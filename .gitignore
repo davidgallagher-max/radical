@@ -1,0 +1,8 @@
+# Raw downloads and generated character data (rebuilt with scripts/get_data.sh)
+raw/
+data/
+
+# Python and Mac clutter
+__pycache__/
+*.pyc
+.DS_Store
