@@ -10,4 +10,10 @@ https://github.com/skishore/makemeahanzi
 
 `scripts/build_data.py` reformats both files into per-character JSON shards, labels each stroke as a meaning, sound, or idea part based on the source's own etymology data, adds a rating of how closely each sound part matches the character's pronunciation, and applies a small set of documented corrections (listed in `OVERRIDES` in that script). The original files are unchanged.
 
+Word segmentation, word pinyin, and word meanings come from **CC-CEDICT** (https://cc-cedict.org), licensed CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). `scripts/build_words.py` reformats it into per-character JSON shards, converts tone numbers to tone marks, and keeps the first three senses of each entry.
+
 Traditional and Simplified conversion uses **OpenCC** via opencc-js: https://github.com/nk2028/opencc-js
+
+Writing practice uses **Hanzi Writer** by David Chanin (MIT license): https://github.com/chanind/hanzi-writer
+
+The Clear color palette is based on the Okabe-Ito colorblind-safe palette.

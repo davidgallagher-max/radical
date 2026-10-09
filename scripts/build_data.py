@@ -28,6 +28,15 @@ TONE_MARKS = {"ā":("a",1),"á":("a",2),"ǎ":("a",3),"à":("a",4),"ē":("e",1),"
 INITIALS = ["zh","ch","sh","b","p","m","f","d","t","n","l","g","k","h","j","q","x","r","z","c","s","y","w"]
 BINARY = set("⿰⿱⿴⿵⿶⿷⿸⿹⿺⿻"); TERNARY = set("⿲⿳")
 
+# A component often appears in a squeezed form: 水 as 氵 on the left, 心 as 忄, and so on.
+VARIANTS = {"水": "氵氺", "心": "忄⺗", "手": "扌", "人": "亻", "艸": "艹", "竹": "⺮", "火": "灬", "言": "訁讠",
+    "金": "釒钅", "食": "飠饣", "糸": "糹纟", "犬": "犭", "示": "礻", "衣": "衤", "肉": "⺼月", "刀": "刂",
+    "足": "𧾷", "网": "罒", "阜": "阝", "邑": "阝", "辵": "辶⻌", "玉": "王", "攴": "攵", "爪": "爫", "老": "耂",
+    "雨": "⻗", "牛": "牜", "羊": "⺶", "魚": "鱼", "鳥": "鸟", "馬": "马", "貝": "贝", "見": "见", "車": "车",
+    "門": "门", "頁": "页", "風": "风", "長": "长", "齒": "齿", "龍": "龙", "麥": "麦", "黃": "黄"}
+def same(a, b):
+    return bool(a) and bool(b) and (a == b or b in VARIANTS.get(a, "") or a in VARIANTS.get(b, ""))
+
 def plain_tone(syl):
     tone, out = 5, ""
     for ch in syl:
@@ -37,7 +46,11 @@ def plain_tone(syl):
 
 def split_syl(s):
     for i in INITIALS:
-        if s.startswith(i): return i, s[len(i):]
+        if s.startswith(i):
+            rest = s[len(i):]
+            if i in ("j", "q", "x", "y") and rest.startswith("u"):  # qu, xu, ju, yu are really ü
+                rest = "ü" + rest[1:]
+            return i, rest
     return "", s
 
 def sound_match(a, b):
@@ -87,19 +100,74 @@ def entry(ch):
     comps = []
     for idx, k in enumerate(kids):
         form = flat(k)
-        if kind == "pictophonetic" and form == ety.get("semantic"): role = "meaning"
-        elif kind == "pictophonetic" and form == ety.get("phonetic"): role = "sound"
-        elif kind == "ideographic": role = "idea" if idx % 2 == 0 else "idea2"
-        else: role = "part"
-        if "？" in form: role = "part"
+        pass  # roles are assigned below, by searching the whole tree
+    # Every subtree, keyed by its path (top-level child 0 is (0,), its first child (0, 0), ...).
+    nodes = {}
+    def walk(t, path):
+        nodes[path] = flat(t)
+        if isinstance(t, tuple):
+            for i, k in enumerate(t[1]):
+                walk(k, path + (i,))
+    walk(tree, ())
+    def find(form):
+        """Shortest path to a subtree that is this component (or one of its side/top forms)."""
+        hits = [p for p, f in nodes.items() if p and same(f, form) and "？" not in f]
+        return min(hits, key=len) if hits else None
+
+    role_at, inferred = {}, False
+    if kind == "pictophonetic":
+        sp, pp = find(ety.get("semantic", "")), find(ety.get("phonetic", ""))
+        if sp: role_at[sp] = "meaning"
+        if pp: role_at[pp] = "sound"
+    elif kind == "ideographic" and len(kids) > 1:
+        for i, k in enumerate(kids):
+            if "？" not in flat(k): role_at[(i,)] = "idea" if i % 2 == 0 else "idea2"
+    if not role_at and len(kids) > 1 and kind not in ("pictographic",):
+        # No recorded origin: infer from the dictionary radical and the sound of the other part.
+        rp = find(d.get("radical", ""))
+        if rp and len(rp) == 1:
+            others = [(i,) for i in range(len(kids)) if (i,) != rp and "？" not in flat(kids[i])]
+            if len(others) == 1 and sound_match(pinyin(ch), pinyin(nodes[others[0]])) in ("same", "same sound, different tone", "rhymes"):
+                role_at[rp], role_at[others[0]], inferred = "meaning", "sound", True
+            else:
+                role_at[rp] = "radical"
+    whole = not role_at and (kind == "pictographic" or len(kids) <= 1)
+
+    comps = []
+    for p in sorted(role_at, key=lambda p: p):
+        form, role = nodes[p], role_at[p]
         one = len(form) == 1
         c = {"f": form, "r": role, "p": pinyin(form) if one else "", "g": gloss(form) if one else ""}
         if role == "sound": c["m"] = sound_match(pinyin(ch), c["p"])
+        if inferred: c["i"] = 1
         comps.append(c)
-    known = any(c["r"] != "part" for c in comps)
+    for i, k in enumerate(kids):  # top-level parts not covered above, shown uncolored
+        if not any(p[:1] == (i,) for p in role_at) and "？" not in flat(k):
+            form = flat(k); one = len(form) == 1
+            comps.append({"f": form, "r": "part", "p": pinyin(form) if one else "", "g": gloss(form) if one else ""})
+    if not role_at:
+        comps = [c for c in comps if not whole]
+
+    # Parts with no known job still get their own color: part1, part2, part3 in reading order.
+    plain = [i for i in range(len(kids)) if not any(p[:1] == (i,) for p in role_at)]
+    rank = {i: f"part{min(n + 1, 3)}" for n, i in enumerate(plain)}
+    for c in comps:
+        if c["r"] == "part":
+            i = next((i for i in plain if flat(kids[i]) == c["f"]), None)
+            c["r"] = rank.get(i, "part3")
     roles = []
     for m in d.get("matches", []):
-        roles.append(comps[m[0]]["r"] if (m and known and m[0] < len(comps)) else "part")
+        r = "whole" if whole or not kids else "part3"
+        if m:
+            path = tuple(m)
+            for L in range(len(path), 0, -1):
+                if path[:L] in role_at:
+                    r = role_at[path[:L]]; break
+            else:
+                if not whole: r = rank.get(path[0], "part3")
+        roles.append(r)
+    if inferred: kind = "inferred"
+    elif whole: kind = "pictographic" if ety.get("type") == "pictographic" else "whole"
     return {"p": d.get("pinyin", []), "d": d.get("definition", ""), "k": kind, "h": ety.get("hint", ""),
             "c": comps, "s": g["strokes"], "md": g["medians"], "r": roles}
 
