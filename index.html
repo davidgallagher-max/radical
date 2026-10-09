@@ -1,5 +1,13 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Radical</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#11161D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Radical">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: paste box, then the text redrawn character by character, then the tapped character taken apart. */
@@ -184,7 +192,7 @@ const PALETTES = {
   earth: { name: "Earth", blurb: "Soft ink and clay",
     light: ["#3E5C76","#B5793A","#8C3B5A","#5B7F3A","#A4452C","#6B4E8A","#4E7A73","#8A7B3A","#A8A29E"],
     dark:  ["#8FB3D1","#E3A867","#D17A9C","#9BBF6E","#E07A5F","#B39BD1","#8FC2B9","#CDBB6E","#78716C"] },
-  original: { name: "Original", blurb: "Plain black ink" }
+  original: { name: "Original", blurb: "Plain ink, no color" }
 };
 let palette = null;
 try { palette = localStorage.getItem("radical-palette"); } catch (e) {}
@@ -326,7 +334,7 @@ function svgFor(ch, grid) {
   g.setAttribute("transform", "scale(1,-1) translate(0,-900)");
   d.s.forEach((p, i) => {
     const path = document.createElementNS(NS, "path");
-    path.setAttribute("d", p); path.setAttribute("fill", `var(--${d.r[i] || "part"})`);
+    path.setAttribute("d", p); path.setAttribute("fill", `var(--${d.r[i] || "part3"}, var(--part3))`);
     g.append(path);
   });
   svg.append(g);
@@ -346,7 +354,7 @@ function animate(svg, ch) {
     const ghost = document.createElementNS(NS, "path"); ghost.setAttribute("d", p); ghost.setAttribute("fill", "var(--grid)"); g.append(ghost);
     const pl = document.createElementNS(NS, "polyline");
     pl.setAttribute("points", d.md[i].map(pt => pt.join(",")).join(" "));
-    pl.setAttribute("fill", "none"); pl.setAttribute("stroke", `var(--${d.r[i] || "part"})`);
+    pl.setAttribute("fill", "none"); pl.setAttribute("stroke", `var(--${d.r[i] || "part3"}, var(--part3))`);
     pl.setAttribute("stroke-width", 150); pl.setAttribute("stroke-linecap", "round"); pl.setAttribute("stroke-linejoin", "round");
     pl.setAttribute("clip-path", `url(#${id}-${i})`);
     g.append(pl);

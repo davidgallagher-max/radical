@@ -1,6 +1,7 @@
 # Raw downloads and generated character data (rebuilt with scripts/get_data.sh)
 raw/
 data/
+public/
 
 # Python and Mac clutter
 __pycache__/
