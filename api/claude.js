@@ -6,6 +6,7 @@
 const API = "https://api.anthropic.com/v1/messages";
 const CARD_MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-5-5";
 const FAST_MODEL = process.env.CLAUDE_FAST_MODEL || "claude-haiku-5-5";
+const OCR_MODEL = process.env.CLAUDE_OCR_MODEL || FAST_MODEL;  // reading text from photos and scanned pages
 
 // The card prompt leaves out the learner's own sentence on purpose: the same word
 // then always gets the same request, so Vercel's CDN can reuse the card (see below).
@@ -46,7 +47,7 @@ async function askClaude(model, prompt, maxTokens) {
       "anthropic-version": "2023-06-01",
       "content-type": "application/json",
     },
-    body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),
+    body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),  // prompt: text, or a list of content blocks
   });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) {
@@ -96,6 +97,16 @@ module.exports = async (req, res) => {
       const out = parseJSON(await askClaude(FAST_MODEL, WORDS_PROMPT(text), 3000));
       if (!out || !Array.isArray(out.words)) return res.status(502).json({ error: "Claude's answer wasn't readable. Try again." });
       return res.status(200).json({ words: out.words.filter(w => w && typeof w.word === "string").slice(0, 80) });
+    }
+    if (body.action === "ocr") {
+      const data = String(body.image || ""), type = String(body.media_type || "image/jpeg");
+      if (!data || !/^image\/(jpeg|png|webp|gif)$/.test(type)) return res.status(400).json({ error: "No usable image sent." });
+      if (data.length > 4_000_000) return res.status(413).json({ error: "That image is too large. Try a closer photo." });
+      const text = await askClaude(OCR_MODEL, [
+        { type: "image", source: { type: "base64", media_type: type, data } },
+        { type: "text", text: "Transcribe the Chinese text in this image exactly as written (Traditional or Simplified, whichever it uses), in reading order, one line per line of the original; for vertical text, read columns right to left. Leave out page numbers, headers and anything that isn't Chinese running text. Output only the text. If there is no Chinese text, output nothing." }
+      ], 2000);
+      return res.status(200).json({ text });
     }
     if (body.action === "translate") {
       const sentence = String(body.sentence || "").trim().slice(0, 600);

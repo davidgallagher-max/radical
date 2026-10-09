@@ -81,6 +81,12 @@ for line in open(f"{MMAH}/dictionary.txt", encoding="utf-8"):
 for line in open(f"{MMAH}/graphics.txt", encoding="utf-8"):
     o = json.loads(line); gfx[o["character"]] = o
 
+# Components that serve as the sound part in many recorded characters (合 in 給, 拾, 恰...).
+# Used to guess the sound part when a character's own origin isn't recorded.
+from collections import Counter
+PHONETICS = Counter((o.get("etymology") or {}).get("phonetic", "") for o in dic.values()
+                    if (o.get("etymology") or {}).get("type") == "pictophonetic")
+
 def pinyin(ch):
     d = dic.get(ch); return (d.get("pinyin") or [""])[0] if d else ""
 
@@ -127,7 +133,9 @@ def entry(ch):
         rp = find(d.get("radical", ""))
         if rp and len(rp) == 1:
             others = [(i,) for i in range(len(kids)) if (i,) != rp and "？" not in flat(kids[i])]
-            if len(others) == 1 and sound_match(pinyin(ch), pinyin(nodes[others[0]])) in ("same", "same sound, different tone", "rhymes"):
+            other = nodes[others[0]] if len(others) == 1 else ""
+            close = sound_match(pinyin(ch), pinyin(other)) in ("same", "same sound, different tone", "rhymes")
+            if other and (close or PHONETICS[other] >= 3):
                 role_at[rp], role_at[others[0]], inferred = "meaning", "sound", True
             else:
                 role_at[rp] = "radical"

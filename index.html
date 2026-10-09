@@ -1,6 +1,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Radical</title>
+<script>try{var t=JSON.parse(localStorage.getItem("radical-theme"));}catch(e){}if(t!=="system")document.documentElement.dataset.theme=t==="light"?"light":"dark";</script>
+<script>try{var t=JSON.parse(localStorage.getItem("radical-theme"));}catch(e){}if(t!=="system")document.documentElement.dataset.theme=t==="light"?"light":"dark";</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -41,7 +43,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .inner{max-width:760px;margin:0 auto;display:grid;gap:14px}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
 .topbar h2{margin:0;font-size:1.15rem;font-weight:600;flex:1;text-align:center}
-.topbar .spacer{width:72px}
+.topbar .spacer{width:72px;display:flex;justify-content:flex-end}
 .back{all:unset;cursor:pointer;color:var(--accent);font-weight:500;display:inline-flex;align-items:center;gap:4px;min-width:72px;height:44px}
 .back::before{content:"";width:9px;height:9px;border-left:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:rotate(45deg);margin-right:2px}
 .iconbtn{flex:none;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;display:grid;place-items:center;padding:0}
@@ -63,6 +65,10 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #splash{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;align-content:center;gap:10px;transition:opacity .45s ease;cursor:pointer}
 #splash.out{opacity:0;pointer-events:none}
 #splash .mark{width:min(46vw,200px);height:min(46vw,200px)}
+#splash h1,#splash p{opacity:0;animation:fadein 1.2s ease 4.2s forwards}
+#splash .skip{position:absolute;bottom:calc(var(--bot) + 28px);font-size:.75rem;color:var(--muted);opacity:.7}
+@keyframes fadein{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){#splash h1,#splash p{animation:none;opacity:1}}
 #splash h1{margin:6px 0 0;font-family:var(--font-zh);font-weight:900;font-size:2.4rem;letter-spacing:.2em;text-transform:uppercase;padding-left:.2em}
 #splash p{margin:0;color:var(--muted);font-size:.95rem;text-align:center;max-width:280px;line-height:1.45}
 
@@ -88,6 +94,10 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
 .ctl{display:grid;gap:3px}
+.themeseg{justify-self:start}
+.themeseg button{font-family:var(--font-ui);font-size:.9rem;padding:9px 14px}
+.themeseg{justify-self:start}
+.themeseg button{font-family:var(--font-ui);font-size:.9rem;padding:9px 14px}
 .ctl-label{font-size:.7rem;color:var(--muted)}
 .note{font-size:.8rem;color:var(--muted);margin:0;line-height:1.45}
 .err{color:var(--sound)}
@@ -111,8 +121,8 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .reader{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 10px;display:grid;gap:10px;min-width:0}
 .line{display:flex;flex-wrap:wrap;align-items:flex-end;row-gap:6px}
 /* Characters inside a word touch; words are separated, so line rhythm follows word lengths, not a grid. */
-.word{display:inline-flex;align-items:flex-end;margin-right:9px;padding-bottom:2px;border-bottom:2px solid transparent}
-.word.multi{border-bottom-color:color-mix(in srgb,var(--accent) 38%,transparent)}
+.word{display:contents}
+.word>:last-child{margin-right:10px}
 .cell{background:none;border:0;border-radius:6px;padding:0;cursor:pointer;display:grid;justify-items:center;color:var(--fg)}
 .cell[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent)}
 .cell svg{width:50px;height:50px;display:block}
@@ -124,6 +134,18 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .enbtn{font-size:.72rem;font-weight:600;letter-spacing:.04em;color:var(--accent);background:var(--surface);border:1px solid var(--line);border-radius:14px;height:28px;padding:0 9px;cursor:pointer}
 .trans{margin:-2px 0 4px;padding:8px 12px;border-left:3px solid var(--accent);font-size:.96rem;background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:0 8px 8px 0}
 .loading{color:var(--muted);font-size:.9rem}
+
+.toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tool{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.85rem;font-weight:500;color:var(--accent);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 4px;cursor:pointer}
+.tool .ti{font-family:var(--font-zh);font-size:1.05rem;font-weight:600}
+.docbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.doctitle{font-size:.85rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doctitle a{color:var(--accent)}
+.docnav{display:flex;align-items:center;gap:8px;font-size:.85rem;flex:none}
+.docnav .btn{min-width:36px}
+.more{justify-self:center}
+#wikiQ{font-family:var(--font-zh),var(--font-ui)}
+.hitem .snip{font-size:.85rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* ---- word screen: page 0 is the word, then one page per character; swipe sideways */
 .wtabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
@@ -139,10 +161,13 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .wpy .bigpy{font-size:1.6rem}
 .addbtn{height:36px;border-radius:18px;padding:0 14px;font-size:.88rem}
 .wmean{text-align:center;font-size:1.05rem;margin:0}
-.swipehint{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--muted);font-size:.78rem}
-.swipehint i{width:8px;height:8px;border-right:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(45deg);animation:nudge 1.6s ease-in-out 3}
-@keyframes nudge{0%,100%{transform:translateX(0) rotate(45deg)}50%{transform:translateX(5px) rotate(45deg)}}
-@media (prefers-reduced-motion:reduce){.swipehint i{animation:none}}
+.pnav{display:flex;justify-content:space-between;align-items:center;min-height:34px}
+.pnav button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-family:var(--font-zh);font-size:1.15rem;padding:4px 6px}
+.pnav i{width:9px;height:9px;border-top:2px solid currentColor;border-right:2px solid currentColor}
+.pnav .nx i{transform:rotate(45deg);animation:nudge 1.6s ease-in-out 2}
+.pnav .pv i{transform:rotate(-135deg)}
+@keyframes nudge{0%,100%{transform:translateX(0) rotate(45deg)}50%{transform:translateX(4px) rotate(45deg)}}
+@media (prefers-reduced-motion:reduce){.pnav .nx i{animation:none}}
 .wcard{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .wcard .ex{font-family:var(--font-zh);font-size:1.3rem;line-height:1.55;margin:0}
 .wcard .exp{font-size:.92rem;color:var(--muted);margin:0}
@@ -185,9 +210,15 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .revstrip .btn{background:var(--surface);color:var(--accent);font-weight:600}
 .revstrip.idle{background:var(--surface);color:var(--fg);border:1px solid var(--line)}
 .revstrip.idle .btn{background:var(--accent);color:var(--surface)}
-.filters{display:flex;gap:6px;flex-wrap:wrap}
-.filters button{all:unset;cursor:pointer;font-size:.85rem;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
-.filters button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.filters{display:flex;gap:5px;flex-wrap:wrap}
+.filters button{all:unset;cursor:pointer;font-size:.8rem;padding:5px 9px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.filters button{display:inline-flex;align-items:center;gap:6px;--c:var(--fg)}
+.filters button[data-k=new]{--c:var(--accent)} .filters button[data-k=due]{--c:var(--sound)}
+.filters button[data-k=learning]{--c:var(--meaning)} .filters button[data-k=known]{--c:var(--muted)}
+.filters button{border-color:color-mix(in srgb,var(--c) 55%,var(--line));color:var(--fg)}
+.filters button[aria-pressed="true"]{background:var(--c);color:var(--bg);border-color:var(--c)}
+.filters button[aria-pressed="true"] .dot{box-shadow:inset 0 0 0 2px var(--bg);background:transparent}
+.filters button:disabled{opacity:.45;cursor:default}
 .wordlist{display:grid;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
 .wrow{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:auto 1fr 10px;gap:14px;align-items:center;padding:11px 14px;border-top:1px solid var(--line);width:100%}
 .wrow:first-child{border-top:0}
@@ -196,8 +227,8 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
 .dot.new{background:transparent;box-shadow:inset 0 0 0 2px var(--accent)}
 .dot.due{background:var(--sound)}
-.dot.learning{background:var(--accent)}
-.dot.known{background:var(--line)}
+.dot.learning{background:var(--meaning)}
+.dot.known{background:var(--muted)}
 .dotkey{display:flex;gap:12px;flex-wrap:wrap;font-size:.74rem;color:var(--muted)}
 .dotkey span{display:inline-flex;align-items:center;gap:5px}
 
@@ -213,6 +244,21 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .grades button{display:grid;gap:2px;justify-items:center;padding:10px 4px}
 .grades small{font-size:.74rem;opacity:.8}
 .grades .again{box-shadow:inset 0 0 0 1px var(--sound);color:var(--sound)}
+.grades .suggest{background:var(--accent);color:var(--surface);box-shadow:none}
+.grades .again.suggest{background:var(--sound);color:var(--surface)}
+.guess{display:grid;gap:8px}
+.guess label{display:grid;grid-template-columns:5.2em 1fr;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+.guess input{font-size:1.1rem;padding:11px 12px}
+.pyprev{margin:-4px 0 0 calc(5.2em + 8px);font-size:1.05rem;min-height:1.3em}
+.guessacts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.guessacts .btn{padding:12px 6px}
+.results{display:grid;gap:6px}
+.res{display:grid;grid-template-columns:5.2em 1fr;gap:2px 8px;align-items:baseline;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:.95rem}
+.res span{color:var(--muted);font-size:.8rem;grid-row:span 2}
+.res em{font-style:normal;font-size:.8rem;color:var(--muted)}
+.res.ok{border-color:var(--on)} .res.ok em{color:var(--on)}
+.res.part{border-color:var(--whole)} .res.part em{color:var(--whole)}
+.res.no{border-color:var(--sound)} .res.no em{color:var(--sound)}
 
 /* ---- history, settings */
 .list{display:grid;gap:8px}
@@ -237,6 +283,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
   <svg class="mark" id="splashMark" viewBox="0 0 1024 1024"></svg>
   <h1>Radical</h1>
   <p>Every character drawn with its meaning and sound in color.</p>
+  <span class="skip">Tap to skip</span>
 </div>
 
 <!-- READ -->
@@ -244,11 +291,15 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
   <div class="inner">
     <header class="readhead">
       <div class="brand"><svg id="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
-      <div class="row">
-        <button type="button" class="btn ghost small" id="histBtn">History</button>
-        <button type="button" class="iconbtn gearbtn" aria-label="Settings"></button>
-      </div>
+      <button type="button" class="iconbtn gearbtn" aria-label="Settings"></button>
     </header>
+    <div class="toolbar">
+      <label class="tool" title="Take a photo, or choose a photo or PDF"><span class="ti">＋</span>Photo or file
+        <input type="file" id="fileIn" accept="image/*,application/pdf,.pdf" hidden></label>
+      <button type="button" class="tool" id="wikiBtn"><span class="ti">維</span>Wikipedia</button>
+      <button type="button" class="tool" id="histBtn"><span class="ti">↺</span>History</button>
+    </div>
+    <p class="note" id="busy" hidden></p>
     <textarea id="src" rows="3" aria-label="Your Chinese text">他的回答讓我很驚訝。他驚訝到瞪大眼睛。
 我們在登山口附近搭帳篷，趁天氣好去爬山。
 訓練AI需要很多資料，桌上有一堆資料。
@@ -259,7 +310,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
         <span><i style="background:var(--sound)"></i>Sound</span>
         <span><i style="background:var(--idea)"></i><i style="background:var(--idea2)"></i>Two ideas</span>
         <span><i style="background:var(--whole)"></i>Picture</span>
-        <span><i style="background:var(--radical)"></i><i style="background:var(--part1)"></i>Radical + rest</span>
+        <span><i style="background:var(--part1)"></i>Origin unclear</span>
         <span><i style="background:var(--part3)"></i>Not placed</span>
       </div>
       <div class="row">
@@ -270,6 +321,10 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
           </div></div>
         <button type="button" class="switch" id="pyBtn" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Pinyin</button>
       </div>
+    </div>
+    <div class="docbar" id="docbar" hidden>
+      <div class="doctitle" id="docTitle"></div>
+      <div class="docnav"><button type="button" class="btn ghost small" id="docPrev">‹</button><span id="docPage"></span><button type="button" class="btn ghost small" id="docNext">›</button></div>
     </div>
     <section class="reader nopy" id="reader" aria-label="Your text, drawn"></section>
   </div>
@@ -282,6 +337,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
       <div class="brand"><b style="font-size:1.25rem">My words</b></div>
       <button type="button" class="iconbtn gearbtn" aria-label="Settings"></button>
     </header>
+    <div class="filters" id="filters"></div>
     <div id="revStrip"></div>
     <div class="addbox">
       <div class="addrow">
@@ -294,16 +350,14 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
       </div>
       <div class="preview" id="preview" hidden></div>
     </div>
-    <div class="filters" id="filters"></div>
     <div class="wordlist" id="wordList"></div>
-    <div class="dotkey"><span><i class="dot new"></i>New</span><span><i class="dot due"></i>Due</span><span><i class="dot learning"></i>Learning</span><span><i class="dot known"></i>Known</span></div>
   </div>
 </section>
 
 <!-- WORD (opens over Read or Words) -->
 <section class="screen sub" id="wordScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back>Back</button><div class="wtabs" id="wtabs"></div><span class="spacer"></span></div>
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><div class="wtabs" id="wtabs"></div><span class="spacer gearslot"><button type="button" class="iconbtn gearbtn" aria-label="Settings"></button></span></div>
     <div class="pager" id="pager"></div>
   </div>
 </section>
@@ -311,15 +365,29 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 <!-- REVIEW -->
 <section class="screen sub" id="reviewScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back>Back</button><h2>Review <span class="note" id="revProg"></span></h2><span class="spacer"></span></div>
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><h2>Review <span class="note" id="revProg"></span></h2><span class="spacer gearslot"><button type="button" class="iconbtn gearbtn" aria-label="Settings"></button></span></div>
     <div id="revCard" class="revcard"></div>
+  </div>
+</section>
+
+<!-- WIKIPEDIA -->
+<section class="screen sub" id="wikiScreen" hidden>
+  <div class="inner">
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><h2>Wikipedia</h2><span class="spacer gearslot"><button type="button" class="iconbtn gearbtn" aria-label="Settings"></button></span></div>
+    <form class="addrow" id="wikiForm">
+      <input type="text" id="wikiQ" lang="zh" placeholder="Search Chinese Wikipedia: 登山, 台北, coffee…" autocomplete="off">
+      <button type="submit" class="btn">Search</button>
+    </form>
+    <button type="button" class="btn ghost wide" id="wikiRandom">Surprise me</button>
+    <p class="note" id="wikiStatus">Articles open in the reader a section at a time. Text from Chinese Wikipedia, CC BY-SA 4.0.</p>
+    <div class="list" id="wikiList"></div>
   </div>
 </section>
 
 <!-- HISTORY -->
 <section class="screen sub" id="historyScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back>Back</button><h2>History</h2><span class="spacer"></span></div>
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><h2>History</h2><span class="spacer gearslot"><button type="button" class="iconbtn gearbtn" aria-label="Settings"></button></span></div>
     <p class="note">Your last 30 texts, newest first. Tap one to read it again; what you have now is saved here first.</p>
     <div class="list" id="histList"></div>
   </div>
@@ -333,6 +401,14 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
     <h3 class="sec">Colors</h3>
     <div class="pgrid" id="paletteGrid"></div>
     <button type="button" class="btn wide" id="startBtn" hidden>Start reading</button>
+    <h3 class="sec">Appearance</h3>
+    <div class="seg themeseg" id="themeSeg" role="group" aria-label="Appearance">
+      <button type="button" data-theme-set="dark">Dark</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="system">Match phone</button>
+    </div>
+    <h3 class="sec">Appearance</h3>
+    <div class="seg themeseg" id="themeSeg" role="group" aria-label="Appearance">
+      <button type="button" data-theme-set="dark">Dark</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="system">Match phone</button>
+    </div>
     <h3 class="sec">Speech speed</h3>
     <div class="panel">
       <div class="rate"><span>Slower</span><input type="range" id="rate" min="0.5" max="1.3" step="0.05"><span>Faster</span></div>
@@ -358,8 +434,8 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 </section>
 
 <nav class="tabbar" id="tabbar" aria-label="Main">
-  <button type="button" data-tab="readScreen" aria-current="page"><span class="tz">讀</span>Read</button>
-  <button type="button" data-tab="wordsScreen"><span class="tz">詞</span>Words<span class="badge" id="dueBadge"></span></button>
+  <button type="button" data-tab="readScreen" aria-current="page"><span class="tz">讀</span>My text</button>
+  <button type="button" data-tab="wordsScreen"><span class="tz">詞</span>My words<span class="badge" id="dueBadge"></span></button>
 </nav>
 
 <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.4.2/dist/umd/full.js"></script>
@@ -379,8 +455,8 @@ const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentCol
 document.querySelectorAll(".gearbtn").forEach(b => { b.innerHTML = GEAR; b.onclick = () => openSettings(false); });
 
 const cache = {}, shardLoads = {}, words = {}, wordLoads = {};
-const ROLE = {meaning:"Meaning", sound:"Sound", idea:"Idea", idea2:"Idea", radical:"Radical", part1:"Rest", part2:"Rest", part3:"Not placed", whole:"Picture"};
-const KIND = {pictophonetic:"Meaning + sound", ideographic:"Two ideas combined", pictographic:"Picture", whole:"Single piece", inferred:"Meaning + sound (likely)", unknown:"Radical + rest"};
+const ROLE = {meaning:"Meaning", sound:"Sound", idea:"Idea", idea2:"Idea", radical:"Meaning (radical)", part1:"Origin unclear", part2:"Origin unclear", part3:"Not placed", whole:"Picture"};
+const KIND = {pictophonetic:"Meaning + sound", ideographic:"Two ideas combined", pictographic:"Picture", whole:"Single piece", inferred:"Meaning + sound (likely)", unknown:"Meaning + unclear part"};
 const TONE = {"ā":1,"á":2,"ǎ":3,"à":4,"ē":1,"é":2,"ě":3,"è":4,"ī":1,"í":2,"ǐ":3,"ì":4,"ō":1,"ó":2,"ǒ":3,"ò":4,"ū":1,"ú":2,"ǔ":3,"ù":4,"ǖ":1,"ǘ":2,"ǚ":3,"ǜ":4};
 const tone = s => { for (const c of s || "") if (TONE[c]) return TONE[c]; return 5; };
 const isHan = c => /\p{Script=Han}/u.test(c);
@@ -388,11 +464,18 @@ const isHan = c => /\p{Script=Han}/u.test(c);
 // ================= sound: the phone's own text-to-speech, preferring a Taiwan Mandarin voice
 const SPK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
 const sayHTML = (t, sm) => `<button type="button" class="saybtn${sm ? " sm" : ""}" data-say="${esc(t)}" aria-label="Play ${esc(t)}">${SPK}</button>`;
-let zhVoice = null, rate = store.get("radical-rate", 0.85);
+// Traditional text is read with a Taiwan voice, Simplified with a Beijing (mainland) voice.
+let twVoice = null, cnVoice = null, rate = store.get("radical-rate", 0.85);
 function pickVoice() {
-  const vs = speechSynthesis.getVoices();
-  zhVoice = vs.find(v => /zh[-_]TW/i.test(v.lang)) || vs.find(v => /zh[-_](HK|Hant)/i.test(v.lang)) || vs.find(v => /^zh/i.test(v.lang)) || null;
-  if ($("voiceName")) $("voiceName").textContent = zhVoice ? `Voice: ${zhVoice.name} (${zhVoice.lang})` : "No Chinese voice found. iPhone: Settings → Accessibility → Spoken Content → Voices → Chinese.";
+  const vs = speechSynthesis.getVoices(), find = re => vs.find(v => re.test(v.lang));
+  twVoice = find(/zh[-_]TW/i) || find(/zh[-_]Hant/i) || null;
+  cnVoice = find(/zh[-_]CN/i) || find(/zh[-_]Hans/i) || null;
+  const any = find(/^zh/i) || find(/^cmn/i) || null;
+  twVoice = twVoice || any; cnVoice = cnVoice || any;
+  const name = v => v ? `${v.name} (${v.lang})` : "none";
+  if ($("voiceName")) $("voiceName").textContent = any
+    ? `Traditional: ${name(twVoice)} · Simplified: ${name(cnVoice)}`
+    : "No Chinese voice found. iPhone: Settings → Accessibility → Spoken Content → Voices → Chinese.";
 }
 if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 else document.documentElement.classList.add("nosay");
@@ -400,7 +483,8 @@ function speak(text) {
   if (!("speechSynthesis" in window) || !text) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = zhVoice ? zhVoice.lang : "zh-TW"; if (zhVoice) u.voice = zhVoice; u.rate = rate;
+  const simp = typeof script !== "undefined" && script === "simp", v = simp ? cnVoice : twVoice;
+  u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = rate;
   speechSynthesis.speak(u);
 }
 document.addEventListener("click", e => { const b = e.target.closest("[data-say]"); if (b) { e.stopPropagation(); speak(b.dataset.say); } }, true);
@@ -446,7 +530,8 @@ const firstRun = !PALETTES[palette];
 if (firstRun) palette = "jade";
 const darkQ = matchMedia("(prefers-color-scheme: dark)");
 const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : darkQ.matches; };
-const roleColor = (key, i) => PALETTES[key][isDark() ? "dark" : "light"][ROLES[i] === "part2" ? ROLES.indexOf("part1") : i];
+// The dictionary radical usually carries the meaning, so it takes the meaning color; unexplained parts share one color.
+const roleColor = (key, i) => PALETTES[key][isDark() ? "dark" : "light"][ROLES[i] === "part2" ? ROLES.indexOf("part1") : ROLES[i] === "radical" ? 0 : i];
 function applyPalette() {
   const root = document.documentElement.style;
   ROLES.forEach((r, i) => root.setProperty(`--${r}`, palette === "original" ? "var(--fg)" : roleColor(palette, i)));
@@ -469,6 +554,26 @@ function buildPalettes() {
 }
 darkQ.addEventListener?.("change", () => { applyPalette(); if (!$("settingsScreen").hidden) buildPalettes(); });
 
+// ================= appearance: dark by default; light or "match phone" from Settings
+function setTheme(t) {
+  store.set("radical-theme", t);
+  if (t === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === t));
+  applyPalette(); if (!$("settingsScreen").hidden) buildPalettes();
+}
+document.querySelectorAll("[data-theme-set]").forEach(b => b.onclick = () => setTheme(b.dataset.themeSet));
+document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === store.get("radical-theme", "dark")));
+
+// ================= appearance: dark by default; light or "match phone" from Settings
+function setTheme(t) {
+  store.set("radical-theme", t);
+  if (t === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === t));
+  applyPalette(); if (!$("settingsScreen").hidden) buildPalettes();
+}
+document.querySelectorAll("[data-theme-set]").forEach(b => b.onclick = () => setTheme(b.dataset.themeSet));
+document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === store.get("radical-theme", "dark")));
+
 // ================= data
 let toTrad = s => s, toSimp = s => s;
 try { toTrad = OpenCC.Converter({ from: "cn", to: "tw" }); toSimp = OpenCC.Converter({ from: "tw", to: "cn" }); } catch (e) {}
@@ -489,8 +594,9 @@ function ensure(chars) {
 function lookup(str) { const first = [...str][0]; return (words[first] || []).find(e => e[0] === str) || null; }
 function token(entry, chars) {
   if (!entry) return { chars, syl: null, mean: null };
-  const syl = (entry[2] || entry[1]).split(" ");
-  return { chars, syl: syl.length === chars.length ? syl : null, mean: entry[3], tw: !!entry[2] };
+  const tw = script !== "simp" && !!entry[2];  // Simplified text gets mainland (Beijing) readings
+  const syl = (tw ? entry[2] : entry[1]).split(" ");
+  return { chars, syl: syl.length === chars.length ? syl : null, mean: entry[3], tw };
 }
 // Split a line into words both ways (longest match from the front and from the back); keep the one with fewer stray single characters.
 function segment(line) {
@@ -512,7 +618,7 @@ function segment(line) {
   // Taiwan keeps full tones where mainland dictionaries mark a neutral tone (眼睛 yǎnjīng), except on particles.
   const NEUTRAL = new Set([..."子們们的了著着過过嗎吗呢吧啊啦麼么"]);
   out.forEach(t => {
-    if (!t.syl || t.tw) return;
+    if (!t.syl || t.tw || script === "simp") return;
     t.syl = t.syl.map((s, k) => {
       const c = t.chars[k], d = cache[c];
       if (k === 0 || tone(s) !== 5 || NEUTRAL.has(c) || !d) return s;
@@ -625,7 +731,11 @@ async function render() {
   await ensure(text);
   if (token !== renderToken) return;
   reader.innerHTML = "";
-  text.split(/\n+/).filter(l => l.trim()).forEach(lineText => {
+  // Every character is a drawing, so very long texts are shown in parts.
+  const LIMIT = 1500, all = text.split(/\n+/).filter(l => l.trim());
+  let shownChars = 0, lines = [];
+  for (const l of all) { if (shownChars && shownChars + l.length > renderLimit) break; lines.push(l); shownChars += l.length; }
+  lines.forEach(lineText => {
     const line = el("div", "line");
     for (const tok of segment(lineText)) {
       const group = el("span", "word" + (tok.chars.length > 1 ? " multi" : ""));
@@ -650,9 +760,15 @@ async function render() {
     ctl.append(en); line.append(ctl);
     reader.append(line);
   });
+  if (lines.length < all.length) {
+    const rest = all.slice(lines.length).join("").length;
+    reader.append(btn(`Show more (${rest} more characters)`, "btn ghost more", () => { renderLimit += LIMIT; render(); }));
+  }
 }
+let renderLimit = 1500;
 let typing;
-function onNewText() { typed = script = detect($("src").value); showScript(); }
+function onNewText() { renderLimit = 1500; onNewText0(); }
+function onNewText0() { typed = script = detect($("src").value); showScript(); }
 $("src").addEventListener("input", e => { store.set("radical-text", e.target.value); clearTimeout(typing); typing = setTimeout(() => { onNewText(); render(); }, 350); });
 $("src").addEventListener("change", e => remember(e.target.value));
 document.querySelectorAll("[data-script]").forEach(b => b.onclick = () => { script = b.dataset.script; showScript(); render(); });
@@ -669,7 +785,8 @@ function remember(text) {
   textHistory = [{ text, at: localDay() }, ...textHistory.filter(h => h.text !== text)].slice(0, 30);
   store.set("radical-history", textHistory);
 }
-function setText(text) {
+function setText(text, keepDoc) {
+  if (!keepDoc && doc) closeDoc();
   remember($("src").value);
   $("src").value = text; store.set("radical-text", text); remember(text);
   stack.length = 0; setTab("readScreen"); $("readScreen").scrollTop = 0;
@@ -798,7 +915,7 @@ function onLeaveWord() { animToken++; document.querySelectorAll(".cell[aria-pres
 function wordFacts() {
   const s = wordState, saved = findWord(s.word), d = lookup(s.word);
   let syl = s.syl && s.syl.length === s.chars.length ? s.syl : null;
-  if (!syl && d) { const p = (d[2] || d[1]).split(" "); if (p.length === s.chars.length) syl = p; }
+  if (!syl && d) { const p = (script !== "simp" && d[2] || d[1]).split(" "); if (p.length === s.chars.length) syl = p; }
   if (!syl && saved && wPinyin(saved)) syl = sylls(wPinyin(saved).replace(/\s+/g, ""));
   if (!syl || syl.length !== s.chars.length) syl = s.chars.map(c => cache[c].p[0]);
   const mean = (saved && wMeaning(saved)) || s.mean || (d && d[3]) || (s.chars.length === 1 ? cache[s.chars[0]].d : "");
@@ -807,7 +924,7 @@ function wordFacts() {
 function renderWordPages() {
   const s = wordState, pager = $("pager"), tabs = $("wtabs");
   pager.innerHTML = ""; tabs.innerHTML = "";
-  const labels = [s.word, ...(s.chars.length > 1 ? s.chars : ["parts"])];
+  const labels = s.labels = [s.word, ...(s.chars.length > 1 ? s.chars : ["parts"])];
   labels.forEach((l, i) => {
     const t = el("button", "", esc(l)); t.type = "button";
     t.onclick = () => pager.scrollTo({ left: i * pager.clientWidth, behavior: "smooth" });
@@ -819,6 +936,14 @@ function renderWordPages() {
 }
 function markTab(i) { [...$("wtabs").children].forEach((t, k) => t.setAttribute("aria-current", k === i)); }
 $("pager").addEventListener("scroll", () => { const p = $("pager"); markTab(Math.round(p.scrollLeft / Math.max(1, p.clientWidth))); }, { passive: true });
+// Arrows to the neighbouring pages, labelled with the character they lead to.
+function pageNav(i) {
+  const L = wordState.labels, nav = el("div", "pnav");
+  const mk = (cls, k, html) => { const b = el("button", cls, html); b.type = "button"; b.onclick = () => goPage(k); return b; };
+  nav.append(i > 0 ? mk("pv", i - 1, `<i></i>${esc(L[i - 1])}`) : el("span"));
+  nav.append(i < L.length - 1 ? mk("nx", i + 1, `${esc(L[i + 1])}<i></i>`) : el("span"));
+  return nav;
+}
 function goPage(i) { const p = $("pager"); p.scrollTo({ left: i * p.clientWidth, behavior: "smooth" }); }
 
 function wordPage() {
@@ -836,19 +961,22 @@ function wordPage() {
   py.append(addBtn());
   page.append(py);
   page.append(el("p", "wmean", esc(mean) + (s.tw ? ` <span class="note">(Taiwan reading)</span>` : "")));
-  page.append(el("div", "swipehint", `Swipe for each character's parts and writing <i></i>`));
+  const nav = pageNav(0);  // on the word page the empty left side carries the swipe tip
+  nav.firstChild.replaceWith(el("span", "note", "Swipe for each character's parts and writing."));
+  page.append(nav);
   if (saved) page.append(savedCard(saved));
   return page;
 }
-function addBtn() {
+// "+ Add" for the whole word (word page) or for one character (character pages).
+function addBtn(word = wordState.word) {
   const s = wordState, b = btn("", "btn addbtn");
-  const idle = () => { const w = findWord(s.word); b.textContent = w ? "✓ In my words" : "+ Add"; b.className = w ? "btn ghost addbtn" : "btn addbtn"; b.disabled = false; };
+  const idle = () => { const w = findWord(word); b.textContent = w ? "✓ In my words" : (word === s.word ? "+ Add" : `+ Add ${word}`); b.className = w ? "btn ghost addbtn" : "btn addbtn"; b.disabled = false; };
   idle();
   b.onclick = async () => {
-    if (findWord(s.word)) { b.textContent = "Already saved"; setTimeout(idle, 1200); return; }
+    if (findWord(word)) { b.textContent = "Already saved"; setTimeout(idle, 1200); return; }
     b.disabled = true;
-    const w = await addEntry(s.word, { context: s.context && s.context !== s.word ? s.context : undefined });
-    idle(); refreshWordPage();
+    const w = await addEntry(word, { context: s.context && s.context !== word ? s.context : undefined });
+    idle(); if (word === s.word) refreshWordPage();
     if (store.get("radical-pw", "")) makeCard(w).then(refreshWordPage).catch(() => {});
   };
   return b;
@@ -894,7 +1022,7 @@ function savedCard(w) {
 
 const NOTE = {
   inferred: "The source doesn't record where this character came from. One part sounds like the whole and the other is its dictionary radical, so this is the likely meaning + sound split.",
-  unknown: "The source names the radical but doesn't say whether the rest carries meaning or sound, so the rest gets its own neutral color.",
+  unknown: "The radical (the part dictionaries file it under) usually carries the meaning. Where the other part came from isn't recorded, so it gets the \"origin unclear\" color.",
   pictographic: "This one started as a drawing: no meaning part or sound part. The whole shape is the picture.",
   whole: "A single sign with no smaller parts."
 };
@@ -911,8 +1039,11 @@ function charPage(ch, i) {
     top.append(row);
   };
   showView();
+  page.append(pageNav(i + 1));
   const other = d.p.filter(p => p !== here);
-  page.append(el("div", "chead", `<span class="cz" lang="zh">${ch}</span><span class="bigpy">${pyHTML(here)}</span>${sayHTML(ch)}<span class="kind">${KIND[d.k] || "Structure only"}</span>`));
+  const head = el("div", "chead", `<span class="cz" lang="zh">${ch}</span><span class="bigpy">${pyHTML(here)}</span>${sayHTML(ch)}`);
+  if (s.chars.length > 1) head.append(addBtn(ch));
+  page.append(head, el("div", "kind", KIND[d.k] || "Structure only"));
   page.append(el("p", "def", esc(d.d || "") + (other.length ? ` <span class="note">· also ${other.map(pyHTML).join(", ")}</span>` : "")));
   const cc = saved && saved.card && (saved.card.chars || []).find(x => x.char === ch);
   if (cc && cc.mnemonic) page.append(el("p", "mnem", `<b>Memory hook:</b> ${esc(cc.mnemonic)}`));
@@ -994,10 +1125,10 @@ function renderWords() {
   const counts = { all: myWords.length, due: 0, new: 0, learning: 0, known: 0 };
   myWords.forEach(w => counts[wStatus(w)]++);
   const f = $("filters"); f.innerHTML = "";
-  [["all", "All"], ["due", "Due"], ["new", "New"], ["learning", "Learning"], ["known", "Known"]].forEach(([k, label]) => {
-    if (k !== "all" && !counts[k]) return;
-    const b = btn(`${label} ${counts[k]}`, ""); b.setAttribute("aria-pressed", filter === k);
-    b.onclick = () => { filter = k; renderWords(); }; f.append(b);
+  [["all", "All"], ["new", "New"], ["due", "Due"], ["learning", "Learning"], ["known", "Known"]].forEach(([k, label]) => {
+    const b = el("button", "", `${k === "all" ? "" : `<i class="dot ${k}"></i>`}${label} ${counts[k]}`); b.type = "button"; b.dataset.k = k;
+    b.setAttribute("aria-pressed", filter === k); b.disabled = !counts[k] && k !== "all";
+    b.onclick = () => { filter = filter === k ? "all" : k; renderWords(); }; f.append(b);
   });
   if (filter !== "all" && !counts[filter]) filter = "all";
   const list = $("wordList"); list.innerHTML = "";
@@ -1163,6 +1294,45 @@ function bigWord(word) {
   [...word].forEach(ch => box.append(cache[ch] ? svgFor(ch, true) : el("span", "plain", esc(ch))));
   return box;
 }
+// ---- answer checking
+// Pinyin: accepts tone marks or numbers (zhang4peng2), spaces optional, v or u: for ü.
+const MARKS = { a: "āáǎà", e: "ēéěè", i: "īíǐì", o: "ōóǒò", u: "ūúǔù", "ü": "ǖǘǚǜ" };
+function numToMarks(s) {
+  return s.replace(/u:|v/gi, "ü").replace(/([a-zü]+)([1-5])/gi, (m, syl, t) => {
+    if (t === "5") return syl;
+    const low = syl.toLowerCase();
+    const at = /[ae]/.test(low) ? low.search(/[ae]/) : low.includes("ou") ? low.indexOf("o") : Math.max(...[..."aeiouü"].map(v => low.lastIndexOf(v)));
+    if (at < 0) return syl;
+    return syl.slice(0, at) + MARKS[low[at]][t - 1] + syl.slice(at + 1);
+  });
+}
+function pyKey(s) {
+  const marked = numToMarks(String(s || "").toLowerCase().replace(/[\s'’·-]+/g, ""));
+  const syl = sylls(marked).filter(Boolean);
+  return { letters: [...marked].map(c => PLAIN[c] || c).join("").replace(/ü/g, "v"), tones: syl.map(tone).join(""), toned: syl.some(x => tone(x) !== 5) };
+}
+function checkPinyin(given, target) {
+  if (!given.trim()) return { ok: null };
+  if (!target) return { ok: null, note: "No pinyin on file to check against." };
+  const a = pyKey(given), b = pyKey(target);
+  if (a.letters !== b.letters) return { ok: false, note: "Not quite." };
+  if (!a.toned) return { ok: "part", note: "Right sounds; add tones next time (numbers work: zhang4peng2)." };
+  if (a.tones !== b.tones) return { ok: "part", note: "Right sounds, tones off." };
+  return { ok: true, note: "Correct." };
+}
+// Meaning: generous. Any meaning phrase, or a shared content word, counts.
+const STOP = new Set("to a an the of and or in on at for with be is it one's oneself something someone sb sth".split(" "));
+const norm = t => t.toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z' ]/g, " ").replace(/\s+/g, " ").trim().replace(/^(to|a|an|the) /, "");
+function checkMeaning(given, target) {
+  if (!given.trim()) return { ok: null };
+  if (!target) return { ok: null };
+  const g = norm(given), phrases = target.split(/[;,/]|\bor\b/).map(norm).filter(Boolean);
+  if (phrases.some(p => p === g || (g.length > 2 && (p.includes(g) || g.includes(p))))) return { ok: true, note: "Correct." };
+  const words = new Set(phrases.join(" ").split(" ").filter(x => x.length > 2 && !STOP.has(x)));
+  if (g.split(" ").some(x => x.length > 2 && !STOP.has(x) && (words.has(x) || words.has(x.replace(/s$/, "")) || words.has(x + "s")))) return { ok: true, note: "Close enough." };
+  return { ok: false, note: "Compare with the answer." };
+}
+
 function showFront() {
   const box = $("revCard"), prog = $("revProg"); box.innerHTML = "";
   if (!rq.length) {
@@ -1175,11 +1345,34 @@ function showFront() {
   prog.textContent = `· ${rq.length} left${w.srs ? "" : " · new"}`;
   box.append(bigWord(w.word));
   if (w.context) box.append(el("p", "revctx", w.context.split(w.word).map(esc).join(`<b>${esc(w.word)}</b>`)));
-  const show = btn("Show answer", "btn wide", () => { show.remove(); showBack(w); });
-  box.append(show);
+  // Two guesses, pinyin first. Tone numbers turn into marks as you type.
+  const form = el("form", "guess");
+  form.innerHTML = `<label><span>Pinyin</span><input id="gPy" type="text" inputmode="latin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="zhang4peng2 or zhàngpéng"></label>
+    <p class="note pyprev" id="gPrev"></p>
+    <label><span>Meaning</span><input id="gMean" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="in English"></label>`;
+  const acts = el("div", "guessacts");
+  const reveal = how => { form.remove(); acts.remove(); showBack(w, how); };
+  acts.append(btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know")), btn("Show answer", "btn ghost", () => reveal("show")));
+  box.append(form, acts);
+  const py = $("gPy"), mean = $("gMean");
+  py.addEventListener("input", () => { const m = numToMarks(py.value); $("gPrev").innerHTML = /\d/.test(py.value) ? pyWordHTML(m) : ""; });
+  py.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); mean.focus(); } });
+  form.onsubmit = e => { e.preventDefault(); reveal("check"); };
+  mean.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); reveal("check"); } });
+  showBack.guess = () => ({ py: py.value, mean: mean.value });
+  setTimeout(() => py.focus(), 50);
 }
-function showBack(w) {
+function showBack(w, how) {
   const box = $("revCard"), c = w.card, ans = el("div", "revans");
+  const guess = how === "check" && showBack.guess ? showBack.guess() : null;
+  let suggest = how === "know" ? "good" : how === "show" ? "again" : null;
+  if (guess) {
+    const rp = checkPinyin(guess.py, wPinyin(w)), rm = checkMeaning(guess.mean, wMeaning(w));
+    const mark = (label, val, r) => val.trim() ? `<div class="res ${r.ok === true ? "ok" : r.ok === "part" ? "part" : r.ok === false ? "no" : ""}"><span>${label}</span><b>${label === "Pinyin" ? pyWordHTML(numToMarks(val)) : esc(val)}</b><em>${esc(r.note || "")}</em></div>` : `<div class="res"><span>${label}</span><em>left blank</em></div>`;
+    ans.append(el("div", "results", mark("Pinyin", guess.py, rp) + mark("Meaning", guess.mean, rm)));
+    const score = [rp.ok, rm.ok].map(x => x === true ? 2 : x === "part" ? 1 : 0).reduce((a, b) => a + b, 0);
+    suggest = score === 4 ? "good" : score >= 1 ? "hard" : "again";
+  }
   ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(wPinyin(w))}</span>${sayHTML(w.word)}`));
   ans.append(el("p", "wmean", esc(wMeaning(w))));
   if (c) {
@@ -1194,18 +1387,19 @@ function showBack(w) {
   } else {
     const mk = btn("Make full card with Claude", "btn ghost small", async () => {
       mk.disabled = true; mk.textContent = "Card being made…";
-      try { await makeCard(w); ans.remove(); grades.remove(); showBack(w); } catch (e) { mk.textContent = e.message; mk.classList.add("err"); }
+      try { await makeCard(w); ans.remove(); grades.remove(); showBack(w, how); } catch (e) { mk.textContent = e.message; mk.classList.add("err"); }
     });
     ans.append(el("div", "row"));
     ans.lastChild.append(mk);
   }
   const grades = el("div", "grades");
   [["again", "Again"], ["hard", "Hard"], ["good", "Good"], ["easy", "Easy"]].forEach(([g, label]) => {
-    const b = el("button", `btn ghost ${g}`, `${label}<small>${ivlText(nextIvl(w.srs, g))}</small>`); b.type = "button";
+    const b = el("button", `btn ghost ${g}${g === suggest ? " suggest" : ""}`, `${label}<small>${ivlText(nextIvl(w.srs, g))}</small>`); b.type = "button";
     b.onclick = () => { grade(w, g); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);
   });
-  box.append(ans, grades);
+  const gl = el("p", "note", suggest ? "Suggested grade is highlighted; tap any." : ""); gl.style.textAlign = "center";
+  box.append(ans, grades, gl);
 }
 
 // ================= settings
@@ -1234,18 +1428,156 @@ $("backupBtn").onclick = async () => {
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 };
 
+// ================= documents: PDFs and Wikipedia articles, read a page (or section) at a time
+let doc = store.get("radical-doc", null), pdfFile = null;
+const busy = msg => { const b = $("busy"); b.hidden = !msg; b.textContent = msg || ""; };
+function saveDoc() { try { const j = JSON.stringify(doc); if (j.length < 1500000) localStorage.setItem("radical-doc", j); } catch (e) {} }
+function closeDoc() { doc = null; pdfFile = null; try { localStorage.removeItem("radical-doc"); } catch (e) {} showDocBar(); }
+function showDocBar() {
+  $("docbar").hidden = !doc;
+  if (!doc) return;
+  $("docTitle").innerHTML = doc.url ? `<a href="${esc(doc.url)}" target="_blank" rel="noopener">${esc(doc.title)}</a> · ${esc(doc.credit || "")}` : esc(doc.title);
+  $("docPage").textContent = `${doc.unit || "Page"} ${doc.i + 1} of ${doc.pages.length}`;
+  $("docPrev").disabled = doc.i === 0; $("docNext").disabled = doc.i >= doc.pages.length - 1;
+}
+async function showDocPage(i) {
+  if (!doc) return;
+  i = Math.max(0, Math.min(doc.pages.length - 1, i));
+  if (doc.pages[i] == null) {
+    if (!pdfFile) { busy("Open the PDF again (Photo or file) to read pages not loaded yet."); return; }
+    busy(`Reading page ${i + 1}…`);
+    try { doc.pages[i] = await pdfPageText(i + 1); } catch (e) { busy(e.message); return; }
+    busy("");
+  }
+  doc.i = i; saveDoc();
+  const text = doc.pages[i].trim() || "(No Chinese text on this page.)";
+  $("src").value = text; store.set("radical-text", text);
+  showDocBar(); onNewText(); render(); $("readScreen").scrollTop = 0;
+}
+$("docPrev").onclick = () => showDocPage(doc.i - 1);
+$("docNext").onclick = () => showDocPage(doc.i + 1);
+
+// ---- photo or file
+async function imageToJpeg(blob, max = 1600) {
+  let img;
+  try { img = await createImageBitmap(blob); }
+  catch (e) { img = await new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => no(new Error("Couldn't open that image.")); im.src = URL.createObjectURL(blob); }); }
+  const k = Math.min(1, max / Math.max(img.width, img.height));
+  const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.85).split(",")[1];
+}
+async function ocr(base64) {
+  const { text } = await claude({ action: "ocr", image: base64, media_type: "image/jpeg" });
+  return (text || "").trim();
+}
+const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+function loadScript(src) { return new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => no(new Error("Couldn't load the PDF reader. Are you online?")); document.head.append(sc); }); }
+async function pdfPageText(n) {
+  const page = await pdfFile.getPage(n);
+  const tc = await page.getTextContent();
+  let text = tc.items.map(it => it.str + (it.hasEOL ? "\n" : "")).join("");
+  // Scanned page (no text layer): draw it and have Claude read it.
+  if ((text.match(/\p{Script=Han}/gu) || []).length < 10) {
+    const vp = page.getViewport({ scale: 1 }), k = Math.min(2, 1600 / Math.max(vp.width, vp.height));
+    const v = page.getViewport({ scale: k }), c = document.createElement("canvas"); c.width = v.width; c.height = v.height;
+    await page.render({ canvasContext: c.getContext("2d"), viewport: v }).promise;
+    text = await ocr(c.toDataURL("image/jpeg", 0.85).split(",")[1]);
+  }
+  return text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+}
+$("fileIn").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) {
+      if (f.size > 60e6) throw new Error("That PDF is over 60 MB. Try a smaller one.");
+      busy("Opening the PDF…");
+      if (!window.pdfjsLib) { await loadScript(PDFJS + "pdf.min.js"); pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js"; }
+      pdfFile = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
+      remember($("src").value);
+      doc = { title: f.name.replace(/\.pdf$/i, ""), unit: "Page", pages: Array(pdfFile.numPages).fill(null), i: 0 };
+      busy(""); await showDocPage(0);
+    } else if (f.type.startsWith("image/") || /\.(heic|jpe?g|png|webp)$/i.test(f.name)) {
+      busy("Reading the photo…");
+      const text = await ocr(await imageToJpeg(f));
+      busy("");
+      if (!text) { busy("No Chinese text found in that photo."); return; }
+      setText(text);
+    } else throw new Error("Choose a photo or a PDF.");
+  } catch (err) { busy(err.message); }
+};
+
+// ---- Wikipedia (Chinese). Articles are converted to whichever script is selected.
+const WAPI = "https://zh.wikipedia.org/w/api.php?origin=*&format=json&formatversion=2&";
+const wget = async q => { const r = await fetch(WAPI + q); if (!r.ok) throw new Error("Wikipedia didn't answer. Are you online?"); return r.json(); };
+const conv = t => script === "simp" ? toSimp(t) : toTrad(t);
+function wikiSections(text) {
+  text = text.split(/\n\s*(參考文獻|参考文献|參考資料|参考资料|外部連結|外部链接|參見|参见|注釋|注释|腳註|脚注|延伸閱讀|延伸阅读)\s*\n/)[0];
+  const paras = text.split(/\n+/).map(x => x.trim()).filter(x => x && /\p{Script=Han}/u.test(x));
+  const pages = []; let cur = "";
+  for (const p of paras) { if (cur && (cur + p).length > 600) { pages.push(cur); cur = ""; } cur += (cur ? "\n" : "") + p; }
+  if (cur) pages.push(cur);
+  return pages;
+}
+async function openArticle(title) {
+  $("wikiStatus").textContent = "Loading…";
+  try {
+    const j = await wget("action=query&prop=extracts&explaintext=1&exsectionformat=plain&redirects=1&titles=" + encodeURIComponent(title));
+    const pg = (j.query && j.query.pages || [])[0];
+    if (!pg || !pg.extract) throw new Error("That article came back empty.");
+    const pages = wikiSections(conv(pg.extract));
+    if (!pages.length) throw new Error("No readable text in that article.");
+    remember($("src").value);
+    doc = { title: conv(pg.title), url: "https://zh.wikipedia.org/wiki/" + encodeURIComponent(pg.title), credit: "Wikipedia, CC BY-SA 4.0", unit: "Part", pages, i: 0 };
+    stack.length = 0; setTab("readScreen");
+    try { history.go(-1); } catch (e) {}
+    await showDocPage(0);
+    remember(pages[0]);
+  } catch (e) { $("wikiStatus").textContent = e.message; }
+}
+$("wikiBtn").onclick = () => { $("wikiStatus").textContent = "Articles open in the reader a section at a time. Text from Chinese Wikipedia, CC BY-SA 4.0."; go("wikiScreen"); };
+$("wikiForm").onsubmit = async e => {
+  e.preventDefault();
+  const q = $("wikiQ").value.trim(); if (!q) return;
+  const list = $("wikiList"); list.innerHTML = ""; $("wikiStatus").textContent = "Searching…";
+  try {
+    const j = await wget("action=query&list=search&srlimit=12&srsearch=" + encodeURIComponent(q));
+    const hits = (j.query && j.query.search) || [];
+    $("wikiStatus").textContent = hits.length ? "Tap an article to read it." : "Nothing found. Try a Chinese word, or another spelling.";
+    hits.forEach(h => {
+      const row = el("button", "hitem load", `<span class="ht" lang="zh">${esc(conv(h.title))}</span><span class="snip" lang="zh">${esc(conv(h.snippet.replace(/<[^>]+>/g, "")))}</span>`);
+      row.type = "button"; row.style.cssText = "all:unset;cursor:pointer;display:grid;gap:3px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px 12px";
+      row.onclick = () => openArticle(h.title); list.append(row);
+    });
+  } catch (err) { $("wikiStatus").textContent = err.message; }
+};
+$("wikiRandom").onclick = async () => {
+  $("wikiStatus").textContent = "Finding something…";
+  try {
+    // Ask for several random articles and take the one with the longest introduction (skips stubs).
+    const j = await wget("action=query&generator=random&grnnamespace=0&grnlimit=12&prop=extracts&exintro=1&explaintext=1&exlimit=12");
+    const pages = ((j.query && j.query.pages) || []).filter(p => p.extract).sort((a, b) => b.extract.length - a.extract.length);
+    if (!pages.length) throw new Error("Nothing came back. Try again.");
+    await openArticle(pages[0].title);
+  } catch (e) { $("wikiStatus").textContent = e.message; }
+};
+
 // ================= start
 (async function start() {
   const t0 = Date.now();
   { const saved = store.get("radical-text", null); if (saved && saved.trim()) $("src").value = saved; }
-  applyPalette(); onNewText(); updateCounts();
+  applyPalette(); onNewText(); updateCounts(); showDocBar();
   await ensure("部");
   const mark = svgFor("部", false); $("brandMark").replaceWith(Object.assign(mark, { id: "brandMark" }));
   const big = svgFor("部", false); big.setAttribute("class", "mark"); $("splashMark").replaceWith(big);
-  animate(big, "部", 3);
+  animate(big, "部", 1.4);  // the strokes draw over about 5 seconds
   await render();
   const hide = () => { $("splash").classList.add("out"); setTimeout(() => $("splash").remove(), 500); };
-  $("splash").onclick = hide;
-  setTimeout(() => { hide(); if (firstRun) openSettings(true); }, Math.max(0, 1500 - (Date.now() - t0)));
+  // The splash stays about 7 seconds (tap anywhere to skip); the app loads behind it.
+  let done = false;
+  const finish = () => { if (done) return; done = true; hide(); if (firstRun) openSettings(true); };
+  $("splash").onclick = finish;
+  setTimeout(finish, Math.max(0, 7000 - (Date.now() - t0)));
 })();
 </script>

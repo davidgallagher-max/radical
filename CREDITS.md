@@ -17,3 +17,6 @@ Traditional and Simplified conversion uses **OpenCC** via opencc-js: https://git
 Writing practice uses **Hanzi Writer** by David Chanin (MIT license): https://github.com/chanind/hanzi-writer
 
 The Clear color palette is based on the Okabe-Ito colorblind-safe palette.
+
+- **pdf.js** (Mozilla, Apache License 2.0): reads PDFs in the browser, loaded from cdnjs.
+- **Wikipedia** (Chinese): articles are shown with a link to the source, under CC BY-SA 4.0.
