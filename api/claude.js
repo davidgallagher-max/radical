@@ -27,6 +27,13 @@ Return ONLY a JSON object, no other text, with exactly these keys:
 }
 Give 0 to 3 related words that share a character with the word. Use Taiwan word choices (資料 not 数据, 網路 not 网络).`;
 
+const WORDS_PROMPT = (text) => `A learner of Taiwan Mandarin pasted the text below to add words to a vocabulary list. It may be a tidy list, a messy list with pinyin and English mixed in, or sentences.
+Pick out the Chinese vocabulary items they most likely want to study: words and set phrases, not whole sentences, and skip particles and very basic words (的, 了, 我, 是) unless the text is clearly just a list.
+Keep the learner's own pinyin and English when given; otherwise give Taiwan pinyin with tone marks and a short English meaning.
+Return ONLY JSON: {"words":[{"word":"Traditional characters","pinyin":"...","meaning":"..."}]}, at most 80 items, in the order they appear.
+
+${text}`;
+
 const TRANSLATE_PROMPT = (sentence) => `Translate this Chinese into natural English. Return only the translation, nothing else.
 
 ${sentence}`;
@@ -82,6 +89,13 @@ module.exports = async (req, res) => {
         res.setHeader("Cache-Control", "public, max-age=0");
       }
       return res.status(200).json({ card });
+    }
+    if (body.action === "words") {
+      const text = String(body.text || "").trim().slice(0, 4000);
+      if (!text) return res.status(400).json({ error: "No text given." });
+      const out = parseJSON(await askClaude(FAST_MODEL, WORDS_PROMPT(text), 3000));
+      if (!out || !Array.isArray(out.words)) return res.status(502).json({ error: "Claude's answer wasn't readable. Try again." });
+      return res.status(200).json({ words: out.words.filter(w => w && typeof w.word === "string").slice(0, 80) });
     }
     if (body.action === "translate") {
       const sentence = String(body.sentence || "").trim().slice(0, 600);

@@ -34,16 +34,14 @@ Vercel builds and hosts it on every push (`vercel.json` runs `scripts/build_site
 
 `raw/` and `data/` are generated and stay out of Git.
 
-## My words, review, import
+## How the app is laid out
 
-- **+ Add to my words** under any tapped word, or type one into **My words**: Claude builds a card (pinyin, meaning, how each character is built, a memory hook, an example sentence, related words).
-- **Review**: spaced repetition. Each card shows the word drawn in color (and the sentence you met it in); tap Show answer, then Again / Hard / Good / Easy. Each button shows when the word comes back. Up to 10 new words join per day; "Learn 10 more" at the end adds more.
-- **Import**: paste or choose a file, one word per line. `word | pinyin | meaning | where you met it | date` works, so do Quizlet exports (word, tab, meaning) and Radical backups. Missing pinyin and meanings come from CC-CEDICT. Imported words get a free dictionary card; tap **Make full card** for Claude's version. Lines containing "skip" stay out of review.
-- **Back up**: saves your words (and review progress) as a .json file. Words live only on the device, so back up now and then. Import the file to restore or move to another device.
-- **EN** at the end of each line: Claude translates it (cached on the device).
-- **Sound**: speaker buttons on each line, words, characters and example sentences use the phone's own text-to-speech (free, offline), preferring a Taiwan Mandarin voice.
-- **History**: the text you're reading is kept between visits; anything replaced (including by "Read it in Radical") goes to History, last 30.
-- Tapping a character opens it in a pop-up sheet (parts, stroke order, writing practice). Writing hints come only from the Hint button or after 5 misses on a stroke.
+- **Two tabs:** Read (讀) and Words (詞, with a badge for words due). Word, Review, History and Settings open as full pages with Back.
+- **Read:** paste text; each character is drawn in color. Characters inside a word sit together, words are spaced apart. 🔊 and **EN** (Claude translation) at the end of each line. **History** keeps the last 30 texts; the current text survives closing the app.
+- **Word page** (tap any character): the whole word first, with pinyin, 🔊 and **+ Add**; swipe left (or tap the chips at the top) for each character's parts, stroke order and **Write it** (grid on by default; hints only from Hint or after 5 misses).
+- **Words:** a review strip (Start review), one **Add word(s)** box (one word adds at once; a pasted list shows a preview to untick words first; messy text is sorted out by Claude), **Import file** (one or several files, preview, then Import N; Radical backup files restore cards and review progress), filters All / Due / New / Learning / Known, and a word / meaning list. Tap a word for its page: Claude card, "I know this", Read it in Radical, Remove (tap twice).
+- **Review:** spaced repetition; up to 10 new words a day ("Learn 10 more" when done). Again / Hard / Good / Easy show when the word comes back.
+- **Settings:** colors, speech speed, Claude password, Save a backup file, About (credits and data notes).
 
 ## How the Claude part works
 

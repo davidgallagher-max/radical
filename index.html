@@ -7,15 +7,18 @@
 <meta name="theme-color" content="#11161D">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Radical">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: paste box, then the text redrawn character by character, then the tapped character taken apart. */
+/* Radical is one page with several full-screen views (Read, Words, Word, Review, History, Settings).
+   Read and Words are the two tabs; the others open on top with a Back button. */
 :root{
   --bg:#F2F4F7; --surface:#FFFFFF; --fg:#18202B; --muted:#5B6676; --line:#D9DEE6; --grid:#E3E7EE; --accent:#1F4AA8;
   --meaning:#0E7C74; --sound:#C2410C; --idea:#7C3AED; --idea2:#1D4ED8; --radical:#4D7C0F; --whole:#A16207; --part1:#BE185D; --part2:#0E7490; --part3:#9AA3AF; --on:#2F9E5B;
   --t1:#C62828; --t2:#B7791F; --t3:#2F855A; --t4:#2B6CB0; --t5:#6B7686;
   --font-zh:"Noto Serif TC","PingFang TC","Microsoft JhengHei",serif; --font-ui:"IBM Plex Sans",system-ui,sans-serif;
+  --top:env(safe-area-inset-top,0px); --bot:env(safe-area-inset-bottom,0px); --tabh:58px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#11161D; --surface:#19202A; --fg:#E6EAF0; --muted:#98A3B3; --line:#2A3340; --grid:#232B36; --accent:#7EA2F2;
@@ -25,294 +28,371 @@
   --bg:#11161D; --surface:#19202A; --fg:#E6EAF0; --muted:#98A3B3; --line:#2A3340; --grid:#232B36; --accent:#7EA2F2;
   --meaning:#4FD1C5; --sound:#FB923C; --idea:#C4B5FD; --idea2:#93C5FD; --radical:#A3E635; --whole:#FBBF24; --part1:#F9A8D4; --part2:#67E8F9; --part3:#7D8796; --on:#3FBF73;
   --t1:#F87171; --t2:#FBBF24; --t3:#68D391; --t4:#63B3ED; --t5:#98A3B3; color-scheme:dark}
-body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);padding-inline:16px;padding-block:24px 56px}
-main{max-width:820px;margin:0 auto;display:grid;gap:18px}
-h1{font-size:1.7rem;margin:0;font-weight:600;letter-spacing:-.01em}
-.sub{color:var(--muted);margin:4px 0 0;font-size:.92rem}
-textarea{font-family:var(--font-zh);font-size:1.15rem;line-height:1.6;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);width:100%;box-sizing:border-box;resize:vertical}
-.bar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between}
-.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
-.legend span{display:inline-flex;align-items:center;gap:6px}
-.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:var(--font-ui);-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* ---- screens */
+.screen{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg);
+  padding:calc(var(--top) + 12px) 16px calc(var(--bot) + var(--tabh) + 24px)}
+.screen.sub{padding-bottom:calc(var(--bot) + 24px);z-index:5}
+.inner{max-width:760px;margin:0 auto;display:grid;gap:14px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
+.topbar h2{margin:0;font-size:1.15rem;font-weight:600;flex:1;text-align:center}
+.topbar .spacer{width:72px}
+.back{all:unset;cursor:pointer;color:var(--accent);font-weight:500;display:inline-flex;align-items:center;gap:4px;min-width:72px;height:44px}
+.back::before{content:"";width:9px;height:9px;border-left:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:rotate(45deg);margin-right:2px}
+.iconbtn{flex:none;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;display:grid;place-items:center;padding:0}
+.iconbtn svg{width:21px;height:21px}
+
+/* ---- tab bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:4;display:grid;grid-template-columns:1fr 1fr;background:color-mix(in srgb,var(--surface) 92%,transparent);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding-bottom:var(--bot);height:calc(var(--tabh) + var(--bot))}
+.tabbar button{all:unset;cursor:pointer;display:grid;justify-items:center;align-content:center;gap:2px;font-size:.72rem;font-weight:500;color:var(--muted);position:relative}
+.tabbar button[aria-current="page"]{color:var(--accent)}
+.tabbar .tz{font-family:var(--font-zh);font-size:1.35rem;line-height:1.1;font-weight:600}
+.badge{position:absolute;top:6px;left:calc(50% + 10px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--sound);color:#fff;font-size:.7rem;font-weight:600;display:grid;place-items:center}
+.badge:empty{display:none}
+
+/* ---- wordmark and splash */
+.brand{display:flex;align-items:center;gap:8px}
+.brand svg{width:34px;height:34px}
+.brand b{font-family:var(--font-zh);font-weight:900;font-size:1.45rem;letter-spacing:.14em;text-transform:uppercase}
+#splash{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;align-content:center;gap:10px;transition:opacity .45s ease;cursor:pointer}
+#splash.out{opacity:0;pointer-events:none}
+#splash .mark{width:min(46vw,200px);height:min(46vw,200px)}
+#splash h1{margin:6px 0 0;font-family:var(--font-zh);font-weight:900;font-size:2.4rem;letter-spacing:.2em;text-transform:uppercase;padding-left:.2em}
+#splash p{margin:0;color:var(--muted);font-size:.95rem;text-align:center;max-width:280px;line-height:1.45}
+
+/* ---- buttons, inputs, switches */
+.btn{font-weight:500;font-size:.9rem;border:0;border-radius:8px;padding:9px 14px;background:var(--accent);color:var(--surface);cursor:pointer}
+.btn.ghost{background:var(--surface);color:var(--accent);box-shadow:inset 0 0 0 1px var(--line)}
+.btn.small{font-size:.82rem;padding:6px 11px}
+.btn.wide{width:100%;font-size:1.02rem;padding:13px}
+.btn.confirm{box-shadow:inset 0 0 0 1px var(--sound);color:var(--sound)}
+.btn:disabled{opacity:.6}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);width:100%}
+#src{font-family:var(--font-zh);font-size:1.1rem;line-height:1.6;resize:vertical}
+.switch{display:inline-flex;align-items:center;gap:9px;font-size:.95rem;font-weight:500;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 13px 6px 6px;cursor:pointer}
+.switch .track{position:relative;width:40px;height:24px;border-radius:999px;background:var(--muted);transition:background .15s}
+.switch .knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+.switch[aria-checked="true"] .track{background:var(--on)}
+.switch[aria-checked="true"] .knob{left:19px}
+.switch.small{font-size:.85rem;padding:5px 11px 5px 5px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg button{font-family:var(--font-zh);font-size:1.5rem;line-height:1;background:var(--surface);color:var(--muted);border:0;padding:10px 20px;min-width:56px;cursor:pointer}
+.seg button{font-family:var(--font-zh);font-size:1.35rem;line-height:1;background:var(--surface);color:var(--muted);border:0;padding:8px 18px;cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.gear{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;display:grid;place-items:center}
-.gear svg{width:22px;height:22px}
-.scrim{position:fixed;inset:0;background:color-mix(in srgb,var(--fg) 35%,transparent);display:grid;justify-items:center;align-items:start;padding:16px;z-index:10;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-.scrim[hidden]{display:none}
-.sheet{background:var(--bg);border-radius:16px;padding:22px;width:min(680px,100%);display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.25);margin:auto 0}
-body.locked{overflow:hidden}
-.charsheet{width:min(820px,100%);padding:14px 18px 20px}
-.charsheet .sheethead{margin-bottom:-6px}
-.srchead{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.btn.small{font-size:.85rem;padding:5px 12px}
 .ctl{display:grid;gap:3px}
-.ctl-label{font-size:.72rem;color:var(--muted);letter-spacing:.02em}
+.ctl-label{font-size:.7rem;color:var(--muted)}
+.note{font-size:.8rem;color:var(--muted);margin:0;line-height:1.45}
+.err{color:var(--sound)}
+.def{color:var(--muted);margin:0}
+.kind{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.bigpy{font-size:1.3rem;font-weight:500}
+h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.saybtn{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--accent);cursor:pointer;vertical-align:middle;flex:none;padding:0}
+.saybtn svg{width:18px;height:18px}
+.saybtn.sm{width:28px;height:28px}
+.saybtn.sm svg{width:14px;height:14px}
+.nosay .saybtn{display:none}
+
+/* ---- read screen */
+.readhead{display:flex;justify-content:space-between;align-items:center}
+.readhead .row{gap:8px}
+.bar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;justify-content:space-between}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.74rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.reader{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 10px;display:grid;gap:10px;min-width:0}
+.line{display:flex;flex-wrap:wrap;align-items:flex-end;row-gap:6px}
+/* Characters inside a word touch; words are separated, so line rhythm follows word lengths, not a grid. */
+.word{display:inline-flex;align-items:flex-end;margin-right:9px;padding-bottom:2px;border-bottom:2px solid transparent}
+.word.multi{border-bottom-color:color-mix(in srgb,var(--accent) 38%,transparent)}
+.cell{background:none;border:0;border-radius:6px;padding:0;cursor:pointer;display:grid;justify-items:center;color:var(--fg)}
+.cell[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.cell svg{width:50px;height:50px;display:block}
+.cell .py{font-size:.74rem;font-weight:500;min-height:1.05em;line-height:1.05}
+.cell .py.multi{text-decoration:underline dotted;text-underline-offset:3px}
+.nopy .cell .py{display:none}
+.glyph{font-family:var(--font-zh);font-size:2rem;line-height:50px;height:50px;color:var(--muted);margin:0 6px 0 -6px;align-self:end}
+.linectl{display:inline-flex;gap:5px;align-items:center;align-self:center;margin-left:2px}
+.enbtn{font-size:.72rem;font-weight:600;letter-spacing:.04em;color:var(--accent);background:var(--surface);border:1px solid var(--line);border-radius:14px;height:28px;padding:0 9px;cursor:pointer}
+.trans{margin:-2px 0 4px;padding:8px 12px;border-left:3px solid var(--accent);font-size:.96rem;background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:0 8px 8px 0}
+.loading{color:var(--muted);font-size:.9rem}
+
+/* ---- word screen: page 0 is the word, then one page per character; swipe sideways */
+.wtabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.wtabs button{all:unset;cursor:pointer;font-family:var(--font-zh);font-size:1.05rem;padding:3px 12px;border-radius:999px;color:var(--muted);border:1px solid var(--line);background:var(--surface)}
+.wtabs button[aria-current="true"]{color:var(--surface);background:var(--accent);border-color:var(--accent)}
+.pager{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -16px;position:relative}
+.pager::-webkit-scrollbar{display:none}
+.wpage{flex:0 0 100%;scroll-snap-align:start;padding:4px 16px 8px;display:grid;gap:12px;align-content:start;min-width:0}
+.wchars{display:flex;justify-content:center;gap:4px;flex-wrap:wrap}
+.wchars button{all:unset;cursor:pointer;border-radius:12px}
+.wchars svg{display:block;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.wpy{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.wpy .bigpy{font-size:1.6rem}
+.addbtn{height:36px;border-radius:18px;padding:0 14px;font-size:.88rem}
+.wmean{text-align:center;font-size:1.05rem;margin:0}
+.swipehint{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--muted);font-size:.78rem}
+.swipehint i{width:8px;height:8px;border-right:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(45deg);animation:nudge 1.6s ease-in-out 3}
+@keyframes nudge{0%,100%{transform:translateX(0) rotate(45deg)}50%{transform:translateX(5px) rotate(45deg)}}
+@media (prefers-reduced-motion:reduce){.swipehint i{animation:none}}
+.wcard{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.wcard .ex{font-family:var(--font-zh);font-size:1.3rem;line-height:1.55;margin:0}
+.wcard .exp{font-size:.92rem;color:var(--muted);margin:0}
+.cview{display:grid;justify-items:center;gap:10px}
+.cview>svg{width:min(62vw,250px);aspect-ratio:1;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.chead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.chead .cz{font-family:var(--font-zh);font-size:2.3rem;font-weight:600;line-height:1}
+.mnem{font-size:.92rem;margin:0;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.comps{display:grid;gap:8px}
+.comp{display:grid;grid-template-columns:52px 1fr;gap:1px 12px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+.comp .f{grid-row:span 3;font-family:var(--font-zh);font-size:2.2rem;line-height:1;text-align:center}
+.comp .r{font-size:.74rem;font-weight:600}
+.comp .r b{text-transform:uppercase;letter-spacing:.06em}
+.comp .g{font-size:.9rem;min-width:0;overflow-wrap:anywhere}
+.comp .m{font-size:.8rem;color:var(--muted)}
+.pad{position:relative;border:1px solid var(--line);border-radius:12px;background:var(--surface);touch-action:none;max-width:100%}
+.pad>svg.gridlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}
+.pad.gridon>svg.gridlay{display:block}
+.pad>svg:not(.gridlay){position:relative}
+.coach{margin:0;font-size:.88rem;color:var(--muted);text-align:center;min-height:2.5em;max-width:300px}
+.coach b{color:var(--fg)}
+.grid line{stroke:color-mix(in srgb,var(--muted) 60%,transparent);stroke-width:9;stroke-linecap:round;stroke-dasharray:0.1 26}
+.grid rect{fill:none;stroke:var(--grid);stroke-width:8}
+
+/* ---- words screen */
+.addbox{display:grid;gap:8px}
+.addrow{display:flex;gap:8px;align-items:flex-end}
+#addWord::placeholder{font-family:var(--font-ui);font-size:1rem}
+.wcard>.btn{justify-self:start}
+#addWord{font-family:var(--font-zh),var(--font-ui);font-size:1.15rem;resize:none;overflow:hidden;line-height:1.4;min-height:46px}
+.addrow .btn{height:46px;flex:none}
+.preview{display:grid;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{all:unset;cursor:pointer;font-family:var(--font-zh);font-size:1.05rem;padding:3px 10px;border-radius:999px;border:1px solid var(--accent);color:var(--fg)}
+.chip.off{border-color:var(--line);color:var(--muted);text-decoration:line-through}
+.chip.have{border-style:dashed;border-color:var(--line);color:var(--muted)}
+.revstrip{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:14px;background:var(--accent);color:var(--surface)}
+.revstrip b{font-size:1.25rem}
+.revstrip span{font-size:.85rem;opacity:.9}
+.revstrip .btn{background:var(--surface);color:var(--accent);font-weight:600}
+.revstrip.idle{background:var(--surface);color:var(--fg);border:1px solid var(--line)}
+.revstrip.idle .btn{background:var(--accent);color:var(--surface)}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{all:unset;cursor:pointer;font-size:.85rem;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.filters button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.wordlist{display:grid;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.wrow{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:auto 1fr 10px;gap:14px;align-items:center;padding:11px 14px;border-top:1px solid var(--line);width:100%}
+.wrow:first-child{border-top:0}
+.wrow .wz{font-family:var(--font-zh);font-size:1.45rem;font-weight:600;min-width:2.2em}
+.wrow .wm{color:var(--muted);font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dot.new{background:transparent;box-shadow:inset 0 0 0 2px var(--accent)}
+.dot.due{background:var(--sound)}
+.dot.learning{background:var(--accent)}
+.dot.known{background:var(--line)}
+.dotkey{display:flex;gap:12px;flex-wrap:wrap;font-size:.74rem;color:var(--muted)}
+.dotkey span{display:inline-flex;align-items:center;gap:5px}
+
+/* ---- review */
+.revcard{display:grid;gap:14px}
+.revchars{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.revchars svg{width:min(140px,38vw);height:min(140px,38vw);border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.revchars .plain{font-family:var(--font-zh);font-size:5.5rem;line-height:1.2}
+.revctx{text-align:center;font-family:var(--font-zh);font-size:1.2rem;color:var(--muted);margin:0}
+.revctx b{color:var(--fg);font-weight:600}
+.revans{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:14px}
+.grades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.grades button{display:grid;gap:2px;justify-items:center;padding:10px 4px}
+.grades small{font-size:.74rem;opacity:.8}
+.grades .again{box-shadow:inset 0 0 0 1px var(--sound);color:var(--sound)}
+
+/* ---- history, settings */
+.list{display:grid;gap:8px}
 .hitem{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px 12px}
 .hitem button.load{all:unset;cursor:pointer;display:grid;gap:3px;min-width:0}
 .hitem .ht{font-family:var(--font-zh);font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.btn.confirm{border-color:var(--sound);color:var(--sound)}
-.sheet h2{margin:0;font-size:1.4rem}
-.sheet h3{margin:4px 0 0;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
-.pcard{display:grid;gap:8px;text-align:left;font:inherit;color:var(--fg);background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
+.panel{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.pcard{display:grid;gap:8px;text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
 .pcard[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
-.pcard .preview{display:flex;gap:2px}
-.pcard .preview svg{width:56px;height:56px}
+.pcard .preview2{display:flex;gap:2px}
+.pcard .preview2 svg{width:50px;height:50px}
 .plabel{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.plabel span{font-size:.82rem;color:var(--muted)}
-.btn.big{justify-self:end;font-size:1rem;padding:11px 20px}
-.topbtns{display:flex;gap:8px;align-items:center;flex:none}
-.wordsbtn{font:inherit;font-weight:500;font-size:.9rem;height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
-.wordsbtn span{display:inline-block;min-width:1.5em;margin-left:4px;padding:1px 6px;border-radius:999px;background:var(--accent);color:var(--surface);font-size:.8rem}
-.pwrow{display:grid;gap:6px}
-.pwrow input,.addrow input{font:inherit;font-size:1rem;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);min-width:0}
-.sheethead{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.addrow{display:flex;gap:8px}
-.addrow input{flex:1;font-family:var(--font-zh);font-size:1.2rem}
-.wordlist{display:grid;gap:8px}
-.witem{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
-.wordlist{gap:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
-.witem{border:0;border-radius:0;border-top:1px solid var(--line)}
-.witem:first-child{border-top:0}
-.witem.open{background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
-.whead{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:minmax(4.5em,auto) 1fr 18px;gap:14px;align-items:center;padding:10px 14px;width:100%}
-.whead:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.whead .wm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.witem.open .whead .wm{white-space:normal}
-.chev{width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translate(-2px,-2px);transition:transform .3s ease;justify-self:end}
-.witem.open .chev{transform:rotate(225deg) translate(-2px,-2px)}
-.acc{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s ease}
-.witem.open .acc{grid-template-rows:1fr}
-.accin{overflow:hidden;min-height:0}
-.accin .wcard{opacity:0;transform:translateY(-6px);transition:opacity .25s ease .05s,transform .3s ease}
-.witem.open .accin .wcard{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){.acc,.chev,.accin .wcard{transition:none}}
-.saybtn{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--accent);cursor:pointer;vertical-align:middle;flex:none;padding:0}
-.saybtn svg{width:18px;height:18px}
-.saybtn.linesay{width:28px;height:28px;margin-left:6px;align-self:center}
-.saybtn.linesay svg{width:15px;height:15px}
-.nosay .saybtn{display:none}
-.witem .wz{font-size:1.6rem;font-family:var(--font-zh)}
-.witem .wm{color:var(--muted);font-size:.9rem}
-.wcard{display:grid;gap:12px;padding:0 14px 14px}
-.wcard .cpart{display:grid;grid-template-columns:56px 1fr;gap:2px 12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px}
-.wcard .cpart .cz{grid-row:span 3;font-family:var(--font-zh);font-size:2.4rem;text-align:center}
-.wcard .ex{font-family:var(--font-zh);font-size:1.5rem;line-height:1.6;margin:0}
-.wcard .exp{font-size:.95rem;color:var(--muted);margin:0}
-.wcard .row{display:flex;flex-wrap:wrap;gap:8px}
-.addword{margin-top:10px}
-.wtools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.pill{display:inline-block;min-width:1.4em;margin-left:4px;padding:1px 7px;border-radius:999px;background:var(--surface);color:var(--accent);font-size:.8rem;text-align:center}
-.importbox{display:grid;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
-.importbox textarea{font:inherit;font-family:var(--font-zh),system-ui,sans-serif;font-size:1.05rem;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);resize:vertical}
-.witem .wtag{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
-.revcard{display:grid;gap:14px}
-.revchars{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
-.revchars svg{width:min(150px,38vw);height:min(150px,38vw)}
-.revchars .plain{font-family:var(--font-zh);font-size:6rem;line-height:1.2}
-.revctx{text-align:center;font-family:var(--font-zh);font-size:1.25rem;color:var(--muted);margin:0}
-.revctx b{color:var(--fg);font-weight:600}
-.revans{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:14px}
-.revans .bigpy{text-align:center;font-size:1.8rem}
-.revans .def{text-align:center;font-size:1.1rem;margin:0}
-.grades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.grades button{display:grid;gap:2px;justify-items:center;padding:10px 4px}
-.grades small{font-size:.75rem;opacity:.8}
-.grades .again{border-color:var(--sound);color:var(--sound)}
-.btn.wide{width:100%;font-size:1.05rem;padding:13px}
-.enbtn{font:inherit;font-size:.75rem;font-weight:600;letter-spacing:.04em;color:var(--accent);background:none;border:1px solid var(--line);border-radius:6px;padding:3px 7px;margin-left:6px;align-self:center;cursor:pointer}
-.trans{margin:-4px 0 6px;padding:8px 12px;border-left:3px solid var(--accent);color:var(--fg);font-size:.98rem;background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:0 8px 8px 0}
-.err{color:var(--sound)}
-#addWord,#pw{font:inherit;font-family:var(--font-zh),system-ui,sans-serif}
-.palettes{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.palettes button{font:inherit;font-size:.85rem;font-weight:500;background:var(--surface);color:var(--fg);border:0;padding:8px 12px;cursor:pointer;display:grid;gap:5px;justify-items:center}
-.palettes button+button{border-left:1px solid var(--line)}
-.palettes button[aria-pressed="true"]{box-shadow:inset 0 -3px 0 var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
-.palettes .strip{display:flex;gap:2px}
-.palettes .strip i{width:7px;height:12px;border-radius:2px;display:block}
-.btnrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.btn.ghost{background:var(--surface);color:var(--accent);box-shadow:inset 0 0 0 1px var(--line)}
-.pad{border:1px solid var(--line);border-radius:10px;background:var(--surface);touch-action:none;max-width:100%}
-.big .pad svg{background:transparent;border:0;border-radius:0;max-width:none;width:auto;aspect-ratio:auto}
-.pad{position:relative}.pad>svg.gridlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}.pad.gridon>svg.gridlay{display:block}.pad>svg:not(.gridlay){position:relative}
-.switch.small{font-size:.9rem;padding:6px 12px 6px 6px}
-.switch.small .track{width:38px;height:22px}
-.switch.small .knob{width:16px;height:16px}
-.switch.small[aria-checked="true"] .knob{left:19px}
-.coach{margin:0;font-size:.9rem;color:var(--muted);text-align:center;min-height:2.6em;max-width:300px}
-.coach b{color:var(--fg)}
-.switch{display:inline-flex;align-items:center;gap:10px;font:inherit;font-size:1rem;font-weight:500;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 14px 8px 8px;cursor:pointer}
-.switch .track{position:relative;width:44px;height:26px;border-radius:999px;background:var(--muted);transition:background .15s}
-.switch .knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
-.switch[aria-checked="true"] .track{background:var(--on)}
-.switch[aria-checked="true"] .knob{left:21px}
-.switch .state{font-size:.8rem;color:var(--muted);min-width:2em}
-button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.reader{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:14px;min-width:0}
-.line{display:flex;flex-wrap:wrap;gap:2px 0;align-items:flex-end}
-.cell{background:none;border:1px solid transparent;border-radius:8px;padding:2px;cursor:pointer;display:grid;justify-items:center;color:var(--fg)}
-.cell:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}
-.cell[aria-pressed="true"]{border-color:var(--accent)}
-.cell svg{width:58px;height:58px;display:block}
-.cell .py{font-size:.8rem;font-weight:500;min-height:1.1em;line-height:1.1}
-.cell .py.multi{text-decoration:underline dotted;text-underline-offset:3px}
-.nopy .cell .py{display:none}
-.word{display:inline-flex;align-items:flex-end;margin-right:2px;padding-bottom:3px;border-bottom:2px solid transparent}
-.word.multi{background:color-mix(in srgb,var(--accent) 7%,transparent);border-radius:10px;border-bottom-color:color-mix(in srgb,var(--accent) 45%,transparent);margin:0 3px 2px 1px}
-.wordbox{display:grid;gap:4px;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line)}
-.wline{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
-.wz{font-family:var(--font-zh);font-size:2.2rem;font-weight:600;line-height:1.1}
-.glyph{font-family:var(--font-zh);font-size:2.6rem;line-height:58px;height:58px;padding:2px 3px;color:var(--muted);align-self:end}
-.loading{color:var(--muted);font-size:.9rem}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}
-.detail{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:20px;align-items:start}
-@media (max-width:640px){.detail{grid-template-columns:1fr}}
-.big{display:grid;gap:10px;justify-items:center}
-.big svg{width:100%;max-width:300px;aspect-ratio:1;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
-.btn{font:inherit;font-weight:500;font-size:.88rem;border:0;border-radius:6px;padding:8px 14px;background:var(--accent);color:var(--surface);cursor:pointer}
-.info{display:grid;gap:12px;min-width:0}
-.info h2{margin:0;font-family:var(--font-zh);font-size:2.8rem;font-weight:600;line-height:1}
-.bigpy{font-size:1.3rem;font-weight:500}
-.kind{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
-.def{color:var(--muted);margin:0}
-.comps{display:grid;gap:10px}
-.comp{display:grid;grid-template-columns:64px 1fr;gap:2px 14px;align-items:center;padding:10px 12px;border-radius:10px;border:1px solid var(--line)}
-.comp .f{grid-row:span 3;font-family:var(--font-zh);font-size:2.6rem;line-height:1;text-align:center}
-.comp .r{font-size:.78rem;font-weight:600}
-.comp .r b{text-transform:uppercase;letter-spacing:.06em}
-.comp .g{font-size:.92rem;min-width:0;overflow-wrap:anywhere}
-.comp .m{font-size:.82rem;color:var(--muted)}
-.note{font-size:.8rem;color:var(--muted);margin:0}
-.grid line{stroke:color-mix(in srgb,var(--muted) 60%,transparent);stroke-width:9;stroke-linecap:round;stroke-dasharray:0.1 26}
-.grid rect{fill:none;stroke:var(--grid);stroke-width:8}
+.plabel span{font-size:.8rem;color:var(--muted)}
+.rate{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:.85rem;color:var(--muted)}
+.rate input{width:100%;accent-color:var(--accent)}
+.about p{font-size:.85rem;color:var(--muted);margin:0;line-height:1.5}
+.about a{color:var(--accent)}
 </style>
 
-<main>
-  <header class="top">
-    <div><h1>Radical</h1>
-    <p class="sub">Paste any Chinese. Every character is redrawn with its meaning part and sound part in their own colors. Tap one to take it apart.</p></div>
-    <div class="topbtns"><button type="button" class="wordsbtn" id="wordsBtn">My words <span id="wordCount">0</span></button>
-    <button type="button" class="gear" id="gear" aria-label="Settings" title="Settings">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
-    </button></div>
-  </header>
+<div id="splash" aria-hidden="true">
+  <svg class="mark" id="splashMark" viewBox="0 0 1024 1024"></svg>
+  <h1>Radical</h1>
+  <p>Every character drawn with its meaning and sound in color.</p>
+</div>
 
-  <div class="srchead"><label for="src" class="note">Your text (Traditional or Simplified)</label>
-    <button type="button" class="btn ghost small" id="histBtn">History</button></div>
-  <textarea id="src" rows="4">他的回答讓我很驚訝。他驚訝到瞪大眼睛。
+<!-- READ -->
+<section class="screen" id="readScreen">
+  <div class="inner">
+    <header class="readhead">
+      <div class="brand"><svg id="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
+      <div class="row">
+        <button type="button" class="btn ghost small" id="histBtn">History</button>
+        <button type="button" class="iconbtn gearbtn" aria-label="Settings"></button>
+      </div>
+    </header>
+    <textarea id="src" rows="3" aria-label="Your Chinese text">他的回答讓我很驚訝。他驚訝到瞪大眼睛。
 我們在登山口附近搭帳篷，趁天氣好去爬山。
 訓練AI需要很多資料，桌上有一堆資料。
 我負責學區的審計工作。</textarea>
-
-  <div class="bar">
-    <div class="legend">
-      <span><i style="background:var(--meaning)"></i>Meaning part</span>
-      <span><i style="background:var(--sound)"></i>Sound part</span>
-      <span><i style="background:var(--idea)"></i><i style="background:var(--idea2)"></i>Two ideas</span>
-      <span><i style="background:var(--whole)"></i>Picture</span>
-      <span><i style="background:var(--radical)"></i><i style="background:var(--part1)"></i>Radical + rest</span>
-      <span><i style="background:var(--part3)"></i>Not placed</span>
+    <div class="bar">
+      <div class="legend">
+        <span><i style="background:var(--meaning)"></i>Meaning</span>
+        <span><i style="background:var(--sound)"></i>Sound</span>
+        <span><i style="background:var(--idea)"></i><i style="background:var(--idea2)"></i>Two ideas</span>
+        <span><i style="background:var(--whole)"></i>Picture</span>
+        <span><i style="background:var(--radical)"></i><i style="background:var(--part1)"></i>Radical + rest</span>
+        <span><i style="background:var(--part3)"></i>Not placed</span>
+      </div>
+      <div class="row">
+        <div class="ctl"><span class="ctl-label">Traditional / Simplified</span>
+          <div class="seg" role="group" aria-label="Script">
+            <button type="button" data-script="trad" aria-pressed="true">繁</button>
+            <button type="button" data-script="simp" aria-pressed="false">简</button>
+          </div></div>
+        <button type="button" class="switch" id="pyBtn" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Pinyin</button>
+      </div>
     </div>
-    <div class="controls">
-      <div class="ctl"><span class="ctl-label">Traditional / Simplified</span>
-      <div class="seg" role="group" aria-label="Script">
-        <button type="button" data-script="trad" aria-pressed="true" title="Traditional">繁</button>
-        <button type="button" data-script="simp" aria-pressed="false" title="Simplified">简</button>
-      </div></div>
-      <button type="button" class="switch" id="pyBtn" role="switch" aria-checked="false">
-        <span class="track"><span class="knob"></span></span>Pinyin <span class="state">Off</span>
-      </button>
-    </div>
+    <section class="reader nopy" id="reader" aria-label="Your text, drawn"></section>
   </div>
+</section>
 
-  <section class="reader nopy" id="reader" aria-label="Your text, drawn"></section>
-
-  <p class="note">Stroke data: Make Me a Hanzi (open source, about 9,500 characters). Sound parts are hints, rated by how close they still sound, since many pronunciations have drifted. Text is read word by word with the CC-CEDICT dictionary, so pinyin follows the word; a dotted underline marks a lone character with more than one reading. Word lists are mainland-based, so a few Taiwan readings (訊息 xùnxí) may show the mainland form.</p>
-</main>
-
-<div class="scrim" id="charSheet" hidden>
-  <section class="sheet charsheet" role="dialog" aria-modal="true" aria-label="Character">
-    <div class="sheethead"><span></span><button type="button" class="btn ghost" id="charClose">Close</button></div>
-    <div id="charCard" aria-live="polite"></div>
-  </section>
-</div>
-
-<div class="scrim" id="historySheet" hidden>
-  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="histTitle">
-    <div class="sheethead"><h2 id="histTitle">Text history</h2><button type="button" class="btn ghost" id="histClose">Close</button></div>
-    <p class="note">Your last 30 texts, newest first. Tap one to read it again; the text you have now is saved here first.</p>
-    <div id="histList" class="wordlist"></div>
-  </section>
-</div>
-
-<div class="scrim" id="wordsSheet" hidden>
-  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="wordsTitle">
-    <div class="sheethead"><h2 id="wordsTitle">My words</h2><button type="button" class="btn ghost" id="wordsClose">Close</button></div>
-    <div class="wtools">
-      <button type="button" class="btn" id="reviewBtn">Review <span class="pill" id="dueCount">0</span></button>
-      <button type="button" class="btn ghost" id="importBtn">Import</button>
-      <button type="button" class="btn ghost" id="backupBtn">Back up</button>
+<!-- WORDS -->
+<section class="screen" id="wordsScreen" hidden>
+  <div class="inner">
+    <header class="readhead">
+      <div class="brand"><b style="font-size:1.25rem">My words</b></div>
+      <button type="button" class="iconbtn gearbtn" aria-label="Settings"></button>
+    </header>
+    <div id="revStrip"></div>
+    <div class="addbox">
+      <div class="addrow">
+        <textarea id="addWord" rows="1" lang="zh" placeholder="Add word(s): type or paste" autocomplete="off" autocapitalize="off"></textarea>
+        <button type="button" class="btn" id="addGo">Add</button>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <p class="note" id="addStatus"></p>
+        <label class="btn ghost small">Import file<input type="file" id="importFile" multiple accept=".txt,.csv,.tsv,.json,.md,text/plain,application/json" hidden></label>
+      </div>
+      <div class="preview" id="preview" hidden></div>
     </div>
-    <div class="importbox" id="importBox" hidden>
-      <p class="note">Paste one word per line, or choose a file. Details after the word are optional: <span lang="zh">帳篷 | zhàngpéng | tent</span>. Quizlet exports (word, tab, meaning) and Radical backup files work too. Missing pinyin and meanings are filled in from the dictionary. A line containing "skip" is kept out of review.</p>
-      <textarea id="importText" rows="6" lang="zh" placeholder="帳篷&#10;登山口 | dēngshānkǒu | trailhead"></textarea>
-      <div class="wtools"><label class="btn ghost">Choose file<input type="file" id="importFile" accept=".txt,.csv,.tsv,.json,.md,text/plain,application/json" hidden></label>
-        <button type="button" class="btn" id="importGo">Import</button></div>
-      <p class="note" id="importStatus"></p>
-    </div>
-    <form class="addrow" id="addForm">
-      <input id="addWord" lang="zh" placeholder="Add a word, e.g. 帳篷" autocomplete="off">
-      <button type="submit" class="btn">Add</button>
-    </form>
-    <p class="note" id="addStatus"></p>
-    <div id="wordList" class="wordlist"></div>
-  </section>
-</div>
+    <div class="filters" id="filters"></div>
+    <div class="wordlist" id="wordList"></div>
+    <div class="dotkey"><span><i class="dot new"></i>New</span><span><i class="dot due"></i>Due</span><span><i class="dot learning"></i>Learning</span><span><i class="dot known"></i>Known</span></div>
+  </div>
+</section>
 
-<div class="scrim" id="reviewSheet" hidden>
-  <section class="sheet review" role="dialog" aria-modal="true" aria-labelledby="revTitle">
-    <div class="sheethead"><h2 id="revTitle">Review <span class="note" id="revProg"></span></h2><button type="button" class="btn ghost" id="revClose">Close</button></div>
+<!-- WORD (opens over Read or Words) -->
+<section class="screen sub" id="wordScreen" hidden>
+  <div class="inner">
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><div class="wtabs" id="wtabs"></div><span class="spacer"></span></div>
+    <div class="pager" id="pager"></div>
+  </div>
+</section>
+
+<!-- REVIEW -->
+<section class="screen sub" id="reviewScreen" hidden>
+  <div class="inner">
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><h2>Review <span class="note" id="revProg"></span></h2><span class="spacer"></span></div>
     <div id="revCard" class="revcard"></div>
-  </section>
-</div>
+  </div>
+</section>
 
-<div class="scrim" id="settings" hidden>
-  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="setTitle">
-    <h2 id="setTitle">Settings</h2>
-    <p class="note" id="setIntro" hidden>Every character is drawn with its parts in color. Choose the look you like. You can change it anytime from the gear icon.</p>
-    <h3>Colors</h3>
+<!-- HISTORY -->
+<section class="screen sub" id="historyScreen" hidden>
+  <div class="inner">
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><h2>History</h2><span class="spacer"></span></div>
+    <p class="note">Your last 30 texts, newest first. Tap one to read it again; what you have now is saved here first.</p>
+    <div class="list" id="histList"></div>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section class="screen sub" id="settingsScreen" hidden>
+  <div class="inner">
+    <div class="topbar"><button type="button" class="back" data-back id="setBack">Back</button><h2 id="setTitle">Settings</h2><span class="spacer"></span></div>
+    <p class="note" id="setIntro" hidden>Every character is drawn with its parts in color. Pick the look you like; you can change it later from the gear.</p>
+    <h3 class="sec">Colors</h3>
     <div class="pgrid" id="paletteGrid"></div>
-    <h3>Claude</h3>
-    <div class="pwrow">
-      <label for="pw" class="note">Password for the Claude features (the APP_PASSWORD you set in Vercel). Saved on this device only.</label>
+    <button type="button" class="btn wide" id="startBtn" hidden>Start reading</button>
+    <h3 class="sec">Speech speed</h3>
+    <div class="panel">
+      <div class="rate"><span>Slower</span><input type="range" id="rate" min="0.5" max="1.3" step="0.05"><span>Faster</span></div>
+      <div class="row" style="justify-content:space-between"><span class="note" id="voiceName"></span><button type="button" class="btn ghost small" id="rateTest">Play a sample</button></div>
+    </div>
+    <h3 class="sec">Claude</h3>
+    <div class="panel">
+      <label for="pw" class="note">Password for translations and word cards (the APP_PASSWORD set in Vercel). Saved on this phone only.</label>
       <input id="pw" type="password" autocomplete="current-password" placeholder="Password">
     </div>
-    <button type="button" class="btn big" id="setClose">Done</button>
-  </section>
-</div>
+    <h3 class="sec">Your words</h3>
+    <div class="panel">
+      <p class="note">Your words and review progress are stored only on this phone. Save a backup file now and then (to Files or iCloud). To restore, or to move your words to another phone, open the file with Import file on the Words tab.</p>
+      <div class="row"><button type="button" class="btn ghost" id="backupBtn">Save a backup file</button></div>
+    </div>
+    <h3 class="sec">About</h3>
+    <div class="panel about">
+      <p>Radical draws every character from stroke data and colors its parts by job: the part that carries the meaning, the part that hints at the sound, two ideas combined, a picture, or the dictionary radical plus the rest. Sound parts are hints, rated by how close they still sound, since many pronunciations have drifted.</p>
+      <p>Text is read word by word with the CC-CEDICT dictionary, so pinyin follows the word. A dotted underline marks a lone character with more than one reading. Word lists are mainland-based, so a few Taiwan readings (訊息 xùnxí) may show the mainland form.</p>
+      <p>Credits: stroke and component data from Make Me a Hanzi (Arphic Public License and LGPL); word list from CC-CEDICT (CC BY-SA 4.0); Traditional/Simplified conversion by OpenCC; writing practice by Hanzi Writer (MIT). Sound uses your phone's own voice. Translations and word cards are made by Claude. Full credits and licenses are in the project's CREDITS.md.</p>
+    </div>
+  </div>
+</section>
+
+<nav class="tabbar" id="tabbar" aria-label="Main">
+  <button type="button" data-tab="readScreen" aria-current="page"><span class="tz">讀</span>Read</button>
+  <button type="button" data-tab="wordsScreen"><span class="tz">詞</span>Words<span class="badge" id="dueBadge"></span></button>
+</nav>
 
 <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.4.2/dist/umd/full.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.3/dist/hanzi-writer.min.js"></script>
 <script>
+// ================= basics
 const NS = "http://www.w3.org/2000/svg", SHARDS = 64;
-const cache = {}, shardLoads = {};
-const words = {}, wordLoads = {};
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const btn = (label, cls, fn) => { const b = el("button", cls); b.type = "button"; b.textContent = label; if (fn) b.onclick = fn; return b; };
+const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>';
+document.querySelectorAll(".gearbtn").forEach(b => { b.innerHTML = GEAR; b.onclick = () => openSettings(false); });
+
+const cache = {}, shardLoads = {}, words = {}, wordLoads = {};
 const ROLE = {meaning:"Meaning", sound:"Sound", idea:"Idea", idea2:"Idea", radical:"Radical", part1:"Rest", part2:"Rest", part3:"Not placed", whole:"Picture"};
 const KIND = {pictophonetic:"Meaning + sound", ideographic:"Two ideas combined", pictographic:"Picture", whole:"Single piece", inferred:"Meaning + sound (likely)", unknown:"Radical + rest"};
 const TONE = {"ā":1,"á":2,"ǎ":3,"à":4,"ē":1,"é":2,"ě":3,"è":4,"ī":1,"í":2,"ǐ":3,"ì":4,"ō":1,"ó":2,"ǒ":3,"ò":4,"ū":1,"ú":2,"ǔ":3,"ù":4,"ǖ":1,"ǘ":2,"ǚ":3,"ǜ":4};
 const tone = s => { for (const c of s || "") if (TONE[c]) return TONE[c]; return 5; };
-// Sound: the phone's own text-to-speech (free, offline). Prefers a Taiwan Mandarin voice.
+const isHan = c => /\p{Script=Han}/u.test(c);
+
+// ================= sound: the phone's own text-to-speech, preferring a Taiwan Mandarin voice
 const SPK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
-const sayHTML = t => `<button type="button" class="saybtn" data-say="${esc(t)}" aria-label="Play ${esc(t)}">${SPK}</button>`;
-let zhVoice = null;
+const sayHTML = (t, sm) => `<button type="button" class="saybtn${sm ? " sm" : ""}" data-say="${esc(t)}" aria-label="Play ${esc(t)}">${SPK}</button>`;
+let zhVoice = null, rate = store.get("radical-rate", 0.85);
 function pickVoice() {
   const vs = speechSynthesis.getVoices();
   zhVoice = vs.find(v => /zh[-_]TW/i.test(v.lang)) || vs.find(v => /zh[-_](HK|Hant)/i.test(v.lang)) || vs.find(v => /^zh/i.test(v.lang)) || null;
+  if ($("voiceName")) $("voiceName").textContent = zhVoice ? `Voice: ${zhVoice.name} (${zhVoice.lang})` : "No Chinese voice found. iPhone: Settings → Accessibility → Spoken Content → Voices → Chinese.";
 }
 if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 else document.documentElement.classList.add("nosay");
@@ -320,12 +400,13 @@ function speak(text) {
   if (!("speechSynthesis" in window) || !text) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = zhVoice ? zhVoice.lang : "zh-TW"; if (zhVoice) u.voice = zhVoice; u.rate = 0.85;
+  u.lang = zhVoice ? zhVoice.lang : "zh-TW"; if (zhVoice) u.voice = zhVoice; u.rate = rate;
   speechSynthesis.speak(u);
 }
 document.addEventListener("click", e => { const b = e.target.closest("[data-say]"); if (b) { e.stopPropagation(); speak(b.dataset.say); } }, true);
+
+// ================= pinyin display (each syllable colored by its tone)
 const pyHTML = s => s ? `<span style="color:var(--t${tone(s)})">${s}</span>` : "";
-// Color each syllable of joined pinyin (zhàngpéng → zhàng + péng) by its own tone.
 const PLAIN = {};
 "āáǎàa ēéěèe īíǐìi ōóǒòo ūúǔùu ǖǘǚǜv".split(" ").forEach(g => [...g].forEach(c => PLAIN[c] = g[4]));
 PLAIN["ü"] = "v";
@@ -337,18 +418,15 @@ function sylls(word) {
     const m = plain.slice(i).match(SYL);
     if (!m) { out.push(word.slice(i)); break; }
     let len = m[0].length;
-    // Give back a trailing n or g when a vowel follows (dàngé → dàn + gé), if what's left is still a syllable.
-    const next = plain[i + len];
-    if (next && /[aeiouv]/.test(next) && /[ng]$/.test(m[0])) {
-      const cut = m[0].slice(0, -1), mm = cut.match(SYL);
-      if (mm && mm[0] === cut) len -= 1;
-    }
+    const next = plain[i + len];  // give back a trailing n/g when a vowel follows (dàngé → dàn + gé)
+    if (next && /[aeiouv]/.test(next) && /[ng]$/.test(m[0])) { const cut = m[0].slice(0, -1), mm = cut.match(SYL); if (mm && mm[0] === cut) len -= 1; }
     out.push(word.slice(i, i + len)); i += len;
   }
   return out;
 }
 const pyWordHTML = s => String(s || "").split(/(\s+|['’-])/).map(p => /^[\s'’-]*$/.test(p) ? esc(p) : sylls(p).map(x => pyHTML(esc(x))).join("")).join("");
-const isHan = c => /\p{Script=Han}/u.test(c);
+
+// ================= colors
 const ROLES = ["meaning","sound","idea","idea2","radical","whole","part1","part2","part3"];
 const PALETTES = {
   jade:  { name: "Jade", blurb: "Deep jewel tones",
@@ -362,70 +440,44 @@ const PALETTES = {
     dark:  ["#8FB3D1","#E3A867","#D17A9C","#9BBF6E","#E07A5F","#B39BD1","#8FC2B9","#CDBB6E","#78716C"] },
   original: { name: "Original", blurb: "Plain ink, no color" }
 };
-let palette = null;
-try { palette = localStorage.getItem("radical-palette"); } catch (e) {}
+let palette = store.get("radical-palette", null);
+if (palette === null) { try { palette = localStorage.getItem("radical-palette"); } catch (e) {} }  // older versions saved it unquoted
 const firstRun = !PALETTES[palette];
 if (firstRun) palette = "jade";
 const darkQ = matchMedia("(prefers-color-scheme: dark)");
-function isDark() {
-  const t = document.documentElement.dataset.theme;
-  return t ? t === "dark" : darkQ.matches;
-}
+const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : darkQ.matches; };
+const roleColor = (key, i) => PALETTES[key][isDark() ? "dark" : "light"][ROLES[i] === "part2" ? ROLES.indexOf("part1") : i];
 function applyPalette() {
-  const root = document.documentElement.style, p = PALETTES[palette];
-  ROLES.forEach((r, i) => {
-    if (palette === "original") root.setProperty(`--${r}`, "var(--fg)");
-    else root.setProperty(`--${r}`, p[isDark() ? "dark" : "light"][r === "part2" ? ROLES.indexOf("part1") : i]);
-  });
-  document.querySelectorAll("#paletteGrid button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === palette));
+  const root = document.documentElement.style;
+  ROLES.forEach((r, i) => root.setProperty(`--${r}`, palette === "original" ? "var(--fg)" : roleColor(palette, i)));
+  document.querySelectorAll("#paletteGrid .pcard").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === palette));
   document.querySelector(".legend").hidden = palette === "original";
 }
-// Settings: a card per palette, each previewing real characters drawn in that palette.
 const SAMPLE = [..."他河台營長"];  // together these show every color in a palette
 function buildPalettes() {
-  const grid = document.getElementById("paletteGrid");
-  grid.innerHTML = "";
+  const grid = $("paletteGrid"); grid.innerHTML = "";
   Object.entries(PALETTES).forEach(([key, p]) => {
-    const b = document.createElement("button");
-    b.type = "button"; b.dataset.p = key; b.className = "pcard";
-    const prev = document.createElement("span"); prev.className = "preview";
-    ROLES.forEach((r, i) => prev.style.setProperty(`--${r}`, key === "original" ? "var(--fg)" : p[isDark() ? "dark" : "light"][i]));
+    const b = el("button", "pcard"); b.type = "button"; b.dataset.p = key;
+    const prev = el("span", "preview2");
+    ROLES.forEach((r, i) => prev.style.setProperty(`--${r}`, key === "original" ? "var(--fg)" : roleColor(key, i)));
     SAMPLE.forEach(c => { if (cache[c]) prev.append(svgFor(c, false)); });
-    const label = document.createElement("span"); label.className = "plabel";
-    label.innerHTML = `<b>${p.name}</b><span>${p.blurb}</span>`;
-    b.append(prev, label);
-    b.onclick = () => { palette = key; try { localStorage.setItem("radical-palette", key); } catch (e) {} applyPalette(); };
+    b.append(prev, el("span", "plabel", `<b>${p.name}</b><span>${p.blurb}</span>`));
+    b.onclick = () => { palette = key; store.set("radical-palette", key); applyPalette(); };
     grid.append(b);
   });
   applyPalette();
 }
-async function openSettings(welcome) {
-  await ensure(SAMPLE.join(""));
-  buildPalettes();
-  document.getElementById("setTitle").textContent = welcome ? "Pick your colors" : "Settings";
-  document.getElementById("setIntro").hidden = !welcome;
-  document.getElementById("setClose").textContent = welcome ? "Start reading" : "Done";
-  document.getElementById("settings").hidden = false;
-}
-function closeSettings() {
-  const pwEl = document.getElementById("pw"); if (pwEl) { try { localStorage.setItem("radical-pw", JSON.stringify(pwEl.value.trim())); } catch (e) {} }
-  try { localStorage.setItem("radical-palette", palette); } catch (e) {}
-  document.getElementById("settings").hidden = true;
-}
-darkQ.addEventListener?.("change", () => { applyPalette(); if (!document.getElementById("settings").hidden) buildPalettes(); });
-let script = "trad", typed = "trad", selected = null;
+darkQ.addEventListener?.("change", () => { applyPalette(); if (!$("settingsScreen").hidden) buildPalettes(); });
 
+// ================= data
 let toTrad = s => s, toSimp = s => s;
 try { toTrad = OpenCC.Converter({ from: "cn", to: "tw" }); toSimp = OpenCC.Converter({ from: "tw", to: "cn" }); } catch (e) {}
-
 function loadShard(n) {
-  if (!shardLoads[n]) shardLoads[n] = fetch(`data/zh-${String(n).padStart(2, "0")}.json`)
-    .then(r => r.ok ? r.json() : {}).then(d => Object.assign(cache, d)).catch(() => {});
+  if (!shardLoads[n]) shardLoads[n] = fetch(`data/zh-${String(n).padStart(2, "0")}.json`).then(r => r.ok ? r.json() : {}).then(d => Object.assign(cache, d)).catch(() => {});
   return shardLoads[n];
 }
 function loadWords(n) {
-  if (!wordLoads[n]) wordLoads[n] = fetch(`data/w-${String(n).padStart(2, "0")}.json`)
-    .then(r => r.ok ? r.json() : {}).then(d => Object.assign(words, d)).catch(() => {});
+  if (!wordLoads[n]) wordLoads[n] = fetch(`data/w-${String(n).padStart(2, "0")}.json`).then(r => r.ok ? r.json() : {}).then(d => Object.assign(words, d)).catch(() => {});
   return wordLoads[n];
 }
 function ensure(chars) {
@@ -434,19 +486,13 @@ function ensure(chars) {
   const needW = new Set(han.filter(c => !(c in words)).map(c => c.codePointAt(0) % SHARDS));
   return Promise.all([...[...need].map(loadShard), ...[...needW].map(loadWords)]);
 }
-
-// Find a dictionary entry for exactly this string (words are filed under their first character).
-function lookup(str) {
-  const first = [...str][0];
-  return (words[first] || []).find(e => e[0] === str) || null;
-}
+function lookup(str) { const first = [...str][0]; return (words[first] || []).find(e => e[0] === str) || null; }
 function token(entry, chars) {
   if (!entry) return { chars, syl: null, mean: null };
   const syl = (entry[2] || entry[1]).split(" ");
   return { chars, syl: syl.length === chars.length ? syl : null, mean: entry[3], tw: !!entry[2] };
 }
-// Split a line into words two ways (longest match front to back, and back to front)
-// and keep whichever leaves fewer stray single characters. Fixes cases like 在台灣.
+// Split a line into words both ways (longest match from the front and from the back); keep the one with fewer stray single characters.
 function segment(line) {
   const chars = [...line], n = chars.length, MAX = 8;
   const fwd = [];
@@ -463,8 +509,7 @@ function segment(line) {
   }
   const singles = s => s.filter(t => t.chars.length === 1 && isHan(t.chars[0])).length;
   const out = (fwd.length < bwd.length || (fwd.length === bwd.length && singles(fwd) < singles(bwd))) ? fwd : bwd;
-  // Taiwan Mandarin keeps full tones where mainland dictionaries mark a neutral tone (眼睛 yǎnjīng),
-  // except on true particles and suffixes.
+  // Taiwan keeps full tones where mainland dictionaries mark a neutral tone (眼睛 yǎnjīng), except on particles.
   const NEUTRAL = new Set([..."子們们的了著着過过嗎吗呢吧啊啦麼么"]);
   out.forEach(t => {
     if (!t.syl || t.tw) return;
@@ -472,13 +517,11 @@ function segment(line) {
       const c = t.chars[k], d = cache[c];
       if (k === 0 || tone(s) !== 5 || NEUTRAL.has(c) || !d) return s;
       const base = s.toLowerCase();
-      const full = d.p.find(p => p.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase() === base && tone(p) !== 5);
-      return full || s;
+      return d.p.find(p => p.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase() === base && tone(p) !== 5) || s;
     });
   });
-  // Single characters fall back to their most common reading.
   out.forEach(t => { if (!t.syl) t.syl = t.chars.map(c => cache[c] ? cache[c].p[0] : ""); });
-  // Tone changes people actually say: 一 and 不 shift before certain tones.
+  // Tone changes people actually say: 一 and 不 before certain tones.
   const flat = out.flatMap(t => t.chars.map((c, k) => ({ t, k, c })));
   flat.forEach((x, n) => {
     const next = flat[n + 1], prev = flat[n - 1];
@@ -490,18 +533,18 @@ function segment(line) {
   return out;
 }
 
+// ================= drawing
 function svgFor(ch, grid) {
-  const d = cache[ch];
-  const svg = document.createElementNS(NS, "svg");
+  const d = cache[ch], svg = document.createElementNS(NS, "svg");
   svg.setAttribute("viewBox", "0 0 1024 1024"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", ch);
   if (grid) {
     const g = document.createElementNS(NS, "g"); g.setAttribute("class", "grid");
-    g.innerHTML = '<rect x="8" y="8" width="1008" height="1008" rx="24"/><line x1="0" y1="512" x2="1024" y2="512"/><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="0" x2="1024" y2="1024"/><line x1="1024" y1="0" x2="0" y2="1024"/>';
+    g.innerHTML = '<line x1="0" y1="512" x2="1024" y2="512"/><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="0" x2="1024" y2="1024"/><line x1="1024" y1="0" x2="0" y2="1024"/>';
     svg.append(g);
   }
   const g = document.createElementNS(NS, "g");
   g.setAttribute("transform", "scale(1,-1) translate(0,-900)");
-  d.s.forEach((p, i) => {
+  (d ? d.s : []).forEach((p, i) => {
     const path = document.createElementNS(NS, "path");
     path.setAttribute("d", p); path.setAttribute("fill", `var(--${d.r[i] || "part3"}, var(--part3))`);
     g.append(path);
@@ -509,10 +552,9 @@ function svgFor(ch, grid) {
   svg.append(g);
   return svg;
 }
-
 let animToken = 0;
-function animate(svg, ch) {
-  const d = cache[ch]; const token = ++animToken;
+function animate(svg, ch, speed = 1) {
+  const d = cache[ch]; if (!d) return; const token = ++animToken;
   const g = svg.querySelector("g:not(.grid)"); g.innerHTML = "";
   const id = "a" + Math.random().toString(36).slice(2);
   const defs = document.createElementNS(NS, "defs"); g.append(defs);
@@ -535,254 +577,121 @@ function animate(svg, ch) {
   let i = 0;
   const next = () => {
     if (token !== animToken || i >= lines.length) return;
-    const [pl, len] = lines[i++]; const ms = Math.max(260, Math.min(700, len * 0.6));
+    const [pl, len] = lines[i++]; const ms = Math.max(260, Math.min(700, len * 0.6)) / speed;
     pl.style.transition = `stroke-dashoffset ${ms}ms linear`;
     requestAnimationFrame(() => { pl.style.strokeDashoffset = 0; });
-    setTimeout(next, ms + 120);
+    setTimeout(next, ms + 120 / speed);
   };
   next();
 }
 
-// Which script was pasted? Count characters that change when converted each way.
+// ================= navigation: two tabs, plus pages that open on top with Back
+const stack = [];
+function showOnly(id) {
+  document.querySelectorAll(".screen").forEach(s => s.hidden = s.id !== id);
+  const tabbed = id === "readScreen" || id === "wordsScreen";
+  $("tabbar").hidden = !tabbed;
+  if (tabbed) document.querySelectorAll("[data-tab]").forEach(b => b.dataset.tab === id ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+}
+let tab = "readScreen";
+function setTab(id) { tab = id; stack.length = 0; showOnly(id); if (id === "wordsScreen") renderWords(); }
+function go(id) { stack.push(id); showOnly(id); $(id).scrollTop = 0; try { history.pushState({ r: stack.length }, ""); } catch (e) {} }
+function back() {
+  if (!stack.length) return;
+  const leaving = stack.pop();
+  if (leaving === "wordScreen") onLeaveWord();
+  if (leaving === "reviewScreen") { updateCounts(); }
+  if (leaving === "settingsScreen") saveSettings();
+  showOnly(stack.length ? stack[stack.length - 1] : tab);
+  if (!stack.length && tab === "wordsScreen") renderWords();
+}
+window.addEventListener("popstate", () => { if (stack.length) back(); });
+document.querySelectorAll("[data-back]").forEach(b => b.onclick = () => { if (stack.length) history.back(); });
+document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+document.addEventListener("keydown", e => { if (e.key === "Escape" && stack.length) history.back(); });
+
+// ================= read screen
+let script = "trad", typed = "trad", selected = null;
 function detect(t) {
   const diff = (a, b) => [...a].filter((c, i) => c !== [...b][i]).length;
   return diff(t, toTrad(t)) > diff(t, toSimp(t)) ? "simp" : "trad";
 }
-function showScript() {
-  document.querySelectorAll("[data-script]").forEach(x => x.setAttribute("aria-pressed", x.dataset.script === script));
-}
-function currentText() {
-  const t = document.getElementById("src").value;
-  if (script === typed) return t;
-  return script === "trad" ? toTrad(t) : toSimp(t);
-}
-
+const showScript = () => document.querySelectorAll("[data-script]").forEach(x => x.setAttribute("aria-pressed", x.dataset.script === script));
+function currentText() { const t = $("src").value; return script === typed ? t : script === "trad" ? toTrad(t) : toSimp(t); }
 let renderToken = 0;
 async function render() {
-  const token = ++renderToken, text = currentText();
-  const reader = document.getElementById("reader");
+  const token = ++renderToken, text = currentText(), reader = $("reader");
   if (!Object.keys(cache).length) reader.innerHTML = '<p class="loading">Drawing…</p>';
   await ensure(text);
   if (token !== renderToken) return;
   reader.innerHTML = "";
   text.split(/\n+/).filter(l => l.trim()).forEach(lineText => {
-    const line = document.createElement("div"); line.className = "line";
+    const line = el("div", "line");
     for (const tok of segment(lineText)) {
-      const group = document.createElement("span");
-      group.className = "word" + (tok.chars.length > 1 ? " multi" : "");
+      const group = el("span", "word" + (tok.chars.length > 1 ? " multi" : ""));
       tok.chars.forEach((ch, k) => {
         if (cache[ch]) {
-          const d = cache[ch];
-          const b = document.createElement("button");
-          b.type = "button"; b.className = "cell"; b.setAttribute("aria-pressed", ch === selected);
-          b.dataset.ch = ch;
-          b.setAttribute("aria-label", `${ch} ${tok.syl[k] || ""}`);
-          const py = document.createElement("span");
-          py.className = "py" + (tok.chars.length === 1 && d.p.length > 1 ? " multi" : "");
-          py.innerHTML = pyHTML(tok.syl[k]);
+          const d = cache[ch], b = el("button", "cell"); b.type = "button";
+          b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", `${ch} ${tok.syl[k] || ""}`);
+          const py = el("span", "py" + (tok.chars.length === 1 && d.p.length > 1 ? " multi" : ""), pyHTML(tok.syl[k]));
           b.append(py, svgFor(ch, false));
-          b.onclick = () => { selected = ch; reader.querySelectorAll(".cell").forEach(x => x.setAttribute("aria-pressed", x === b)); tok.line = lineText; showChar(ch, tok, k); };
+          b.onclick = () => {
+            reader.querySelectorAll(".cell[aria-pressed=true]").forEach(x => x.setAttribute("aria-pressed", "false"));
+            group.querySelectorAll(".cell").forEach(x => x.setAttribute("aria-pressed", "true"));
+            openWord(tok.chars.join(""), { context: lineText, syl: tok.syl, mean: tok.mean, tw: tok.tw });
+          };
           group.append(b);
-        } else if (ch.trim()) {
-          const s = document.createElement("span"); s.className = "glyph"; s.textContent = ch; group.append(s);
-        }
+        } else if (ch.trim()) group.append(el("span", "glyph", esc(ch)));
       });
       line.append(group);
     }
-    const en = document.createElement("button");
-    en.type = "button"; en.className = "enbtn"; en.textContent = "EN"; en.title = "Translate this line";
-    en.onclick = () => translateLine(lineText, line, en);
-    line.insertAdjacentHTML("beforeend", sayHTML(lineText));
-    line.lastElementChild.classList.add("linesay");
-    line.append(en);
+    const ctl = el("span", "linectl", sayHTML(lineText, true));
+    const en = btn("EN", "enbtn"); en.title = "Translate this line"; en.onclick = () => translateLine(lineText, line, en);
+    ctl.append(en); line.append(ctl);
     reader.append(line);
   });
-
 }
-
-// Writing practice: draw each stroke with a finger or mouse. Forgiving by design:
-// a hint is one tap away, and after 3 tries on a stroke it fills in so you can keep going.
-function practice(big, ch) {
-  const d = cache[ch];
-  if (!d || typeof HanziWriter === "undefined") return;
-  const css = getComputedStyle(document.documentElement);
-  const col = n => css.getPropertyValue(n).trim();
-  big.innerHTML = "";
-  const box = document.createElement("div"); box.className = "pad"; big.append(box);
-  const status = document.createElement("p"); status.className = "coach"; big.append(status);
-  const row = document.createElement("div"); row.className = "btnrow"; big.append(row);
-  const mk = (label, cls, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = label; b.onclick = fn; row.append(b); return b; };
-  const total = d.s.length;
-  let current = 0, firstTry = 0, missesHere = 0, writer;
-  const say = msg => { status.innerHTML = `<b>Stroke ${Math.min(current + 1, total)} of ${total}</b> · ${msg}`; };
-  const size = Math.min(300, big.clientWidth || 300);
-  writer = HanziWriter.create(box, ch, {
-    width: size, height: size, padding: 12,
-    charDataLoader: (c, onLoad) => onLoad({ strokes: d.s, medians: d.md }),
-    showCharacter: false, showOutline: false,
-    outlineColor: col("--grid"), strokeColor: col("--fg"), drawingColor: col("--accent"), highlightColor: col("--sound"),
-    drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 5, markStrokeCorrectAfterMisses: false
-  });
-  // Two separate helpers, both off by default: write from memory, turn on what you need.
-  const guides = document.createElement("div"); guides.className = "btnrow";
-  const toggle = (label, onChange) => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "switch small"; b.setAttribute("role", "switch"); b.setAttribute("aria-checked", "false");
-    b.innerHTML = `<span class="track"><span class="knob"></span></span>${label} <span class="state">Off</span>`;
-    b.onclick = () => {
-      const on = b.getAttribute("aria-checked") !== "true";
-      b.setAttribute("aria-checked", on); b.querySelector(".state").textContent = on ? "On" : "Off";
-      onChange(on);
-    };
-    guides.append(b);
-  };
-  // Same dotted grid as the big character above, laid under the writing pad.
-  const lay = document.createElementNS(NS, "svg"); lay.setAttribute("class", "gridlay"); lay.setAttribute("viewBox", "0 0 1024 1024");
-  lay.innerHTML = '<g class="grid"><line x1="0" y1="512" x2="1024" y2="512"/><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="0" x2="1024" y2="1024"/><line x1="1024" y1="0" x2="0" y2="1024"/></g>';
-  box.prepend(lay);
-  toggle("Grid", on => box.classList.toggle("gridon", on));
-  toggle("Strokes", on => on ? writer.showOutline() : writer.hideOutline());
-  big.insertBefore(guides, status);
-  const start = () => {
-    current = 0; firstTry = 0; missesHere = 0;
-    say("Write it from memory, first stroke first. Turn on Grid or Strokes, or tap Hint, anytime.");
-    writer.quiz({
-      onCorrectStroke: s => {
-        if (s.mistakesOnStroke === 0) firstTry++;
-        current = s.strokeNum + 1; missesHere = 0;
-        const good = ["Nice.", "Good.", "That's it.", "Yes."][s.strokeNum % 4];
-        say(s.mistakesOnStroke ? "Got it." : good);
-      },
-      onMistake: s => {
-        missesHere = s.mistakesOnStroke;
-        say(missesHere >= 5 ? "Here's where it goes. Trace it." : missesHere === 1 ? "Not quite. Try that stroke again." : `Not yet (${missesHere} tries). Try again, or tap Hint.`);
-      },
-      onComplete: () => {
-        status.innerHTML = `<b>Done.</b> ${firstTry} of ${total} strokes on the first try.`;
-        setTimeout(() => {
-          big.querySelector(".pad")?.replaceWith(svgFor(ch, true));
-        }, 900);
-      }
-    });
-  };
-  mk("Hint", "btn", () => { writer.highlightStroke(current); say("That stroke is highlighted. Trace it."); });
-  mk("Start over", "btn ghost", () => { writer.cancelQuiz(); showChar(ch, shown && shown[1], shown && shown[2], true); });
-  mk("Done", "btn ghost", () => { writer.cancelQuiz(); showChar(ch, shown && shown[1], shown && shown[2]); });
-  start();
-}
-
-let shown = null;
-function openSheet(id) { document.getElementById(id).hidden = false; document.body.classList.add("locked"); }
-function closeSheet(id) {
-  document.getElementById(id).hidden = true;
-  if (![...document.querySelectorAll(".scrim")].some(x => !x.hidden)) document.body.classList.remove("locked");
-}
-function closeChar() {
-  closeSheet("charSheet"); document.getElementById("charCard").innerHTML = "";
-  selected = null; document.querySelectorAll(".cell").forEach(x => x.setAttribute("aria-pressed", false));
-}
-async function showChar(ch, tok, pos, startPractice) {
-  await ensure(ch);
-  const d = cache[ch], card = document.getElementById("charCard");
-  if (!d) return;
-  shown = [ch, tok, pos];
-  card.innerHTML = "";
-  openSheet("charSheet");
-  document.getElementById("charSheet").scrollTop = 0;
-  if (tok && tok.chars.length > 1) {
-    const wb = document.createElement("div"); wb.className = "wordbox";
-    wb.innerHTML = `<span class="kind">Word</span>
-      <div class="wline"><span class="wz" lang="zh">${tok.chars.join("")}</span>
-      <span class="bigpy">${tok.syl.map(pyHTML).join(" ")}</span>${sayHTML(tok.chars.join(""))}</div>
-      <p class="def">${tok.mean || ""}${tok.tw ? " (Taiwan reading)" : ""}</p>`;
-    wb.append(addButton(tok.chars.join(""), tok.line));
-    card.append(wb);
-  } else if (d) {
-    const wb = document.createElement("div"); wb.className = "wordbox";
-    wb.append(addButton(ch, tok && tok.line));
-    card.append(wb);
-  }
-  const wrap = document.createElement("div"); wrap.className = "detail";
-  const big = document.createElement("div"); big.className = "big";
-  const svg = svgFor(ch, true); big.append(svg);
-  const row = document.createElement("div"); row.className = "btnrow";
-  const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn"; btn.textContent = "Show stroke order";
-  btn.onclick = () => animate(svg, ch);
-  const prac = document.createElement("button"); prac.type = "button"; prac.className = "btn ghost"; prac.textContent = "Practice writing";
-  prac.onclick = () => practice(big, ch);
-  row.append(btn, prac); big.append(row);
-  const info = document.createElement("div"); info.className = "info";
-  const here = tok ? tok.syl[pos] : d.p[0];
-  const other = d.p.filter(p => p !== here);
-  info.innerHTML = `<div class="kind">${KIND[d.k] || "Structure only"}</div>
-    <h2 lang="zh">${ch} ${sayHTML(ch)}</h2>
-    <div class="bigpy">${pyHTML(here)}${other.length ? ` <span class="note">also ${other.map(pyHTML).join(", ")}</span>` : ""}</div>
-    <p class="def">${d.d || ""}</p>`;
-  const comps = document.createElement("div"); comps.className = "comps";
-  d.c.forEach(c => {
-    const el = document.createElement("div"); el.className = "comp";
-    el.style.borderColor = `color-mix(in srgb, var(--${c.r}) 45%, var(--line))`;
-    const match = c.r === "sound" && c.m ? `<span class="m">Sounds like ${ch} ${pyHTML(here)}? <b>${c.m}</b></span>` : "";
-    el.innerHTML = `<span class="f" lang="zh" style="color:var(--${c.r})">${c.f}</span>
-      <span class="r" style="color:var(--${c.r})"><b>${ROLE[c.r]}${c.i ? " (likely)" : ""}</b>${c.p ? " · " + pyHTML(c.p) : ""}</span>
-      <span class="g">${c.g || ""}</span>${match}`;
-    comps.append(el);
-  });
-  info.append(comps);
-  if (d.h) { const h = document.createElement("p"); h.className = "note"; h.textContent = d.k === "pictophonetic" ? `The meaning part points to: ${d.h}` : `Hint: ${d.h}`; info.append(h); }
-  const NOTE = {
-    inferred: "The source doesn't record where this character came from. One part sounds like the whole character and the other is its dictionary radical, so this is the likely meaning + sound split.",
-    unknown: "The source names the radical (the part dictionaries file it under) but doesn't say whether the rest carries meaning or sound, so the rest gets its own neutral color.",
-    pictographic: "This one started as a drawing, so it has no meaning part or sound part. The whole shape is the picture.",
-    whole: "A single sign with no smaller parts to split."
-  };
-  if (NOTE[d.k]) { const h = document.createElement("p"); h.className = "note"; h.textContent = NOTE[d.k]; info.append(h); }
-  wrap.append(big, info); card.append(wrap);
-  if (startPractice) practice(big, ch);
-}
-
-let t;
-function onNewText() { typed = script = detect(document.getElementById("src").value); showScript(); }
-document.getElementById("src").addEventListener("input", () => {
-  clearTimeout(t); t = setTimeout(() => { onNewText(); render(); }, 350);
-});
-document.querySelectorAll("[data-script]").forEach(b => b.onclick = () => {
-  script = b.dataset.script; showScript(); selected = null; render();
-});
-document.getElementById("pyBtn").onclick = e => {
-  const btn = e.currentTarget, on = btn.getAttribute("aria-checked") !== "true";
-  btn.setAttribute("aria-checked", on);
-  btn.querySelector(".state").textContent = on ? "On" : "Off";
-  document.getElementById("reader").classList.toggle("nopy", !on);
+let typing;
+function onNewText() { typed = script = detect($("src").value); showScript(); }
+$("src").addEventListener("input", e => { store.set("radical-text", e.target.value); clearTimeout(typing); typing = setTimeout(() => { onNewText(); render(); }, 350); });
+$("src").addEventListener("change", e => remember(e.target.value));
+document.querySelectorAll("[data-script]").forEach(b => b.onclick = () => { script = b.dataset.script; showScript(); render(); });
+$("pyBtn").onclick = e => {
+  const b = e.currentTarget, on = b.getAttribute("aria-checked") !== "true";
+  b.setAttribute("aria-checked", on); $("reader").classList.toggle("nopy", !on); store.set("radical-py", on);
 };
-applyPalette();
-document.getElementById("gear").onclick = () => openSettings(false);
-document.getElementById("setClose").onclick = closeSettings;
-document.getElementById("settings").addEventListener("click", e => { if (e.target.id === "settings") closeSettings(); });
-if (firstRun) openSettings(true);
+if (store.get("radical-py", false)) { $("pyBtn").setAttribute("aria-checked", "true"); $("reader").classList.remove("nopy"); }
 
-// ---------- Claude features (word cards, translation). The key lives on the server; the page sends your password.
-const store = {
-  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
-};
-let myWords = store.get("radical-words", []);
-const transCache = store.get("radical-trans", {});
-const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-function updateCount() {
-  document.getElementById("wordCount").textContent = myWords.length;
-  document.getElementById("dueCount").textContent = reviewQueue().length;
+// ================= history
+let textHistory = store.get("radical-history", []);
+function remember(text) {
+  text = (text || "").trim(); if (!text) return;
+  textHistory = [{ text, at: localDay() }, ...textHistory.filter(h => h.text !== text)].slice(0, 30);
+  store.set("radical-history", textHistory);
 }
-const saveWords = () => { store.set("radical-words", myWords); updateCount(); };
-const wPinyin = w => (w.card && w.card.pinyin) || w.pinyin || "";
-const wMeaning = w => (w.card && w.card.meaning) || w.meaning || "";
-const findWord = word => myWords.find(w => w.word === word || (w.card && (w.card.word === word || w.card.simplified === word)));
+function setText(text) {
+  remember($("src").value);
+  $("src").value = text; store.set("radical-text", text); remember(text);
+  stack.length = 0; setTab("readScreen"); $("readScreen").scrollTop = 0;
+  onNewText(); render();
+}
+function renderHistory() {
+  const list = $("histList");
+  list.innerHTML = textHistory.length ? "" : `<p class="note">Nothing yet. Texts you replace show up here.</p>`;
+  textHistory.forEach(h => {
+    const row = el("div", "hitem");
+    const load = el("button", "load", `<span class="ht" lang="zh">${esc(h.text.split("\n")[0])}</span><span class="note">${esc(h.at)} · ${[...h.text].length} characters</span>`);
+    load.type = "button"; load.onclick = () => setText(h.text);
+    const del = btn("Delete", "btn ghost small", () => { textHistory = textHistory.filter(x => x !== h); store.set("radical-history", textHistory); renderHistory(); });
+    row.append(load, del); list.append(row);
+  });
+}
+$("histBtn").onclick = () => { remember($("src").value); renderHistory(); go("historyScreen"); };
 
-// Cards are fetched with GET (same word, same address) so Vercel's CDN can reuse them;
-// translations are POSTed because every sentence is different.
+// ================= Claude (the key stays on the server; the page sends your password)
 async function claude(payload) {
   const pw = store.get("radical-pw", "");
-  if (!pw) { openSettings(false); document.getElementById("pw").focus(); throw new Error("Add your Claude password in Settings first."); }
+  if (!pw) { openSettings(false); setTimeout(() => $("pw").focus(), 300); throw new Error("Add your Claude password in Settings first."); }
   const get = payload.action === "card";
   const url = get ? `/api/claude?v=1&action=card&word=${encodeURIComponent(payload.word)}` : "/api/claude";
   let r;
@@ -795,133 +704,47 @@ async function claude(payload) {
   if (!r.ok) throw new Error(data.error || `Something went wrong (${r.status}).`);
   return data;
 }
-
-async function addWord(word, context) {
-  word = word.trim();
-  if (!word) return null;
-  const existing = findWord(word);
-  if (existing && existing.card) return existing;
-  const { card } = await claude({ action: "card", word });
-  if (existing) { existing.card = card; saveWords(); return existing; }
-  const entry = { word: card.word || word, card, context: context || "", added: localDay() };
-  myWords.unshift(entry); saveWords();
-  return entry;
-}
-
-function addButton(word, context) {
-  const b = document.createElement("button");
-  b.type = "button"; b.className = "btn ghost addword";
-  const saved = () => !!findWord(word);
-  const idle = () => { b.textContent = saved() ? `In my words ✓ · open` : `+ Add ${word} to my words`; b.disabled = false; };
-  idle();
-  b.onclick = async () => {
-    if (saved()) { openWords(word); return; }
-    b.disabled = true; b.textContent = "Card being made…";
-    try { await addWord(word, context); idle(); }
-    catch (e) { b.textContent = e.message; b.classList.add("err"); setTimeout(() => { b.classList.remove("err"); idle(); }, 4000); }
-  };
-  return b;
-}
-
-function cardHTML(w) {
-  if (!w.card) return `<div class="wcard">
-    <div class="bigpy">${pyWordHTML(wPinyin(w))} ${sayHTML(w.word)}</div>
-    ${wMeaning(w) ? "" : `<p class="def">No dictionary entry.</p>`}
-    ${w.context ? `<p class="note">Met in: <span lang="zh">${esc(w.context)}</span> · ${esc(w.added)}</p>` : `<p class="note">Added ${esc(w.added)}</p>`}
-    <p class="note">${dueText(w)}</p>
-    <div class="row"><button type="button" class="btn" data-act="make">Make full card</button>
-      <button type="button" class="btn ghost" data-act="read">Read it in Radical</button>
-      <button type="button" class="btn ghost" data-act="skip">${w.skip ? "Include in review" : "Skip in review"}</button>
-      <button type="button" class="btn ghost" data-act="del">Remove</button></div></div>`;
-  const c = w.card || {};
-  const parts = (c.chars || []).map(x => `<div class="cpart"><span class="cz" lang="zh">${esc(x.char)}</span>
-      <span class="bigpy">${pyHTML(esc(x.pinyin))}</span><span>${esc(x.parts)}</span><span class="note">${esc(x.mnemonic)}</span></div>`).join("");
-  const related = (c.related || []).map(r => `<span><b lang="zh">${esc(r.word)}</b> ${esc(r.pinyin)} · ${esc(r.meaning)}</span>`).join("<br>");
-  return `<div class="wcard">
-    ${c.simplified ? `<p class="note">Simplified: <span lang="zh-Hans" style="font-family:var(--font-zh);font-size:1.2rem">${esc(c.simplified)}</span></p>` : ""}
-    <div class="bigpy">${pyWordHTML(c.pinyin)} ${sayHTML(w.word)}</div>
-    <p class="def">${esc(c.meaning)}${c.usage ? ` · ${esc(c.usage)}` : ""}</p>
-    ${parts}
-    ${c.example ? `<p class="ex" lang="zh">${esc(c.example)} ${sayHTML(c.example)}</p><p class="exp">${esc(c.example_pinyin)}</p>
-      <p class="exp en" hidden>${esc(c.example_en)}</p>` : ""}
-    ${related ? `<p class="note">${related}</p>` : ""}
-    ${w.context ? `<p class="note">Met in: <span lang="zh">${esc(w.context)}</span> · ${esc(w.added)}</p>` : `<p class="note">Added ${esc(w.added)}</p>`}
-    <p class="note">${dueText(w)}</p>
-    <div class="row">${c.example_en ? `<button type="button" class="btn ghost" data-act="en">Show English</button>` : ""}
-      <button type="button" class="btn ghost" data-act="read">Read it in Radical</button>
-      <button type="button" class="btn ghost" data-act="skip">${w.skip ? "Include in review" : "Skip in review"}</button>
-      <button type="button" class="btn ghost" data-act="del">Remove</button></div>
-  </div>`;
-}
-
-// My words: a two-column table (word, meaning). Tapping a row slides its card open and closes any other.
-function renderWordList(openWord) {
-  const list = document.getElementById("wordList");
-  list.innerHTML = myWords.length ? "" : `<p class="note">No words yet. Tap a character while reading and choose "Add to my words," or type one above.</p>`;
-  myWords.forEach(w => {
-    const item = document.createElement("div"); item.className = "witem";
-    const head = document.createElement("button"); head.type = "button"; head.className = "whead"; head.setAttribute("aria-expanded", "false");
-    head.innerHTML = `<span class="wz" lang="zh">${esc(w.word)}</span><span class="wm">${esc(wMeaning(w))}${w.skip ? ` <span class="wtag">skipped</span>` : ""}</span><span class="chev" aria-hidden="true"></span>`;
-    const acc = document.createElement("div"); acc.className = "acc";
-    const body = document.createElement("div"); body.className = "accin"; acc.append(body);
-    const open = (yes, instant) => {
-      if (yes && !body.innerHTML) body.innerHTML = cardHTML(w);
-      if (instant) { acc.style.transition = "none"; requestAnimationFrame(() => acc.style.transition = ""); }
-      item.classList.toggle("open", yes); head.setAttribute("aria-expanded", yes);
-    };
-    head.onclick = () => {
-      const was = item.classList.contains("open");
-      list.querySelectorAll(".witem.open").forEach(x => x !== item && x._open(false));
-      open(!was);
-      if (!was) setTimeout(() => item.scrollIntoView({ block: "nearest", behavior: "smooth" }), 320);
-    };
-    item._open = open;
-    body.addEventListener("click", e => {
-      const act = e.target.dataset.act; if (!act) return;
-      if (act === "en") { const hid = body.querySelector(".exp.en"); hid.hidden = !hid.hidden; e.target.textContent = hid.hidden ? "Show English" : "Hide English"; }
-      if (act === "del") {
-        const b = e.target;
-        if (!b.classList.contains("confirm")) {
-          b.classList.add("confirm"); b.textContent = `Remove ${w.word}? Tap again`;
-          setTimeout(() => { if (b.isConnected) { b.classList.remove("confirm"); b.textContent = "Remove"; } }, 4000);
-          return;
-        }
-        myWords.splice(myWords.indexOf(w), 1); saveWords(); renderWordList();
-      }
-      if (act === "skip") { w.skip = !w.skip; saveWords(); renderWordList(w.word); }
-      if (act === "make") {
-        e.target.disabled = true; e.target.textContent = "Card being made…";
-        addWord(w.word).then(() => renderWordList(w.word))
-          .catch(err => { e.target.textContent = err.message; e.target.classList.add("err"); });
-      }
-      if (act === "read") { const c = w.card || {}; setText([w.word, c.example, w.context].filter(Boolean).join("\n")); closeWords(); }
-    });
-    item.append(head, acc); list.append(item);
-    if (w.word === openWord) { open(true, true); setTimeout(() => item.scrollIntoView({ block: "nearest" }), 50); }
-  });
-}
-function openWords(openWord) { renderWordList(openWord); openSheet("wordsSheet"); }
-function closeWords() { closeSheet("wordsSheet"); }
-
-async function translateLine(text, line, btn) {
+const transCache = store.get("radical-trans", {});
+async function translateLine(text, line, b) {
   const next = line.nextElementSibling;
   if (next && next.classList.contains("trans")) {
-    const failed = next.classList.contains("err"); next.remove(); btn.textContent = "EN";
-    if (!failed) return;  // a failed try gets retried; a shown translation gets hidden
+    const failed = next.classList.contains("err"); next.remove(); b.textContent = "EN";
+    if (!failed) return;
   }
-  const box = document.createElement("p"); box.className = "trans"; line.after(box);
-  if (transCache[text]) { box.textContent = transCache[text]; btn.textContent = "Hide"; return; }
-  box.textContent = "Translating…"; btn.disabled = true;
+  const box = el("p", "trans"); line.after(box);
+  if (transCache[text]) { box.textContent = transCache[text]; b.textContent = "Hide"; return; }
+  box.textContent = "Translating…"; b.disabled = true;
   try {
     const { translation } = await claude({ action: "translate", sentence: text });
     transCache[text] = translation; store.set("radical-trans", transCache);
-    box.textContent = translation; btn.textContent = "Hide";
+    box.textContent = translation; b.textContent = "Hide";
   } catch (e) { box.textContent = e.message; box.classList.add("err"); }
-  btn.disabled = false;
+  b.disabled = false;
 }
 
-// ---------- Review (spaced repetition). Each word keeps srs = {ivl days, ease, reps, lapses, due ms}.
-// Words without srs are new; up to NEW_PER_DAY of them join each day's review, newest first.
+// ================= my words store
+let myWords = store.get("radical-words", []);
+const saveWords = () => { store.set("radical-words", myWords); updateCounts(); };
+const wPinyin = w => (w.card && w.card.pinyin) || w.pinyin || "";
+const wMeaning = w => (w.card && w.card.meaning) || w.meaning || "";
+const findWord = word => myWords.find(w => w.word === word || (w.card && (w.card.word === word || w.card.simplified === word)));
+// Add a word right away with its dictionary entry; Claude's card follows in the background when a password is set.
+async function addEntry(word, extra = {}) {
+  await ensure(word);
+  const d = lookup(word);
+  const e = { word, added: localDay(), ...(d ? { pinyin: d[2] || d[1], meaning: d[3] } : {}), ...extra };
+  for (const k of Object.keys(e)) if (e[k] === "" || e[k] == null) delete e[k];
+  if (!e.pinyin && word.length && [...word].every(c => cache[c])) e.pinyin = [...word].map(c => cache[c].p[0]).join(" ");
+  if (!e.meaning && [...word].length === 1 && cache[word]) e.meaning = cache[word].d;
+  myWords.unshift(e); saveWords();
+  return e;
+}
+async function makeCard(w) {
+  const { card } = await claude({ action: "card", word: w.word });
+  w.card = card; saveWords(); return w;
+}
+
+// ================= review scheduling (spaced repetition)
 const NEW_PER_DAY = 10, DAY = 864e5;
 function localDay(t = Date.now()) { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 function midnight(t = Date.now()) { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
@@ -943,168 +766,464 @@ function grade(w, g) {
   if (!w.srs) { w.srs = { ivl: 0, ease: 2.5, reps: 0, lapses: 0, due: 0 }; countNew(); }
   const s = w.srs, ivl = nextIvl(s, g);
   if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); }
-  else {
-    s.ivl = ivl; s.reps++; s.due = midnight() + ivl * DAY;
-    if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15);
-    if (g === "easy") s.ease += 0.15;
-  }
+  else { s.ivl = ivl; s.reps++; s.due = midnight() + ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
   saveWords();
 }
 const ivlText = d => d === 0 ? "soon" : d === 1 ? "1 day" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
+const wStatus = w => w.skip ? "known" : !w.srs ? "new" : w.srs.due <= Date.now() ? "due" : "learning";
 function dueText(w) {
-  if (w.skip) return "Skipped in review.";
+  if (w.skip) return "Marked known: left out of review.";
   if (!w.srs) return "New: not reviewed yet.";
   if (w.srs.due <= Date.now()) return "Due for review now.";
   return `Next review ${localDay(w.srs.due)} (every ${ivlText(w.srs.ivl)}).`;
 }
-
-let rq = [], rDone = 0;
-async function openReview() {
-  rq = reviewQueue(); rDone = 0;
-  openSheet("reviewSheet");
-  await ensure(rq.map(w => w.word).join(""));
-  showFront();
+function updateCounts() {
+  const n = reviewQueue().length;
+  $("dueBadge").textContent = n ? n : "";
+  if (!$("wordsScreen").hidden) renderStrip();
 }
-function closeReview() { closeSheet("reviewSheet"); updateCount(); if (!document.getElementById("wordsSheet").hidden) renderWordList(); }
-function bigWord(word) {
-  const box = document.createElement("div"); box.className = "revchars"; box.lang = "zh";
-  [...word].forEach(ch => {
-    if (cache[ch]) box.append(svgFor(ch, true));
-    else { const s = document.createElement("span"); s.className = "plain"; s.textContent = ch; box.append(s); }
+
+// ================= word page: page 0 is the whole word, then one page per character
+let wordState = null;
+async function openWord(word, opts = {}) {
+  await ensure(word);
+  const chars = [...word].filter(c => cache[c]);
+  if (!chars.length) return;
+  wordState = { word, chars, ...opts };
+  renderWordPages();
+  go("wordScreen");
+  $("pager").scrollLeft = 0;
+}
+function onLeaveWord() { animToken++; document.querySelectorAll(".cell[aria-pressed=true]").forEach(x => x.setAttribute("aria-pressed", "false")); }
+function wordFacts() {
+  const s = wordState, saved = findWord(s.word), d = lookup(s.word);
+  let syl = s.syl && s.syl.length === s.chars.length ? s.syl : null;
+  if (!syl && d) { const p = (d[2] || d[1]).split(" "); if (p.length === s.chars.length) syl = p; }
+  if (!syl && saved && wPinyin(saved)) syl = sylls(wPinyin(saved).replace(/\s+/g, ""));
+  if (!syl || syl.length !== s.chars.length) syl = s.chars.map(c => cache[c].p[0]);
+  const mean = (saved && wMeaning(saved)) || s.mean || (d && d[3]) || (s.chars.length === 1 ? cache[s.chars[0]].d : "");
+  return { saved, syl, mean };
+}
+function renderWordPages() {
+  const s = wordState, pager = $("pager"), tabs = $("wtabs");
+  pager.innerHTML = ""; tabs.innerHTML = "";
+  const labels = [s.word, ...(s.chars.length > 1 ? s.chars : ["parts"])];
+  labels.forEach((l, i) => {
+    const t = el("button", "", esc(l)); t.type = "button";
+    t.onclick = () => pager.scrollTo({ left: i * pager.clientWidth, behavior: "smooth" });
+    tabs.append(t);
   });
+  pager.append(wordPage());
+  s.chars.forEach((c, i) => pager.append(charPage(c, i)));
+  markTab(0);
+}
+function markTab(i) { [...$("wtabs").children].forEach((t, k) => t.setAttribute("aria-current", k === i)); }
+$("pager").addEventListener("scroll", () => { const p = $("pager"); markTab(Math.round(p.scrollLeft / Math.max(1, p.clientWidth))); }, { passive: true });
+function goPage(i) { const p = $("pager"); p.scrollTo({ left: i * p.clientWidth, behavior: "smooth" }); }
+
+function wordPage() {
+  const s = wordState, { saved, syl, mean } = wordFacts(), c = saved && saved.card;
+  const page = el("div", "wpage");
+  const size = Math.min(Math.floor((Math.min(innerWidth, 760) - 48) / s.chars.length) - 4, 150);
+  const row = el("div", "wchars");
+  s.chars.forEach((ch, i) => {
+    const b = el("button"); b.type = "button"; b.setAttribute("aria-label", `Open ${ch}`);
+    const svg = svgFor(ch, true); svg.style.width = svg.style.height = size + "px";
+    b.append(svg); b.onclick = () => goPage(i + 1); row.append(b);
+  });
+  page.append(row);
+  const py = el("div", "wpy", `<span class="bigpy">${syl.map(pyHTML).join(" ")}</span>${sayHTML(s.word)}`);
+  py.append(addBtn());
+  page.append(py);
+  page.append(el("p", "wmean", esc(mean) + (s.tw ? ` <span class="note">(Taiwan reading)</span>` : "")));
+  page.append(el("div", "swipehint", `Swipe for each character's parts and writing <i></i>`));
+  if (saved) page.append(savedCard(saved));
+  return page;
+}
+function addBtn() {
+  const s = wordState, b = btn("", "btn addbtn");
+  const idle = () => { const w = findWord(s.word); b.textContent = w ? "✓ In my words" : "+ Add"; b.className = w ? "btn ghost addbtn" : "btn addbtn"; b.disabled = false; };
+  idle();
+  b.onclick = async () => {
+    if (findWord(s.word)) { b.textContent = "Already saved"; setTimeout(idle, 1200); return; }
+    b.disabled = true;
+    const w = await addEntry(s.word, { context: s.context && s.context !== s.word ? s.context : undefined });
+    idle(); refreshWordPage();
+    if (store.get("radical-pw", "")) makeCard(w).then(refreshWordPage).catch(() => {});
+  };
+  return b;
+}
+function refreshWordPage() {
+  if ($("wordScreen").hidden || !wordState) return;
+  const first = $("pager").firstElementChild, keep = $("pager").scrollLeft;
+  first.replaceWith(wordPage()); $("pager").scrollLeft = keep;
+}
+function savedCard(w) {
+  const c = w.card, box = el("div", "wcard");
+  if (c) {
+    if (c.simplified && c.simplified !== w.word) box.append(el("p", "note", `Simplified: <span lang="zh-Hans" style="font-family:var(--font-zh);font-size:1.15rem">${esc(c.simplified)}</span>`));
+    if (c.usage) box.append(el("p", "note", esc(c.usage)));
+    if (c.example) {
+      box.append(el("p", "ex", `<span lang="zh">${esc(c.example)}</span> ${sayHTML(c.example, true)}`));
+      box.append(el("p", "exp", esc(c.example_pinyin)));
+      const en = el("p", "exp", esc(c.example_en)); en.hidden = true; box.append(en);
+      if (c.example_en) box.append(btn("Show English", "btn ghost small", e => { en.hidden = !en.hidden; e.target.textContent = en.hidden ? "Show English" : "Hide English"; }));
+    }
+    if ((c.related || []).length) box.append(el("p", "note", "Related: " + c.related.map(r => `<b lang="zh">${esc(r.word)}</b> ${esc(r.pinyin)} ${esc(r.meaning)}`).join(" · ")));
+  }
+  if (w.context) box.append(el("p", "note", `Met in: <span lang="zh">${esc(w.context)}</span> · ${esc(w.added)}`));
+  box.append(el("p", "note", dueText(w)));
+  const acts = el("div", "row");
+  if (!c) {
+    const mk = btn("Make full card with Claude", "btn small", async () => {
+      mk.disabled = true; mk.textContent = "Card being made…";
+      try { await makeCard(w); refreshWordPage(); } catch (e) { mk.textContent = e.message; mk.classList.add("err"); }
+    });
+    acts.append(mk);
+  }
+  acts.append(btn(w.skip ? "Put back in review" : "I know this", "btn ghost small", () => { w.skip = !w.skip; saveWords(); refreshWordPage(); }));
+  acts.append(btn("Read it in Radical", "btn ghost small", () => setText([w.word, c && c.example, w.context].filter(Boolean).join("\n"))));
+  const rm = btn("Remove", "btn ghost small", () => {
+    if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove? Tap again"; setTimeout(() => { if (rm.isConnected) { rm.classList.remove("confirm"); rm.textContent = "Remove"; } }, 4000); return; }
+    myWords.splice(myWords.indexOf(w), 1); saveWords(); refreshWordPage();
+  });
+  acts.append(rm);
+  box.append(acts);
   return box;
 }
-function ctxHTML(w) {
-  if (!w.context) return "";
-  const parts = w.context.split(w.word).map(esc);
-  return `<p class="revctx">${parts.join(`<b>${esc(w.word)}</b>`)}</p>`;
-}
-function showFront() {
-  const box = document.getElementById("revCard"), prog = document.getElementById("revProg");
-  box.innerHTML = "";
-  if (!rq.length) {
-    const tomorrow = myWords.filter(w => !w.skip && w.srs && w.srs.due < midnight() + 2 * DAY && w.srs.due > Date.now()).length;
-    prog.textContent = "";
-    box.innerHTML = myWords.length
-      ? `<p class="def" style="text-align:center;font-size:1.2rem">${rDone ? `Done. ${rDone} card${rDone === 1 ? "" : "s"} reviewed.` : "Nothing due right now."}</p>
-         <p class="note" style="text-align:center">${tomorrow ? `${tomorrow} due tomorrow.` : ""} ${myWords.some(w => !w.srs && !w.skip) && newLeft() <= 0 ? `New words: ${NEW_PER_DAY} a day, more tomorrow.` : ""}</p>`
-      : `<p class="note">No words yet. Add some from your reading, or import a list.</p>`;
-    if (myWords.some(w => !w.srs && !w.skip) && newLeft() <= 0) {
-      const more = document.createElement("button"); more.type = "button"; more.className = "btn ghost wide"; more.textContent = `Learn ${NEW_PER_DAY} more new words`;
-      more.onclick = () => { const n = store.get("radical-newday", {}); store.set("radical-newday", { day: localDay(), n: (n.n || 0) - NEW_PER_DAY }); openReview(); };
-      box.append(more);
-    }
-    const b = document.createElement("button"); b.type = "button"; b.className = "btn wide"; b.textContent = "Close"; b.onclick = closeReview; box.append(b);
-    return;
-  }
-  const w = rq[0];
-  prog.textContent = `· ${rq.length} left${w.srs ? "" : " · new"}`;
-  box.append(bigWord(w.word));
-  box.insertAdjacentHTML("beforeend", ctxHTML(w));
-  const show = document.createElement("button"); show.type = "button"; show.className = "btn wide"; show.textContent = "Show answer";
-  show.onclick = () => { show.remove(); showBack(w); };
-  box.append(show);
-}
-function showBack(w) {
-  const box = document.getElementById("revCard"), c = w.card;
-  const ans = document.createElement("div"); ans.className = "revans";
-  ans.innerHTML = `<div class="bigpy">${pyWordHTML(wPinyin(w))} ${sayHTML(w.word)}</div>
-    <p class="def">${esc(wMeaning(w))}${c && c.usage ? `<br><span class="note">${esc(c.usage)}</span>` : ""}</p>
-    ${c && c.simplified && c.simplified !== w.word ? `<p class="note" style="text-align:center">Simplified: <span lang="zh-Hans" style="font-family:var(--font-zh);font-size:1.3rem">${esc(c.simplified)}</span></p>` : ""}
-    ${c ? (c.chars || []).map(x => `<div class="wcard" style="padding:0"><div class="cpart"><span class="cz" lang="zh">${esc(x.char)}</span>
-      <span class="bigpy">${pyHTML(esc(x.pinyin))}</span><span>${esc(x.parts)}</span><span class="note">${esc(x.mnemonic)}</span></div></div>`).join("") : ""}
-    ${c && c.example ? `<div class="wcard" style="padding:0"><p class="ex" lang="zh">${esc(c.example)} ${sayHTML(c.example)}</p><p class="exp">${esc(c.example_pinyin)}</p><p class="exp en" hidden>${esc(c.example_en)}</p></div>` : ""}`;
-  const extra = document.createElement("div"); extra.className = "wtools";
-  if (c && c.example_en) {
-    const en = document.createElement("button"); en.type = "button"; en.className = "btn ghost"; en.textContent = "English";
-    en.onclick = () => { const p = ans.querySelector(".en"); p.hidden = !p.hidden; };
-    extra.append(en);
-  }
-  if (!c) {
-    const mk = document.createElement("button"); mk.type = "button"; mk.className = "btn ghost"; mk.textContent = "Make full card";
-    mk.onclick = async () => {
-      mk.disabled = true; mk.textContent = "Card being made…";
-      try { await addWord(w.word); ans.remove(); extra.remove(); grades.remove(); showBack(w); }
-      catch (e) { mk.textContent = e.message; mk.classList.add("err"); }
-    };
-    extra.append(mk);
-  }
-  const grades = document.createElement("div"); grades.className = "grades";
-  [["again", "Again"], ["hard", "Hard"], ["good", "Good"], ["easy", "Easy"]].forEach(([g, label]) => {
-    const b = document.createElement("button"); b.type = "button"; b.className = `btn ghost ${g}`;
-    b.innerHTML = `${label}<small>${ivlText(nextIvl(w.srs, g))}</small>`;
-    b.onclick = () => {
-      grade(w, g); rq.shift(); rDone++;
-      if (g === "again") rq.splice(Math.min(3, rq.length), 0, w);  // see it again in a few cards
-      showFront();
-    };
-    grades.append(b);
+
+const NOTE = {
+  inferred: "The source doesn't record where this character came from. One part sounds like the whole and the other is its dictionary radical, so this is the likely meaning + sound split.",
+  unknown: "The source names the radical but doesn't say whether the rest carries meaning or sound, so the rest gets its own neutral color.",
+  pictographic: "This one started as a drawing: no meaning part or sound part. The whole shape is the picture.",
+  whole: "A single sign with no smaller parts."
+};
+function charPage(ch, i) {
+  const s = wordState, { saved, syl } = wordFacts(), d = cache[ch], here = syl[i] || d.p[0];
+  const page = el("div", "wpage");
+  const top = el("div", "cview");
+  page.append(top);
+  const showView = () => {
+    top.innerHTML = "";
+    const svg = svgFor(ch, true); top.append(svg);
+    const row = el("div", "btnrow");
+    row.append(btn("Stroke order", "btn ghost", () => animate(svg, ch)), btn("Write it", "btn", () => practice(top, ch, showView)));
+    top.append(row);
+  };
+  showView();
+  const other = d.p.filter(p => p !== here);
+  page.append(el("div", "chead", `<span class="cz" lang="zh">${ch}</span><span class="bigpy">${pyHTML(here)}</span>${sayHTML(ch)}<span class="kind">${KIND[d.k] || "Structure only"}</span>`));
+  page.append(el("p", "def", esc(d.d || "") + (other.length ? ` <span class="note">· also ${other.map(pyHTML).join(", ")}</span>` : "")));
+  const cc = saved && saved.card && (saved.card.chars || []).find(x => x.char === ch);
+  if (cc && cc.mnemonic) page.append(el("p", "mnem", `<b>Memory hook:</b> ${esc(cc.mnemonic)}`));
+  const comps = el("div", "comps");
+  d.c.forEach(c => {
+    const e = el("div", "comp");
+    e.style.borderColor = `color-mix(in srgb, var(--${c.r}) 45%, var(--line))`;
+    const match = c.r === "sound" && c.m ? `<span class="m">Sounds like ${ch} ${pyHTML(here)}? <b>${c.m}</b></span>` : "";
+    e.innerHTML = `<span class="f" lang="zh" style="color:var(--${c.r})">${c.f}</span>
+      <span class="r" style="color:var(--${c.r})"><b>${ROLE[c.r]}${c.i ? " (likely)" : ""}</b>${c.p ? " · " + pyHTML(c.p) : ""}</span>
+      <span class="g">${c.g || ""}</span>${match}`;
+    comps.append(e);
   });
-  box.append(ans, extra, grades);
+  page.append(comps);
+  if (d.h) page.append(el("p", "note", esc(d.k === "pictophonetic" ? `The meaning part points to: ${d.h}` : `Hint: ${d.h}`)));
+  if (NOTE[d.k]) page.append(el("p", "note", NOTE[d.k]));
+  return page;
 }
 
-// ---------- Import a word list, and back up / restore.
+// Writing practice: hints only on request or after 5 misses on a stroke. Grid starts on.
+function practice(top, ch, onBack) {
+  const d = cache[ch];
+  if (!d || typeof HanziWriter === "undefined") return;
+  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+  top.innerHTML = "";
+  const size = Math.min(260, top.clientWidth || 260, Math.floor(innerWidth * 0.66));
+  const box = el("div", "pad gridon"); top.append(box);
+  const lay = document.createElementNS(NS, "svg"); lay.setAttribute("class", "gridlay"); lay.setAttribute("viewBox", "0 0 1024 1024");
+  lay.innerHTML = '<g class="grid"><line x1="0" y1="512" x2="1024" y2="512"/><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="0" x2="1024" y2="1024"/><line x1="1024" y1="0" x2="0" y2="1024"/></g>';
+  box.append(lay);
+  const writer = HanziWriter.create(box, ch, {
+    width: size, height: size, padding: 12,
+    charDataLoader: (c, onLoad) => onLoad({ strokes: d.s, medians: d.md }),
+    showCharacter: false, showOutline: false,
+    outlineColor: col("--grid"), strokeColor: col("--fg"), drawingColor: col("--accent"), highlightColor: col("--sound"),
+    drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 5, markStrokeCorrectAfterMisses: false
+  });
+  const guides = el("div", "btnrow");
+  const toggle = (label, on, fn) => {
+    const b = el("button", "switch small", `<span class="track"><span class="knob"></span></span>${label}`); b.type = "button";
+    b.setAttribute("role", "switch"); b.setAttribute("aria-checked", on);
+    b.onclick = () => { const v = b.getAttribute("aria-checked") !== "true"; b.setAttribute("aria-checked", v); fn(v); };
+    guides.append(b);
+  };
+  toggle("Grid", true, v => box.classList.toggle("gridon", v));
+  toggle("Strokes", false, v => v ? writer.showOutline() : writer.hideOutline());
+  const coach = el("p", "coach"); const row = el("div", "btnrow");
+  top.append(guides, coach, row);
+  const total = d.s.length; let current = 0, firstTry = 0;
+  const say = m => { coach.innerHTML = `<b>Stroke ${Math.min(current + 1, total)} of ${total}</b> · ${m}`; };
+  say("Write it from memory, first stroke first.");
+  writer.quiz({
+    onCorrectStroke: s => { if (!s.mistakesOnStroke) firstTry++; current = s.strokeNum + 1; say(s.mistakesOnStroke ? "Got it." : ["Nice.", "Good.", "That's it.", "Yes."][s.strokeNum % 4]); },
+    onMistake: s => { const n = s.mistakesOnStroke; say(n >= 5 ? "Here's where it goes. Trace it." : n === 1 ? "Not quite. Try that stroke again." : `Not yet (${n} tries). Try again, or tap Hint.`); },
+    onComplete: () => { coach.innerHTML = `<b>Finished.</b> ${firstTry} of ${total} strokes on the first try.`; }
+  });
+  row.append(
+    btn("Hint", "btn", () => { writer.highlightStroke(current); say("That stroke is highlighted. Trace it."); }),
+    btn("Start over", "btn ghost", () => { writer.cancelQuiz(); practice(top, ch, onBack); }),
+    btn("Back to character", "btn ghost", () => { writer.cancelQuiz(); onBack(); })
+  );
+}
+
+// ================= words screen
+let filter = "all", pending = null;
+function renderStrip() {
+  const n = reviewQueue().length, strip = $("revStrip");
+  const tomorrow = myWords.filter(w => !w.skip && w.srs && w.srs.due > Date.now() && w.srs.due < midnight() + 2 * DAY).length;
+  strip.innerHTML = "";
+  const box = el("div", "revstrip" + (n ? "" : " idle"));
+  box.append(el("div", "", n ? `<b>${n} to review</b><br><span>${Math.min(n, reviewQueue().filter(w => !w.srs).length)} new · ${reviewQueue().filter(w => w.srs).length} due</span>`
+    : `<b>All caught up</b><br><span>${myWords.length ? (tomorrow ? `${tomorrow} due tomorrow` : "Nothing due soon") : "Add words to start reviewing"}</span>`));
+  if (n) box.append(btn("Start review", "btn", openReview));
+  else if (myWords.some(w => !w.srs && !w.skip)) box.append(btn(`Learn ${NEW_PER_DAY} more`, "btn", () => { const m = store.get("radical-newday", {}); store.set("radical-newday", { day: localDay(), n: (m.day === localDay() ? m.n : 0) - NEW_PER_DAY }); updateCounts(); openReview(); }));
+  strip.append(box);
+}
+function renderWords() {
+  renderStrip();
+  const counts = { all: myWords.length, due: 0, new: 0, learning: 0, known: 0 };
+  myWords.forEach(w => counts[wStatus(w)]++);
+  const f = $("filters"); f.innerHTML = "";
+  [["all", "All"], ["due", "Due"], ["new", "New"], ["learning", "Learning"], ["known", "Known"]].forEach(([k, label]) => {
+    if (k !== "all" && !counts[k]) return;
+    const b = btn(`${label} ${counts[k]}`, ""); b.setAttribute("aria-pressed", filter === k);
+    b.onclick = () => { filter = k; renderWords(); }; f.append(b);
+  });
+  if (filter !== "all" && !counts[filter]) filter = "all";
+  const list = $("wordList"); list.innerHTML = "";
+  const shown = myWords.map((w, i) => [w, i]).filter(([w]) => filter === "all" || wStatus(w) === filter)
+    .sort((a, b) => (b[0].added || "").localeCompare(a[0].added || "") || a[1] - b[1]).map(x => x[0]);
+  list.hidden = !shown.length;
+  shown.forEach(w => {
+    const r = el("button", "wrow", `<span class="wz" lang="zh">${esc(w.word)}</span><span class="wm">${esc(wMeaning(w))}</span><i class="dot ${wStatus(w)}" title="${wStatus(w)}"></i>`);
+    r.type = "button"; r.onclick = () => openWord(w.word, { context: w.context });
+    list.append(r);
+  });
+  if (!myWords.length) $("addStatus").textContent = "Add a word you're learning, paste a list, or import a file.";
+}
+
+// Add word(s): one word is added at once; several words (typed, pasted, or from a file) are shown first so you can drop any.
 const HAN_RUN = /[\p{Script=Han}～〜][\p{Script=Han}～〜，。？！、；：「」A-Za-z0-9 ]*[\p{Script=Han}。？！]/gu;
 function parseLine(line) {
-  line = line.trim().replace(/^[-*•]\s*/, "").replace(/^\[stated\]\s*/i, "");
+  line = line.trim().replace(/^[-*•]\s*/, "").replace(/^\[stated\]\s*/i, "").replace(/^\d+[.)]\s*/, "");
   if (!line || line.startsWith("#") || line.startsWith("(")) return null;
   let fields;
   if (line.includes("|")) fields = line.split("|").map(f => f.trim());
   else if (line.includes("\t")) fields = line.split("\t").map(f => f.trim());
-  else { const m = line.match(/^([\p{Script=Han}～〜]+)[\s,，:：]*(.*)$/u); if (!m) return null; fields = [m[1], "", m[2]]; }
-  let word = fields[0].replace(/\[.*?\]/g, "").replace(/\(.*?\)|（.*?）/g, "").split(/\s*\/\s*/)[0].replace(/\s+/g, "");
-  if (!/\p{Script=Han}/u.test(word)) return null;
-  const tab = !line.includes("|") && line.includes("\t");
-  const e = { word, pinyin: "", meaning: "", context: "", added: "" };
-  if (tab) e.meaning = fields.slice(1).join(" · ");
+  else { const m = line.match(/^([\p{Script=Han}～〜]+)[\s,，:：=-]*(.*)$/u); if (!m) return null; fields = [m[1], "", m[2]]; }
+  const word = fields[0].replace(/\[.*?\]/g, "").replace(/\(.*?\)|（.*?）/g, "").split(/\s*\/\s*/)[0].replace(/\s+/g, "");
+  if (!/\p{Script=Han}/u.test(word) || [...word].length > 8) return null;
+  const e = { word };
+  if (!line.includes("|") && line.includes("\t")) e.meaning = fields.slice(1).filter(Boolean).join(" · ");
   else {
-    e.pinyin = (fields[1] || "").split(/\s+\(/)[0].trim();
-    e.meaning = fields[2] || "";
-    if (!fields[1] && !fields[2]) e.meaning = "";
+    const rest = (fields[1] || "").split(/\s+\(/)[0].trim();
+    if (rest && !/\p{Script=Han}/u.test(rest)) e.pinyin = rest;
+    if (fields[2]) e.meaning = fields[2];
     const ctx = (fields[3] || "").match(HAN_RUN);
     if (ctx) { const best = ctx.sort((a, b) => b.length - a.length)[0].trim(); if ([...best].length >= 4) e.context = best; }
     const date = fields.find(f => /^\d{4}-\d\d-\d\d$/.test(f)); if (date) e.added = date;
   }
   if (/\bskip\b/i.test(fields.slice(1).join(" "))) e.skip = true;
-  if (/\p{Script=Han}/u.test(e.pinyin)) e.pinyin = "";
   return e;
 }
-async function importText(text) {
-  text = text.trim(); if (!text) return "Nothing to import.";
-  let incoming, skipped = 0;
+// Read candidates locally; if the text is messy (sentences, prose), ask Claude to pick out the vocabulary.
+async function findWords(text) {
+  text = text.trim();
   if (/^[\[{]/.test(text)) {
-    try { const j = JSON.parse(text); incoming = Array.isArray(j) ? j : j.words || []; }
-    catch (e) { return "That looks like a backup file, but it couldn't be read."; }
-  } else {
-    incoming = [];
-    text.split(/\r?\n/).forEach(l => { const e = parseLine(l); if (e) incoming.push(e); else if (/\p{Script=Han}/u.test(l)) skipped++; });
-    await ensure(incoming.map(e => e.word).join(""));
-    incoming.forEach(e => {
-      const d = lookup(e.word);
-      if (d && !e.pinyin) e.pinyin = d[2] || d[1];
-      if (d && !e.meaning) e.meaning = d[3];
-    });
+    try { const j = JSON.parse(text); return { list: Array.isArray(j) ? j : j.words || [], backup: true }; } catch (e) {}
   }
-  let added = 0, merged = 0;
-  incoming.forEach(e => {
-    if (!e || !e.word) return;
-    const have = findWord(e.word);
-    if (have) {
-      let changed = false;
-      for (const k of ["card", "srs", "pinyin", "meaning", "context"]) if (!have[k] && e[k]) { have[k] = e[k]; changed = true; }
-      if (changed) merged++;
-      return;
-    }
-    if (!e.added) e.added = localDay();
-    for (const k of Object.keys(e)) if (e[k] === "" ) delete e[k];
-    myWords.push(e); added++;
-  });
-  saveWords();
-  return `Imported ${added} new word${added === 1 ? "" : "s"}` + (merged ? `, updated ${merged}` : "")
-    + (incoming.length - added - merged > 0 ? `, ${incoming.length - added - merged} already there` : "")
-    + (skipped ? `, ${skipped} line${skipped === 1 ? "" : "s"} not understood` : "") + ".";
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  let list = [], messy = false;
+  for (const l of lines) {
+    const e = parseLine(l);
+    if (e) { list.push(e); continue; }
+    const runs = l.match(/[\p{Script=Han}～]+/gu) || [];
+    if (runs.some(r => [...r].length > 4)) messy = true;
+    runs.forEach(r => list.push({ word: r }));
+  }
+  if (lines.length === 1 && !/[|\t]/.test(lines[0])) {
+    const runs = lines[0].match(/[\p{Script=Han}～]+/gu) || [];
+    if (runs.length > 1) list = runs.map(r => ({ word: r }));
+  }
+  await ensure(list.map(e => e.word).join(""));
+  if (!messy) messy = list.some(e => [...e.word].length > 4 && !lookup(e.word));
+  if (messy && store.get("radical-pw", "")) {
+    try {
+      const { words: got } = await claude({ action: "words", text: text.slice(0, 4000) });
+      if (Array.isArray(got) && got.length) { list = got.filter(x => x && x.word); await ensure(list.map(e => e.word).join("")); return { list, viaClaude: true }; }
+    } catch (e) { /* fall back to the local guess */ }
+  }
+  return { list };
 }
-async function backup() {
+function dedupe(list) {
+  const seen = new Set(), out = [];
+  list.forEach(e => { if (e && e.word && !seen.has(e.word)) { seen.add(e.word); out.push(e); } });
+  return out;
+}
+function showPreview(found, source) {
+  const list = dedupe(found.list);
+  const fresh = list.filter(e => !findWord(e.word)), have = list.length - fresh.length;
+  const pv = $("preview"); pv.hidden = false; pv.innerHTML = "";
+  if (!list.length) {
+    pv.append(el("p", "note", `No Chinese words found${source ? " in that file" : ""}.`), btn("Close", "btn ghost small", closePreview));
+    return;
+  }
+  pending = fresh.map(e => ({ ...e, on: true }));
+  pv.append(el("p", "note", `Found ${list.length} word${list.length === 1 ? "" : "s"}${found.viaClaude ? " (picked out by Claude)" : ""}${found.backup ? " in a backup file" : ""}` +
+    (have ? `, ${have} already in your list` : "") + (fresh.length ? ". Tap a word to leave it out." : ".")));
+  const chips = el("div", "chips");
+  pending.forEach(e => {
+    const c = el("button", "chip", esc(e.word)); c.type = "button";
+    c.onclick = () => { e.on = !e.on; c.classList.toggle("off", !e.on); go_.textContent = label(); go_.disabled = !count(); };
+    chips.append(c);
+  });
+  const count = () => pending.filter(e => e.on).length, label = () => `${source ? "Import" : "Add"} ${count()}`;
+  const go_ = btn(label(), "btn", () => commitPending(found.backup));
+  go_.disabled = !count();
+  const acts = el("div", "row"); acts.append(go_, btn("Cancel", "btn ghost", closePreview));
+  pv.append(acts, chips);
+  pv.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+function closePreview() { pending = null; $("preview").hidden = true; $("preview").innerHTML = ""; }
+async function commitPending(isBackup) {
+  const take = (pending || []).filter(e => e.on);
+  await ensure(take.map(e => e.word).join(""));
+  let n = 0;
+  for (const e of [...take].reverse()) {
+    const { on, ...rest } = e;
+    if (isBackup) { myWords.push(rest); n++; continue; }
+    const d = lookup(rest.word);
+    const entry = { added: localDay(), ...rest };
+    if (d && !entry.pinyin) entry.pinyin = d[2] || d[1];
+    if (d && !entry.meaning) entry.meaning = d[3];
+    if (!entry.meaning && [...entry.word].length === 1 && cache[entry.word]) entry.meaning = cache[entry.word].d;
+    myWords.unshift(entry); n++;
+  }
+  saveWords(); closePreview(); $("addWord").value = ""; growAdd();
+  $("addStatus").textContent = `Added ${n} word${n === 1 ? "" : "s"}.`;
+  renderWords();
+}
+const growAdd = () => { const a = $("addWord"); a.style.height = "auto"; a.style.height = Math.min(a.scrollHeight + 2, 200) + "px"; };
+$("addWord").addEventListener("input", growAdd);
+$("addWord").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.target.value.includes("\n")) { e.preventDefault(); $("addGo").click(); } });
+$("addGo").onclick = async () => {
+  const text = $("addWord").value.trim(); if (!text) return;
+  const st = $("addStatus"); st.textContent = "Reading…";
+  const found = await findWords(text);
+  const list = dedupe(found.list);
+  st.textContent = "";
+  if (list.length === 1 && !found.viaClaude) {
+    const w = list[0];
+    if (findWord(w.word)) { st.textContent = `${w.word} is already in your list.`; return; }
+    const entry = await addEntry(w.word, { pinyin: w.pinyin, meaning: w.meaning, skip: w.skip });
+    $("addWord").value = ""; growAdd(); renderWords();
+    st.textContent = `Added ${entry.word}.`;
+    if (store.get("radical-pw", "")) makeCard(entry).then(() => { renderWords(); refreshWordPage(); }).catch(() => {});
+    return;
+  }
+  showPreview(found, null);
+};
+$("importFile").onchange = async e => {
+  const files = [...e.target.files]; e.target.value = "";
+  if (!files.length) return;
+  $("addStatus").textContent = "Reading…";
+  const all = { list: [] };
+  for (const f of files) { const r = await findWords(await f.text()); all.list.push(...r.list); all.backup ||= r.backup; all.viaClaude ||= r.viaClaude; }
+  $("addStatus").textContent = "";
+  if (all.backup) restoreProgress(all.list);
+  showPreview(all, files.length === 1 ? files[0].name : `${files.length} files`);
+};
+// A backup file restores cards and review progress onto words that are already in the list.
+function restoreProgress(list) {
+  let n = 0;
+  list.forEach(e => { const have = findWord(e.word); if (!have) return; for (const k of ["card", "srs", "context", "skip"]) if (!have[k] && e[k]) { have[k] = e[k]; n++; } });
+  if (n) saveWords();
+}
+
+// ================= review
+let rq = [], rDone = 0;
+async function openReview() {
+  rq = reviewQueue(); rDone = 0;
+  go("reviewScreen");
+  await ensure(rq.map(w => w.word).join(""));
+  showFront();
+}
+function bigWord(word) {
+  const box = el("div", "revchars"); box.lang = "zh";
+  [...word].forEach(ch => box.append(cache[ch] ? svgFor(ch, true) : el("span", "plain", esc(ch))));
+  return box;
+}
+function showFront() {
+  const box = $("revCard"), prog = $("revProg"); box.innerHTML = "";
+  if (!rq.length) {
+    prog.textContent = "";
+    box.append(el("p", "wmean", rDone ? `Done. ${rDone} card${rDone === 1 ? "" : "s"} reviewed.` : "Nothing to review right now."));
+    box.append(btn("Back to my words", "btn wide", () => history.back()));
+    return;
+  }
+  const w = rq[0];
+  prog.textContent = `· ${rq.length} left${w.srs ? "" : " · new"}`;
+  box.append(bigWord(w.word));
+  if (w.context) box.append(el("p", "revctx", w.context.split(w.word).map(esc).join(`<b>${esc(w.word)}</b>`)));
+  const show = btn("Show answer", "btn wide", () => { show.remove(); showBack(w); });
+  box.append(show);
+}
+function showBack(w) {
+  const box = $("revCard"), c = w.card, ans = el("div", "revans");
+  ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(wPinyin(w))}</span>${sayHTML(w.word)}`));
+  ans.append(el("p", "wmean", esc(wMeaning(w))));
+  if (c) {
+    (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
+    if (c.example) {
+      const ex = el("div", "wcard");
+      ex.append(el("p", "ex", `<span lang="zh">${esc(c.example)}</span> ${sayHTML(c.example, true)}`), el("p", "exp", esc(c.example_pinyin)));
+      const en = el("p", "exp", esc(c.example_en)); en.hidden = true; ex.append(en);
+      if (c.example_en) ex.append(btn("Show English", "btn ghost small", e => { en.hidden = !en.hidden; e.target.textContent = en.hidden ? "Show English" : "Hide English"; }));
+      ans.append(ex);
+    }
+  } else {
+    const mk = btn("Make full card with Claude", "btn ghost small", async () => {
+      mk.disabled = true; mk.textContent = "Card being made…";
+      try { await makeCard(w); ans.remove(); grades.remove(); showBack(w); } catch (e) { mk.textContent = e.message; mk.classList.add("err"); }
+    });
+    ans.append(el("div", "row"));
+    ans.lastChild.append(mk);
+  }
+  const grades = el("div", "grades");
+  [["again", "Again"], ["hard", "Hard"], ["good", "Good"], ["easy", "Easy"]].forEach(([g, label]) => {
+    const b = el("button", `btn ghost ${g}`, `${label}<small>${ivlText(nextIvl(w.srs, g))}</small>`); b.type = "button";
+    b.onclick = () => { grade(w, g); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
+    grades.append(b);
+  });
+  box.append(ans, grades);
+}
+
+// ================= settings
+async function openSettings(welcome) {
+  await ensure(SAMPLE.join(""));
+  buildPalettes();
+  $("setTitle").textContent = welcome ? "Pick your colors" : "Settings";
+  $("setIntro").hidden = !welcome; $("startBtn").hidden = !welcome; $("setBack").style.visibility = welcome ? "hidden" : "";
+  $("rate").value = rate; pickVoice();
+  $("pw").value = store.get("radical-pw", "");
+  go("settingsScreen");
+}
+function saveSettings() { store.set("radical-pw", $("pw").value.trim()); store.set("radical-palette", palette); }
+$("pw").addEventListener("change", saveSettings);
+$("startBtn").onclick = () => { saveSettings(); history.back(); };
+$("rate").addEventListener("input", e => { rate = +e.target.value; store.set("radical-rate", rate); });
+$("rateTest").onclick = () => speak("你好，歡迎使用 Radical。我們在登山口附近搭帳篷。");
+$("backupBtn").onclick = async () => {
   const name = `radical-words-${localDay()}.json`;
   const blob = new Blob([JSON.stringify({ app: "Radical", saved: new Date().toISOString(), words: myWords }, null, 1)], { type: "application/json" });
   const file = new File([blob], name, { type: "application/json" });
@@ -1113,81 +1232,20 @@ async function backup() {
   }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-}
-document.getElementById("reviewBtn").onclick = openReview;
-document.getElementById("revClose").onclick = closeReview;
-document.getElementById("backupBtn").onclick = backup;
-document.getElementById("importBtn").onclick = () => { const b = document.getElementById("importBox"); b.hidden = !b.hidden; };
-document.getElementById("importGo").onclick = async () => {
-  const st = document.getElementById("importStatus"), ta = document.getElementById("importText");
-  st.className = "note"; st.textContent = "Importing…";
-  st.textContent = await importText(ta.value); ta.value = ""; renderWordList();
-};
-document.getElementById("importFile").onchange = async e => {
-  const f = e.target.files[0]; if (!f) return;
-  const st = document.getElementById("importStatus");
-  st.className = "note"; st.textContent = "Importing…";
-  st.textContent = await importText(await f.text()); e.target.value = ""; renderWordList();
 };
 
-document.getElementById("pw").value = store.get("radical-pw", "");
-document.getElementById("pw").addEventListener("change", e => store.set("radical-pw", e.target.value.trim()));
-document.getElementById("wordsBtn").onclick = () => openWords();
-document.getElementById("wordsClose").onclick = closeWords;
-document.getElementById("wordsSheet").addEventListener("click", e => { if (e.target.id === "wordsSheet") closeWords(); });
-document.getElementById("addForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const input = document.getElementById("addWord"), status = document.getElementById("addStatus");
-  const word = input.value.trim(); if (!word) return;
-  status.className = "note"; status.textContent = `Card for ${word} being made…`;
-  try { const w = await addWord(word, ""); input.value = ""; status.textContent = ""; renderWordList(w.word); }
-  catch (err) { status.className = "note err"; status.textContent = err.message; }
-});
-// ---------- Text history. The current text is kept between visits; replaced texts go to history.
-let textHistory = store.get("radical-history", []);
-function remember(text) {
-  text = (text || "").trim();
-  if (!text) return;
-  textHistory = [{ text, at: localDay() }, ...textHistory.filter(h => h.text !== text)].slice(0, 30);
-  store.set("radical-history", textHistory);
-}
-function setText(text) {
-  const src = document.getElementById("src");
-  remember(src.value);
-  src.value = text; store.set("radical-text", text); remember(text);
-  if (!document.getElementById("charSheet").hidden) closeChar();
-  onNewText(); selected = null; render(); window.scrollTo({ top: 0, behavior: "smooth" });
-}
-function renderHistory() {
-  const list = document.getElementById("histList");
-  list.innerHTML = textHistory.length ? "" : `<p class="note">Nothing yet. Texts you replace show up here.</p>`;
-  textHistory.forEach(h => {
-    const row = document.createElement("div"); row.className = "hitem";
-    const load = document.createElement("button"); load.type = "button"; load.className = "load";
-    load.innerHTML = `<span class="ht" lang="zh">${esc(h.text.split("\n")[0])}</span><span class="note">${esc(h.at)} · ${[...h.text].length} characters</span>`;
-    load.onclick = () => { closeSheet("historySheet"); setText(h.text); };
-    const del = document.createElement("button"); del.type = "button"; del.className = "btn ghost small"; del.textContent = "Delete";
-    del.onclick = () => { textHistory = textHistory.filter(x => x !== h); store.set("radical-history", textHistory); renderHistory(); };
-    row.append(load, del); list.append(row);
-  });
-}
-document.getElementById("histBtn").onclick = () => { remember(document.getElementById("src").value); renderHistory(); openSheet("historySheet"); };
-document.getElementById("histClose").onclick = () => closeSheet("historySheet");
-document.getElementById("charClose").onclick = closeChar;
-document.getElementById("src").addEventListener("input", e => store.set("radical-text", e.target.value));
-document.getElementById("src").addEventListener("change", e => remember(e.target.value));
-// Tapping the dimmed background closes a sheet (not settings on first run).
-["charSheet", "historySheet", "reviewSheet"].forEach(id => document.getElementById(id).addEventListener("click", e => {
-  if (e.target.id !== id) return;
-  if (id === "charSheet") closeChar(); else if (id === "reviewSheet") closeReview(); else closeSheet(id);
-}));
-document.addEventListener("keydown", e => {
-  if (e.key !== "Escape") return;
-  const open = ["reviewSheet", "historySheet", "wordsSheet", "charSheet"].find(id => !document.getElementById(id).hidden);
-  if (open === "charSheet") closeChar(); else if (open === "reviewSheet") closeReview(); else if (open) closeSheet(open);
-});
-{ const saved = store.get("radical-text", null); if (saved && saved.trim()) document.getElementById("src").value = saved; }
-updateCount();
-onNewText();
-render();
+// ================= start
+(async function start() {
+  const t0 = Date.now();
+  { const saved = store.get("radical-text", null); if (saved && saved.trim()) $("src").value = saved; }
+  applyPalette(); onNewText(); updateCounts();
+  await ensure("部");
+  const mark = svgFor("部", false); $("brandMark").replaceWith(Object.assign(mark, { id: "brandMark" }));
+  const big = svgFor("部", false); big.setAttribute("class", "mark"); $("splashMark").replaceWith(big);
+  animate(big, "部", 3);
+  await render();
+  const hide = () => { $("splash").classList.add("out"); setTimeout(() => $("splash").remove(), 500); };
+  $("splash").onclick = hide;
+  setTimeout(() => { hide(); if (firstRun) openSettings(true); }, Math.max(0, 1500 - (Date.now() - t0)));
+})();
 </script>
