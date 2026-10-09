@@ -5,17 +5,17 @@
 /* Layout: paste box, then the text redrawn character by character, then the tapped character taken apart. */
 :root{
   --bg:#F2F4F7; --surface:#FFFFFF; --fg:#18202B; --muted:#5B6676; --line:#D9DEE6; --grid:#E3E7EE; --accent:#1F4AA8;
-  --meaning:#0E7C74; --sound:#C2410C; --idea:#7C3AED; --idea2:#1D4ED8; --radical:#4D7C0F; --whole:#A16207; --part1:#BE185D; --part2:#0E7490; --part3:#475569; --on:#2F9E5B;
+  --meaning:#0E7C74; --sound:#C2410C; --idea:#7C3AED; --idea2:#1D4ED8; --radical:#4D7C0F; --whole:#A16207; --part1:#BE185D; --part2:#0E7490; --part3:#9AA3AF; --on:#2F9E5B;
   --t1:#C62828; --t2:#B7791F; --t3:#2F855A; --t4:#2B6CB0; --t5:#6B7686;
   --font-zh:"Noto Serif TC","PingFang TC","Microsoft JhengHei",serif; --font-ui:"IBM Plex Sans",system-ui,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#11161D; --surface:#19202A; --fg:#E6EAF0; --muted:#98A3B3; --line:#2A3340; --grid:#232B36; --accent:#7EA2F2;
-  --meaning:#4FD1C5; --sound:#FB923C; --idea:#C4B5FD; --idea2:#93C5FD; --radical:#A3E635; --whole:#FBBF24; --part1:#F9A8D4; --part2:#67E8F9; --part3:#CBD5E1; --on:#3FBF73;
+  --meaning:#4FD1C5; --sound:#FB923C; --idea:#C4B5FD; --idea2:#93C5FD; --radical:#A3E635; --whole:#FBBF24; --part1:#F9A8D4; --part2:#67E8F9; --part3:#7D8796; --on:#3FBF73;
   --t1:#F87171; --t2:#FBBF24; --t3:#68D391; --t4:#63B3ED; --t5:#98A3B3; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#11161D; --surface:#19202A; --fg:#E6EAF0; --muted:#98A3B3; --line:#2A3340; --grid:#232B36; --accent:#7EA2F2;
-  --meaning:#4FD1C5; --sound:#FB923C; --idea:#C4B5FD; --idea2:#93C5FD; --radical:#A3E635; --whole:#FBBF24; --part1:#F9A8D4; --part2:#67E8F9; --part3:#CBD5E1; --on:#3FBF73;
+  --meaning:#4FD1C5; --sound:#FB923C; --idea:#C4B5FD; --idea2:#93C5FD; --radical:#A3E635; --whole:#FBBF24; --part1:#F9A8D4; --part2:#67E8F9; --part3:#7D8796; --on:#3FBF73;
   --t1:#F87171; --t2:#FBBF24; --t3:#68D391; --t4:#63B3ED; --t5:#98A3B3; color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);padding-inline:16px;padding-block:24px 56px}
 main{max-width:820px;margin:0 auto;display:grid;gap:18px}
@@ -31,6 +31,22 @@ textarea{font-family:var(--font-zh);font-size:1.15rem;line-height:1.6;padding:12
 .seg button{font-family:var(--font-zh);font-size:1.5rem;line-height:1;background:var(--surface);color:var(--muted);border:0;padding:10px 20px;min-width:56px;cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.gear{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;display:grid;place-items:center}
+.gear svg{width:22px;height:22px}
+.scrim{position:fixed;inset:0;background:color-mix(in srgb,var(--fg) 35%,transparent);display:grid;place-items:center;padding:16px;z-index:10}
+.scrim[hidden]{display:none}
+.sheet{background:var(--bg);border-radius:16px;padding:22px;width:min(560px,100%);max-height:90vh;overflow:auto;display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.sheet h2{margin:0;font-size:1.4rem}
+.sheet h3{margin:4px 0 0;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.pcard{display:grid;gap:8px;text-align:left;font:inherit;color:var(--fg);background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
+.pcard[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
+.pcard .preview{display:flex;gap:2px}
+.pcard .preview svg{width:40px;height:40px}
+.plabel{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.plabel span{font-size:.82rem;color:var(--muted)}
+.btn.big{justify-self:end;font-size:1rem;padding:11px 20px}
 .palettes{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .palettes button{font:inherit;font-size:.85rem;font-weight:500;background:var(--surface);color:var(--fg);border:0;padding:8px 12px;cursor:pointer;display:grid;gap:5px;justify-items:center}
 .palettes button+button{border-left:1px solid var(--line)}
@@ -40,6 +56,11 @@ textarea{font-family:var(--font-zh);font-size:1.15rem;line-height:1.6;padding:12
 .btnrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .btn.ghost{background:var(--surface);color:var(--accent);box-shadow:inset 0 0 0 1px var(--line)}
 .pad{border:1px solid var(--line);border-radius:10px;background:var(--surface);touch-action:none;max-width:100%}
+.pad.gridon{background-image:linear-gradient(var(--grid),var(--grid)),linear-gradient(var(--grid),var(--grid)),linear-gradient(45deg,transparent calc(50% - 1px),var(--grid) calc(50% - 1px),var(--grid) calc(50% + 1px),transparent calc(50% + 1px)),linear-gradient(-45deg,transparent calc(50% - 1px),var(--grid) calc(50% - 1px),var(--grid) calc(50% + 1px),transparent calc(50% + 1px));background-size:100% 2px,2px 100%,100% 100%,100% 100%;background-position:center,center,center,center;background-repeat:no-repeat}
+.switch.small{font-size:.9rem;padding:6px 12px 6px 6px}
+.switch.small .track{width:38px;height:22px}
+.switch.small .knob{width:16px;height:16px}
+.switch.small[aria-checked="true"] .knob{left:19px}
 .coach{margin:0;font-size:.9rem;color:var(--muted);text-align:center;min-height:2.6em;max-width:300px}
 .coach b{color:var(--fg)}
 .switch{display:inline-flex;align-items:center;gap:10px;font:inherit;font-size:1rem;font-weight:500;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 14px 8px 8px;cursor:pointer}
@@ -89,9 +110,12 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 
 <main>
-  <header>
-    <h1>Radical</h1>
-    <p class="sub">Paste any Chinese. Every character is redrawn with its meaning part and sound part in their own colors. Tap one to take it apart.</p>
+  <header class="top">
+    <div><h1>Radical</h1>
+    <p class="sub">Paste any Chinese. Every character is redrawn with its meaning part and sound part in their own colors. Tap one to take it apart.</p></div>
+    <button type="button" class="gear" id="gear" aria-label="Settings" title="Settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+    </button>
   </header>
 
   <label for="src" class="note">Your text (Traditional or Simplified)</label>
@@ -107,10 +131,10 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <span><i style="background:var(--idea)"></i><i style="background:var(--idea2)"></i>Two ideas</span>
       <span><i style="background:var(--radical)"></i>Radical only</span>
       <span><i style="background:var(--whole)"></i>Picture</span>
-      <span><i style="background:var(--part1)"></i><i style="background:var(--part2)"></i><i style="background:var(--part3)"></i>Other parts</span>
+      <span><i style="background:var(--part1)"></i><i style="background:var(--part2)"></i>Other parts</span>
+      <span><i style="background:var(--part3)"></i>Not placed</span>
     </div>
     <div class="controls">
-      <div class="palettes" role="group" aria-label="Colors" id="palettes"></div>
       <div class="seg" role="group" aria-label="Script">
         <button type="button" data-script="trad" aria-pressed="true" title="Traditional">繁</button>
         <button type="button" data-script="simp" aria-pressed="false" title="Simplified">简</button>
@@ -127,6 +151,16 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <p class="note">Stroke data: Make Me a Hanzi (open source, about 9,500 characters). Sound parts are hints, rated by how close they still sound, since many pronunciations have drifted. Text is read word by word with the CC-CEDICT dictionary, so pinyin follows the word; a dotted underline marks a lone character with more than one reading. Word lists are mainland-based, so a few Taiwan readings (訊息 xùnxí) may show the mainland form.</p>
 </main>
 
+<div class="scrim" id="settings" hidden>
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <h2 id="setTitle">Settings</h2>
+    <p class="note" id="setIntro" hidden>Every character is drawn with its parts in color. Choose the look you like. You can change it anytime from the gear icon.</p>
+    <h3>Colors</h3>
+    <div class="pgrid" id="paletteGrid"></div>
+    <button type="button" class="btn big" id="setClose">Done</button>
+  </section>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.4.2/dist/umd/full.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.3/dist/hanzi-writer.min.js"></script>
 <script>
@@ -141,20 +175,21 @@ const pyHTML = s => s ? `<span style="color:var(--t${tone(s)})">${s}</span>` : "
 const isHan = c => /\p{Script=Han}/u.test(c);
 const ROLES = ["meaning","sound","idea","idea2","radical","whole","part1","part2","part3"];
 const PALETTES = {
-  jade:  { name: "Jade",
-    light: ["#0E7C74","#C2410C","#7C3AED","#1D4ED8","#4D7C0F","#A16207","#BE185D","#0E7490","#475569"],
-    dark:  ["#4FD1C5","#FB923C","#C4B5FD","#93C5FD","#A3E635","#FBBF24","#F9A8D4","#67E8F9","#CBD5E1"] },
-  vivid: { name: "Vivid",
-    light: ["#059669","#E11D48","#9333EA","#2563EB","#65A30D","#D97706","#DB2777","#0891B2","#4B5563"],
-    dark:  ["#34D399","#FB7185","#D8B4FE","#60A5FA","#BEF264","#FCD34D","#F472B6","#22D3EE","#D1D5DB"] },
-  clear: { name: "Clear",  // based on the Okabe-Ito colorblind-safe set
-    light: ["#0072B2","#D55E00","#CC79A7","#009E73","#2E8BC0","#B88700","#882255","#3E9C8C","#333333"],
-    dark:  ["#56B4E9","#E69F00","#E59CC4","#2BC79B","#9BD3F2","#F0E442","#EE7AA8","#88CCBB","#DDDDDD"] },
-  off:   { name: "Off" }
+  jade:  { name: "Jade", blurb: "Deep jewel tones",
+    light: ["#0E7C74","#C2410C","#7C3AED","#1D4ED8","#4D7C0F","#A16207","#BE185D","#0E7490","#9AA3AF"],
+    dark:  ["#4FD1C5","#FB923C","#C4B5FD","#93C5FD","#A3E635","#FBBF24","#F9A8D4","#67E8F9","#7D8796"] },
+  pop:   { name: "Pop", blurb: "Bright and loud",
+    light: ["#0066FF","#FF1F8E","#00A83A","#FF7A00","#00A8C6","#B000F0","#C9A000","#E63900","#A0A7B4"],
+    dark:  ["#4D9AFF","#FF5CAD","#3DDC6B","#FFA733","#33D6EE","#D966FF","#FFE14D","#FF7A4D","#6B7280"] },
+  earth: { name: "Earth", blurb: "Soft ink and clay",
+    light: ["#3E5C76","#B5793A","#8C3B5A","#5B7F3A","#A4452C","#6B4E8A","#4E7A73","#8A7B3A","#A8A29E"],
+    dark:  ["#8FB3D1","#E3A867","#D17A9C","#9BBF6E","#E07A5F","#B39BD1","#8FC2B9","#CDBB6E","#78716C"] },
+  original: { name: "Original", blurb: "Plain black ink" }
 };
-let palette = "jade";
-try { palette = localStorage.getItem("radical-palette") || "jade"; } catch (e) {}
-if (!PALETTES[palette]) palette = "jade";
+let palette = null;
+try { palette = localStorage.getItem("radical-palette"); } catch (e) {}
+const firstRun = !PALETTES[palette];
+if (firstRun) palette = "jade";
 const darkQ = matchMedia("(prefers-color-scheme: dark)");
 function isDark() {
   const t = document.documentElement.dataset.theme;
@@ -163,24 +198,44 @@ function isDark() {
 function applyPalette() {
   const root = document.documentElement.style, p = PALETTES[palette];
   ROLES.forEach((r, i) => {
-    if (palette === "off") root.setProperty(`--${r}`, "var(--fg)");
+    if (palette === "original") root.setProperty(`--${r}`, "var(--fg)");
     else root.setProperty(`--${r}`, p[isDark() ? "dark" : "light"][i]);
   });
-  document.querySelectorAll("#palettes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === palette));
-  document.querySelector(".legend").style.opacity = palette === "off" ? ".45" : "1";
+  document.querySelectorAll("#paletteGrid button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === palette));
+  document.querySelector(".legend").hidden = palette === "original";
 }
+// Settings: a card per palette, each previewing real characters drawn in that palette.
+const SAMPLE = [..."河驚帳台長"];
 function buildPalettes() {
-  const box = document.getElementById("palettes");
+  const grid = document.getElementById("paletteGrid");
+  grid.innerHTML = "";
   Object.entries(PALETTES).forEach(([key, p]) => {
     const b = document.createElement("button");
-    b.type = "button"; b.dataset.p = key; b.title = key === "off" ? "No color" : `${p.name} colors`;
-    const colors = key === "off" ? ["var(--fg)","var(--fg)","var(--fg)","var(--fg)"] : p.light.slice(0, 6);
-    b.innerHTML = `<span class="strip">${colors.map(c => `<i style="background:${c}"></i>`).join("")}</span>${p.name}`;
+    b.type = "button"; b.dataset.p = key; b.className = "pcard";
+    const prev = document.createElement("span"); prev.className = "preview";
+    ROLES.forEach((r, i) => prev.style.setProperty(`--${r}`, key === "original" ? "var(--fg)" : p[isDark() ? "dark" : "light"][i]));
+    SAMPLE.forEach(c => { if (cache[c]) prev.append(svgFor(c, false)); });
+    const label = document.createElement("span"); label.className = "plabel";
+    label.innerHTML = `<b>${p.name}</b><span>${p.blurb}</span>`;
+    b.append(prev, label);
     b.onclick = () => { palette = key; try { localStorage.setItem("radical-palette", key); } catch (e) {} applyPalette(); };
-    box.append(b);
+    grid.append(b);
   });
+  applyPalette();
 }
-darkQ.addEventListener?.("change", applyPalette);
+async function openSettings(welcome) {
+  await ensure(SAMPLE.join(""));
+  buildPalettes();
+  document.getElementById("setTitle").textContent = welcome ? "Pick your colors" : "Settings";
+  document.getElementById("setIntro").hidden = !welcome;
+  document.getElementById("setClose").textContent = welcome ? "Start reading" : "Done";
+  document.getElementById("settings").hidden = false;
+}
+function closeSettings() {
+  try { localStorage.setItem("radical-palette", palette); } catch (e) {}
+  document.getElementById("settings").hidden = true;
+}
+darkQ.addEventListener?.("change", () => { applyPalette(); if (!document.getElementById("settings").hidden) buildPalettes(); });
 let script = "trad", typed = "trad", selected = null;
 
 let toTrad = s => s, toSimp = s => s;
@@ -381,13 +436,24 @@ function practice(big, ch) {
   writer = HanziWriter.create(box, ch, {
     width: size, height: size, padding: 12,
     charDataLoader: (c, onLoad) => onLoad({ strokes: d.s, medians: d.md }),
-    showCharacter: false, showOutline: true,
+    showCharacter: false, showOutline: false,
     outlineColor: col("--grid"), strokeColor: col("--fg"), drawingColor: col("--accent"), highlightColor: col("--sound"),
     drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 2, markStrokeCorrectAfterMisses: 3
   });
+  // The guide (faint outline plus practice grid) is off by default: write from memory, peek if needed.
+  const guide = document.createElement("button");
+  guide.type = "button"; guide.className = "switch small"; guide.setAttribute("role", "switch"); guide.setAttribute("aria-checked", "false");
+  guide.innerHTML = '<span class="track"><span class="knob"></span></span>Guide <span class="state">Off</span>';
+  guide.onclick = () => {
+    const on = guide.getAttribute("aria-checked") !== "true";
+    guide.setAttribute("aria-checked", on); guide.querySelector(".state").textContent = on ? "On" : "Off";
+    on ? writer.showOutline() : writer.hideOutline();
+    box.classList.toggle("gridon", on);
+  };
+  big.insertBefore(guide, status);
   const start = () => {
     current = 0; firstTry = 0; missesHere = 0;
-    say("Trace the faint shape, first stroke first.");
+    say("Write it from memory, first stroke first. Turn on the guide or tap Hint anytime.");
     writer.quiz({
       onCorrectStroke: s => {
         if (s.mistakesOnStroke === 0) firstTry++;
@@ -477,8 +543,11 @@ document.getElementById("pyBtn").onclick = e => {
   btn.querySelector(".state").textContent = on ? "On" : "Off";
   document.getElementById("reader").classList.toggle("nopy", !on);
 };
-buildPalettes();
 applyPalette();
+document.getElementById("gear").onclick = () => openSettings(false);
+document.getElementById("setClose").onclick = closeSettings;
+document.getElementById("settings").addEventListener("click", e => { if (e.target.id === "settings") closeSettings(); });
+if (firstRun) openSettings(true);
 onNewText();
 render();
 </script>
