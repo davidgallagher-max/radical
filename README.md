@@ -32,6 +32,14 @@ Vercel builds and hosts it on every push (`vercel.json` runs `scripts/build_site
 
 `raw/` and `data/` are generated and stay out of Git.
 
+## Claude features
+
+- **EN** at the end of each line: Claude translates it (cached on the device).
+- **+ Add to my words** under any tapped word, or type one into **My words**: Claude builds a card (pinyin, meaning, how each character is built, a memory hook, an example sentence, related words). Words are saved on this device only.
+- The page never sees the API key. `api/claude.js` runs on Vercel and reads two environment variables: `ANTHROPIC_API_KEY` and `APP_PASSWORD`. Enter the same password in Radical's settings (the gear).
+- Models: Sonnet for cards, Haiku for translations. Override with `CLAUDE_MODEL` / `CLAUDE_FAST_MODEL` in Vercel if needed.
+- These only work on the live site; `python3 -m http.server` has no `/api`.
+
 ## Next up
 1. Read text from photos and screenshots (on-device text recognition)
 2. Per-sentence translation, hidden until tapped (word glosses free; full sentences via AI, likely paid tier)

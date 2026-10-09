@@ -55,6 +55,31 @@ textarea{font-family:var(--font-zh);font-size:1.15rem;line-height:1.6;padding:12
 .plabel{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .plabel span{font-size:.82rem;color:var(--muted)}
 .btn.big{justify-self:end;font-size:1rem;padding:11px 20px}
+.topbtns{display:flex;gap:8px;align-items:center;flex:none}
+.wordsbtn{font:inherit;font-weight:500;font-size:.9rem;height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.wordsbtn span{display:inline-block;min-width:1.5em;margin-left:4px;padding:1px 6px;border-radius:999px;background:var(--accent);color:var(--surface);font-size:.8rem}
+.pwrow{display:grid;gap:6px}
+.pwrow input,.addrow input{font:inherit;font-size:1rem;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);min-width:0}
+.sheethead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.addrow{display:flex;gap:8px}
+.addrow input{flex:1;font-family:var(--font-zh);font-size:1.2rem}
+.wordlist{display:grid;gap:8px}
+.witem{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.witem>button{all:unset;cursor:pointer;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;padding:12px 14px;width:calc(100% - 28px)}
+.witem>button:focus-visible{outline:2px solid var(--accent)}
+.witem .wz{font-size:1.9rem}
+.witem .wm{color:var(--muted);font-size:.9rem}
+.wcard{display:grid;gap:12px;padding:0 14px 14px}
+.wcard .cpart{display:grid;grid-template-columns:56px 1fr;gap:2px 12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px}
+.wcard .cpart .cz{grid-row:span 3;font-family:var(--font-zh);font-size:2.4rem;text-align:center}
+.wcard .ex{font-family:var(--font-zh);font-size:1.5rem;line-height:1.6;margin:0}
+.wcard .exp{font-size:.95rem;color:var(--muted);margin:0}
+.wcard .row{display:flex;flex-wrap:wrap;gap:8px}
+.addword{margin-top:10px}
+.enbtn{font:inherit;font-size:.75rem;font-weight:600;letter-spacing:.04em;color:var(--accent);background:none;border:1px solid var(--line);border-radius:6px;padding:3px 7px;margin-left:6px;align-self:center;cursor:pointer}
+.trans{margin:-4px 0 6px;padding:8px 12px;border-left:3px solid var(--accent);color:var(--fg);font-size:.98rem;background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:0 8px 8px 0}
+.err{color:var(--sound)}
+#addWord,#pw{font:inherit;font-family:var(--font-zh),system-ui,sans-serif}
 .palettes{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .palettes button{font:inherit;font-size:.85rem;font-weight:500;background:var(--surface);color:var(--fg);border:0;padding:8px 12px;cursor:pointer;display:grid;gap:5px;justify-items:center}
 .palettes button+button{border-left:1px solid var(--line)}
@@ -65,7 +90,7 @@ textarea{font-family:var(--font-zh);font-size:1.15rem;line-height:1.6;padding:12
 .btn.ghost{background:var(--surface);color:var(--accent);box-shadow:inset 0 0 0 1px var(--line)}
 .pad{border:1px solid var(--line);border-radius:10px;background:var(--surface);touch-action:none;max-width:100%}
 .big .pad svg{background:transparent;border:0;border-radius:0;max-width:none;width:auto;aspect-ratio:auto}
-.pad.gridon{--gl:color-mix(in srgb,var(--muted) 45%,transparent);background-image:linear-gradient(var(--gl),var(--gl)),linear-gradient(var(--gl),var(--gl)),linear-gradient(45deg,transparent calc(50% - 1px),var(--gl) calc(50% - 1px),var(--gl) calc(50% + 1px),transparent calc(50% + 1px)),linear-gradient(-45deg,transparent calc(50% - 1px),var(--gl) calc(50% - 1px),var(--gl) calc(50% + 1px),transparent calc(50% + 1px));background-size:100% 2px,2px 100%,100% 100%,100% 100%;background-position:center,center,center,center;background-repeat:no-repeat}
+.pad{position:relative}.pad>svg.gridlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}.pad.gridon>svg.gridlay{display:block}.pad>svg:not(.gridlay){position:relative}
 .switch.small{font-size:.9rem;padding:6px 12px 6px 6px}
 .switch.small .track{width:38px;height:22px}
 .switch.small .knob{width:16px;height:16px}
@@ -114,7 +139,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .comp .g{font-size:.92rem;min-width:0;overflow-wrap:anywhere}
 .comp .m{font-size:.82rem;color:var(--muted)}
 .note{font-size:.8rem;color:var(--muted);margin:0}
-.grid line{stroke:var(--grid);stroke-width:6;stroke-dasharray:24 18}
+.grid line{stroke:color-mix(in srgb,var(--muted) 60%,transparent);stroke-width:9;stroke-linecap:round;stroke-dasharray:0.1 26}
 .grid rect{fill:none;stroke:var(--grid);stroke-width:8}
 </style>
 
@@ -122,9 +147,10 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <header class="top">
     <div><h1>Radical</h1>
     <p class="sub">Paste any Chinese. Every character is redrawn with its meaning part and sound part in their own colors. Tap one to take it apart.</p></div>
+    <div class="topbtns"><button type="button" class="wordsbtn" id="wordsBtn">My words <span id="wordCount">0</span></button>
     <button type="button" class="gear" id="gear" aria-label="Settings" title="Settings">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
-    </button>
+    </button></div>
   </header>
 
   <label for="src" class="note">Your text (Traditional or Simplified)</label>
@@ -160,12 +186,29 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <p class="note">Stroke data: Make Me a Hanzi (open source, about 9,500 characters). Sound parts are hints, rated by how close they still sound, since many pronunciations have drifted. Text is read word by word with the CC-CEDICT dictionary, so pinyin follows the word; a dotted underline marks a lone character with more than one reading. Word lists are mainland-based, so a few Taiwan readings (訊息 xùnxí) may show the mainland form.</p>
 </main>
 
+<div class="scrim" id="wordsSheet" hidden>
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="wordsTitle">
+    <div class="sheethead"><h2 id="wordsTitle">My words</h2><button type="button" class="btn ghost" id="wordsClose">Close</button></div>
+    <form class="addrow" id="addForm">
+      <input id="addWord" lang="zh" placeholder="Add a word, e.g. 帳篷" autocomplete="off">
+      <button type="submit" class="btn">Add</button>
+    </form>
+    <p class="note" id="addStatus"></p>
+    <div id="wordList" class="wordlist"></div>
+  </section>
+</div>
+
 <div class="scrim" id="settings" hidden>
   <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="setTitle">
     <h2 id="setTitle">Settings</h2>
     <p class="note" id="setIntro" hidden>Every character is drawn with its parts in color. Choose the look you like. You can change it anytime from the gear icon.</p>
     <h3>Colors</h3>
     <div class="pgrid" id="paletteGrid"></div>
+    <h3>Claude</h3>
+    <div class="pwrow">
+      <label for="pw" class="note">Password for the Claude features (the APP_PASSWORD you set in Vercel). Saved on this device only.</label>
+      <input id="pw" type="password" autocomplete="current-password" placeholder="Password">
+    </div>
     <button type="button" class="btn big" id="setClose">Done</button>
   </section>
 </div>
@@ -241,6 +284,7 @@ async function openSettings(welcome) {
   document.getElementById("settings").hidden = false;
 }
 function closeSettings() {
+  const pwEl = document.getElementById("pw"); if (pwEl) { try { localStorage.setItem("radical-pw", JSON.stringify(pwEl.value.trim())); } catch (e) {} }
   try { localStorage.setItem("radical-palette", palette); } catch (e) {}
   document.getElementById("settings").hidden = true;
 }
@@ -413,7 +457,7 @@ async function render() {
           py.className = "py" + (tok.chars.length === 1 && d.p.length > 1 ? " multi" : "");
           py.innerHTML = pyHTML(tok.syl[k]);
           b.append(py, svgFor(ch, false));
-          b.onclick = () => { selected = ch; reader.querySelectorAll(".cell").forEach(x => x.setAttribute("aria-pressed", x === b)); showChar(ch, tok, k); };
+          b.onclick = () => { selected = ch; reader.querySelectorAll(".cell").forEach(x => x.setAttribute("aria-pressed", x === b)); tok.line = lineText; showChar(ch, tok, k); };
           group.append(b);
         } else if (ch.trim()) {
           const s = document.createElement("span"); s.className = "glyph"; s.textContent = ch; group.append(s);
@@ -421,6 +465,10 @@ async function render() {
       });
       line.append(group);
     }
+    const en = document.createElement("button");
+    en.type = "button"; en.className = "enbtn"; en.textContent = "EN"; en.title = "Translate this line";
+    en.onclick = () => translateLine(lineText, line, en);
+    line.append(en);
     reader.append(line);
   });
   if (!selected) { const first = reader.querySelector(".cell"); if (first) first.click(); }
@@ -462,6 +510,10 @@ function practice(big, ch) {
     };
     guides.append(b);
   };
+  // Same dotted grid as the big character above, laid under the writing pad.
+  const lay = document.createElementNS(NS, "svg"); lay.setAttribute("class", "gridlay"); lay.setAttribute("viewBox", "0 0 1024 1024");
+  lay.innerHTML = '<g class="grid"><line x1="0" y1="512" x2="1024" y2="512"/><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="0" x2="1024" y2="1024"/><line x1="1024" y1="0" x2="0" y2="1024"/></g>';
+  box.prepend(lay);
   toggle("Grid", on => box.classList.toggle("gridon", on));
   toggle("Strokes", on => on ? writer.showOutline() : writer.hideOutline());
   big.insertBefore(guides, status);
@@ -503,6 +555,11 @@ async function showChar(ch, tok, pos) {
       <div class="wline"><span class="wz" lang="zh">${tok.chars.join("")}</span>
       <span class="bigpy">${tok.syl.map(pyHTML).join(" ")}</span></div>
       <p class="def">${tok.mean || ""}${tok.tw ? " (Taiwan reading)" : ""}</p>`;
+    wb.append(addButton(tok.chars.join(""), tok.line));
+    card.append(wb);
+  } else if (d) {
+    const wb = document.createElement("div"); wb.className = "wordbox";
+    wb.append(addButton(ch, tok && tok.line));
     card.append(wb);
   }
   const wrap = document.createElement("div"); wrap.className = "detail";
@@ -562,6 +619,129 @@ document.getElementById("gear").onclick = () => openSettings(false);
 document.getElementById("setClose").onclick = closeSettings;
 document.getElementById("settings").addEventListener("click", e => { if (e.target.id === "settings") closeSettings(); });
 if (firstRun) openSettings(true);
+
+// ---------- Claude features (word cards, translation). The key lives on the server; the page sends your password.
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+let myWords = store.get("radical-words", []);
+const transCache = store.get("radical-trans", {});
+const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function updateCount() { document.getElementById("wordCount").textContent = myWords.length; }
+
+async function claude(payload) {
+  const pw = store.get("radical-pw", "");
+  if (!pw) { openSettings(false); document.getElementById("pw").focus(); throw new Error("Add your Claude password in Settings first."); }
+  let r;
+  try {
+    r = await fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json", "x-app-password": pw }, body: JSON.stringify(payload) });
+  } catch (e) { throw new Error("Can't reach the server. Are you online?"); }
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 404) throw new Error("Claude features only work on the live site, not the Mac test server.");
+  if (!r.ok) throw new Error(data.error || `Something went wrong (${r.status}).`);
+  return data;
+}
+
+async function addWord(word, context) {
+  word = word.trim();
+  if (!word) return null;
+  const existing = myWords.find(w => w.word === word || (w.card && (w.card.word === word || w.card.simplified === word)));
+  if (existing) return existing;
+  const { card } = await claude({ action: "card", word, context: context || "" });
+  const entry = { word: card.word || word, card, context: context || "", added: new Date().toISOString().slice(0, 10) };
+  myWords.unshift(entry); store.set("radical-words", myWords); updateCount();
+  return entry;
+}
+
+function addButton(word, context) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "btn ghost addword";
+  const saved = () => myWords.some(w => w.word === word || (w.card && w.card.simplified === word));
+  const idle = () => { b.textContent = saved() ? `In my words ✓ · open` : `+ Add ${word} to my words`; b.disabled = false; };
+  idle();
+  b.onclick = async () => {
+    if (saved()) { openWords(word); return; }
+    b.disabled = true; b.textContent = "Claude is making the card…";
+    try { await addWord(word, context); idle(); }
+    catch (e) { b.textContent = e.message; b.classList.add("err"); setTimeout(() => { b.classList.remove("err"); idle(); }, 4000); }
+  };
+  return b;
+}
+
+function cardHTML(w) {
+  const c = w.card || {};
+  const parts = (c.chars || []).map(x => `<div class="cpart"><span class="cz" lang="zh">${esc(x.char)}</span>
+      <span class="bigpy">${pyHTML(esc(x.pinyin))}</span><span>${esc(x.parts)}</span><span class="note">${esc(x.mnemonic)}</span></div>`).join("");
+  const related = (c.related || []).map(r => `<span><b lang="zh">${esc(r.word)}</b> ${esc(r.pinyin)} · ${esc(r.meaning)}</span>`).join("<br>");
+  return `<div class="wcard">
+    ${c.simplified ? `<p class="note">Simplified: <span lang="zh-Hans" style="font-family:var(--font-zh);font-size:1.2rem">${esc(c.simplified)}</span></p>` : ""}
+    <div class="bigpy">${(c.pinyin || "").split(/\s+/).map(p => pyHTML(esc(p))).join(" ")}</div>
+    <p class="def">${esc(c.meaning)}${c.usage ? ` · ${esc(c.usage)}` : ""}</p>
+    ${parts}
+    ${c.example ? `<p class="ex" lang="zh">${esc(c.example)}</p><p class="exp">${esc(c.example_pinyin)}</p>
+      <p class="exp" hidden>${esc(c.example_en)}</p>` : ""}
+    ${related ? `<p class="note">${related}</p>` : ""}
+    ${w.context ? `<p class="note">Met in: <span lang="zh">${esc(w.context)}</span> · ${esc(w.added)}</p>` : `<p class="note">Added ${esc(w.added)}</p>`}
+    <div class="row">${c.example_en ? `<button type="button" class="btn ghost" data-act="en">Show English</button>` : ""}
+      <button type="button" class="btn ghost" data-act="read">Read it in Radical</button>
+      <button type="button" class="btn ghost" data-act="del">Remove</button></div>
+  </div>`;
+}
+
+function renderWordList(openWord) {
+  const list = document.getElementById("wordList");
+  list.innerHTML = myWords.length ? "" : `<p class="note">No words yet. Tap a character while reading and choose "Add to my words," or type one above.</p>`;
+  myWords.forEach((w, i) => {
+    const item = document.createElement("div"); item.className = "witem";
+    const head = document.createElement("button"); head.type = "button";
+    head.innerHTML = `<span class="wz" lang="zh">${esc(w.word)}</span><span class="bigpy">${pyHTML(esc((w.card && w.card.pinyin) || ""))}</span><span class="wm">${esc(w.card && w.card.meaning)}</span>`;
+    const body = document.createElement("div"); body.hidden = w.word !== openWord;
+    if (!body.hidden) body.innerHTML = cardHTML(w);
+    head.onclick = () => { body.hidden = !body.hidden; if (!body.hidden && !body.innerHTML) body.innerHTML = cardHTML(w); };
+    body.addEventListener("click", e => {
+      const act = e.target.dataset.act; if (!act) return;
+      if (act === "en") { const p = body.querySelector(".exp[hidden], .exp.shown"); const hid = body.querySelectorAll(".exp")[1]; hid.hidden = !hid.hidden; e.target.textContent = hid.hidden ? "Show English" : "Hide English"; }
+      if (act === "del") { myWords.splice(i, 1); store.set("radical-words", myWords); updateCount(); renderWordList(); }
+      if (act === "read") { const c = w.card || {}; document.getElementById("src").value = [w.word, c.example, w.context].filter(Boolean).join("\n"); closeWords(); onNewText(); selected = null; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+    });
+    item.append(head, body); list.append(item);
+  });
+}
+function openWords(openWord) { renderWordList(openWord); document.getElementById("wordsSheet").hidden = false; }
+function closeWords() { document.getElementById("wordsSheet").hidden = true; }
+
+async function translateLine(text, line, btn) {
+  const next = line.nextElementSibling;
+  if (next && next.classList.contains("trans")) {
+    const failed = next.classList.contains("err"); next.remove(); btn.textContent = "EN";
+    if (!failed) return;  // a failed try gets retried; a shown translation gets hidden
+  }
+  const box = document.createElement("p"); box.className = "trans"; line.after(box);
+  if (transCache[text]) { box.textContent = transCache[text]; btn.textContent = "Hide"; return; }
+  box.textContent = "Translating…"; btn.disabled = true;
+  try {
+    const { translation } = await claude({ action: "translate", sentence: text });
+    transCache[text] = translation; store.set("radical-trans", transCache);
+    box.textContent = translation; btn.textContent = "Hide";
+  } catch (e) { box.textContent = e.message; box.classList.add("err"); }
+  btn.disabled = false;
+}
+
+document.getElementById("pw").value = store.get("radical-pw", "");
+document.getElementById("pw").addEventListener("change", e => store.set("radical-pw", e.target.value.trim()));
+document.getElementById("wordsBtn").onclick = () => openWords();
+document.getElementById("wordsClose").onclick = closeWords;
+document.getElementById("wordsSheet").addEventListener("click", e => { if (e.target.id === "wordsSheet") closeWords(); });
+document.getElementById("addForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const input = document.getElementById("addWord"), status = document.getElementById("addStatus");
+  const word = input.value.trim(); if (!word) return;
+  status.className = "note"; status.textContent = `Claude is making a card for ${word}…`;
+  try { const w = await addWord(word, ""); input.value = ""; status.textContent = ""; renderWordList(w.word); }
+  catch (err) { status.className = "note err"; status.textContent = err.message; }
+});
+updateCount();
 onNewText();
 render();
 </script>
