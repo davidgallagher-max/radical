@@ -41,5 +41,4 @@ Vercel builds and hosts it on every push (`vercel.json` runs `scripts/build_site
 6. Wikipedia reading: search Chinese Wikipedia by topic or tap "Surprise me" for a random article, loaded straight into the reader in Taiwan Traditional (zh-tw). Intro first, "keep reading" for more. Free; CC BY-SA, so every article shows its source link. Later: pick articles by how many of their words are already in the word bank.
 
 ## Polish queue
-- Settings preview: bigger characters, sample phrase chosen to show every palette color at once
-- Writing guide: two switches, Grid and Strokes (outline), both off by default
+- Characters the data can't place (有, 學) are still mostly grey; find better splits

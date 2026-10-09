@@ -44,14 +44,14 @@ textarea{font-family:var(--font-zh);font-size:1.15rem;line-height:1.6;padding:12
 .gear svg{width:22px;height:22px}
 .scrim{position:fixed;inset:0;background:color-mix(in srgb,var(--fg) 35%,transparent);display:grid;place-items:center;padding:16px;z-index:10}
 .scrim[hidden]{display:none}
-.sheet{background:var(--bg);border-radius:16px;padding:22px;width:min(560px,100%);max-height:90vh;overflow:auto;display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.sheet{background:var(--bg);border-radius:16px;padding:22px;width:min(680px,100%);max-height:90vh;overflow:auto;display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
 .sheet h2{margin:0;font-size:1.4rem}
 .sheet h3{margin:4px 0 0;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
 .pcard{display:grid;gap:8px;text-align:left;font:inherit;color:var(--fg);background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
 .pcard[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
 .pcard .preview{display:flex;gap:2px}
-.pcard .preview svg{width:40px;height:40px}
+.pcard .preview svg{width:56px;height:56px}
 .plabel{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .plabel span{font-size:.82rem;color:var(--muted)}
 .btn.big{justify-self:end;font-size:1rem;padding:11px 20px}
@@ -64,7 +64,8 @@ textarea{font-family:var(--font-zh);font-size:1.15rem;line-height:1.6;padding:12
 .btnrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .btn.ghost{background:var(--surface);color:var(--accent);box-shadow:inset 0 0 0 1px var(--line)}
 .pad{border:1px solid var(--line);border-radius:10px;background:var(--surface);touch-action:none;max-width:100%}
-.pad.gridon{background-image:linear-gradient(var(--grid),var(--grid)),linear-gradient(var(--grid),var(--grid)),linear-gradient(45deg,transparent calc(50% - 1px),var(--grid) calc(50% - 1px),var(--grid) calc(50% + 1px),transparent calc(50% + 1px)),linear-gradient(-45deg,transparent calc(50% - 1px),var(--grid) calc(50% - 1px),var(--grid) calc(50% + 1px),transparent calc(50% + 1px));background-size:100% 2px,2px 100%,100% 100%,100% 100%;background-position:center,center,center,center;background-repeat:no-repeat}
+.big .pad svg{background:transparent;border:0;border-radius:0;max-width:none;width:auto;aspect-ratio:auto}
+.pad.gridon{--gl:color-mix(in srgb,var(--muted) 45%,transparent);background-image:linear-gradient(var(--gl),var(--gl)),linear-gradient(var(--gl),var(--gl)),linear-gradient(45deg,transparent calc(50% - 1px),var(--gl) calc(50% - 1px),var(--gl) calc(50% + 1px),transparent calc(50% + 1px)),linear-gradient(-45deg,transparent calc(50% - 1px),var(--gl) calc(50% - 1px),var(--gl) calc(50% + 1px),transparent calc(50% + 1px));background-size:100% 2px,2px 100%,100% 100%,100% 100%;background-position:center,center,center,center;background-repeat:no-repeat}
 .switch.small{font-size:.9rem;padding:6px 12px 6px 6px}
 .switch.small .track{width:38px;height:22px}
 .switch.small .knob{width:16px;height:16px}
@@ -213,7 +214,7 @@ function applyPalette() {
   document.querySelector(".legend").hidden = palette === "original";
 }
 // Settings: a card per palette, each previewing real characters drawn in that palette.
-const SAMPLE = [..."河驚帳台長"];
+const SAMPLE = [..."他河台營長"];  // together these show every color in a palette
 function buildPalettes() {
   const grid = document.getElementById("paletteGrid");
   grid.innerHTML = "";
@@ -448,20 +449,25 @@ function practice(big, ch) {
     outlineColor: col("--grid"), strokeColor: col("--fg"), drawingColor: col("--accent"), highlightColor: col("--sound"),
     drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 2, markStrokeCorrectAfterMisses: 3
   });
-  // The guide (faint outline plus practice grid) is off by default: write from memory, peek if needed.
-  const guide = document.createElement("button");
-  guide.type = "button"; guide.className = "switch small"; guide.setAttribute("role", "switch"); guide.setAttribute("aria-checked", "false");
-  guide.innerHTML = '<span class="track"><span class="knob"></span></span>Guide <span class="state">Off</span>';
-  guide.onclick = () => {
-    const on = guide.getAttribute("aria-checked") !== "true";
-    guide.setAttribute("aria-checked", on); guide.querySelector(".state").textContent = on ? "On" : "Off";
-    on ? writer.showOutline() : writer.hideOutline();
-    box.classList.toggle("gridon", on);
+  // Two separate helpers, both off by default: write from memory, turn on what you need.
+  const guides = document.createElement("div"); guides.className = "btnrow";
+  const toggle = (label, onChange) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "switch small"; b.setAttribute("role", "switch"); b.setAttribute("aria-checked", "false");
+    b.innerHTML = `<span class="track"><span class="knob"></span></span>${label} <span class="state">Off</span>`;
+    b.onclick = () => {
+      const on = b.getAttribute("aria-checked") !== "true";
+      b.setAttribute("aria-checked", on); b.querySelector(".state").textContent = on ? "On" : "Off";
+      onChange(on);
+    };
+    guides.append(b);
   };
-  big.insertBefore(guide, status);
+  toggle("Grid", on => box.classList.toggle("gridon", on));
+  toggle("Strokes", on => on ? writer.showOutline() : writer.hideOutline());
+  big.insertBefore(guides, status);
   const start = () => {
     current = 0; firstTry = 0; missesHere = 0;
-    say("Write it from memory, first stroke first. Turn on the guide or tap Hint anytime.");
+    say("Write it from memory, first stroke first. Turn on Grid or Strokes, or tap Hint, anytime.");
     writer.quiz({
       onCorrectStroke: s => {
         if (s.mistakesOnStroke === 0) firstTry++;
