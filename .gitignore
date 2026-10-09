@@ -7,3 +7,8 @@ public/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Secrets pulled by `vercel env pull` and Vercel's local link folder: never commit
+.env
+.env.*
+.vercel/

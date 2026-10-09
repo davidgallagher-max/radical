@@ -7,9 +7,11 @@ const API = "https://api.anthropic.com/v1/messages";
 const CARD_MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-5-5";
 const FAST_MODEL = process.env.CLAUDE_FAST_MODEL || "claude-haiku-5-5";
 
-const CARD_PROMPT = (word, context) => `You are making a study card for an adult learner of Taiwan Mandarin (low intermediate, Traditional characters).
+// The card prompt leaves out the learner's own sentence on purpose: the same word
+// then always gets the same request, so Vercel's CDN can reuse the card (see below).
+const CARD_PROMPT = (word) => `You are making a study card for an adult learner of Taiwan Mandarin (low intermediate, Traditional characters).
 Word: ${word}
-${context ? `Sentence where the learner met it: ${context}\n` : ""}
+
 Return ONLY a JSON object, no other text, with exactly these keys:
 {
   "word": "the word in Traditional characters",
@@ -55,21 +57,30 @@ function parseJSON(text) {
 }
 
 module.exports = async (req, res) => {
-  if (req.method !== "POST") return res.status(405).json({ error: "Use POST." });
+  if (req.method !== "POST" && req.method !== "GET") return res.status(405).json({ error: "Use GET or POST." });
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: "No API key on the server. Add ANTHROPIC_API_KEY in Vercel, Settings, Environment Variables, then redeploy." });
   }
   if (!process.env.APP_PASSWORD || req.headers["x-app-password"] !== process.env.APP_PASSWORD) {
     return res.status(401).json({ error: "Wrong or missing password. Set it in Radical's settings (the gear)." });
   }
-  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+  const body = req.method === "GET" ? (req.query || {})
+    : typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
   try {
     if (body.action === "card") {
       const word = String(body.word || "").trim().slice(0, 20);
       if (!word) return res.status(400).json({ error: "No word given." });
-      const text = await askClaude(CARD_MODEL, CARD_PROMPT(word, String(body.context || "").slice(0, 200)), 1200);
+      const text = await askClaude(CARD_MODEL, CARD_PROMPT(word), 1200);
       const card = parseJSON(text);
       if (!card) return res.status(502).json({ error: "Claude's answer wasn't readable. Try again." });
+      // Cards are the same for everyone, so let Vercel's CDN keep them for a year.
+      // The next request for this word (from any device) is answered from the cache
+      // without calling Claude. Best effort: the cache is per region and rarely used
+      // words can be dropped. Browsers are told not to cache (the page keeps its own copy).
+      if (req.method === "GET") {
+        res.setHeader("Vercel-CDN-Cache-Control", "max-age=31536000");
+        res.setHeader("Cache-Control", "public, max-age=0");
+      }
       return res.status(200).json({ card });
     }
     if (body.action === "translate") {
