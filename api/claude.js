@@ -135,7 +135,7 @@ module.exports = async (req, res) => {
       const items = (Array.isArray(body.items) ? body.items : []).slice(0, 15)
         .map(it => ({ t: String(it.t || "").slice(0, 60), s: String(it.s || "").slice(0, 400) })).filter(it => it.t);
       if (!items.length) return res.status(400).json({ error: "Nothing to rate." });
-      const out = parseJSON(await askClaude(FAST_MODEL, RATE_PROMPT(items), 200));
+      const out = parseJSON(await askClaude(FAST_MODEL, RATE_PROMPT(items), 700));  // room for one entry per article
       // Matched by number, so a skipped or extra entry can't shift every rating by one.
       const ratings = items.map(() => null);
       const clamp = v => { const n = Math.round(+v); return n >= 1 ? Math.min(10, n) : null; };
