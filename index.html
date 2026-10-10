@@ -784,7 +784,14 @@ document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-
 
 // ================= data
 let toTrad = s => s, toSimp = s => s;
-try { toTrad = OpenCC.Converter({ from: "cn", to: "tw" }); toSimp = OpenCC.Converter({ from: "tw", to: "cn" }); } catch (e) {}
+try {
+  const t = OpenCC.Converter({ from: "cn", to: "tw" });
+  // OpenCC writes 台 as the formal 臺 (臺灣, 舞臺). Everyday Taiwan writing uses 台, so keep 台 unless the text itself had 臺.
+  toTrad = s => { const out = t(s); if (!out.includes("臺")) return out;
+    const a = [...s], b = [...out];
+    return a.length === b.length ? b.map((c, i) => c === "臺" && a[i] !== "臺" ? "台" : c).join("") : (s.includes("臺") ? out : out.replace(/臺/g, "台")); };
+  toSimp = OpenCC.Converter({ from: "tw", to: "cn" });
+} catch (e) {}
 function loadShard(n) {
   if (!shardLoads[n]) shardLoads[n] = fetch(`data/zh-${String(n).padStart(2, "0")}.json`).then(r => r.ok ? r.json() : {}).then(d => Object.assign(cache, d)).catch(() => {});
   return shardLoads[n];
