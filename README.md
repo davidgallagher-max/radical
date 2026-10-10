@@ -34,6 +34,10 @@ Vercel builds and hosts it on every push (`vercel.json` runs `scripts/build_site
 
 `raw/` and `data/` are generated and stay out of Git.
 
+## Brand
+
+Scholar's Ink: night-blue ink, jade (meaning) and celadon blue (sound); Shippori Mincho B1 for the wordmark and titles, Zen Kaku Gothic New for text; 部 as the mark. Dark by default. Settings offers two other themes (Lacquer & Gold, Observatory) plus Original (plain ink). A soft highlight glides across large characters (follows the phone's tilt if allowed). Sounds are synthesized Chinese instruments (gongs, woodblock, guzheng, dizi, erhu), five variants per moment, picked at random; real recordings are a later upgrade.
+
 ## How the app is laid out
 
 - **Two tabs:** My text (讀) and My words (詞, with a badge for words due). Word, Review, History and Settings open as full pages with Back.

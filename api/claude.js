@@ -1,6 +1,6 @@
 // Radical's only server code. It holds the Anthropic API key (from Vercel's
-// environment variables, never from the page) and passes two kinds of requests
-// to Claude: build a study card for a word, or translate a sentence.
+// environment variables, never from the page) and passes requests to Claude:
+// study cards, translations, word lists, photo text, and Wikipedia search help.
 // The page must send the APP_PASSWORD, so strangers can't spend your credits.
 
 const API = "https://api.anthropic.com/v1/messages";
@@ -39,6 +39,15 @@ const TRANSLATE_PROMPT = (sentence) => `Translate this Chinese into natural Engl
 
 ${sentence}`;
 
+// Wikipedia helpers: turn an English search into Chinese search words, and rate articles for a learner.
+const ZHQUERY_PROMPT = (q) => `A learner wants to find Chinese Wikipedia articles about this topic, typed in English: "${q}"
+Give the Chinese search words a Chinese Wikipedia editor would use for it (Traditional characters, Taiwan usage, usually 1 to 4 words). Return only the Chinese, nothing else.`;
+
+const RATE_PROMPT = (items) => `Rate how hard each Chinese Wikipedia article below would be to read for an adult learner of Mandarin, from 1 (very easy: short sentences, everyday words) to 10 (very hard: dense technical, legal, scientific or classical vocabulary). Judge from the title and the opening text given.
+Return ONLY JSON: {"ratings":[n, n, ...]}, one whole number per article, in the same order.
+
+${items.map((it, k) => `${k + 1}. ${it.t}\n${it.s}`).join("\n\n")}`;
+
 async function askClaude(model, prompt, maxTokens) {
   const r = await fetch(API, {
     method: "POST",
@@ -51,7 +60,7 @@ async function askClaude(model, prompt, maxTokens) {
   });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) {
-    const msg = (data.error && data.error.message) || `Claude API error ${r.status}`;
+    const msg = (data.error && data.error.message) || `AI service error ${r.status}`;
     throw Object.assign(new Error(msg), { status: r.status });
   }
   return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
@@ -80,7 +89,7 @@ module.exports = async (req, res) => {
       if (!word) return res.status(400).json({ error: "No word given." });
       const text = await askClaude(CARD_MODEL, CARD_PROMPT(word), 1200);
       const card = parseJSON(text);
-      if (!card) return res.status(502).json({ error: "Claude's answer wasn't readable. Try again." });
+      if (!card) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       // Cards are the same for everyone, so let Vercel's CDN keep them for a year.
       // The next request for this word (from any device) is answered from the cache
       // without calling Claude. Best effort: the cache is per region and rarely used
@@ -95,7 +104,7 @@ module.exports = async (req, res) => {
       const text = String(body.text || "").trim().slice(0, 4000);
       if (!text) return res.status(400).json({ error: "No text given." });
       const out = parseJSON(await askClaude(FAST_MODEL, WORDS_PROMPT(text), 3000));
-      if (!out || !Array.isArray(out.words)) return res.status(502).json({ error: "Claude's answer wasn't readable. Try again." });
+      if (!out || !Array.isArray(out.words)) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       return res.status(200).json({ words: out.words.filter(w => w && typeof w.word === "string").slice(0, 80) });
     }
     if (body.action === "ocr") {
@@ -108,6 +117,20 @@ module.exports = async (req, res) => {
       ], 2000);
       return res.status(200).json({ text });
     }
+    if (body.action === "zhquery") {
+      const q = String(body.q || "").trim().slice(0, 120);
+      if (!q) return res.status(400).json({ error: "Nothing to search for." });
+      const zh = (await askClaude(FAST_MODEL, ZHQUERY_PROMPT(q), 60)).split("\n")[0].replace(/["“”「」]/g, "").trim();
+      return res.status(200).json({ zh });
+    }
+    if (body.action === "rate") {
+      const items = (Array.isArray(body.items) ? body.items : []).slice(0, 15)
+        .map(it => ({ t: String(it.t || "").slice(0, 60), s: String(it.s || "").slice(0, 400) })).filter(it => it.t);
+      if (!items.length) return res.status(400).json({ error: "Nothing to rate." });
+      const out = parseJSON(await askClaude(FAST_MODEL, RATE_PROMPT(items), 200));
+      const ratings = out && Array.isArray(out.ratings) ? out.ratings.map(n => Math.max(1, Math.min(10, Math.round(+n) || 0)) || null) : [];
+      return res.status(200).json({ ratings });
+    }
     if (body.action === "translate") {
       const sentence = String(body.sentence || "").trim().slice(0, 600);
       if (!sentence) return res.status(400).json({ error: "No sentence given." });
@@ -116,6 +139,6 @@ module.exports = async (req, res) => {
     }
     return res.status(400).json({ error: "Unknown action." });
   } catch (e) {
-    return res.status(e.status === 401 ? 502 : 500).json({ error: e.status === 401 ? "The API key was rejected by Anthropic. Check ANTHROPIC_API_KEY in Vercel." : e.message });
+    return res.status(e.status === 401 ? 502 : 500).json({ error: e.status === 401 ? "The server's API key was rejected. Check ANTHROPIC_API_KEY in Vercel." : e.message });
   }
 };

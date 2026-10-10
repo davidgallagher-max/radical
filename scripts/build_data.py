@@ -21,6 +21,7 @@ FORM_GLOSS = {
 OVERRIDES = {
     "稅": {"type": "pictophonetic", "semantic": "禾", "phonetic": "兌", "hint": "grain (taxes were once paid in grain)"},
     "税": {"type": "pictophonetic", "semantic": "禾", "phonetic": "兑", "hint": "grain (taxes were once paid in grain)"},
+    "決": {"type": "pictophonetic", "semantic": "氵", "phonetic": "夬", "hint": "water (to open a channel and let water through)"},
 }
 TONE_MARKS = {"ā":("a",1),"á":("a",2),"ǎ":("a",3),"à":("a",4),"ē":("e",1),"é":("e",2),"ě":("e",3),"è":("e",4),
     "ī":("i",1),"í":("i",2),"ǐ":("i",3),"ì":("i",4),"ō":("o",1),"ó":("o",2),"ǒ":("o",3),"ò":("o",4),
@@ -120,11 +121,22 @@ def entry(ch):
         hits = [p for p, f in nodes.items() if p and same(f, form) and "？" not in f]
         return min(hits, key=len) if hits else None
 
-    role_at, inferred = {}, False
+    role_at, inferred, inferred_part = {}, False, None
     if kind == "pictophonetic":
         sp, pp = find(ety.get("semantic", "")), find(ety.get("phonetic", ""))
         if sp: role_at[sp] = "meaning"
         if pp: role_at[pp] = "sound"
+        # One part found but not the other: the record often names the traditional form of a part
+        # (巠 in 颈 is written in its simplified shape), so the one remaining top-level part is the other job.
+        if bool(sp) != bool(pp) and len(kids) == 2:
+            found = sp or pp
+            rest = [(i,) for i in range(2) if (i,) != found[:1]]
+            other = nodes[rest[0]] if len(rest) == 1 else ""
+            if other and "？" not in other:
+                if pp:  # sound part found; the remaining part carries the meaning
+                    role_at[rest[0]] = "meaning"; inferred_part = rest[0]
+                elif sound_match(pinyin(ch), pinyin(other)) in ("same", "same sound, different tone", "rhymes"):
+                    role_at[rest[0]] = "sound"; inferred_part = rest[0]
     elif kind == "ideographic" and len(kids) > 1:
         for i, k in enumerate(kids):
             if "？" not in flat(k): role_at[(i,)] = "idea" if i % 2 == 0 else "idea2"
@@ -147,7 +159,7 @@ def entry(ch):
         one = len(form) == 1
         c = {"f": form, "r": role, "p": pinyin(form) if one else "", "g": gloss(form) if one else ""}
         if role == "sound": c["m"] = sound_match(pinyin(ch), c["p"])
-        if inferred: c["i"] = 1
+        if inferred or p == inferred_part: c["i"] = 1
         comps.append(c)
     for i, k in enumerate(kids):  # top-level parts not covered above, shown uncolored
         if not any(p[:1] == (i,) for p in role_at) and "？" not in flat(k):
