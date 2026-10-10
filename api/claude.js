@@ -48,6 +48,14 @@ Return ONLY JSON: {"ratings":[n, n, ...]}, one whole number per article, in the 
 
 ${items.map((it, k) => `${k + 1}. ${it.t}\n${it.s}`).join("\n\n")}`;
 
+// Simplify: rewrite one part of an article at a learner's level, keeping the facts.
+const LEVELS = { easy: "HSK 2 to 3 (about 600 to 1,200 common words): very short sentences, only everyday words", mid: "HSK 4 (about 2,000 words): short, clear sentences, common words; keep a few key topic words" };
+const SIMPLIFY_PROMPT = (text, level, trad) => `Rewrite this passage from Chinese Wikipedia for an adult learner of Mandarin at ${LEVELS[level] || LEVELS.mid}.
+Keep the facts, names, numbers and the order of ideas. Do not add anything that isn't in the passage. Shorter is fine; leave out minor details if needed.
+Keep one paragraph per paragraph of the original. Write in ${trad ? "Traditional" : "Simplified"} characters. Output only the rewritten Chinese, nothing else.
+
+${text}`;
+
 async function askClaude(model, prompt, maxTokens) {
   const r = await fetch(API, {
     method: "POST",
@@ -130,6 +138,12 @@ module.exports = async (req, res) => {
       const out = parseJSON(await askClaude(FAST_MODEL, RATE_PROMPT(items), 200));
       const ratings = out && Array.isArray(out.ratings) ? out.ratings.map(n => Math.max(1, Math.min(10, Math.round(+n) || 0)) || null) : [];
       return res.status(200).json({ ratings });
+    }
+    if (body.action === "simplify") {
+      const text = String(body.text || "").trim().slice(0, 2500), level = body.level === "easy" ? "easy" : "mid";
+      if (!text) return res.status(400).json({ error: "Nothing to simplify." });
+      const out = await askClaude(FAST_MODEL, SIMPLIFY_PROMPT(text, level, body.trad !== false), 2000);
+      return res.status(200).json({ text: out });
     }
     if (body.action === "translate") {
       const sentence = String(body.sentence || "").trim().slice(0, 600);
