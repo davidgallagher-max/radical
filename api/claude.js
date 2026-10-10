@@ -44,7 +44,7 @@ const ZHQUERY_PROMPT = (q) => `A learner wants to find Chinese Wikipedia article
 Give the Chinese search words a Chinese Wikipedia editor would use for it (Traditional characters, Taiwan usage, usually 1 to 4 words). Return only the Chinese, nothing else.`;
 
 const RATE_PROMPT = (items) => `Rate how hard each Chinese Wikipedia article below would be to read for an adult learner of Mandarin, from 1 (very easy: short sentences, everyday words) to 10 (very hard: dense technical, legal, scientific or classical vocabulary). Judge from the title and the opening text given.
-Return ONLY JSON: {"ratings":[n, n, ...]}, one whole number per article, in the same order.
+Return ONLY JSON: {"ratings":[{"n":1,"r":5},{"n":2,"r":7}, ...]}: one entry per article, "n" its number in the list and "r" its rating.
 
 ${items.map((it, k) => `${k + 1}. ${it.t}\n${it.s}`).join("\n\n")}`;
 
@@ -136,7 +136,13 @@ module.exports = async (req, res) => {
         .map(it => ({ t: String(it.t || "").slice(0, 60), s: String(it.s || "").slice(0, 400) })).filter(it => it.t);
       if (!items.length) return res.status(400).json({ error: "Nothing to rate." });
       const out = parseJSON(await askClaude(FAST_MODEL, RATE_PROMPT(items), 200));
-      const ratings = out && Array.isArray(out.ratings) ? out.ratings.map(n => Math.max(1, Math.min(10, Math.round(+n) || 0)) || null) : [];
+      // Matched by number, so a skipped or extra entry can't shift every rating by one.
+      const ratings = items.map(() => null);
+      const clamp = v => { const n = Math.round(+v); return n >= 1 ? Math.min(10, n) : null; };
+      if (out && Array.isArray(out.ratings)) out.ratings.forEach((x, k) => {
+        if (x && typeof x === "object") { const i = Math.round(+x.n) - 1; if (i >= 0 && i < items.length) ratings[i] = clamp(x.r); }
+        else if (out.ratings.length === items.length) ratings[k] = clamp(x);  // plain list of numbers, same length
+      });
       return res.status(200).json({ ratings });
     }
     if (body.action === "simplify") {
