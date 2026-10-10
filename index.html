@@ -121,14 +121,27 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .sizerow{display:flex;align-items:center;gap:8px;color:var(--muted);font-family:var(--font-zh)}
 .sizerow i{font-style:normal;font-size:.8rem}.sizerow b{font-weight:400;font-size:1.25rem}
 #sizeIn{flex:1;accent-color:var(--accent);min-width:0}
-.word.speaking .cell{background:color-mix(in srgb,var(--accent) 22%,transparent)}
+.word.speaking .cell{background:color-mix(in srgb,var(--accent) 30%,transparent);box-shadow:inset 0 -3px 0 var(--accent)}
 .listen{display:inline-flex;align-items:center;gap:8px;font-size:.95rem;font-weight:500;color:var(--accent);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:7px 14px 7px 11px;cursor:pointer}
 .listen i{width:0;height:0;border-left:10px solid currentColor;border-top:6px solid transparent;border-bottom:6px solid transparent}
 .listen[aria-pressed="true"] i{width:10px;height:11px;border:0;border-left:3.5px solid currentColor;border-right:3.5px solid currentColor}
 .listen[aria-pressed="true"] span::after{content:"ing"}
 .seg.simpseg{display:grid;grid-template-columns:repeat(3,1fr)}
 .seg.simpseg button{font-family:var(--font-ui);font-size:.85rem;line-height:1.2;padding:8px 6px}
+.seg.simpseg button{position:relative;overflow:hidden;isolation:isolate}
+.seg.simpseg button.working{background:var(--bg);color:var(--fg)}
+.seg.simpseg button.working::before{content:"";position:absolute;inset:0;z-index:-1;background:color-mix(in srgb,var(--accent) 55%,transparent);transform-origin:left;animation:fillup 9s cubic-bezier(.15,.7,.3,1) forwards}
+.seg.simpseg button.working::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,transparent,color-mix(in srgb,#fff 18%,transparent),transparent);animation:shimmer 1.4s linear infinite}
+@keyframes fillup{from{transform:scaleX(.04)}to{transform:scaleX(.94)}}
+@keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
 .simpnote{font-size:.78rem;color:var(--muted);margin:0 0 2px;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--accent) 10%,transparent)}
+/* Glint across reading characters: a band crosses each character, then rests; total cycle 6 seconds. */
+.glint{animation:glint 6s cubic-bezier(.45,.05,.55,.95) infinite}
+@keyframes glint{0%{transform:translateX(0)}30%{transform:translateX(2200px)}100%{transform:translateX(2200px)}}
+/* With tilt on, the glint stops sweeping by itself and sits where the phone's angle puts it. */
+.tilting .glint{animation:none;transform:translateX(calc(1100px + (var(--tp, .5) - var(--ph, .5)) * 3000px));transition:transform .12s linear}
+.nolight .lacq,.nolight .sheen{display:none}
+@media (prefers-reduced-motion:reduce){.glint{animation:none;display:none}}
 .docfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid var(--line);margin-top:4px}
 /* Peek strip: first tap on a word shows it here; a second tap (or tapping the strip) opens the word page. */
 .peek{position:fixed;left:12px;right:12px;bottom:calc(var(--tabh) + var(--bot) + 10px);max-width:736px;margin:0 auto;z-index:3;
@@ -241,6 +254,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .pnav{display:flex;justify-content:space-between;align-items:center;min-height:34px}
 .pnav button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-family:var(--font-zh);font-size:1.15rem;padding:4px 6px}
 .pnav i{width:9px;height:9px;border-top:2px solid currentColor;border-right:2px solid currentColor}
+.pnav .swipehint{font-family:var(--font-ui);font-size:.85rem;color:var(--muted);font-weight:500;gap:8px}
 .pnav .nx i{transform:rotate(45deg);animation:nudge 1.6s ease-in-out 2}
 .pnav .pv i{transform:rotate(-135deg)}
 @keyframes nudge{0%,100%{transform:translateX(0) rotate(45deg)}50%{transform:translateX(4px) rotate(45deg)}}
@@ -286,8 +300,8 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .revhead b{font-family:var(--font-brand);font-size:1.2rem;font-weight:800}
 .revhead span{flex:1;color:var(--muted);font-size:.88rem}
 .revhead .btn{padding:10px 22px;font-weight:700}
-.seg2{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.seg2 button{all:unset;cursor:pointer;text-align:center;padding:9px 4px;font-size:.88rem;font-weight:500;color:var(--fg)}
+.seg2{display:grid;grid-template-columns:repeat(4,minmax(max-content,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg2 button{all:unset;cursor:pointer;text-align:center;white-space:nowrap;padding:9px 5px;font-size:.88rem;font-weight:500;color:var(--fg)}
 .seg2 button+button{border-left:1px solid var(--line)}
 .seg2 button span{color:var(--muted);font-size:.8rem;margin-left:2px}
 .seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
@@ -295,7 +309,8 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .seg2 button:disabled{opacity:.4;cursor:default}
 .seg2.small{flex:1}
 .revcount{flex-wrap:nowrap}
-.revcount .note{flex:none}
+.revcount .note{flex:none;width:72px}
+.revcount .seg2{flex:1;min-width:0}
 .revstrip{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:14px;background:var(--accent);color:var(--surface)}
 .revstrip b{font-size:1.25rem}
 .revstrip span{font-size:.85rem;opacity:.9}
@@ -331,6 +346,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .stmenu b{display:block;font-weight:600;font-size:.95rem}.stmenu small{display:block;color:var(--muted);font-size:.78rem}
 .stmenu em{font-style:normal;color:var(--accent)}
 .stmenu .confirm small{color:var(--sound)}
+.stmenu .keep{border-top:1px solid var(--line);border-radius:0 0 10px 10px;margin-top:2px}
 .selbar{position:fixed;left:10px;right:10px;bottom:calc(var(--tabh) + var(--bot) + 10px);max-width:740px;margin:0 auto;z-index:6;background:var(--surface);border-radius:18px;
   box-shadow:0 0 0 1px var(--line),0 14px 36px rgba(0,0,0,.45);padding:10px 12px 12px;display:grid;gap:10px;animation:peekin .18s ease}
 .screen.hassel{padding-bottom:calc(var(--bot) + var(--tabh) + 150px)}
@@ -494,7 +510,8 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 <!-- WORD (opens over Read or Words) -->
 <section class="screen sub" id="wordScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back>Back</button><div class="wtabs" id="wtabs"></div><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="topbar"><button type="button" class="back" data-back id="wordBack">Back</button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="wtabs" id="wtabs"></div>
     <div class="pager" id="pager"></div>
   </div>
 </section>
@@ -533,7 +550,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
     <div class="brand" style="justify-content:center;padding:6px 0 2px"><svg id="aboutMark" viewBox="0 0 1024 1024" aria-hidden="true" style="width:56px;height:56px"></svg><b style="font-size:1.8rem">Radical</b></div>
     
     <div class="panel about">
-      <p>Radical draws every character from stroke data and colors its parts by job: the part that carries the meaning, the part that hints at the sound, two ideas combined, a picture, or a part whose origin isn't recorded. Sound parts are hints, rated by how close they still sound, since many pronunciations have drifted.</p>
+      <p>Radical draws every character from stroke data and colors its components by job: the component that carries the meaning, the component that hints at the sound, two ideas combined, a picture, or a component whose origin isn't recorded. Sound components are hints, rated by how close they still sound, since many pronunciations have drifted.</p>
       <p>Text is read word by word with the CC-CEDICT dictionary, so pinyin follows the word. A dotted underline marks a lone character with more than one reading. Word lists are mainland-based, so a few Taiwan readings (訊息 xùnxí) may show the mainland form.</p>
       <p>Credits: stroke and component data from Make Me a Hanzi (Arphic Public License and LGPL); word list from CC-CEDICT (CC BY-SA 4.0); Traditional/Simplified conversion by OpenCC; writing practice by Hanzi Writer (MIT). Sound uses your phone's own voice. Translations, word cards and photo reading use an AI model. Full credits and licenses are in the project's CREDITS.md.</p>
     </div>
@@ -568,7 +585,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 <section class="screen sub" id="settingsScreen" hidden>
   <div class="inner">
     <div class="topbar"><button type="button" class="back" data-back id="setBack">Back</button><h2 id="setTitle">Settings</h2><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
-    <p class="note" id="setIntro" hidden>Every character is drawn with its parts in color. Pick the look you like; you can change it later from the gear.</p>
+    <p class="note" id="setIntro" hidden>Every character is drawn with its components in color. Pick the look you like; you can change it later from the menu.</p>
     <h3 class="sec">Theme</h3>
     <div class="pgrid" id="paletteGrid"></div>
     <button type="button" class="btn wide" id="startBtn" hidden>Start reading</button>
@@ -579,8 +596,9 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
     <h3 class="sec">Sound and motion</h3>
     <div class="panel">
       <div class="row" style="justify-content:space-between"><span>Sounds (gongs, guzheng, dizi, erhu)</span><button type="button" class="switch small" id="soundSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
+      <div class="row" style="justify-content:space-between"><span>Light on the characters</span><button type="button" class="switch small" id="lightSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
       <div class="row" style="justify-content:space-between"><span>Light follows the phone's tilt</span><button type="button" class="switch small" id="tiltSw" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span></button></div>
-      <p class="note">Sounds play when you tap a character, check an answer, add a word, finish writing a character or finish a review, picked at random from five per moment. Without tilt, the light drifts slowly on its own.</p>
+      <p class="note">Sounds play when you tap a character, check an answer, add a word, finish writing a character or finish a review, picked at random from five per moment. The light gives characters a lacquer finish and a glint that sweeps across the text; with tilt on, tipping the phone moves it.</p>
     </div>
     <h3 class="sec">Speech speed</h3>
     <div class="panel">
@@ -643,7 +661,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("menu")
 
 const cache = {}, shardLoads = {}, words = {}, wordLoads = {};
 const ROLE = {meaning:"Meaning", sound:"Sound", idea:"Idea", idea2:"Idea", radical:"Meaning (radical)", part1:"Origin unclear", part2:"Origin unclear", part3:"Origin unclear", whole:"Picture"};
-const KIND = {pictophonetic:"Meaning + sound", ideographic:"Two ideas combined", pictographic:"Picture", whole:"Single piece", inferred:"Meaning + sound (likely)", unknown:"Meaning + unclear part"};
+const KIND = {pictophonetic:"Meaning + sound", ideographic:"Two ideas combined", pictographic:"Picture", whole:"Single piece", inferred:"Meaning + sound (likely)", unknown:"Meaning + unclear component"};
 const TONE = {"ā":1,"á":2,"ǎ":3,"à":4,"ē":1,"é":2,"ě":3,"è":4,"ī":1,"í":2,"ǐ":3,"ì":4,"ō":1,"ó":2,"ǒ":3,"ò":4,"ū":1,"ú":2,"ǔ":3,"ù":4,"ǖ":1,"ǘ":2,"ǚ":3,"ǜ":4};
 const tone = s => { for (const c of s || "") if (TONE[c]) return TONE[c]; return 5; };
 const isHan = c => /\p{Script=Han}/u.test(c);
@@ -701,22 +719,31 @@ function readAloud(lines, all) {
     };
     const u = new SpeechSynthesisUtterance(text);
     u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = rate;
-    let heard = false, timers = [];
-    u.onboundary = e => { if (e.name && e.name !== "word") return; heard = true; timers.forEach(clearTimeout); show(e.charIndex); };
-    u.onstart = () => {
-      show(0);
-      // Fallback: if the voice gives no positions, step through the words at about the speaking speed.
-      timers.push(setTimeout(() => {
-        if (heard) return;
-        let t = 0; const per = 1000 / (4.3 * rate);
-        [...text].reduce((i, ch) => {
-          const at = t; timers.push(setTimeout(() => { if (!heard) show(i); }, at));
-          t += /\p{Script=Han}/u.test(ch) ? per : /[，、；：]/.test(ch) ? per * 1.4 : /[。！？]/.test(ch) ? per * 2.2 : per * .25;
-          return i + ch.length;
-        }, 0);
-      }, 350));
+    readAloud.current = u;  // keep a reference: some browsers drop the events of an utterance nothing points to
+    let heard = false, ended = false, timers = [];
+    const clear = () => { timers.forEach(clearTimeout); timers = []; };
+    // Our own timeline: step through the words at about the speaking speed. It starts right away (iPhones don't
+    // always report when speech starts or where it is), restarts when the voice says it has started, and stops
+    // for good the moment the voice reports real positions.
+    const per = 1000 / (4.3 * rate);
+    let total = 0;
+    const timeline = delay => {
+      clear(); let t = delay;
+      [...text].reduce((i, ch) => {
+        const at = t; timers.push(setTimeout(() => { if (!heard) show(i); }, at));
+        t += /\p{Script=Han}/u.test(ch) ? per : /[，、；：]/.test(ch) ? per * 1.4 : /[。！？]/.test(ch) ? per * 2.2 : per * .25;
+        return i + ch.length;
+      }, 0);
+      total = t;
     };
-    u.onend = u.onerror = () => { timers.forEach(clearTimeout); setTimeout(next, 120); };
+    const done = () => { if (ended) return; ended = true; clear(); setTimeout(next, 120); };
+    u.onboundary = e => { if (e.name && e.name !== "word") return; if (!heard) clear(); heard = true; show(e.charIndex); };
+    u.onstart = () => { if (!heard) timeline(0); };
+    u.onend = u.onerror = done;
+    timeline(250);
+    // If the voice never says it has finished, check whether it's still talking once the line should be over.
+    const poll = () => { if (token !== readToken || ended) return; if (!speechSynthesis.speaking) done(); else setTimeout(poll, 400); };
+    setTimeout(poll, total + 400);
     speechSynthesis.speak(u);
   };
   next();
@@ -854,7 +881,6 @@ function applyPalette() {
   const root = document.documentElement.style, ui = uiOf(palette);
   for (const k in ui) root.setProperty(`--${k}`, ui[k]);
   ROLES.forEach((r, i) => root.setProperty(`--${r}`, palette === "original" ? "var(--fg)" : roleColor(palette, i)));
-  if (readerGrads.length) buildReaderLight();
   const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = ui.bg;
   document.querySelectorAll("#paletteGrid .pcard").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === palette));
   document.querySelector(".legend").hidden = palette === "original";
@@ -981,7 +1007,7 @@ function svgFor(ch, grid, light) {
 // ---- moving light: a soft highlight that glides over the strokes. It follows the phone's tilt when allowed,
 // otherwise it drifts slowly on its own.
 const lit = new Set();
-let lightId = 0, tilt = null;
+let lightId = 0, tilt = null, tiltFrame = 0;
 function sheenStops(k = 1) {
   const th = PALETTES[palette] || PALETTES.scholar, iris = th.sheen === "iris";
   const c = th.sheen && !iris ? th.sheen : "#fff", a = (th.sheenA || .4) * k;
@@ -998,47 +1024,34 @@ function addLight(svg, d) {
   svg.append(h); svg._grad = defs.firstElementChild; lit.add(svg);
   if (!lightRunning) requestAnimationFrame(lightTick);
 }
-// ---- light across the reading text. Every character on the page shares a handful of gradients, one per band
-// across the page, so a single slow glint sweeps over the text diagonally every few seconds. Cheap: only the
-// shared gradients move, not each character.
-const RL = 12;
-function buildReaderLight() {
-  let host = $("rlDefs");
-  if (!host) { host = document.createElementNS(NS, "svg"); host.id = "rlDefs"; host.setAttribute("aria-hidden", "true"); host.style.cssText = "position:absolute;width:0;height:0;overflow:hidden"; document.body.append(host); }
-  host.innerHTML = "<defs>" + Array.from({ length: RL }, (_, k) => `<linearGradient id="rl${k}" gradientUnits="userSpaceOnUse" x1="-3000" y1="0" x2="-2000" y2="0">${sheenStops(1.25)}</linearGradient>`).join("") + "</defs>";
-  readerGrads = [...host.querySelectorAll("linearGradient")];
-}
-let readerGrads = [], readerLightOn = false;
+// ---- light on the reading text. Each character gets a lacquer finish (lit from the top left, a touch darker at
+// the bottom right) and a bright band that sweeps across it every few seconds. The sweep is a CSS animation clipped
+// to the strokes, delayed by the character's place on the page, so the glint travels diagonally down the text.
+// Everything is local to each character (no shared gradients), which keeps Safari happy, and no script runs per frame.
+let glintN = 0;
 function lightReader(reader) {
-  if (palette === "original" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  if (!readerGrads.length) buildReaderLight();
+  if (palette === "original") return;
+  const th = PALETTES[palette] || PALETTES.scholar, iris = th.sheen === "iris", c = th.sheen && !iris ? th.sheen : "#fff";
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const box = reader.getBoundingClientRect(); if (!box.width) return;
   reader.querySelectorAll(".cell svg").forEach(svg => {
-    if (svg.querySelector(".sheen")) return;
+    if (svg.querySelector(".lacq")) return;
     const ch = svg.getAttribute("aria-label"), d = cache[ch]; if (!d) return;
-    const r = svg.getBoundingClientRect();
-    // Band by position: left to right and top to bottom, so the glint travels diagonally down the page.
-    const ph = ((r.left - box.left) / box.width) * .65 + ((r.top - box.top) / Math.max(box.height, 1)) * .35;
-    const k = Math.min(RL - 1, Math.max(0, Math.round(ph * (RL - 1))));
-    const h = document.createElementNS(NS, "g"); h.setAttribute("transform", "scale(1,-1) translate(0,-900)"); h.setAttribute("class", "sheen");
-    d.s.forEach(p => { const path = document.createElementNS(NS, "path"); path.setAttribute("d", p); path.setAttribute("fill", `url(#rl${k})`); h.append(path); });
-    svg.append(h);
+    const r = svg.getBoundingClientRect(), n = ++glintN;
+    const ph = ((r.left - box.left) / box.width) * .55 + ((r.top - box.top) / Math.max(box.height, 1)) * .45;
+    const paths = d.s.map(p => `<path transform="scale(1,-1) translate(0,-900)" d="${p}"/>`).join("");  // clipPath can't hold a <g>
+    const band = iris
+      ? `<stop offset="0" stop-color="#9BF6FF" stop-opacity="0"/><stop offset=".4" stop-color="#9BF6FF" stop-opacity=".75"/><stop offset=".55" stop-color="#FFB3E6" stop-opacity=".85"/><stop offset=".7" stop-color="#FFE29A" stop-opacity=".5"/><stop offset="1" stop-color="#FFE29A" stop-opacity="0"/>`
+      : `<stop offset="0" stop-color="${c}" stop-opacity="0"/><stop offset=".35" stop-color="${c}" stop-opacity=".45"/><stop offset=".5" stop-color="${c}" stop-opacity=".95"/><stop offset=".65" stop-color="${c}" stop-opacity=".45"/><stop offset="1" stop-color="${c}" stop-opacity="0"/>`;
+    const g = document.createElementNS(NS, "g"); g.setAttribute("class", "lacq");
+    g.innerHTML = `<defs><clipPath id="gc${n}">${paths}</clipPath>`
+      + `<linearGradient id="gl${n}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".38" stop-color="#fff" stop-opacity=".08"/><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".42"/></linearGradient>`
+      + `<linearGradient id="gb${n}" x1="0" y1="0" x2="1" y2="0">${band}</linearGradient></defs>`
+      + `<g clip-path="url(#gc${n})"><rect width="1024" height="1024" fill="url(#gl${n})"/>`
+      + (still ? "" : `<g transform="rotate(28 512 512)"><rect class="glint" x="-800" y="-600" width="440" height="2224" fill="url(#gb${n})" style="animation-delay:${(ph * 1.6).toFixed(2)}s;--ph:${ph.toFixed(3)}"/></g>`)
+      + `</g>`;
+    svg.append(g);
   });
-  if (!readerLightOn) { readerLightOn = true; requestAnimationFrame(readerTick); }
-}
-function readerTick(now) {
-  const read = $("readScreen");
-  if (read && !read.hidden && readerGrads.length) {
-    // A sweep crosses the page in about 4 seconds, then rests; a new one starts every 10 seconds.
-    const cyc = (now % 10000) / 4200, a = tilt ? .8 + tilt.g / 90 : .85, L = 1000;
-    readerGrads.forEach((gr, k) => {
-      let t = tilt ? .5 + tilt.b / 70 - k / RL * .5 : cyc * 1.6 - k / (RL - 1) * .6;
-      if (!tilt && (t < -.2 || t > 1.2)) t = -2;
-      const cx = 512 + Math.cos(a) * (t - .5) * L, cy = 512 + Math.sin(a) * (t - .5) * L, dx = Math.cos(a) * L / 2, dy = Math.sin(a) * L / 2;
-      gr.setAttribute("x1", cx - dx); gr.setAttribute("y1", 900 - (cy - dy)); gr.setAttribute("x2", cx + dx); gr.setAttribute("y2", 900 - (cy + dy));
-    });
-  }
-  requestAnimationFrame(readerTick);
 }
 let lightRunning = false;
 function lightTick(now) {
@@ -1058,8 +1071,17 @@ function lightTick(now) {
 }
 function useTilt(on) {
   store.set("radical-tilt", on);
-  if (!on) { tilt = null; return; }
-  const listen = () => window.addEventListener("deviceorientation", e => { if (e.beta != null) tilt = { b: Math.max(-35, Math.min(35, e.beta - 45)), g: Math.max(-45, Math.min(45, e.gamma)) }; });
+  if (!on) { tilt = null; document.documentElement.classList.remove("tilting"); return; }
+  const listen = () => window.addEventListener("deviceorientation", e => {
+    if (e.beta == null) return;
+    tilt = { b: Math.max(-35, Math.min(35, e.beta - 45)), g: Math.max(-45, Math.min(45, e.gamma)) };
+    // The reading text's glint follows too: one number for the whole page, set at most once a frame.
+    if (!tiltFrame) tiltFrame = requestAnimationFrame(() => {
+      tiltFrame = 0; if (!tilt) return;
+      const root = document.documentElement; root.classList.add("tilting");
+      root.style.setProperty("--tp", Math.max(-.4, Math.min(1.4, .5 + tilt.g / 50 + tilt.b / 140)).toFixed(3));
+    });
+  });
   const D = window.DeviceOrientationEvent;
   if (D && typeof D.requestPermission === "function") D.requestPermission().then(r => { if (r === "granted") listen(); }).catch(() => {});
   else listen();
@@ -1380,7 +1402,7 @@ function midnight(t = Date.now()) { const d = new Date(t); d.setHours(0, 0, 0, 0
 function newLeft() { const n = store.get("radical-newday", {}); return NEW_PER_DAY - (n.day === localDay() ? n.n : 0); }
 function countNew() { const day = localDay(), n = store.get("radical-newday", {}); store.set("radical-newday", { day, n: (n.day === day ? n.n : 0) + 1 }); }
 // Known words stay in rotation, but rarely: each one comes back after a long, slightly random wait (2 to 6 months),
-// so now and then one turns up as a surprise check. Missing it puts it back into Learning.
+// so now and then one turns up as a surprise check. Missing it makes it Active again.
 const KNOWN_MIN = 60, KNOWN_SPAN = 120;
 const knownWait = (ivl = 0) => Math.max(ivl, KNOWN_MIN + Math.round(Math.random() * KNOWN_SPAN));
 function freshSrs() { return { ivl: 0, ease: 2.5, reps: 0, lapses: 0, due: 0 }; }
@@ -1407,7 +1429,7 @@ function nextIvl(s, g) {
 function grade(w, g) {
   if (!w.srs) { w.srs = { ivl: 0, ease: 2.5, reps: 0, lapses: 0, due: 0 }; countNew(); }
   const s = w.srs, ivl = nextIvl(s, g);
-  if (w.skip && (g === "again" || g === "hard")) w.skip = false;  // a known word you missed goes back into Learning
+  if (w.skip && (g === "again" || g === "hard")) w.skip = false;  // a known word you missed becomes Active again
   if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); }
   else { s.ivl = w.skip ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
   saveWords();
@@ -1433,6 +1455,9 @@ async function openWord(word, opts = {}) {
   const chars = [...word].filter(c => cache[c]);
   if (!chars.length) return;
   wordState = { word, chars, ...opts };
+  // Say where Back goes: to the reading, the word list, or the flash cards.
+  const from = stack.length ? stack[stack.length - 1] : tab;
+  $("wordBack").textContent = { readScreen: "Back to reading", wordsScreen: "Back to my words", reviewScreen: "Back to flash cards", wikiScreen: "Back to Explore" }[from] || "Back";
   renderWordPages();
   go("wordScreen");
   $("pager").scrollLeft = 0;
@@ -1452,7 +1477,7 @@ function wordFacts() {
 function renderWordPages() {
   const s = wordState, pager = $("pager"), tabs = $("wtabs");
   pager.innerHTML = ""; tabs.innerHTML = "";
-  const labels = s.labels = [s.word, ...(s.chars.length > 1 ? s.chars : ["parts"])];
+  const labels = s.labels = [s.word, ...(s.chars.length > 1 ? s.chars : ["components"])];
   labels.forEach((l, i) => {
     const t = el("button", "", esc(l)); t.type = "button";
     t.onclick = () => pager.scrollTo({ left: i * pager.clientWidth, behavior: "smooth" });
@@ -1489,8 +1514,9 @@ function wordPage() {
   py.append(addBtn());
   page.append(py);
   page.append(el("p", "wmean", esc(mean) + (s.tw ? ` <span class="note">(Taiwan reading)</span>` : "")));
-  const nav = pageNav(0);  // on the word page the empty left side carries the swipe tip
-  nav.firstChild.replaceWith(el("span", "note", "Swipe for each character's parts and writing."));
+  // One line, and it's the way forward: no separate arrow repeating the next character.
+  const nav = el("div", "pnav"), go1 = el("button", "nx swipehint", `Swipe for each character's components and writing<i></i>`);
+  go1.type = "button"; go1.onclick = () => goPage(1); nav.append(el("span"), go1);
   page.append(nav);
   if (saved) page.append(savedCard(saved));
   return page;
@@ -1549,10 +1575,10 @@ function savedCard(w) {
 }
 
 const NOTE = {
-  inferred: "The source doesn't record where this character came from. One part sounds like the whole and the other is its dictionary radical, so this is the likely meaning + sound split.",
-  unknown: "The radical (the part dictionaries file it under) usually carries the meaning. Where the other part came from isn't recorded, so it gets the \"origin unclear\" color.",
-  pictographic: "This one started as a drawing: no meaning part or sound part. The whole shape is the picture.",
-  whole: "A single sign with no smaller parts."
+  inferred: "The source doesn't record where this character came from. One component sounds like the whole and the other is its dictionary radical, so this is the likely meaning + sound split.",
+  unknown: "The radical (the component dictionaries file it under) usually carries the meaning. Where the other component came from isn't recorded, so it gets the \"origin unclear\" color.",
+  pictographic: "This one started as a drawing: no meaning component or sound component. The whole shape is the picture.",
+  whole: "A single sign with no smaller components."
 };
 function charPage(ch, i) {
   const s = wordState, { saved, syl } = wordFacts(), d = cache[ch], here = syl[i] || d.p[0];
@@ -1586,7 +1612,7 @@ function charPage(ch, i) {
     comps.append(e);
   });
   page.append(comps);
-  if (d.h) page.append(el("p", "note", esc(d.k === "pictophonetic" ? `The meaning part points to: ${d.h}` : `Hint: ${d.h}`)));
+  if (d.h) page.append(el("p", "note", esc(d.k === "pictophonetic" ? `The meaning component points to: ${d.h}` : `Hint: ${d.h}`)));
   if (NOTE[d.k]) page.append(el("p", "note", NOTE[d.k]));
   return page;
 }
@@ -1643,7 +1669,7 @@ function pool(mode) {
   const live = myWords.filter(w => !w.skip);
   if (mode === "due") return reviewQueue();
   if (mode === "new") return live.filter(w => !w.srs);
-  if (mode === "learning") return live.filter(w => w.srs && !w.skip);
+  if (mode === "learning") return live.filter(w => wStatus(w) === "learning");  // Active: in rotation, not due yet
   return live;
 }
 function buildQueue(mode, count) {
@@ -1657,7 +1683,7 @@ function renderStrip() {
   const sizes = { due: pool("due").length, new: pool("new").length, learning: pool("learning").length, all: pool("all").length };
   if (!sizes[revMode]) revMode = ["due", "new", "learning", "all"].find(k => sizes[k]) || "due";
   const modes = el("div", "seg2");
-  [["due", "Due"], ["new", "New"], ["learning", "Learning"], ["all", "All"]].forEach(([k, label]) => {
+  [["due", "Due"], ["new", "New"], ["learning", "Active"], ["all", "All"]].forEach(([k, label]) => {
     const b = el("button", "", `${label} <span>${sizes[k]}</span>`); b.type = "button"; b.setAttribute("aria-pressed", revMode === k); b.disabled = !sizes[k];
     b.onclick = () => { revMode = k; store.set("radical-revmode", k); renderStrip(); }; modes.append(b);
   });
@@ -1670,9 +1696,11 @@ function renderStrip() {
   const head = el("div", "revhead", `<b>Flash cards</b><span>${nCards ? `${nCards} card${nCards === 1 ? "" : "s"}` : (myWords.length ? "Nothing in this set" : "Add words to start")}</span>`);
   const go_ = btn("Start", "btn", () => openReview(revMode, revCount)); go_.disabled = !nCards;
   head.append(go_);
-  box.append(head, modes, el("div", "row revcount", '<span class="note">How many</span>'), counts);
-  box.querySelector(".revcount").append(counts);
+  const typeRow = el("div", "row revcount", '<span class="note">What type?</span>'), countRow = el("div", "row revcount", '<span class="note">How many?</span>');
+  typeRow.append(modes); countRow.append(counts);
+  box.append(head, typeRow, countRow);
   if (revMode === "due") box.append(el("p", "note", "Due: words whose review date has come, plus up to 10 new words a day."));
+  if (revMode === "learning") box.append(el("p", "note", "Active: words in rotation that aren't due yet. Reviewing them early is fine."));
   strip.append(box);
 }
 function renderWords() {
@@ -1680,7 +1708,7 @@ function renderWords() {
   const counts = { all: myWords.length, due: 0, new: 0, learning: 0, known: 0 };
   myWords.forEach(w => counts[wStatus(w)]++);
   const f = $("filters"); f.innerHTML = "";
-  [["all", "All"], ["new", "New"], ["due", "Due"], ["learning", "Learning"], ["known", "Known"]].forEach(([k, label]) => {
+  [["all", "All"], ["new", "New"], ["due", "Due"], ["learning", "Active"], ["known", "Known"]].forEach(([k, label]) => {
     const b = el("button", "", `${k === "all" ? "" : `<i class="dot ${k}"></i>`}${label} ${counts[k]}`); b.type = "button"; b.dataset.k = k;
     b.setAttribute("aria-pressed", filter === k); b.disabled = !counts[k] && k !== "all";
     b.onclick = () => { filter = filter === k ? "all" : k; renderWords(); }; f.append(b);
@@ -1708,8 +1736,8 @@ function renderWords() {
 
 // ---- selecting words: circles on the left; a bar at the bottom acts on the selection.
 const picks = new Set();
-const STATUS_NAME = { new: "New", due: "Due", learning: "Learning", known: "Known" };
-const STATUS_ACTS = [["due", "Review now", "Due today"], ["learning", "Learning", "Back into rotation"], ["known", "Known", "Comes back rarely"], ["new", "Start over", "Progress wiped"]];
+const STATUS_NAME = { new: "New", due: "Due", learning: "Active", known: "Known" };
+const STATUS_ACTS = [["due", "Review now", "Due today"], ["learning", "Active", "Back into rotation"], ["known", "Known", "Comes back rarely"], ["new", "Start over", "Progress wiped"]];
 function statusMenu(anchor, ws) {
   closeStatusMenu();
   const m = el("div", "stmenu"); m.id = "stmenu"; m.setAttribute("role", "menu");
@@ -1725,6 +1753,9 @@ function statusMenu(anchor, ws) {
     };
     m.append(b);
   });
+  // Last row: leave it as it is (for when you only opened the menu to check the current status).
+  const keep = el("button", "keep", `<i></i><span><b>No change</b><small>${cur ? "Stays " + STATUS_NAME[cur] : "Leave as they are"}</small></span>`); keep.type = "button"; keep.setAttribute("role", "menuitem");
+  keep.onclick = closeStatusMenu; m.append(keep);
   document.body.append(m);
   const r = anchor.getBoundingClientRect(), mh = m.offsetHeight, mw = m.offsetWidth;
   m.style.top = Math.max(8, Math.min(innerHeight - mh - 8, r.bottom + 6 > innerHeight - mh ? r.top - mh - 6 : r.bottom + 6)) + "px";
@@ -2042,6 +2073,10 @@ $("pw").addEventListener("change", saveSettings);
 $("startBtn").onclick = () => { saveSettings(); history.back(); };
 $("soundSw").setAttribute("aria-checked", soundOn);
 $("soundSw").onclick = e => { soundOn = !soundOn; store.set("radical-sound", soundOn); e.currentTarget.setAttribute("aria-checked", soundOn); if (soundOn) play("tap"); };
+// Light on/off: off gives flat ink, with no finish, glint or sheen anywhere.
+const setLight = on => { document.documentElement.classList.toggle("nolight", !on); $("lightSw").setAttribute("aria-checked", on); };
+setLight(store.get("radical-light", true));
+$("lightSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-light", on); setLight(on); };
 $("tiltSw").setAttribute("aria-checked", store.get("radical-tilt", false));
 $("tiltSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; e.currentTarget.setAttribute("aria-checked", on); useTilt(on); };
 if (store.get("radical-tilt", false)) { useTilt(true); document.addEventListener("click", function once() { useTilt(true); document.removeEventListener("click", once); }); }
@@ -2071,6 +2106,7 @@ function showDocBar() {
   $("docTitle").innerHTML = t + (doc.url ? `<span class="src"><a href="${esc(doc.url)}" target="_blank" rel="noopener">${esc(doc.credit || "Source")}</a></span>` : "");
   $("docbar").querySelector(".docnav").hidden = doc.pages.length < 2;
   $("simpSeg").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.lv === (doc.lv || "")));
+  if (doc.unit === "Part") doc.unit = "Page";  // older saved articles
   $("docPage").textContent = `${doc.unit || "Page"} ${doc.i + 1} of ${doc.pages.length}`;
   $("docPrev").disabled = doc.i === 0; $("docNext").disabled = doc.i >= doc.pages.length - 1;
 }
@@ -2089,9 +2125,13 @@ async function showDocPage(i) {
   if (doc.lv && /\p{Script=Han}/u.test(text)) {
     doc.simp = doc.simp || {}; const key = i + ":" + doc.lv;
     if (!doc.simp[key]) {
+      // While the rewrite is being made, the chosen button fills up slowly, so it's clear something is happening.
+      const bt = $("simpSeg").querySelector(`[data-lv="${doc.lv}"]`); simpBusy = true; bt.classList.add("working");
       busy(doc.lv === "easy" ? "Making it easiest…" : "Making it easier…");
       try { const r = await claude({ action: "simplify", text: text.slice(0, 2500), level: doc.lv, trad: script !== "simp" }); if (!r.text) throw new Error("Nothing came back. Try again."); doc.simp[key] = r.text.trim(); busy(""); }
       catch (e) { busy(e.message); doc.lv = ""; }
+      finally { simpBusy = false; bt.classList.remove("working"); }
+      if (doc.lv) play("right");
     }
     if (doc.lv) text = doc.simp[key];
   }
@@ -2099,7 +2139,13 @@ async function showDocPage(i) {
   $("src").value = text; store.set("radical-text", text);
   showDocBar(); onNewText(); render(); $("readScreen").scrollTop = 0;
 }
-$("simpSeg").querySelectorAll("button").forEach(bt => bt.onclick = () => { if (!doc) return; doc.lv = bt.dataset.lv; play("tap"); showDocPage(doc.i); });
+let simpBusy = false;
+$("simpSeg").querySelectorAll("button").forEach(bt => bt.onclick = () => {
+  if (!doc || simpBusy || (doc.lv || "") === bt.dataset.lv) return;  // extra taps while it's working do nothing
+  play("tap");
+  $("simpSeg").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === bt));  // highlight right away
+  doc.lv = bt.dataset.lv; showDocPage(doc.i);
+});
 $("docPrev").onclick = () => showDocPage(doc.i - 1);
 $("docNext").onclick = () => showDocPage(doc.i + 1);
 
@@ -2243,7 +2289,7 @@ async function readOtherFile(f) {
   if (["txt", "text", "md"].includes(ext) || f.type.startsWith("text/")) return { title, parts: toParts(await readTextFile(f)) };
   throw new Error("That kind of file can't be opened. Try a photo, PDF, Word file, e-book, subtitles, text or spreadsheet.");
 }
-function openTextDoc(title, parts, unit = "Part") {
+function openTextDoc(title, parts, unit = "Page") {
   remember($("src").value);
   if (parts.length === 1) { setText(parts[0]); return; }
   doc = { title, unit, pages: parts, i: 0 }; pdfFile = null;
@@ -2308,7 +2354,7 @@ async function openArticle(title) {
     if (!pages.length) throw new Error("No readable text in that article.");
     remember($("src").value);
     const [en] = await englishTitles([pg.title]);
-    doc = { title: conv(pg.title), en: en || "", url: "https://zh.wikipedia.org/wiki/" + encodeURIComponent(pg.title), credit: "Wikipedia, CC BY-SA 4.0", unit: "Part", pages, i: 0 };
+    doc = { title: conv(pg.title), en: en || "", url: "https://zh.wikipedia.org/wiki/" + encodeURIComponent(pg.title), credit: "Wikipedia, CC BY-SA 4.0", unit: "Page", pages, i: 0 };
     // Explore is a tab now, so there is usually nothing to pop; if it was opened on top of something, unwind that.
     const depth = stack.length; stack.length = 0; setTab("readScreen");
     if (depth) try { history.go(-depth); } catch (e) {}
@@ -2329,8 +2375,9 @@ function noteTopic(zh, en) {
 function wikiLabels() {
   $("wikiRandomZh").textContent = script === "simp" ? "随机条目" : "隨機條目";
   const box = $("wikiTopics"); box.innerHTML = "";
-  const mine = [...myTopics].sort((a, b) => (b.n - a.n) || (b.at - a.at)).slice(0, 8).map(t => [t.zh, t.en]);
-  const list = [...mine, ...TOPICS.filter(([zh]) => !mine.some(m => m[0] === zh))].slice(0, 12);
+  // Nine chips (three rows of three): your topics first, starter topics fill whatever is left.
+  const mine = [...myTopics].sort((a, b) => (b.n - a.n) || (b.at - a.at)).slice(0, 9).map(t => [t.zh, t.en]);
+  const list = [...mine, ...TOPICS.filter(([zh]) => !mine.some(m => m[0] === zh))].slice(0, 9);
   list.forEach(([zh, en]) => {
     const b = el("button", "", `<b>${esc(conv(zh))}</b>${en ? `<span>${esc(en)}</span>` : ""}`); b.type = "button";
     b.onclick = () => { speak(conv(zh)); wikiSearch(conv(zh), en); };  // say it, then search
