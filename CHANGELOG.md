@@ -2,6 +2,13 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v28
+
+- The top bar (Back, 部 RADICAL, ☰) stays pinned on every page that opens on top: word page, flash cards, Review, Settings, History, About.
+- Listen card speeds are named for what they do: Normal, Spaced, One by one. (The iPhone voice won't stretch a single syllable, so the slower settings add gaps between syllables.)
+- On the answer side, the glow sweeps across the whole rating bar and leaves a faint glowing edge.
+- While Listen plays, a 慢–快 speed slider opens under the reading controls. It's the same setting as Settings → Speech speed, and letting go restarts the current sentence at the new speed.
+
 ## v27
 
 - 部 RADICAL is on every screen. On the tabs, once the header scrolls away a slim strip with the brand and ☰ stays at the top; on other pages a small 部 RADICAL sits in the middle of the top bar. Tapping it jumps back to the top. Back buttons are shorter (My words, Reading, Flash cards), and on flash cards "‹ Previous card" sits on its own line opposite the score.
