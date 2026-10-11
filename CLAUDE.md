@@ -12,7 +12,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 ## How we work
 
 - **Release flow:** David sends ideas from his phone; they're debated, decided and added to a numbered list. Nothing is built, committed or pushed until he says **"batch"**. Then Claude builds the whole list, tests it, and pushes straight to GitHub (`main`); Vercel deploys the live site automatically. No zips, no Terminal steps for David.
-- **Commits:** one commit per theme, named for what it does, with a type in front: `feat:` new feature, `fix:` bug, `style:` looks, `docs:` notes, `chore:` housekeeping. Tag the last commit of each batch with the version (`v22`, `v23`, ...) and add the version's changes to CHANGELOG.md in plain words. Versions go up by one per batch; don't skip numbers.
+- **Commits:** one commit per theme, named for what it does, with a type in front: `feat:` new feature, `fix:` bug, `style:` looks, `docs:` notes, `chore:` housekeeping. Each batch is a version (`v22`, `v23`, ...): add its changes to CHANGELOG.md in plain words, under the version number. (Git tags would be the usual way to mark versions, but pushing tags is blocked from Claude's cloud sessions, so the changelog is the record.) Versions go up by one per batch; don't skip numbers.
 - **If GitHub access isn't available,** fall back to a zip of the whole app (top folder `radical/`) and these steps, explaining each one:
   ```
   cd ~/Projects

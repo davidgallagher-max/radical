@@ -6,7 +6,7 @@ What changed in each version, in plain words. Newest first.
 
 - The latest v21 work is now actually live. It had been pushed into a nested `radical/radical` folder that Vercel ignores, so the live site was running an earlier v21.
 - Restoring a backup file now brings back writing-card progress, not just reading progress.
-- Added CLAUDE.md (how David and Claude work on Radical) and this changelog. Releases are now pushed by Claude on "batch", one commit per theme, tagged with the version.
+- Added CLAUDE.md (how David and Claude work on Radical) and this changelog. Releases are now pushed by Claude on "batch", one commit per theme, and recorded here by version.
 
 ## v21
 
