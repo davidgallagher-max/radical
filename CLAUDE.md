@@ -40,11 +40,14 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 - Reading: `buildLine()` makes the grid; first tap on a word picks it (peek strip), second opens the word page. `miniReader()` is the small reader used in card sentences (tap a word for a gloss strip with + Add and ×).
 - Characters: `svgFor()` draws strokes; `glyphFor()` returns the normal font instead when the "Original" look is chosen. `addLight()` is the 3D lighting on big characters; `lightReader()` adds the sparks in the reader.
 - Looks (Settings): Scholar's Ink (default), Lacquer & Gold, Observatory, Plain ink (key `original`: drawn strokes, one color), Original (key `font`: normal font, no color or light).
-- Words and review: `myWords` in localStorage (only on the phone until sign-in exists; Settings has "Save a backup file", restored with Import file on My words). Statuses New, Due, Active (internal key `learning`), Known. Known words come back every 60 to 180 days. Reading cards use `w.srs`; writing cards keep their own schedule in `w.wsrs`. `grade(w, g, k)`, `setStatus()`.
-- Flash cards: panel asks Practice? (Read / Write), What type?, How many?
+- Words and review: `myWords` in localStorage (only on the phone until sign-in exists; Settings has "Save a backup file", restored with Import file on My words). Statuses New, Due, Active (internal key `learning`), Known. Known words come back every 60 to 180 days. Reading cards use `w.srs`; writing cards keep their own schedule in `w.wsrs`, listening cards in `w.lsrs`. `grade(w, g, k)`, `setStatus()`.
+- Flash cards: panel asks Practice? (Read / Write / Listen), What type?, How many?
   - Read: guess pinyin and meaning, Check / I know it / Show answer. Tap a character for a random clue (its pinyin, meaning or sound); any clue caps the suggested rating at Hard. Pinyin is graded per syllable with tips (`checkPinyin`). Meaning: quick word match, then the `judge` AI action if that fails.
   - Write: pinyin, sound and meaning shown; write each character on the pad; after each character the app waits for "Next character ›" / "See answer" (`writeFront`). `brushLayer` draws the live stroke in its component color with the 3D lighting.
+  - Listen: the word is played (Play / Slower) without showing it; type pinyin and meaning; the characters appear on Check.
   - Header: "Card N of T · R repeats" and a running score (right / shaky / missed). ‹ Previous card undoes the last rating (`revHist`).
+- Progress record (recorded, not shown yet): `radical-days` holds a per-day tally (`c` cards reviewed, `r` characters read, `n` words added) via `logDay()`; a line counts as read after about 4 seconds on screen or when read aloud (`watchLines`). `learned` (`radical-learned`) lists learned words: earned when Known or a review gap reaches 21 days (`learn`), lost on Again or when the word is added back, including pasted lists (`unlearn`). Both go into backups and are merged on restore.
+- Pinned bars: the reading legend and controls (`#readBar`) and the My words filters stay pinned while scrolling (`pinned()` adds `.stuck`). A backup reminder shows on My words after a week or 100 reviews without a backup.
 - Read-along: `readAloud()` highlights words as the device voice speaks; stops on page turn or leaving the screen.
 - Explore: Wikipedia search by topic or English query (`zhquery`), difficulty rating 1 to 10 (`rate`), Easier / Easiest rewrite (`simplify`).
 
@@ -58,7 +61,13 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 - Mainland/Taiwan setting: Simplified as default (most learners), Taiwan as a toggle, card caches separated by region.
 - Grammar mode: catalog from the HSK skeleton, AI-drafted, native-speaker reviewed; multiple-choice and word-tile tests.
 - Domain, payments ($9.99 unlock plus an AI subscription), native apps, privacy policy.
-- Real instrument recordings; daily goal ring or streak.
+- Real instrument recordings.
+- "This week" card on My words and one quiet line under the 部 on the opening screen, built from the progress record: days studied (e.g. 5 of 7), cards per day, characters read per day, new words, and words learned shown as "312 learned · +14 this week · 3 back for review" (gains first; losses framed as back for review). No streak cliff and never sell streak protection; if a streak is ever added, give free rest days.
+- Daily target on the tab bar (the 詞 badge shows today's progress).
+- Notifications (cards due, at a chosen time): only after sign-in, since the server must know each device; iPhone needs the app on the Home Screen (iOS 16.4+).
+- First-run walkthrough: three short cards on what the colors mean, tapping words, saving and reviewing.
+- AI spending cap before sharing the app: a monthly cap in the Anthropic console and a per-device daily limit in `api/claude.js`.
+- Sentence-gap cards (the example sentence with the word blanked out), once pre-built cards exist.
 - Pre-built common cards; one-hour license check before charging.
 - Branding: Scholar's Ink now; David is tempted by Lacquer & Gold. Not decided.
 

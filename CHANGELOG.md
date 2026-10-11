@@ -2,6 +2,17 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v24
+
+- Reading controls are compact and stay pinned at the top while you scroll: the color legend on one line, then Traditional/Simplified, Pinyin, Listen and a Size button that opens the text-size slider.
+- The Add text and Read panels sit a touch darker than the page with a fine outline, and the tapped word and the word being read aloud are highlighted more strongly.
+- Lacquer & Gold has distinct colors: cinnabar, gold, jade, mother-of-pearl, ivory and bronze.
+- Flash card choices are outlined, so Start is the only solid button; Practice now includes Listen (hear the word, type its pinyin and meaning).
+- Writing: a wider pad, a thinner brush, Hint in the pad's corner, hints in the stroke's own color, and a clear finish for each character (check mark, glow, chime, pad locks).
+- My words: the filters fit on one row and stay pinned, and a reminder appears when it's been a week or 100 reviews since your last backup.
+- The app now quietly records daily progress and the words you've learned, for a "This week" view coming later.
+- Fixed: a card that failed to come back could leave the card screen redrawing itself.
+
 ## v23
 
 - Writing cards no longer rush you: a finished character stays on the pad until you tap "Next character ›", and the last one waits for "See answer".
