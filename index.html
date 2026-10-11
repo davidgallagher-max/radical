@@ -40,9 +40,12 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   padding:calc(var(--top) + 12px) 16px calc(var(--bot) + var(--tabh) + 24px)}
 .screen.sub{padding-bottom:calc(var(--bot) + 24px);z-index:5}
 .inner{max-width:760px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
+.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;min-height:44px}
+.topbar .spacer{justify-self:end}
+.topbar .back{display:block;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;line-height:44px}
+.topbar .back::before{display:inline-block;vertical-align:1px}
 .topbar h2{margin:0;font-family:var(--font-brand);font-size:1.15rem;font-weight:800;letter-spacing:.03em;flex:1;text-align:center}
-.topbar .spacer{width:72px;display:flex;justify-content:flex-end}
+.topbar .spacer{display:flex;justify-content:flex-end}
 .back{all:unset;cursor:pointer;color:var(--accent);font-weight:500;display:inline-flex;align-items:center;gap:4px;min-width:72px;height:44px}
 .back::before{content:"";width:9px;height:9px;border-left:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:rotate(45deg);margin-right:2px}
 .iconbtn{flex:none;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;display:grid;place-items:center;padding:0}
@@ -168,7 +171,10 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .sheetcard h3{margin:0;font-family:var(--font-brand);font-size:1.2rem}
 .sheetcard p{margin:0;line-height:1.5}
 .sheetcard .row .btn{flex:1;padding:12px}
-.revprev{all:unset;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--accent);padding:6px 4px;white-space:nowrap}  /* sits in the top bar, between Quit and the menu */
+.revprev{all:unset;cursor:pointer;font-family:var(--font-ui);font-size:.82rem;font-weight:600;color:var(--accent);padding:2px 0;white-space:nowrap}  /* under the card count */
+/* One line under the title: ‹ Previous card on the left, the running score on the right. */
+.revsub{display:flex;align-items:baseline;justify-content:space-between;gap:10px;min-height:1.4em;margin-top:-6px}
+.revsub .revscore{margin-top:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 @media (max-width:359px){#reviewScreen .scriptpick .sclabel{display:none}#reviewScreen .revtitle{font-size:1rem}}
 .revprev:focus-visible{outline:2px solid var(--accent);border-radius:6px}
 .revscore{display:block;font-family:var(--font-ui);font-size:.8rem;font-weight:500;color:var(--muted);margin-top:2px}
@@ -283,10 +289,20 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .fadeR{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent)}
 .fadeL{-webkit-mask-image:linear-gradient(to right,transparent,#000 26px);mask-image:linear-gradient(to right,transparent,#000 26px)}
 .fadeL.fadeR{-webkit-mask-image:linear-gradient(to right,transparent,#000 26px,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(to right,transparent,#000 26px,#000 calc(100% - 26px),transparent)}
-/* The menu stays reachable on a frozen bar: a small ☰ fixed at the bar's right end, shown only while it's stuck. */
-.stuckmenu{display:none;width:36px;height:36px}
-.stuckmenu svg{width:19px;height:19px}
-.stuck .stuckmenu{display:grid}
+/* Collapsing header: once a tab's 部 RADICAL header scrolls away, a slim strip with the brand and ☰ stays at the top.
+   Tapping the brand (here or in a sub-page's top bar) goes back to the top. Frozen bars stick just under the strip. */
+.minihead{position:fixed;left:0;right:0;top:0;z-index:6;height:calc(var(--top) + 40px);padding:var(--top) max(12px,calc((100vw - 760px) / 2)) 0;display:flex;align-items:center;justify-content:space-between;
+  background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+  transform:translateY(-100%);visibility:hidden;transition:transform .2s ease,visibility 0s .2s}
+.screen.collapsed .minihead{transform:none;visibility:visible;transition:transform .2s ease}
+.minihead .iconbtn{width:34px;height:34px}.minihead .iconbtn svg{width:18px;height:18px}
+@media (prefers-reduced-motion:reduce){.minihead{transition:none}}
+.topbrand{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;justify-self:center;padding:4px 6px;border-radius:8px}
+.topbrand svg{width:24px;height:24px}
+.topbrand b{font-family:var(--font-brand);font-weight:800;font-size:.9rem;letter-spacing:.16em;text-transform:uppercase}
+.topbrand:focus-visible{outline:2px solid var(--accent)}
+@media (max-width:359px){.topbar .topbrand b{display:none}}
+#readBar,.filterbar{top:28px}
 .reader{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 10px;display:grid;gap:10px;min-width:0}
 /* Reading text sits on an even grid, like a printed Chinese page: every character gets the same square, leftover
    width is shared out evenly, words may break across lines, and punctuation takes a full square. */
@@ -451,7 +467,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .revstrip .btn{background:var(--surface);color:var(--accent);font-weight:600}
 .revstrip.idle{background:var(--surface);color:var(--fg);border:1px solid var(--line)}
 .revstrip.idle .btn{background:var(--accent);color:var(--surface)}
-.filterbar{display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:4;background:var(--bg);margin:0 -16px;padding:6px 16px}
+.filterbar{display:flex;align-items:center;gap:8px;position:sticky;top:28px;z-index:4;background:var(--bg);margin:0 -16px;padding:6px 16px}
 .filters{flex:1;min-width:0;display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
 .filters::-webkit-scrollbar{display:none}
 .backupnote{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.82rem;color:var(--muted);padding:8px 12px;border:1px dashed color-mix(in srgb,var(--sound) 55%,var(--line));border-radius:12px}
@@ -665,6 +681,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 <!-- READ -->
 <section class="screen" id="readScreen">
   <div class="inner">
+    <div class="minihead" aria-hidden="true"><button type="button" class="topbrand" tabindex="-1" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><button type="button" class="iconbtn menubtn" tabindex="-1" aria-label="Menu" aria-haspopup="true"></button></div>
     <header class="readhead">
       <div class="brand"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
@@ -699,7 +716,6 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
           <span><i style="background:var(--whole)"></i>Picture</span>
           <span><i style="background:var(--part1)"></i>Unclear</span>
         </div>
-        <button type="button" class="iconbtn menubtn stuckmenu" aria-label="Menu" aria-haspopup="true"></button>
       </div>
       <div class="row ctlrow">
         <div class="ctl"><span class="ctl-label">Traditional / Simplified</span>
@@ -733,12 +749,13 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 <!-- WORDS -->
 <section class="screen" id="wordsScreen" hidden>
   <div class="inner">
+    <div class="minihead" aria-hidden="true"><button type="button" class="topbrand" tabindex="-1" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><button type="button" class="iconbtn menubtn" tabindex="-1" aria-label="Menu" aria-haspopup="true"></button></div>
     <header class="readhead">
       <div class="brand"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
     <h3 class="sec tabsec"><span lang="zh">詞</span>My words</h3>
-    <div class="filterbar" id="filterBar"><div class="filters" id="filters"></div><button type="button" class="iconbtn menubtn stuckmenu" aria-label="Menu" aria-haspopup="true"></button></div>
+    <div class="filterbar" id="filterBar"><div class="filters" id="filters"></div></div>
     <p class="backupnote" id="backupNote" hidden></p>
     <div id="revStrip"></div>
     <div class="addbox">
@@ -760,7 +777,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 <!-- WORD (opens over Read or Words) -->
 <section class="screen sub" id="wordScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back id="wordBack">Back</button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="topbar"><button type="button" class="back" data-back id="wordBack">Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
     <div class="wtabrow"><div id="wordScript"></div><div class="wtabs" id="wtabs"></div></div>
     <div class="pager" id="pager"></div>
   </div>
@@ -769,8 +786,9 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 <!-- REVIEW -->
 <section class="screen sub" id="reviewScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back id="revQuit">Quit</button><button type="button" class="revprev" id="revPrev" style="visibility:hidden">‹ Previous card</button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
-    <div class="revhead"><h2 class="revtitle">Flash cards <span class="note" id="revProg"></span><span class="revscore" id="revScore"></span></h2><div id="revScript"></div></div>
+    <div class="topbar"><button type="button" class="back" data-back id="revQuit">Quit</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="revhead"><h2 class="revtitle">Flash cards <span class="note" id="revProg"></span></h2><div id="revScript"></div></div>
+    <div class="revsub"><button type="button" class="revprev" id="revPrev" style="visibility:hidden">‹ Previous card</button><span class="revscore" id="revScore"></span></div>
     <div id="revCard" class="revcard"></div>
     <div class="revbar" id="revBar"></div>
   </div>
@@ -779,7 +797,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 <!-- REVIEW LIST: look through words card by card, no grading -->
 <section class="screen sub" id="lookScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back>Back to my words</button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="topbar"><button type="button" class="back" data-back>My words</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
     <div class="lookhead"><h2 class="revtitle">Review <span class="note" id="lookProg"></span></h2>
       <button type="button" class="switch small" id="shuffleSw" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Shuffle</button></div>
     <div id="lookCard" class="revcard lookcard"></div>
@@ -790,6 +808,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 <!-- WIKIPEDIA -->
 <section class="screen" id="wikiScreen" hidden>
   <div class="inner">
+    <div class="minihead" aria-hidden="true"><button type="button" class="topbrand" tabindex="-1" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><button type="button" class="iconbtn menubtn" tabindex="-1" aria-label="Menu" aria-haspopup="true"></button></div>
     <header class="readhead">
       <div class="brand"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
@@ -814,7 +833,8 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 <!-- ABOUT -->
 <section class="screen sub" id="aboutScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back>Back</button><h2>About</h2><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <h3 class="sec tabsec"><span lang="zh">部</span>About</h3>
     <div class="brand" style="justify-content:center;padding:6px 0 2px"><svg id="aboutMark" viewBox="0 0 1024 1024" aria-hidden="true" style="width:56px;height:56px"></svg><b style="font-size:1.8rem">Radical</b></div>
     
     <div class="panel about">
@@ -844,7 +864,8 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 <!-- HISTORY -->
 <section class="screen sub" id="historyScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back>Back</button><h2>History</h2><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <h3 class="sec tabsec"><span lang="zh">歷</span>History</h3>
     <p class="note">Your last 30 texts, newest first. Tap one to read it again; what you have now is saved here first.</p>
     <div class="list" id="histList"></div>
   </div>
@@ -853,7 +874,8 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 <!-- SETTINGS -->
 <section class="screen sub" id="settingsScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back id="setBack">Back</button><h2 id="setTitle">Settings</h2><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="topbar"><button type="button" class="back" data-back id="setBack">Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <h3 class="sec tabsec"><span lang="zh">設</span><span id="setTitle">Settings</span></h3>
     <p class="note" id="setIntro" hidden>Every character is drawn with its components in color. Pick the look you like; you can change it later from the menu.</p>
     <h3 class="sec">Theme</h3>
     <div class="pgrid" id="paletteGrid"></div>
@@ -927,7 +949,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: opens an email with the app version and device filled in. The address is in the page's code, so
 // anyone can read it: use a dedicated address, not a personal one. Empty: the menu item stays hidden.
-const APP_VERSION = "v26", FEEDBACK_TO = "";
+const APP_VERSION = "v27", FEEDBACK_TO = "";
 $("feedbackBtn").hidden = !FEEDBACK_TO;
 $("feedbackBtn").onclick = () => {
   closeMenu();
@@ -1755,13 +1777,20 @@ addEventListener("resize", () => fitLegend());
 function pinned(screenId, barId, onChange) {
   const sc = $(screenId), bar = $(barId);
   const check = () => {
-    const edge = sc.getBoundingClientRect().top + parseFloat(getComputedStyle(sc).paddingTop);
+    const edge = sc.getBoundingClientRect().top + parseFloat(getComputedStyle(sc).paddingTop) + (parseFloat(getComputedStyle(bar).top) || 0);
     const on = sc.scrollTop > 0 && bar.getBoundingClientRect().top <= edge + 1;
     if (on !== bar.classList.contains("stuck")) { bar.classList.toggle("stuck", on); if (onChange) onChange(on); }
   };
   sc.addEventListener("scroll", check, { passive: true });
 }
 pinned("readScreen", "readBar", () => fitLegend()); pinned("wordsScreen", "filterBar", () => $("filters")._fade());
+// Collapsing header on the tabs: past the 部 RADICAL header, the slim strip shows.
+["readScreen", "wordsScreen", "wikiScreen"].forEach(id => {
+  const sc = $(id), head = sc.querySelector(".readhead");
+  sc.addEventListener("scroll", () => sc.classList.toggle("collapsed", sc.scrollTop > head.offsetTop + head.offsetHeight - 8), { passive: true });
+});
+// The brand, wherever it shows, goes back to the top of the page you're on.
+document.querySelectorAll(".topbrand").forEach(b => b.onclick = () => { const sc = b.closest(".screen"); if (sc) sc.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); });
 $("listenBtn").onclick = () => readAloud([...$("reader").querySelectorAll(".line")], true);  // read the whole page, word by word
 if (store.get("radical-py", false)) { $("pyBtn").setAttribute("aria-checked", "true"); $("reader").classList.remove("nopy"); }
 
@@ -1984,7 +2013,7 @@ async function openWord(word, opts = {}) {
   wordState = { word, chars, ...opts };
   // Say where Back goes: to the reading, the word list, or the flash cards.
   const from = stack.length ? stack[stack.length - 1] : tab;
-  $("wordBack").textContent = { readScreen: "Back to reading", wordsScreen: "Back to my words", reviewScreen: "Back to flash cards", wikiScreen: "Back to Explore" }[from] || "Back";
+  $("wordBack").textContent = { readScreen: "Reading", wordsScreen: "My words", reviewScreen: "Flash cards", wikiScreen: "Explore", lookScreen: "Review" }[from] || "Back";
   renderWordPages();
   go("wordScreen");
   $("pager").scrollLeft = 0;
@@ -2821,7 +2850,7 @@ function showFront() {
   $("revPrev").style.visibility = revHist.length ? "visible" : "hidden";  // keeps its space, so the card never jumps
   const sc = rScore || (rScore = newScore()), rep = n => `${n} repeat${n === 1 ? "" : "s"}`;
   $("revScore").textContent = rDone && rq.length ? scoreText(sc) : "";
-  $("revQuit").textContent = rq.length ? "Quit" : "Back to my words";
+  $("revQuit").textContent = rq.length ? "Quit" : "My words";
   if (!rq.length) {
     prog.textContent = ""; $("revBar").replaceChildren();
     box.append(el("p", "wmean", rDone ? `Done. ${rDone} reviewed${sc.repeats ? `, including ${rep(sc.repeats)}` : ""}.` : "Nothing to review right now."));
