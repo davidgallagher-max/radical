@@ -345,9 +345,6 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .pad>svg.gridlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}
 .pad.gridon>svg.gridlay{display:block}
 .pad>svg:not(.gridlay){position:relative}
-/* The writing pad is practice paper in both themes: warm rice paper, a red guide grid, black ink. */
-.pad.paper{background:#F3EDE0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .28 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");border-color:#D6CBB4;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
-.pad.paper .grid line{stroke:rgba(178,58,42,.42);stroke-width:5;stroke-dasharray:22 16;stroke-linecap:butt}
 .coach{margin:0;font-size:.88rem;color:var(--muted);text-align:center;min-height:2.5em;max-width:300px}
 .coach b{color:var(--fg)}
 .grid line{stroke:color-mix(in srgb,var(--muted) 60%,transparent);stroke-width:9;stroke-linecap:round;stroke-dasharray:0.1 26}
@@ -1896,55 +1893,61 @@ function charPage(ch, i) {
   return page;
 }
 
-// The writing pad as practice paper: the finished strokes take the light palette's colors so they read on paper,
-// whatever the app's theme.
-const PAPER = "#F3EDE0";
-function paperPad(pad) {
-  pad.classList.add("paper");
-  ROLES.forEach((r, i) => pad.style.setProperty(`--${r}`, noColor(palette) ? "#1C1A20" : PALETTES[palette].light[i === 8 ? 6 : i]));
-  pad.style.setProperty("--fg", "#1C1A20");
-}
-// Brush ink: your stroke is laid down as black ink while you write. It swells when you press on slowly,
-// thins when you move fast (with a little dry-brush streaking), and tapers off where you lift. The writing
-// engine still judges the stroke; its own line is invisible. The ink fades as the finished stroke appears.
-function brushLayer(pad, size) {
-  const cv = document.createElement("canvas"), dpr = Math.min(3, devicePixelRatio || 1);
-  cv.width = cv.height = Math.round(size * dpr); cv.className = "brush";
-  cv.style.cssText = `position:absolute;left:0;top:0;width:${size}px;height:${size}px;pointer-events:none`;
-  pad.append(cv);
-  const g = cv.getContext("2d"); g.scale(dpr, dpr);
-  const INK = "22,20,26", base = size * .05;
-  let last = null, w = 0, dir = { x: 0, y: 0 }, fade = null;
-  const pos = e => { const r = pad.getBoundingClientRect(); return { x: (e.clientX - r.left) * size / r.width, y: (e.clientY - r.top) * size / r.height, t: e.timeStamp }; };
-  const dab = (x, y, r, a = .92) => {
-    g.fillStyle = `rgba(${INK},${a})`; g.beginPath(); g.arc(x, y, Math.max(.4, r / 2), 0, Math.PI * 2); g.fill();
+// Brush: the stroke you're writing is drawn live in the color of the component it belongs to, with the same
+// 3D lighting as the big characters, so it looks like Radical's ink from the first touch. It swells when you
+// move slowly, thins when you move fast, and tapers where you lift. The writing engine still judges the stroke
+// (its own line is invisible); when a stroke is accepted, the finished stroke appears in the same color.
+// `role` says which component the stroke being written belongs to.
+function brushLayer(pad, size, role) {
+  const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 1024 1024"); svg.setAttribute("class", "brush");
+  svg.style.cssText = `position:absolute;left:0;top:0;width:${size}px;height:${size}px;pointer-events:none`;
+  const g = document.createElementNS(NS, "g"); g.setAttribute("class", "strokes");
+  const path = document.createElementNS(NS, "path"); g.append(path); svg.append(g);
+  if (palette !== "font") addLight(svg, {});
+  pad.append(svg);
+  const k = 1024 / size, base = size * .055 * k;  // drawing in the 1024-unit picture space, like the strokes
+  let pts = [], w = 0, last = null, fade = null, frame = 0;
+  const pos = e => { const r = pad.getBoundingClientRect(); return { x: (e.clientX - r.left) * 1024 / r.width, y: (e.clientY - r.top) * 1024 / r.height, t: e.timeStamp }; };
+  const draw = () => {
+    frame = 0; if (!pts.length) { path.removeAttribute("d"); return; }
+    if (pts.length === 1) { const p = pts[0], r = p.w / 2; path.setAttribute("d", `M${p.x - r},${p.y}a${r},${r} 0 1,0 ${2 * r},0a${r},${r} 0 1,0 ${-2 * r},0`); return; }
+    const L = [], R = [];
+    pts.forEach((p, i) => {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+      let dx = b.x - a.x, dy = b.y - a.y; const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
+      const h = p.w / 2; L.push([p.x - dy * h, p.y + dx * h]); R.push([p.x + dy * h, p.y - dx * h]);
+    });
+    const e = pts[pts.length - 1], s0 = pts[0], f = n => n.toFixed(1);
+    let d = `M${f(L[0][0])},${f(L[0][1])}` + L.slice(1).map(q => `L${f(q[0])},${f(q[1])}`).join("");
+    d += `A${f(e.w / 2)},${f(e.w / 2)} 0 0,1 ${f(R[R.length - 1][0])},${f(R[R.length - 1][1])}`;
+    d += R.slice(0, -1).reverse().map(q => `L${f(q[0])},${f(q[1])}`).join("");
+    d += `A${f(s0.w / 2)},${f(s0.w / 2)} 0 0,1 ${f(L[0][0])},${f(L[0][1])}Z`;
+    path.setAttribute("d", d);
   };
+  const later = () => { if (!frame) frame = requestAnimationFrame(draw); };
   const move = p => {
-    const dx = p.x - last.x, dy = p.y - last.y, d = Math.hypot(dx, dy); if (d < .5) return;
-    const v = d / Math.max(1, p.t - last.t);                            // px per ms
-    const target = base * Math.max(.32, Math.min(1.2, 1.25 - v * .55));  // slow = full brush, fast = thin
-    const dry = Math.max(0, Math.min(.6, (v - .9) * .5));               // fast strokes break up a little
-    const n = Math.ceil(d / .9);
-    for (let i = 1; i <= n; i++) {
-      w += (target - w) * .07;
-      const x = last.x + dx * i / n, y = last.y + dy * i / n;
-      dab(x, y, w, dry && Math.random() < dry ? .35 + Math.random() * .3 : .92);
-    }
-    dir = { x: dx / d, y: dy / d, v }; last = p;
+    const d = Math.hypot(p.x - last.x, p.y - last.y); if (d < 3) return;
+    const v = d / k / Math.max(1, p.t - last.t);                           // screen px per ms
+    const target = base * Math.max(.34, Math.min(1.2, 1.25 - v * .55));   // slow = full brush, fast = thin
+    const n = Math.ceil(d / 6);
+    for (let i = 1; i <= n; i++) { w += (target - w) * .3; pts.push({ x: last.x + (p.x - last.x) * i / n, y: last.y + (p.y - last.y) * i / n, w }); }
+    last = p; later();
   };
   pad.addEventListener("pointerdown", e => {
-    clearTimeout(fade); cv.style.transition = "none"; cv.style.opacity = 1; g.clearRect(0, 0, size, size);
-    last = pos(e); w = base * .7; dir = { x: 0, y: 0, v: 0 };
-    dab(last.x, last.y, base * .8, .88);  // the brush touching down
+    clearTimeout(fade); svg.style.transition = "none"; svg.style.opacity = 1;
+    path.setAttribute("fill", `var(--${(role && role()) || "part3"}, var(--part3))`);
+    last = pos(e); w = base * .75; pts = [{ x: last.x, y: last.y, w }]; later();
   }, true);
   pad.addEventListener("pointermove", e => { if (last) (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(ev => move(pos(ev))); }, true);
   const up = () => {
     if (!last) return;
-    // Lift-off: the brush tip trails a little further and narrows to a point.
-    const len = Math.min(10, 3 + (dir.v || 0) * 6);
-    for (let i = 1; i <= len; i++) { const k = i / len; dab(last.x + dir.x * i, last.y + dir.y * i, w * (1 - k) ** 1.3, .9); }
-    last = null;
-    fade = setTimeout(() => { cv.style.transition = "opacity .5s ease"; cv.style.opacity = 0; }, 200);
+    // Lift-off: the brush trails a little further and narrows to a point.
+    const n = pts.length; if (n > 1) {
+      const a = pts[Math.max(0, n - 4)], b = pts[n - 1]; let dx = b.x - a.x, dy = b.y - a.y; const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
+      for (let i = 1; i <= 5; i++) pts.push({ x: b.x + dx * i * w * .35, y: b.y + dy * i * w * .35, w: w * (1 - i / 6) });
+    }
+    last = null; later();
+    fade = setTimeout(() => { svg.style.transition = "opacity .3s ease"; svg.style.opacity = 0; }, 160);
   };
   pad.addEventListener("pointerup", up, true); pad.addEventListener("pointercancel", up, true);
   pad.addEventListener("pointerleave", e => { if (e.target === pad) up(); }, true);  // leaving the pad itself, not a line inside it
@@ -1959,12 +1962,12 @@ function practice(top, ch, onBack) {
   const box = el("div", "pad gridon"); top.append(box);
   const lay = document.createElementNS(NS, "svg"); lay.setAttribute("class", "gridlay"); lay.setAttribute("viewBox", "0 0 1024 1024");
   lay.innerHTML = '<g class="grid"><line x1="0" y1="512" x2="1024" y2="512"/><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="0" x2="1024" y2="1024"/><line x1="1024" y1="0" x2="0" y2="1024"/></g>';
-  box.append(lay); paperPad(box);
+  box.append(lay);
   const writer = HanziWriter.create(box, ch, {
     width: size, height: size, padding: 12,
     charDataLoader: (c, onLoad) => onLoad({ strokes: d.s, medians: d.md }),
     showCharacter: false, showOutline: false,
-    outlineColor: "#D8CDB8", strokeColor: PAPER, drawingColor: "rgba(0,0,0,0)", highlightColor: col("--sound"),
+    outlineColor: col("--grid"), strokeColor: col("--surface"), drawingColor: "rgba(0,0,0,0)", highlightColor: col("--sound"),
     drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 5, markStrokeCorrectAfterMisses: false
   });
   // Each stroke you get right appears in its component color with the same 3D finish as the big characters.
@@ -1972,7 +1975,7 @@ function practice(top, ch, onBack) {
   const ink = svgFor(ch, false, true); ink.setAttribute("class", "inkover");
   ink.style.cssText = `position:absolute;left:12px;top:12px;width:${size - 24}px;height:${size - 24}px;pointer-events:none`;
   const inkStrokes = [...ink.querySelectorAll("g.strokes path")]; inkStrokes.forEach(x => { x.style.opacity = 0; x.style.transition = "opacity .35s ease"; });
-  box.append(ink); brushLayer(box, size);
+  box.append(ink); brushLayer(box, size, () => d.r[current]);
   const showInk = i => { if (inkStrokes[i]) inkStrokes[i].style.opacity = 1; };
   const guides = el("div", "btnrow");
   const toggle = (label, on, fn) => {
@@ -2520,18 +2523,18 @@ function writeFront(w) {
     const pad = el("div", "pad gridon"); padHost.append(pad);
     const lay = document.createElementNS(NS, "svg"); lay.setAttribute("class", "gridlay"); lay.setAttribute("viewBox", "0 0 1024 1024");
     lay.innerHTML = '<g class="grid"><line x1="0" y1="512" x2="1024" y2="512"/><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="0" x2="1024" y2="1024"/><line x1="1024" y1="0" x2="0" y2="1024"/></g>';
-    pad.append(lay); paperPad(pad);
+    pad.append(lay);
     writer = HanziWriter.create(pad, ch, {
       width: size, height: size, padding: 12,
       charDataLoader: (c, onLoad) => onLoad({ strokes: d.s, medians: d.md }),
       showCharacter: false, showOutline: false,
-      outlineColor: "#D8CDB8", strokeColor: PAPER, drawingColor: "rgba(0,0,0,0)", highlightColor: col("--sound"),
+      outlineColor: col("--grid"), strokeColor: col("--surface"), drawingColor: "rgba(0,0,0,0)", highlightColor: col("--sound"),
       drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 3, markStrokeCorrectAfterMisses: false
     });
     const ink = svgFor(ch, false, true); ink.setAttribute("class", "inkover");
     ink.style.cssText = `position:absolute;left:12px;top:12px;width:${size - 24}px;height:${size - 24}px;pointer-events:none`;
     const inkStrokes = [...ink.querySelectorAll("g.strokes path")]; inkStrokes.forEach(x => { x.style.opacity = 0; x.style.transition = "opacity .35s ease"; });
-    pad.append(ink); brushLayer(pad, size);
+    pad.append(ink); brushLayer(pad, size, () => d.r[current]);
     const total = d.s.length; stats.strokes += total;
     const lead = chars.length > 1 ? `<b>Character ${idx + 1} of ${chars.length}</b> · ` : "";
     const say = m => { coach.innerHTML = lead + m; };
