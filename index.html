@@ -958,21 +958,21 @@ const ROLES = ["meaning","sound","idea","idea2","radical","whole","part1","part2
 // Themes: the brand is Scholar's Ink; the others are alternatives. Each sets the page tones and the part colors,
 // in dark and light. Part order: meaning, sound, idea, idea2, radical, whole (picture), part1, part2 (origin unclear), part3 (unassigned strokes, shown as origin unclear).
 const PALETTES = {
-  scholar: { name: "Scholar's Ink", blurb: "Night-blue ink, jade and celadon", sheen: "#F2FFF9", sheenA: .8,
+  scholar: { name: "Scholar's Ink", blurb: "Night-blue ink, jade and celadon", sheen: "#F2FFF9", sheenA: .55,
     darkUI:  { bg: "#0A0F14", surface: "#111821", line: "#1F2C3A", fg: "#E3ECEF", muted: "#8597A3", accent: "#7FD3B6", grid: "#1A2531" },
     lightUI: { bg: "#EEF2F0", surface: "#FBFCFB", line: "#D3DCDA", fg: "#14202A", muted: "#5A6B73", accent: "#0F7C5C", grid: "#E2E9E7" },
-    dark:  ["#5FD0A5","#7CB4F2","#B9A6F0","#E3C68A","#5FD0A5","#D9A56B","#8E9C9A","#8E9C9A","#46535F"],
-    light: ["#0F8A64","#2F6FB8","#6B4FC4","#9A7A2E","#0F8A64","#9A6A2E","#5E6B69","#5E6B69","#A3AEB6"] },
-  lacquer: { name: "Lacquer & Gold", blurb: "Black lacquer, cinnabar and gold leaf", sheen: "#FFF6DC", sheenA: .85,
+    dark:  ["#2AE69F","#55A3FB","#9D7CFC","#F4C25A","#2AE69F","#EF9837","#8E9C9A","#8E9C9A","#46535F"],
+    light: ["#048B61","#1068CC","#562BDE","#A97D15","#048B61","#A96715","#5E6B69","#5E6B69","#A3AEB6"] },
+  lacquer: { name: "Lacquer & Gold", blurb: "Black lacquer, cinnabar and gold leaf", sheen: "#FFF6DC", sheenA: .5,
     darkUI:  { bg: "#0E0A09", surface: "#171110", line: "#2E2320", fg: "#F1E7DA", muted: "#A08F80", accent: "#D9A84E", grid: "#231A18" },
     lightUI: { bg: "#F5EFE7", surface: "#FFFCF7", line: "#E2D6C8", fg: "#2A1B16", muted: "#7A6658", accent: "#A0661A", grid: "#EDE3D7" },
-    dark:  ["#E2553D","#E0AF4F","#C46B7F","#D99B86","#E2553D","#E89A6A","#9C7A5C","#9C7A5C","#5A4C45"],
-    light: ["#B5321F","#A8740F","#9C3F57","#B0644D","#B5321F","#B2643A","#7A5A3E","#7A5A3E","#B3A59C"] },
-  observatory: { name: "Observatory", blurb: "Midnight indigo, amber and violet", sheen: "iris", sheenA: .8,
+    dark:  ["#EC3B1E","#F9AD17","#D43C5E","#E87D58","#EC3B1E","#FA8339","#9C7A5C","#9C7A5C","#5A4C45"],
+    light: ["#C51D05","#A87104","#AA2648","#C15332","#C51D05","#C5581D","#7A5A3E","#7A5A3E","#B3A59C"] },
+  observatory: { name: "Observatory", blurb: "Midnight indigo, amber and violet", sheen: "iris", sheenA: .6,
     darkUI:  { bg: "#090A16", surface: "#10122A", line: "#24274F", fg: "#ECEAF6", muted: "#9592B8", accent: "#B79BFF", grid: "#191B3A" },
     lightUI: { bg: "#F0F0F7", surface: "#FCFCFF", line: "#D9D9EA", fg: "#17172E", muted: "#5F5D80", accent: "#5B3FD0", grid: "#E5E5F2" },
-    dark:  ["#FFB65C","#A98BFF","#5ED6E8","#FF8BB0","#FFB65C","#FFD27A","#8C8AA8","#8C8AA8","#3A3C5E"],
-    light: ["#C27408","#6A4BD8","#0F8FA3","#C2416E","#C27408","#A87F10","#6E6C8C","#6E6C8C","#AAABC6"] },
+    dark:  ["#FAA842","#9470FB","#2EDFFA","#FB709C","#FAA842","#FBC65F","#8C8AA8","#8C8AA8","#3A3C5E"],
+    light: ["#BB6F05","#5223F5","#048EA4","#D91F60","#BB6F05","#A97D04","#6E6C8C","#6E6C8C","#AAABC6"] },
   original: { name: "Plain ink", blurb: "Drawn strokes in one ink, no color" },
   font: { name: "Original", blurb: "The normal font: no drawing, color or light" }
 };
@@ -1145,7 +1145,7 @@ function addLight(svg, d) {
     <feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.18" k2="0" k3="0" k4="0" result="shaded"/>
     <feSpecularLighting in="b" surfaceScale="8" specularConstant=".8" specularExponent="26" lighting-color="#fff" result="s"><fePointLight x="300" y="300" z="520"/></feSpecularLighting>
     <feComposite in="s" in2="SourceAlpha" operator="in" result="sIn"/>
-    <feComposite in="shaded" in2="sIn" operator="arithmetic" k1="0" k2="1" k3=".6" k4="0" result="lit"/>
+    <feComposite in="shaded" in2="sIn" operator="arithmetic" k1="0" k2="1" k3=".35" k4="0" result="lit"/>
     <feComposite in="lit" in2="SourceAlpha" operator="in"/>
   </filter>`;
   svg.append(defs);
@@ -1173,12 +1173,12 @@ function lightReader(reader) {
     // A soft spark of light that drifts slowly over the strokes, each character on its own path and timing,
     // so the page shimmers rather than sweeps. Tilt (when on) shifts every spark together; the drift never stops.
     const spark = iris
-      ? `<stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".25" stop-color="#9BF6FF" stop-opacity=".7"/><stop offset=".55" stop-color="#FFB3E6" stop-opacity=".3"/><stop offset="1" stop-color="#FFE29A" stop-opacity="0"/>`
-      : `<stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".22" stop-color="${c}" stop-opacity=".75"/><stop offset=".55" stop-color="${c}" stop-opacity=".22"/><stop offset="1" stop-color="${c}" stop-opacity="0"/>`;
+      ? `<stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset=".25" stop-color="#9BF6FF" stop-opacity=".45"/><stop offset=".55" stop-color="#FFB3E6" stop-opacity=".3"/><stop offset="1" stop-color="#FFE29A" stop-opacity="0"/>`
+      : `<stop offset="0" stop-color="${c}" stop-opacity=".6"/><stop offset=".22" stop-color="${c}" stop-opacity=".45"/><stop offset=".55" stop-color="${c}" stop-opacity=".22"/><stop offset="1" stop-color="${c}" stop-opacity="0"/>`;
     const dur = (9 + Math.random() * 7).toFixed(1), delay = (-Math.random() * 16).toFixed(1), path = 1 + (n % 3);
     const g = document.createElementNS(NS, "g"); g.setAttribute("class", "lacq");
     g.innerHTML = `<defs><clipPath id="gc${n}">${paths}</clipPath>`
-      + `<linearGradient id="gl${n}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".32"/><stop offset=".38" stop-color="#fff" stop-opacity=".08"/><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".42"/></linearGradient>`
+      + `<linearGradient id="gl${n}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".38" stop-color="#fff" stop-opacity=".04"/><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".42"/></linearGradient>`
       + `<radialGradient id="gs${n}">${spark}</radialGradient>`
       // Bevel: a thin lit edge inside each stroke's top-left and a shaded edge inside its bottom-right, so the
       // strokes read as raised. Each edge is the stroke minus a copy of itself nudged the other way.
@@ -1186,7 +1186,7 @@ function lightReader(reader) {
       + `<mask id="md${n}" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><g transform="scale(1,-1) translate(0,-900)" fill="#fff">${plain}</g><g transform="translate(${-B},${-B}) scale(1,-1) translate(0,-900)" fill="#000">${plain}</g></mask></defs>`
       + `<rect width="1024" height="1024" fill="#000" opacity=".5" mask="url(#md${n})"/>`
       + `<g clip-path="url(#gc${n})"><rect width="1024" height="1024" fill="url(#gl${n})"/>`
-      + `<rect width="1024" height="1024" fill="#fff" opacity=".45" mask="url(#mh${n})"/>`
+      + `<rect width="1024" height="1024" fill="#fff" opacity=".3" mask="url(#mh${n})"/>`
       + (still ? "" : `<g class="tiltshift"><g class="spark p${path}" style="animation-duration:${dur}s;animation-delay:${delay}s"><circle cx="512" cy="512" r="300" fill="url(#gs${n})"/></g></g>`)
       + `</g>`;
     svg.append(g);
