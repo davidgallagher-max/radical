@@ -404,6 +404,13 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .wcard>.btn{justify-self:start}
 #addWord{font-family:var(--font-zh),var(--font-ui);font-size:1.15rem;resize:none;overflow:hidden;line-height:1.4;min-height:46px}
 .addrow .btn{height:46px;flex:none}
+/* Import sits inside the add box as a small file icon (a page with a down arrow), so it needs no row of its own. */
+.addfield{position:relative;flex:1;min-width:0;display:flex}
+.addfield #addWord{padding-right:46px}
+.fileicon{position:absolute;right:6px;bottom:6px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--accent);cursor:pointer}
+.fileicon svg{width:22px;height:22px}
+.fileicon:active{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+#addStatus:empty{display:none}
 .preview{display:grid;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{all:unset;cursor:pointer;font-family:var(--font-zh);font-size:1.05rem;padding:3px 10px;border-radius:999px;border:1px solid var(--accent);color:var(--fg)}
@@ -413,6 +420,12 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .revhead{display:flex;align-items:center;gap:10px}
 .revhead b{font-family:var(--font-brand);font-size:1.2rem;font-weight:800}
 .revhead span{flex:1;color:var(--muted);font-size:.88rem}
+.revtoggle{all:unset;cursor:pointer;flex:1;min-width:0;display:flex;align-items:center;gap:10px}
+.revtoggle span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.revtoggle i{flex:none;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-135deg) translate(-2px,-2px);margin-right:4px;transition:transform .15s}
+.revtoggle[aria-expanded="false"] i{transform:rotate(45deg) translate(-2px,-2px)}
+.revtoggle:focus-visible{outline:2px solid var(--accent);border-radius:8px}
+.revpanel.folded{padding:10px 14px}
 .revhead .btn{padding:10px 22px;font-weight:700}
 .seg2{display:grid;grid-template-columns:repeat(4,minmax(max-content,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg2.two{grid-template-columns:repeat(2,1fr)}
@@ -730,13 +743,13 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
     <div id="revStrip"></div>
     <div class="addbox">
       <div class="addrow">
-        <textarea id="addWord" rows="1" lang="zh" placeholder="Add word(s): type or paste" autocomplete="off" autocapitalize="off"></textarea>
+        <div class="addfield">
+          <textarea id="addWord" rows="1" lang="zh" placeholder="Add word(s): type or paste" autocomplete="off" autocapitalize="off"></textarea>
+          <label class="fileicon" title="Import a word list or backup file" aria-label="Import file"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M6 3h8l4 4v14H6z M14 3v4h4"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 10v7m-3-3 3 3 3-3"/></svg><input type="file" id="importFile" multiple accept=".txt,.csv,.tsv,.json,.md,text/plain,application/json" hidden></label>
+        </div>
         <button type="button" class="btn" id="addGo">Add</button>
       </div>
-      <div class="row" style="justify-content:space-between">
-        <p class="note" id="addStatus"></p>
-        <label class="btn ghost small">Import file<input type="file" id="importFile" multiple accept=".txt,.csv,.tsv,.json,.md,text/plain,application/json" hidden></label>
-      </div>
+      <p class="note" id="addStatus"></p>
       <div class="preview" id="preview" hidden></div>
     </div>
     <button type="button" class="btn ghost wide lookbtn" id="lookBtn" hidden></button>
@@ -2316,9 +2329,16 @@ function renderStrip() {
     b.onclick = () => { revCount = n; store.set("radical-revcount", n); renderStrip(); }; counts.append(b);
   });
   const nCards = Math.min(sizes[revMode], revCount === "all" ? Infinity : revCount);
-  const head = el("div", "revhead", `<b>Flash cards</b><span>${nCards ? `${nCards} card${nCards === 1 ? "" : "s"}` : (myWords.length ? "Nothing in this set" : "Add words to start")}</span>`);
+  // The panel folds to its top row (which keeps Start), and remembers whether you left it open.
+  const open = store.get("radical-rev-open", true);
+  const what = { due: "due", new: "new", learning: "active", all: nCards === 1 ? "card" : "cards" }[revMode], how = { read: "Read", write: "Write", listen: "Listen" }[revHow];
+  const sub = !nCards ? (myWords.length ? "Nothing in this set" : "Add words to start") : open ? `${nCards} card${nCards === 1 ? "" : "s"}` : `${nCards} ${what} · ${how}`;
+  const head = el("div", "revhead", `<button type="button" class="revtoggle" aria-expanded="${open}"><b>Flash cards</b><span>${sub}</span><i aria-hidden="true"></i></button>`);
+  head.querySelector(".revtoggle").onclick = () => { store.set("radical-rev-open", !open); renderStrip(); };
   const go_ = btn("Start", "btn", () => openReview(revMode, revCount)); go_.disabled = !nCards;
   head.append(go_);
+  box.classList.toggle("folded", !open);
+  if (!open) { box.append(head); strip.append(box); return; }
   const hows = el("div", "seg2 three");
   [["read", "Read"], ["write", "Write"], ["listen", "Listen"]].forEach(([k, label]) => {
     const b = el("button", "", label); b.type = "button"; b.setAttribute("aria-pressed", revHow === k);
@@ -2375,7 +2395,7 @@ function renderWords() {
   lb.hidden = !set.length; lb.textContent = picks.size ? `Review selection (${set.length})` : `Review ${set.length === 1 ? "this word" : `these ${set.length}`}`;
   lb.onclick = () => openLook(set);
   renderSelBar(shown);
-  if (!myWords.length) $("addStatus").textContent = "Add a word you're learning, paste a list, or import a file.";
+  if (!myWords.length) $("addStatus").textContent = "Add a word you're learning, paste a list, or import a file (the page icon in the box).";
 }
 
 // ---- selecting words: circles on the left; a bar at the bottom acts on the selection.
