@@ -2,6 +2,15 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v27
+
+- 部 RADICAL is on every screen. On the tabs, once the header scrolls away a slim strip with the brand and ☰ stays at the top; on other pages a small 部 RADICAL sits in the middle of the top bar. Tapping it jumps back to the top. Back buttons are shorter (My words, Reading, Flash cards), and on flash cards "‹ Previous card" sits on its own line opposite the score.
+- Tilt is gone, along with the motion-access popup on every launch. The light still drifts on its own.
+- Listen speeds you can hear: Slowest says one syllable at a time with a clear pause, Slower with a short pause; Normal is the whole word.
+- Quit on flash cards always asks first, even before any card is rated.
+- My words: Import is a file icon inside the add box (no separate row), and the flash cards panel folds to one row that keeps Start (it remembers open or closed).
+- Random article scrolls to the results right away, like topics and search.
+
 ## v26
 
 - My text now has its "讀 MY TEXT" heading under the 部 RADICAL header, like Explore and My words; the "Add text" and "Read" panel labels are quieter, matching Explore's labels.
