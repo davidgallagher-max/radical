@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v26
+
+- My text now has its "讀 MY TEXT" heading under the 部 RADICAL header, like Explore and My words; the "Add text" and "Read" panel labels are quieter, matching Explore's labels.
+
 ## v25
 
 - Reading bar: the Size button shows a small and a large 字 and fills while the slider is open; a second tap closes it. The color legend is bigger and spans the width, shrinking to fit narrow phones. When the bar (or the My words filters) is frozen at the top, a small ☰ sits at its right end, and anything still too wide scrolls sideways with a fade. On iPhone SE width the controls take two rows instead of overlapping.
