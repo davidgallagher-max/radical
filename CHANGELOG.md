@@ -2,6 +2,23 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v25
+
+- Reading bar: the Size button shows a small and a large 字 and fills while the slider is open; a second tap closes it. The color legend is bigger and spans the width, shrinking to fit narrow phones. When the bar (or the My words filters) is frozen at the top, a small ☰ sits at its right end, and anything still too wide scrolls sideways with a fade. On iPhone SE width the controls take two rows instead of overlapping.
+- Numbers like 3,000, 1,234.5 and 3.5 stay together as one unit.
+- Read-aloud goes a sentence at a time (long sentences by clause, unpunctuated text in chunks of about 15 characters) and highlights the whole sentence, so the voice stops skipping words. Listen fills while playing instead of getting wider.
+- Every tab now has the 部 RADICAL header and menu; tab names are small headings under it.
+- Explore: nine fresh topic chips a day, picked by AI from your searches and recent reading plus a few wild cards, with pinyin (starter topics until then; your raw searches no longer show as chips). The tapped chip stays outlined. Results appear at once: the list scrolls into view with placeholder rows, and chip searches are fetched ahead when Explore opens. "‹ Back to reading" shows when you came from the reading panel.
+- My words: "Review these N" (or "Review selection (n)") looks through words card by card with everything showing, no grading and no schedule change; ‹ › or swipe, Shuffle (remembered, only reorders cards you haven't seen), Start over at the end. The selection bar's "Study these" is now "Flash cards (n)".
+- Writing cards fit one screen: pinyin, speaker and meaning on one line, slim slots, a one-line coach, and the pad sized so the bottom bar never covers it. "Show this one" draws just the current character on the pad and counts it as hinted; after the last one the answer side opens. "‹ Previous card" moved to the top bar.
+- Reading-card clues come in order for each character: sound, then meaning, then pinyin (more taps replay the sound), one at a time, right under the big characters.
+- Ratings: Hard on a new or missed card means later today, so all four buttons differ; reviewed cards keep Hard, Good and Easy at least a day apart. The rating row glows when the answer shows, the suggested button pulses, and rating plays a short woodblock tick.
+- Listening cards: Slowest, Slower and Normal speeds; tapping one plays the word and keeps the speed.
+- Flash cards: "Back to my words" is now "Quit"; once you've rated a card it asks first and shows how far you got and the score.
+- Grammar patterns: in items like ~到, the ~ or … shows as a dotted box with a Pattern label; pinyin checks, writing and the voice skip it, and the AI judge knows it's a pattern.
+- A slim color line under big characters (word page, answer side, Review cards, a finished writing pad) shows only the colors actually used.
+- Send feedback is built into the menu and stays hidden until a feedback address is chosen.
+
 ## v24
 
 - Reading controls are compact and stay pinned at the top while you scroll: the color legend on one line, then Traditional/Simplified, Pinyin, Listen and a Size button that opens the text-size slider.

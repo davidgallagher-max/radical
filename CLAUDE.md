@@ -36,24 +36,28 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 ## Structure worth knowing (index.html)
 
-- Tabs: 讀 My text, 探 Explore, 詞 My words. Sub-screens (word page, flash cards, settings, history) use a stack: `go()`, `back()`; `setTab()` returns to a tab and ends per-visit toggles (`endSession`).
+- Tabs: 讀 My text, 探 Explore, 詞 My words, each under the same 部 RADICAL header (`.brandMark`) with a small `h3.sec.tabsec` name. Sub-screens (word page, flash cards, Review list, settings, history) use a stack: `go()`, `back()`; `setTab()` returns to a tab and ends per-visit toggles (`endSession`).
 - Reading: `buildLine()` makes the grid; first tap on a word picks it (peek strip), second opens the word page. `miniReader()` is the small reader used in card sentences (tap a word for a gloss strip with + Add and ×).
 - Characters: `svgFor()` draws strokes; `glyphFor()` returns the normal font instead when the "Original" look is chosen. `addLight()` is the 3D lighting on big characters; `lightReader()` adds the sparks in the reader.
 - Looks (Settings): Scholar's Ink (default), Lacquer & Gold, Observatory, Plain ink (key `original`: drawn strokes, one color), Original (key `font`: normal font, no color or light).
 - Words and review: `myWords` in localStorage (only on the phone until sign-in exists; Settings has "Save a backup file", restored with Import file on My words). Statuses New, Due, Active (internal key `learning`), Known. Known words come back every 60 to 180 days. Reading cards use `w.srs`; writing cards keep their own schedule in `w.wsrs`, listening cards in `w.lsrs`. `grade(w, g, k)`, `setStatus()`.
 - Flash cards: panel asks Practice? (Read / Write / Listen), What type?, How many?
-  - Read: guess pinyin and meaning, Check / I know it / Show answer. Tap a character for a random clue (its pinyin, meaning or sound); any clue caps the suggested rating at Hard. Pinyin is graded per syllable with tips (`checkPinyin`). Meaning: quick word match, then the `judge` AI action if that fails.
-  - Write: pinyin, sound and meaning shown; write each character on the pad; after each character the app waits for "Next character ›" / "See answer" (`writeFront`). `brushLayer` draws the live stroke in its component color with the 3D lighting.
-  - Listen: the word is played (Play / Slower) without showing it; type pinyin and meaning; the characters appear on Check.
-  - Header: "Card N of T · R repeats" and a running score (right / shaky / missed). ‹ Previous card undoes the last rating (`revHist`).
+  - Read: guess pinyin and meaning, Check / I know it / Show answer. Tap a character for a clue in a fixed order (sound, meaning, pinyin, then the sound again), shown one at a time under the big characters; any clue caps the suggested rating at Hard. Pinyin is graded per syllable with tips (`checkPinyin`). Meaning: quick word match, then the `judge` AI action if that fails.
+  - Write: pinyin, speaker and meaning on one line; the pad is sized to fit above the bottom bar at its tallest; write each character; after each one the app waits for "Next character ›" / "See answer" (`writeFront`). "Show this one" animates only the current character and counts its strokes as hinted. `brushLayer` draws the live stroke in its component color with the 3D lighting.
+  - Listen: the word is played without showing it (Slowest / Slower / Normal, remembered in `radical-listen-speed`); type pinyin and meaning; the characters appear on Check.
+  - Header: "Card N of T · R repeats" and a running score (right / shaky / missed). ‹ Previous card (in the top bar) undoes the last rating (`revHist`). Quit (`#revQuit`) asks first once a card is rated.
+  - Ratings: `nextIvl` gives new or missed cards Again soon, Hard later today (`LATER`), Good 1 day, Easy 4 days, and keeps Hard < Good < Easy a day apart otherwise. The answer side's rating row glows (`.grades.glow`); `tick(g)` plays the woodblock.
 - Progress record (recorded, not shown yet): `radical-days` holds a per-day tally (`c` cards reviewed, `r` characters read, `n` words added) via `logDay()`; a line counts as read after about 4 seconds on screen or when read aloud (`watchLines`). `learned` (`radical-learned`) lists learned words: earned when Known or a review gap reaches 21 days (`learn`), lost on Again or when the word is added back, including pasted lists (`unlearn`). Both go into backups and are merged on restore.
-- Pinned bars: the reading legend and controls (`#readBar`) and the My words filters stay pinned while scrolling (`pinned()` adds `.stuck`). A backup reminder shows on My words after a week or 100 reviews without a backup.
-- Read-along: `readAloud()` highlights words as the device voice speaks; stops on page turn or leaving the screen.
-- Explore: Wikipedia search by topic or English query (`zhquery`), difficulty rating 1 to 10 (`rate`), Easier / Easiest rewrite (`simplify`).
+- Pinned bars: the reading legend and controls (`#readBar`) and the My words filters (`#filterBar`) stay pinned while scrolling (`pinned()` adds `.stuck`, which shows a small ☰ `.stuckmenu`). `fitLegend()` sizes the legend to the width; `edgeFade()` fades a row that still overflows. Size button `#sizeBtn` (字字) opens `#sizePop`. A backup reminder shows on My words after a week or 100 reviews without a backup.
+- Read-along: `readAloud()` speaks one chunk at a time (`chunksOf()`: sentences, long ones split at clauses, unpunctuated text about 15 characters at word boundaries) and highlights the whole chunk; stops on page turn or leaving the screen. Numbers like 3,000 stay one unit (regex in `buildLine`'s `flush`).
+- Explore: `openExplore(fromReading)`; nine daily chips from the `topics` action (`fetchDaily`, cached per day in `radical-wiki-daily`, starter `TOPICS` until then; searches recorded in `myTopics` only feed it). Chips change only when Explore opens. `searchHits()` is prefetched per chip; a search shows `skeleton()` rows at once. Wikipedia search by topic or English query (`zhquery`), difficulty rating 1 to 10 (`rate`), Easier / Easiest rewrite (`simplify`).
+- Review list (`#lookScreen`, `openLook`): face-up cards in list order, Shuffle (`radical-look-shuffle`) reorders only unseen cards; never grades.
+- Grammar patterns: `isSlot`, `isPattern`, `patternPy`, `slotBox`. Color lines: `legendLine(text)`, `showLegend(after, text)`.
+- Feedback: `FEEDBACK_TO` (empty hides the menu item) and `APP_VERSION`; bump `APP_VERSION` each batch.
 
 ## Server actions (api/claude.js)
 
-`card` (GET, cached at Vercel's CDN for a year), `words`, `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge`. Fast jobs use the Haiku model; cards use Sonnet.
+`card` (GET, cached at Vercel's CDN for a year), `words`, `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips). Fast jobs use the Haiku model; cards use Sonnet.
 
 ## Open roadmap (not started)
 
@@ -69,6 +73,9 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 - AI spending cap before sharing the app: a monthly cap in the Anthropic console and a per-device daily limit in `api/claude.js`.
 - Sentence-gap cards (the example sentence with the word blanked out), once pre-built cards exist.
 - Pre-built common cards; one-hour license check before charging.
+- Save an article for later (a bookmark in Explore and the reader).
+- Articles finished per week, as a stat for the This week card.
+- Feedback address: `FEEDBACK_TO` is empty until there's a dedicated address (e.g. on the company domain); a personal address would be public in the page code.
 - Branding: Scholar's Ink now; David is tempted by Lacquer & Gold. Not decided.
 
 ## Related
