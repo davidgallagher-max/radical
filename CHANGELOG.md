@@ -2,6 +2,24 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v30
+
+- Accounts: Settings → Account. Enter your email, type the 6-digit code it sends (from login@upslopelabs.com), and you're signed in. Your words go into your account and sync across every phone you sign in on, a few seconds after each change and whenever the app opens. A copy of this phone's words is kept on the phone the first time.
+- The AI features now use your account instead of the shared app password (the old password keeps working until it's deleted in Vercel).
+- Every AI call is logged per person with its estimated cost, with a high daily safety stop ($3 a day per person) until real numbers show what a sensible limit is.
+- A status line in Settings says whether the account service is connected.
+
+## v29
+
+- 解 Explain on every line (and in card sentences): how the sentence is built, its grammar points, and words used in a less obvious sense. Made once, then kept.
+- A walkthrough: three short cards on the colors, reading and studying. It shows once, and any time from the menu as 導 How it works.
+- Flash cards end properly: 完 draws itself, then the session at a glance, words learned, what's due by tomorrow, and "Go over the ones you missed".
+- Sounds: guzheng and woodblock only; anything good rises, a miss is one soft low pluck.
+- My words: the flash cards box says Today (due cards plus today's new words) instead of Due, with one count on the Start row that matches the 詞 badge. Status colors are the same in every theme; only Due is warm, and Active is never red.
+- Writing cards: once a character is done there's one button (Next character or See answer), and no repeated message.
+- Listen cards take pinyin or characters in one box; a same-sound character gets sound credit and names the right one.
+- A word's full card is made as soon as it's added, two at a time, waiting while offline.
+
 ## v28
 
 - The top bar (Back, 部 RADICAL, ☰) stays pinned on every page that opens on top: word page, flash cards, Review, Settings, History, About.

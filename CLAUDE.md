@@ -41,8 +41,9 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 - Speech: `speak(text, slow)`; `slow = { k, gap }` says each character separately (Listen cards' Slowest and Slower). Tilt was removed in v27 (iPhones asked for motion access every launch).
 - Characters: `svgFor()` draws strokes; `glyphFor()` returns the normal font instead when the "Original" look is chosen. `addLight()` is the 3D lighting on big characters; `lightReader()` adds the sparks in the reader.
 - Looks (Settings): Scholar's Ink (default), Lacquer & Gold, Observatory, Plain ink (key `original`: drawn strokes, one color), Original (key `font`: normal font, no color or light).
-- Words and review: `myWords` in localStorage (only on the phone until sign-in exists; Settings has "Save a backup file", restored with Import file on My words). Statuses New, Due, Active (internal key `learning`), Known. Known words come back every 60 to 180 days. Reading cards use `w.srs`; writing cards keep their own schedule in `w.wsrs`, listening cards in `w.lsrs`. `grade(w, g, k)`, `setStatus()`.
+- Words and review: `myWords` in localStorage, synced to the account when signed in (see Accounts). Settings has "Save a backup file", restored with the file icon in the add box on My words. Statuses New, Due, Active (internal key `learning`), Known. Known words come back every 60 to 180 days. Reading cards use `w.srs`; writing cards keep their own schedule in `w.wsrs`, listening cards in `w.lsrs`. `grade(w, g, k)`, `setStatus()`.
 - Flash cards: panel asks Practice? (Read / Write / Listen), What type?, How many? It folds to one row with Start (`radical-rev-open`). Import is the file icon in the add box.
+  - Finish screen: 完 drawn, summary, learned this session, due by tomorrow, missed ones open in Review. Walkthrough: `showTour()` (menu 導 How it works, `radical-tour-seen`). Cards are made on add via `queueCard()` (two at a time).
   - Read: guess pinyin and meaning, Check / I know it / Show answer. Tap a character for a clue in a fixed order (sound, meaning, pinyin, then the sound again), shown one at a time under the big characters; any clue caps the suggested rating at Hard. Pinyin is graded per syllable with tips (`checkPinyin`). Meaning: quick word match, then the `judge` AI action if that fails.
   - Write: pinyin, speaker and meaning on one line; the pad is sized to fit above the bottom bar at its tallest; write each character; after each one the app waits for "Next character ›" / "See answer" (`writeFront`). "Show this one" animates only the current character and counts its strokes as hinted. `brushLayer` draws the live stroke in its component color with the 3D lighting.
   - Listen: the word is played without showing it (Normal / Spaced / One by one, keys `normal` / `slower` / `slowest` in `radical-listen-speed`; iPhone voices won't stretch a syllable, so the slow ones add gaps); type pinyin and meaning; the characters appear on Check.
@@ -57,13 +58,22 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 - Grammar patterns: `isSlot`, `isPattern`, `patternPy`, `slotBox`. Color lines: `legendLine(text)`, `showLegend(after, text)`.
 - Feedback: `FEEDBACK_TO` (empty hides the menu item) and `APP_VERSION`; bump `APP_VERSION` each batch.
 
+## Accounts and sync (v30)
+
+- Sign-in is Supabase email OTP, called from the page (`sbAuth`: `otp`, then `verify` with the 6-digit code; `accessToken()` refreshes). Emails go out through Resend as login@upslopelabs.com (custom SMTP in Supabase; templates show `{{ .Token }}`). Session in `radical-session`.
+- The server (`api/_account.js`) checks the access token with Supabase and keeps data in a private Storage bucket `radical` (no tables): `users/<id>/data.json` (+ daily `backups/`), `usage/<id>/<day>.json` (every AI call: action, model, tokens, estimated cost). Prices are estimates (env `PRICE_SONNET_IN/OUT`, `PRICE_HAIKU_IN/OUT`); daily stop `RADICAL_DAILY_CAP` (default $3).
+- Sync: `saveWords()` stamps changed words with `t` (`stampWords`, comparing to `wordSig`) and records removals in `radical-deleted`; `syncNow()` posts everything, the server merges (newest `t` per word, tombstones, daily tallies by max, learned by union) and `applyMerged()` updates the word objects in place. Known gap: un-learning a word doesn't sync (learned merges by union).
+- Env vars in Vercel: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` (Secret type), plus `ANTHROPIC_API_KEY`; `APP_PASSWORD` still accepted until deleted.
+
 ## Server actions (api/claude.js)
 
-`card` (GET, cached at Vercel's CDN for a year), `words`, `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips). Fast jobs use the Haiku model; cards use Sonnet.
+`card` (GET, cached at Vercel's CDN for a year), `words`, `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips), `explain` (解, card model), `sync`; public: `config`, `status`. Fast jobs use the Haiku model; cards use Sonnet.
 
 ## Open roadmap (not started)
 
-- Sign-in and sync: Supabase with Apple and Google sign-in; email sign-in needs a domain plus an email service.
+- Apple and Google sign-in buttons, with the app-store wrap (Apple requires Sign in with Apple if Google is offered).
+- Offline: app and character data cached, word list, flash cards, reviews, Listen and current reading; offline answers graded locally and re-checked on reconnect.
+- Real AI cap after a month of usage data (from `usage/`).
 - Mainland/Taiwan setting: Simplified as default (most learners), Taiwan as a toggle, card caches separated by region.
 - Grammar mode: catalog from the HSK skeleton, AI-drafted, native-speaker reviewed; multiple-choice and word-tile tests.
 - Domain, payments ($9.99 unlock plus an AI subscription), native apps, privacy policy.
@@ -71,13 +81,13 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 - "This week" card on My words and one quiet line under the 部 on the opening screen, built from the progress record: days studied (e.g. 5 of 7), cards per day, characters read per day, new words, and words learned shown as "312 learned · +14 this week · 3 back for review" (gains first; losses framed as back for review). No streak cliff and never sell streak protection; if a streak is ever added, give free rest days.
 - Daily target on the tab bar (the 詞 badge shows today's progress).
 - Notifications (cards due, at a chosen time): only after sign-in, since the server must know each device; iPhone needs the app on the Home Screen (iOS 16.4+).
-- First-run walkthrough: three short cards on what the colors mean, tapping words, saving and reviewing.
 - AI spending cap before sharing the app: a monthly cap in the Anthropic console and a per-device daily limit in `api/claude.js`.
 - Sentence-gap cards (the example sentence with the word blanked out), once pre-built cards exist.
 - Pre-built common cards; one-hour license check before charging.
 - Save an article for later (a bookmark in Explore and the reader).
 - Articles finished per week, as a stat for the This week card.
-- Feedback address: `FEEDBACK_TO` is empty until there's a dedicated address (e.g. on the company domain); a personal address would be public in the page code.
+- Feedback address: `FEEDBACK_TO` is empty; upslopelabs.com exists now, so feedback@ (forwarded by GoDaddy) can go in.
+- Launch: app stores only (no home-screen web launch); Apple $99/yr, Google $25; move hosting off Vercel Hobby before selling; no trademark for now. Company: Upslope Labs (upslopelabs.com).
 - Branding: Scholar's Ink now; David is tempted by Lacquer & Gold. Not decided.
 
 ## Related
