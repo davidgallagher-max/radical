@@ -43,7 +43,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 - Words and review: `myWords` in localStorage (only on the phone until sign-in exists; Settings has "Save a backup file", restored with Import file on My words). Statuses New, Due, Active (internal key `learning`), Known. Known words come back every 60 to 180 days. Reading cards use `w.srs`; writing cards keep their own schedule in `w.wsrs`. `grade(w, g, k)`, `setStatus()`.
 - Flash cards: panel asks Practice? (Read / Write), What type?, How many?
   - Read: guess pinyin and meaning, Check / I know it / Show answer. Tap a character for a random clue (its pinyin, meaning or sound); any clue caps the suggested rating at Hard. Pinyin is graded per syllable with tips (`checkPinyin`). Meaning: quick word match, then the `judge` AI action if that fails.
-  - Write: pinyin, sound and meaning shown; write each character on a rice-paper pad (`writeFront`, `brushLayer` for the black brush ink, `paperPad`).
+  - Write: pinyin, sound and meaning shown; write each character on the pad; after each character the app waits for "Next character ›" / "See answer" (`writeFront`). `brushLayer` draws the live stroke in its component color with the 3D lighting.
   - Header: "Card N of T · R repeats" and a running score (right / shaky / missed). ‹ Previous card undoes the last rating (`revHist`).
 - Read-along: `readAloud()` highlights words as the device voice speaks; stops on page turn or leaving the screen.
 - Explore: Wikipedia search by topic or English query (`zhquery`), difficulty rating 1 to 10 (`rate`), Easier / Easiest rewrite (`simplify`).

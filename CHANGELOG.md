@@ -2,6 +2,14 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v23
+
+- Writing cards no longer rush you: a finished character stays on the pad until you tap "Next character ›", and the last one waits for "See answer".
+- The writing pad matches your theme again (no more white paper), and the stroke you're drawing is in its component's color with the same 3D look as the big characters.
+- Richer, more saturated colors in every look, with softer highlights, so the characters match the color legend.
+- The Pinyin toggle and every switch use the theme's accent color.
+- The Random article button looks like the topic buttons.
+
 ## v22
 
 - The latest v21 work is now actually live. It had been pushed into a nested `radical/radical` folder that Vercel ignores, so the live site was running an earlier v21.
