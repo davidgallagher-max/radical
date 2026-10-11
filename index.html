@@ -496,6 +496,17 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .looknav .btn{padding:13px;font-size:1rem}
 .lookacts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .lookend{display:grid;gap:12px;justify-items:center;text-align:center;padding:30px 0}
+.slotbox{display:inline-block;width:min(140px,38vw);height:min(140px,38vw);border:2px dashed color-mix(in srgb,var(--muted) 60%,transparent);border-radius:12px;opacity:.7}
+.slotbox.sm{width:.85em;height:.85em;border-width:1.5px;border-radius:4px;vertical-align:-.05em;margin:0 1px}
+.wchars .slotbox,.revchars .slotbox{flex:none}
+.pattag{align-self:center;font-family:var(--font-ui);font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;vertical-align:middle}
+.wz .pattag{font-size:.6rem;padding:1px 6px}
+.revchars .pattag{flex-basis:100%;text-align:center;border:0;padding:0}
+.legline{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font-size:.74rem;color:var(--muted)}
+.legline span{display:inline-flex;align-items:center;gap:4px}
+.legline i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.legline i+i{margin-left:-2px}
+.writewrap{flex-direction:column;align-items:center;gap:6px}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--line)}
 .dot.new{background:transparent;box-shadow:inset 0 0 0 2px var(--accent)}
 .dot.due{background:var(--sound)}
@@ -545,10 +556,24 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 @keyframes inkglow{0%{filter:none}35%{filter:drop-shadow(0 0 10px color-mix(in srgb,var(--accent) 70%,transparent)) brightness(1.15)}100%{filter:none}}
 @media (prefers-reduced-motion:reduce){.padwrap.done .padtick,.padwrap.done .inkover{animation:none}}
 .writeprompt{justify-content:center}
+/* Writing card, compact: pinyin, speaker and meaning share one line; slim slots; a one-line coach. */
+.wprompt1{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;row-gap:2px;text-align:center}
+.wprompt1 .bigpy{font-size:1.2rem}
+.wprompt1 .wm1{color:var(--muted);font-size:.95rem}
+#reviewScreen .revcard:has(.wprompt1){gap:8px}
+.wslots.slim .wslot{width:38px;height:38px;border-radius:8px}
+.wslots.slim .wslot svg{width:32px;height:32px}
+.wslots.slim .wslot .fontglyph{width:32px;height:32px;font-size:26px}
+.coach.one{min-height:0;max-width:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.85rem}
+.padwrap.shown .padtick{display:none!important}
+.padwrap.shown .pad{border-color:var(--line);box-shadow:none}
 .listenprompt{display:grid;justify-items:center;gap:10px;padding:18px 0 8px}
 .listenbig{all:unset;cursor:pointer;display:grid;justify-items:center;gap:6px;width:132px;height:132px;place-content:center;border-radius:50%;border:2px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:600}
 .listenbig svg{width:44px;height:44px}
 .listenbig:active{transform:scale(.97)}
+.seg2.speeds{width:min(100%,320px);padding:2px}
+.seg2.speeds button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);border-radius:8px;font-weight:700}
+.seg2.speeds button[aria-pressed="true"]+button,.seg2.speeds button:has(+button[aria-pressed="true"]){border-color:transparent}
 .revans{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:14px}
 .grades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .grades button{display:grid;gap:2px;justify-items:center;padding:10px 4px}
@@ -556,6 +581,17 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .grades .again{box-shadow:inset 0 0 0 1px var(--sound);color:var(--sound)}
 .grades .suggest{background:var(--accent);color:var(--surface);box-shadow:none}
 .grades .again.suggest{background:var(--sound);color:var(--surface)}
+/* On the answer side a light sweeps across the ratings two or three times, then a faint glow stays; the suggested
+   one pulses. With reduced motion, just the steady glow. */
+.grades.glow{position:relative;border-radius:12px;isolation:isolate;animation:rowglow 3.4s ease-out forwards}
+.grades.glow::after{content:"";position:absolute;inset:-3px;border-radius:14px;pointer-events:none;z-index:1;
+  background:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--accent) 45%,transparent) 50%,transparent 70%);background-size:300% 100%;background-repeat:no-repeat;
+  animation:sweep 1.1s ease-in-out 3;opacity:.9;mix-blend-mode:screen}
+.grades.glow .suggest{animation:pulse 1.4s ease-in-out 4}
+@keyframes sweep{from{background-position:150% 0}to{background-position:-50% 0}}
+@keyframes rowglow{0%{box-shadow:0 0 0 0 transparent}40%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 60%,transparent),0 0 22px color-mix(in srgb,var(--accent) 40%,transparent)}100%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent),0 0 12px color-mix(in srgb,var(--accent) 18%,transparent)}}
+@keyframes pulse{0%,100%{transform:none}50%{transform:scale(1.05)}}
+@media (prefers-reduced-motion:reduce){.grades.glow{animation:none;box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent),0 0 12px color-mix(in srgb,var(--accent) 18%,transparent)}.grades.glow::after{display:none}.grades.glow .suggest{animation:none}}
 .guess{display:grid;gap:8px}
 .guess label{display:grid;grid-template-columns:5.6em 1fr;align-items:center;gap:8px;font-size:1.1rem;color:var(--muted)}
 .guess input::placeholder{color:var(--muted);opacity:.45}
@@ -567,6 +603,9 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .guessacts.one{grid-template-columns:1fr}
 .hintbox{display:grid;gap:6px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,transparent);font-size:.92rem}
 .hintbox p{margin:0}
+.cluespot{min-height:2.6em;align-content:center;justify-items:center;text-align:center;padding:8px 12px}
+.cluespot .cluehint{color:var(--muted);font-size:.85rem}
+.cluespot p{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
 .cluechar{cursor:pointer;transition:transform .12s ease}
 .cluechar:active{transform:scale(.96)}
 .cluechar:focus{outline:none}
@@ -717,7 +756,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 <!-- REVIEW -->
 <section class="screen sub" id="reviewScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back>Back to my words</button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="topbar"><button type="button" class="back" data-back id="revQuit">Quit</button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
     <div class="revhead"><h2 class="revtitle">Flash cards <span class="note" id="revProg"></span><span class="revscore" id="revScore"></span></h2><div id="revScript"></div></div>
     <button type="button" class="revprev" id="revPrev" style="visibility:hidden">‹ Previous card</button>
     <div id="revCard" class="revcard"></div>
@@ -786,6 +825,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
     <hr>
     <button type="button" data-go="settings"><span class="mi">設</span>Settings</button>
     <button type="button" data-go="about"><span class="mi">部</span>About</button>
+    <button type="button" id="feedbackBtn" hidden><span class="mi">信</span>Send feedback</button>
   </nav>
 </div>
 
@@ -874,6 +914,16 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
   else if (g === "settings") openSettings(false);
   else if (g === "about") go("aboutScreen");
 });
+// Send feedback: opens an email with the app version and device filled in. The address is in the page's code, so
+// anyone can read it: use a dedicated address, not a personal one. Empty: the menu item stays hidden.
+const APP_VERSION = "v25", FEEDBACK_TO = "";
+$("feedbackBtn").hidden = !FEEDBACK_TO;
+$("feedbackBtn").onclick = () => {
+  closeMenu();
+  const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua);
+  const body = `\n\n\n---\nRadical ${APP_VERSION} · ${dev ? dev[0] : "device"} · ${screen.width}×${screen.height} · ${ua}`;
+  location.href = `mailto:${FEEDBACK_TO}?subject=${encodeURIComponent(`Radical feedback (${APP_VERSION})`)}&body=${encodeURIComponent(body)}`;
+};
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("menu").hidden) { e.stopImmediatePropagation(); closeMenu(); } }, true);
 
 const cache = {}, shardLoads = {}, words = {}, wordLoads = {};
@@ -902,6 +952,7 @@ function pickVoice() {
 if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 else document.documentElement.classList.add("nosay");
 function speak(text) {
+  text = String(text || "").replace(/[~～〜]/g, "").replace(/…|⋯/g, "，");  // a pattern's slot isn't read out
   if (!("speechSynthesis" in window) || !text) return;
   if (typeof stopReading === "function") stopReading(); else speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
@@ -1048,6 +1099,8 @@ const KIT = {
     () => { zheng(0, pen(0), .6, 1, 2.4); erhu(.1, [[pen(5), .4], [pen(7), .4], [pen(8), .35], [pen(7), .9]]); },
     () => { [0, .09, .18].forEach((d, k) => woodblock(d, 1200 + k * 220, .45)); for (let k = 0; k < 6; k++) zheng(.3 + k * .06, pen(5 + k), .5, 1, 1.8); dizi(.72, pen(10), .9, .3, pen(9)); }]
 };
+// Rating tick: one short woodblock knock, low for Again, middle for Hard, bright for Good and Easy.
+function tick(g) { if (!soundOn) return; try { woodblock(0, g === "again" ? 380 : g === "hard" ? 700 : 1250, .55); } catch (e) {} }
 const lastPlayed = {};
 let soundOn = store.get("radical-sound", true);
 function play(kind) {
@@ -1859,11 +1912,16 @@ function reviewQueue(k = "srs") {
   const fresh = myWords.filter(w => !w.skip && !w[k]).slice(0, Math.max(0, newLeft(k)));
   return [...due, ...fresh];
 }
+// Days until a card comes back. New or just-missed cards: Again soon, Hard later today (a few hours), Good tomorrow,
+// Easy in 4 days. Cards with a history: Hard < Good < Easy, at least a day apart, so the four buttons always differ.
+const LATER = 4 / 24;  // "later today": about four hours, as a fraction of a day
 function nextIvl(s, g) {
   if (g === "again") return 0;
-  if (!s || !s.reps) return { hard: 1, good: 1, easy: 4 }[g];
-  const m = { hard: 1.2, good: s.ease, easy: s.ease * 1.3 }[g];
-  return Math.max(s.ivl + (g === "easy" ? 2 : 1), Math.round(s.ivl * m));
+  if (!s || !s.reps) return { hard: LATER, good: 1, easy: 4 }[g];
+  const hard = Math.max(s.ivl + 1, Math.round(s.ivl * 1.2));
+  const good = Math.max(hard + 1, Math.round(s.ivl * s.ease));
+  const easy = Math.max(good + 1, Math.round(s.ivl * s.ease * 1.3));
+  return { hard, good, easy }[g];
 }
 // ---- progress record. Each day keeps a small tally (c: cards reviewed, r: characters read, n: new words), and a
 // separate list remembers learned words even after their cards are deleted. A word is learned once it's marked
@@ -1891,11 +1949,12 @@ function grade(w, g, k = "srs") {
   if (k === "srs" && w.skip && (g === "again" || g === "hard")) w.skip = false;  // a known word you missed becomes Active again
   logDay("c"); store.set("radical-rev-since-backup", store.get("radical-rev-since-backup", 0) + 1);
   if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); unlearn(w.word); }
+  else if (ivl < 1) { s.ivl = 0; s.reps++; s.due = Date.now() + ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); }  // later today
   else { s.ivl = k === "srs" && w.skip ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
   if (g !== "again") learn(w);
   saveWords();
 }
-const ivlText = d => d === 0 ? "soon" : d === 1 ? "1 day" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
+const ivlText = d => d === 0 ? "soon" : d < 1 ? "later today" : d === 1 ? "1 day" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
 const wStatus = w => w.skip ? "known" : !w.srs ? "new" : w.srs.due <= Date.now() ? "due" : "learning";
 function dueText(w) {
   if (w.skip) return `Known: comes back now and then for a quick check (next around ${localDay(w.srs && w.srs.due)}).`;
@@ -1929,7 +1988,7 @@ function wordFacts() {
   const s = wordState, saved = findWord(s.word), d = lookup(s.word);
   let syl = s.syl && s.syl.length === s.chars.length ? s.syl : null;
   // Your saved pinyin (Taiwan readings) wins over the mainland dictionary, except in Simplified mode.
-  if (!syl && saved && wPinyin(saved) && script !== "simp") { const p = sylls(wPinyin(saved).replace(/\s+/g, "")); if (p.length === s.chars.length) syl = p; }
+  if (!syl && saved && wPinyin(saved) && script !== "simp") { const p = sylls(patternPy(wPinyin(saved)).replace(/\s+/g, "")); if (p.length === s.chars.length) syl = p; }
   if (!syl && d) { const p = (script !== "simp" && d[2] || d[1]).split(" "); if (p.length === s.chars.length) syl = p; }
   if (!syl || syl.length !== s.chars.length) syl = s.chars.map(c => cache[c].p[0]);
   const mean = (saved && wMeaning(saved)) || s.mean || (d && d[3]) || (s.chars.length === 1 ? cache[s.chars[0]].d : "");
@@ -1970,14 +2029,20 @@ function goPage(i) { const p = $("pager"); p.scrollTo({ left: i * p.clientWidth,
 function wordPage() {
   const s = wordState, { saved, syl, mean } = wordFacts(), c = saved && saved.card;
   const page = el("div", "wpage");
-  const size = Math.min(Math.floor((Math.min(innerWidth, 760) - 48) / s.chars.length) - 4, 150);
+  const all = [...s.word].filter(c => cache[c] || isSlot(c));  // a pattern keeps its slot, drawn as a dotted box
+  const size = Math.min(Math.floor((Math.min(innerWidth, 760) - 48) / all.length) - 4, 150);
   const row = el("div", "wchars");
-  s.chars.forEach((ch, i) => {
+  let k = 0;
+  all.forEach(ch => {
+    if (isSlot(ch)) { const sb = slotBox(); sb.style.width = sb.style.height = size + "px"; row.append(sb); return; }
+    const i = k++;
     const b = el("button"); b.type = "button"; b.setAttribute("aria-label", `Open ${ch}`);
     const svg = glyphFor(ch, true); svg.style.width = svg.style.height = size + "px"; svg.style.fontSize = Math.round(size * .8) + "px";
     b.append(svg); b.onclick = () => goPage(i + 1); row.append(b);
   });
   page.append(row);
+  if (isPattern(s.word)) page.append(el("div", "kind", "Pattern · the box stands for whatever fills it"));
+  { const l = legendLine(s.chars.join("")); if (l) page.append(l); }
   const py = el("div", "wpy", `<span class="bigpy">${syl.map(pyHTML).join(" ")}</span>${sayHTML(s.word)}`);
   py.append(addBtn());
   page.append(py);
@@ -2203,6 +2268,25 @@ function practice(top, ch, onBack) {
   );
 }
 
+// ---- grammar patterns: a saved item like ~到 or 一…就 has a slot (~ or …) for whatever fills it. The slot shows as
+// a muted dotted box with a "Pattern" label; pinyin checks and writing skip it; the meaning judge is told.
+const isSlot = c => /^[~～〜…⋯]$/.test(c) || c === "...";
+const isPattern = word => [...String(word || "")].some(isSlot);
+const patternPy = p => String(p || "").replace(/[~～〜…⋯]|\.\.\./g, " ").replace(/\s+/g, " ").trim();
+const slotBox = () => { const b = el("span", "slotbox"); b.setAttribute("aria-label", "blank"); return b; };
+const slotHTML = word => [...String(word || "")].map(c => isSlot(c) ? '<span class="slotbox sm" aria-label="blank"></span>' : esc(c)).join("") + (isPattern(word) ? ' <span class="pattag">Pattern</span>' : "");
+
+// ---- color lines: a slim legend showing only the colors the characters on screen actually use.
+const LEG = [["meaning", "Meaning", ["meaning", "radical"]], ["sound", "Sound", ["sound"]], ["idea", "Ideas", ["idea", "idea2"]], ["whole", "Picture", ["whole"]], ["part1", "Unclear", ["part1", "part2", "part3"]]];
+function legendLine(text) {
+  if (noColor(palette)) return null;
+  const used = new Set(); [...String(text || "")].forEach(c => { const d = cache[c]; if (d) d.s.forEach((_, i) => used.add(d.r[i] || "part3")); });
+  const items = LEG.filter(([, , rs]) => rs.some(r => used.has(r)));
+  if (!items.length) return null;
+  return el("div", "legline", items.map(([k, label, rs]) => `<span>${(k === "idea" ? rs.filter(r => used.has(r)) : [k]).map(r => `<i style="background:var(--${r})"></i>`).join("")}${label}</span>`).join(""));
+}
+function showLegend(after, text) { const l = legendLine(text); if (l && after && !(after.nextElementSibling && after.nextElementSibling.classList.contains("legline"))) after.after(l); }
+
 // ================= words screen
 let filter = "all", pending = null;
 // Flash cards: choose which words (due, new, learning, all) and how many, then start.
@@ -2284,7 +2368,7 @@ function renderWords() {
     const st = wStatus(w), on = picks.has(w);
     const r = el("div", "wrow" + (on ? " sel" : ""));
     r.innerHTML = `<button type="button" class="wsel" role="checkbox" aria-checked="${on}" aria-label="Select ${esc(w.word)}"><i></i></button>`
-      + `<button type="button" class="wmain"><span class="wz" lang="zh">${esc(w.word)}</span><span class="wm">${esc(wMeaning(w))}</span></button>`
+      + `<button type="button" class="wmain"><span class="wz" lang="zh">${slotHTML(w.word)}</span><span class="wm">${esc(wMeaning(w))}</span></button>`
       + `<button type="button" class="wdot" aria-label="Status: ${STATUS_NAME[st]}. Change"><i class="dot ${st}"></i></button>`;
     r.querySelector(".wsel").onclick = () => { on ? picks.delete(w) : picks.add(w); renderWords(); };
     r.querySelector(".wmain").onclick = () => openWord(w.word, { context: w.context });
@@ -2561,7 +2645,8 @@ function showLook() {
     if ($("lookScreen").hidden || look.order[look.i] !== w) return;
     box.innerHTML = ""; const c = w.card;
     box.append(bigWord(conv(w.word)));
-    box.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(wPinyin(w))}</span>${sayHTML(w.word)}`));
+    { const l = legendLine(conv(w.word) + (c && c.example ? conv(c.example) : w.context ? conv(w.context) : "")); if (l) box.append(l); }
+    box.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${sayHTML(w.word)}`));
     box.append(el("p", "wmean", esc(wMeaning(w))));
     if (c) {
       (c.chars || []).forEach(x => box.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
@@ -2602,6 +2687,17 @@ function prevCard() {
   $("reviewScreen").scrollTop = 0;
 }
 $("revPrev").onclick = prevCard;
+// Quit: with nothing rated it just leaves; once a card is rated it asks first, showing how far you got and the score.
+// (Ratings are saved as you go, so quitting loses nothing.) On the Done screen the button is Back to my words.
+$("revQuit").onclick = () => {
+  if (!rDone || !rq.length) { history.back(); return; }
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard");
+  card.innerHTML = `<h3>End this session?</h3><p>${rDone} of ${rDone + rq.length} done · ${scoreText(rScore)}</p><p class="note">Your ratings so far are saved.</p>`;
+  const row = el("div", "row"), stay = btn("Keep going", "btn ghost", () => sheet.remove()), quit = btn("Quit", "btn", () => { sheet.remove(); history.back(); });
+  row.append(stay, quit); card.append(row); sheet.append(card);
+  sheet.onclick = ev => { if (ev.target === sheet) sheet.remove(); };
+  document.body.append(sheet); stay.focus();
+};
 // Flash cards for a hand-picked set of words (from the selection bar), shuffled, schedule ignored for choosing.
 async function openReviewWith(ws) {
   rq = ws.slice(); for (let i = rq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rq[i], rq[j]] = [rq[j], rq[i]]; }
@@ -2617,7 +2713,8 @@ async function openReview(mode = "due", count = "all") {
 }
 function bigWord(word) {
   const box = el("div", "revchars"); box.lang = "zh";
-  [...word].forEach(ch => box.append(cache[ch] ? glyphFor(ch, true) : el("span", "plain", esc(ch))));
+  [...word].forEach(ch => box.append(isSlot(ch) ? slotBox() : cache[ch] ? glyphFor(ch, true) : el("span", "plain", esc(ch))));
+  if (isPattern(word)) box.append(el("span", "pattag", "Pattern"));
   return box;
 }
 // ---- answer checking
@@ -2655,6 +2752,7 @@ function soundTip(g, t) {
   return "";
 }
 function checkPinyin(given, target) {
+  given = patternPy(given); target = patternPy(target);  // a pattern's slot (~到 → dào) isn't part of the answer
   if (!given.trim()) return { ok: null };
   if (!target) return { ok: null, note: "No pinyin on file to check against." };
   const a = pyKey(given), b = pyKey(target);
@@ -2699,8 +2797,8 @@ function revBar(label, flipLabel, flipIcon, onFlip, actions, cls, sub) {
   const top = el("div", "revbartop", `<span class="rl"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span>`);
   const f = btn("", "btn ghost small flipbtn", onFlip); f.innerHTML = `<i>${flipIcon}</i>${flipLabel}`;
   top.append(f);
-  const row = el("div", cls); actions.forEach(a => row.append(a));
-  bar.append(top, row);
+  bar.append(top);
+  if (actions.length) { const row = el("div", cls); actions.forEach(a => row.append(a)); bar.append(row); }  // no actions: a slim bar
 }
 function showFront() {
   if (rq && rq[0]) ensureCard(rq[0]).catch(() => {});  // have the full card ready by the time the answer shows
@@ -2708,6 +2806,7 @@ function showFront() {
   $("revPrev").style.visibility = revHist.length ? "visible" : "hidden";  // keeps its space, so the card never jumps
   const sc = rScore || (rScore = newScore()), rep = n => `${n} repeat${n === 1 ? "" : "s"}`;
   $("revScore").textContent = rDone && rq.length ? scoreText(sc) : "";
+  $("revQuit").textContent = rq.length ? "Quit" : "Back to my words";
   if (!rq.length) {
     prog.textContent = ""; $("revBar").replaceChildren();
     box.append(el("p", "wmean", rDone ? `Done. ${rDone} reviewed${sc.repeats ? `, including ${rep(sc.repeats)}` : ""}.` : "Nothing to review right now."));
@@ -2726,38 +2825,43 @@ function showFront() {
   if (revHow === "write") { writeFront(w); return; }
   const listen = revHow === "listen";
   if (listen) {
-    // Listening card: only the sound. Play it again, or slower, as often as you like.
-    const say = slow => { const r0 = rate; if (slow) rate = rate * .65; speak(conv(w.word)); rate = r0; };
+    // Listening card: only the sound. Three speeds: Slowest (about half), Slower (about 70%) and Normal (your speech
+    // speed). Tapping a speed plays the word at it and keeps it (remembered); Play replays at the chosen speed.
+    const SPEEDS = [["slowest", "Slowest", .5], ["slower", "Slower", .7], ["normal", "Normal", 1]];
+    let sp = store.get("radical-listen-speed", "normal"); if (!SPEEDS.some(x => x[0] === sp)) sp = "normal";
+    const say = () => { const r0 = rate; rate = rate * SPEEDS.find(x => x[0] === sp)[2]; speak(conv(w.word)); rate = r0; };
     const lp = el("div", "listenprompt");
-    const big = el("button", "listenbig", `${SPK}<span>Play</span>`); big.type = "button"; big.onclick = () => say(false);
-    const slow = btn("Slower", "btn ghost small", () => say(true));
-    lp.append(big, slow); box.append(lp);
-    setTimeout(() => { if (lp.isConnected) say(false); }, 250);
+    const big = el("button", "listenbig", `${SPK}<span>Play</span>`); big.type = "button"; big.onclick = say;
+    const seg = el("div", "seg2 three speeds"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Speed");
+    SPEEDS.forEach(([k, label]) => { const b = btn(label, "", () => { sp = k; store.set("radical-listen-speed", k); seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); say(); }); b.setAttribute("aria-pressed", k === sp); seg.append(b); });
+    lp.append(big, seg); box.append(lp);
+    setTimeout(() => { if (lp.isConnected) say(); }, 250);
   } else box.append(bigWord(conv(w.word)));
   // Two guesses, pinyin first. Tone numbers turn into marks as you type.
   const form = el("form", "guess");
   form.innerHTML = `<label><span>Pinyin</span><input id="gPy" type="text" inputmode="latin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="wo3 or wǒ"></label>
     <button type="button" class="pyprev" id="gPrev" hidden title="Use tone marks"></button>
     <label><span>Meaning</span><input id="gMean" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="in English"></label>`;
-  // Clues: tap a character for a random clue about it (its pinyin, its meaning, or its sound), each kind once
-  // per character. The guess boxes stay as they are. Any clue caps the suggested rating at Hard.
-  const hintBox = el("div", "hintbox"); hintBox.hidden = true;
+  // Clues: tap a character for a clue about it, in a fixed order: its sound (played), then its meaning, then its
+  // pinyin; after that a tap plays the sound again. One clue shows at a time, right under the big characters (where
+  // the "Stuck?" line was), and each replaces the last. Every character keeps its own place in the order.
+  // The guess boxes stay as they are. Any clue caps the suggested rating at Hard.
+  const hintBox = el("div", "hintbox cluespot"); hintBox.innerHTML = '<p class="cluehint">Stuck? Tap a character for a clue.</p>';
   let used = 0;
   const big = box.querySelector(".revchars") || el("div"), word = conv(w.word), wchars = [...word];
-  const syl = sylls(numToMarks(String(wPinyin(w)).toLowerCase().replace(/[\s'’·-]+/g, ""))).filter(Boolean);
-  const given = wchars.map(() => new Set());
+  const syl = sylls(numToMarks(patternPy(wPinyin(w)).toLowerCase().replace(/[\s'’·-]+/g, ""))).filter(Boolean);
+  const sylOf = []; { let k = 0; wchars.forEach((c, i) => { if (!isSlot(c)) sylOf[i] = syl[k++]; }); }
+  const step = wchars.map(() => 0);
   [...big.children].forEach((node, i) => {
-    const ch = wchars[i], d = cache[ch]; if (!ch) return;
+    const ch = wchars[i], d = cache[ch]; if (!ch || !d || isSlot(ch)) return;
     node.classList.add("cluechar"); node.setAttribute("tabindex", "0"); node.setAttribute("aria-label", `Clue for ${ch}`);
+    const order = ["sound", ...(d.d ? ["meaning"] : []), "pinyin"];
     const clue = () => {
-      const kinds = ["pinyin", "meaning", "sound"].filter(k => !given[i].has(k) && (k !== "meaning" || (d && d.d)) && (k !== "pinyin" || syl[i] || d));
-      if (!kinds.length) { node.classList.add("nomore"); setTimeout(() => node.classList.remove("nomore"), 400); return; }
-      const k = kinds[Math.floor(Math.random() * kinds.length)]; given[i].add(k); used++;
+      const k = step[i] < order.length ? order[step[i]] : "sound"; step[i]++; used++;
       const tag = `<span lang="zh" class="hz">${esc(ch)}</span>`;
-      if (k === "pinyin") hintBox.append(el("p", "", `${tag} <b>Pinyin:</b> ${pyHTML(syl[i] || d.p[0])}`));
-      if (k === "meaning") hintBox.append(el("p", "", `${tag} <b>Meaning:</b> ${esc(d.d.split(/;/).slice(0, 2).join(";"))}`));
-      if (k === "sound") { speak(ch); hintBox.append(el("p", "", `${tag} <b>Sound:</b> ${sayHTML(ch, true)}`)); }
-      hintBox.hidden = false;
+      if (k === "sound") { speak(ch); hintBox.innerHTML = `<p>${tag} <b>Sound:</b> ${sayHTML(ch, true)}</p>`; }
+      if (k === "meaning") hintBox.innerHTML = `<p>${tag} <b>Meaning:</b> ${esc(d.d.split(/;/).slice(0, 2).join(";"))}</p>`;
+      if (k === "pinyin") hintBox.innerHTML = `<p>${tag} <b>Pinyin:</b> ${pyHTML(sylOf[i] || d.p[0])}</p>`;
     };
     node.addEventListener("click", clue);
     node.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clue(); } });
@@ -2772,7 +2876,7 @@ function showFront() {
       if (g && local.ok === false && store.get("radical-pw", "") && navigator.onLine !== false) {
         judging = true; const cb = $("revBar").querySelector(".guessacts .btn"); if (cb) { cb.disabled = true; cb.textContent = "Checking…"; }
         try {
-          const r = await Promise.race([claude({ action: "judge", word: w.word, meaning: wMeaning(w), guess: g }), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 8000))]);
+          const r = await Promise.race([claude({ action: "judge", word: w.word, meaning: wMeaning(w), guess: g, pattern: isPattern(w.word) }), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 8000))]);
           const ok = r.verdict === "right" ? true : r.verdict === "close" ? "part" : false;
           st = { aiMean: { ok, note: r.note || (ok === true ? "Correct." : ok ? "Close." : "Not quite.") } };
         } catch (e) {}
@@ -2784,8 +2888,9 @@ function showFront() {
     form.remove(); hintBox.remove(); revSide = { how }; showBack.hints = used; showBack(w, how, st);
   };
   showFront.reveal = reveal;
-  box.append(form, hintBox);
-  revBar(listen ? "Listen, then type it" : "Guess, then check", "Show answer", "⟳", () => reveal("show"), [btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know"))], "guessacts", listen ? "Type the pinyin and meaning of what you hear." : "Stuck? Tap a character for a clue.");
+  if (!listen) big.after(hintBox);
+  box.append(form);
+  revBar(listen ? "Listen, then type it" : "Guess, then check", "Show answer", "⟳", () => reveal("show"), [btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know"))], "guessacts", listen ? "Type the pinyin and meaning of what you hear." : "");
   const py = $("gPy"), mean = $("gMean");
   // Typing tone numbers (ta1) shows the marked form below; tap it to swap it in.
   py.addEventListener("input", () => { const pv = $("gPrev"), m = numToMarks(py.value); pv.hidden = !/\d/.test(py.value); pv.innerHTML = `${pyWordHTML(m)} <span>tap to use</span>`; });
@@ -2796,38 +2901,44 @@ function showFront() {
   showBack.guess = () => ({ py: py.value, mean: mean.value });
   setTimeout(() => py.focus(), 50);
 }
-// Writing card: pinyin, sound and meaning on top; write each character in turn on the pad.
-// Hints come after 3 misses on a stroke, or from the Hint button. The rating suggestion comes from how it went.
+// Writing card: pinyin, sound and meaning on one line on top; write each character in turn on the pad. The card
+// fits one screen: the pad is sized to the room left above the bottom bar (measured at its tallest), so the bar never
+// covers it. Hints come after 3 misses on a stroke, or from the Hint button. The rating suggestion comes from how it went.
+// Show answer, while writing, shows just the character you're on: it draws itself on the pad, locks, and all its
+// strokes count as hinted; then on to the next character (after the last one, the answer side).
 function writeFront(w) {
-  const box = $("revCard"), word = conv(w.word), chars = [...word];
-  box.append(el("div", "wpy writeprompt", `<span class="bigpy">${pyWordHTML(wPinyin(w))}</span>${sayHTML(w.word)}`));
-  box.append(el("p", "wmean", esc(wMeaning(w))));
-  const slots = el("div", "wslots"), slotEls = chars.map(() => slots.appendChild(el("span", "wslot")));
-  const padHost = el("div", "writewrap"), coach = el("p", "coach");
+  const box = $("revCard"), word = conv(w.word), chars = [...word].filter(c => !isSlot(c));
+  box.append(el("div", "wprompt1", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${sayHTML(w.word, true)}<span class="wm1">${esc(wMeaning(w))}</span>`));
+  const slots = el("div", "wslots slim"), slotEls = chars.map(() => slots.appendChild(el("span", "wslot")));
+  const padHost = el("div", "writewrap"), coach = el("p", "coach one");
   box.append(slots, padHost, coach);
   const stats = { strokes: 0, first: 0, hints: 0 };
-  let writer = null, idx = 0, current = 0, hinted = new Set(), curWrap = null;
+  let writer = null, idx = 0, current = 0, hinted = new Set(), curWrap = null, firstHere = 0, showing = false;
   const reveal = (how, st = stats) => {
     if (writer) { try { writer.cancelQuiz(); } catch (e) {} writer = null; }
     revSide = { how, stats: st }; box.innerHTML = ""; box.append(bigWord(word)); showBack(w, how, st);
   };
   showFront.reveal = reveal;
   const fill = i => { const ch = chars[i]; slotEls[i].replaceChildren(cache[ch] ? glyphFor(ch, true) : el("span", "plain", esc(ch))); slotEls[i].classList.add("done"); };
+  let lead = "", inkSvg = null;
   const nextChar = () => {
     if (!box.isConnected || revSide) return;
     if (idx >= chars.length) { reveal("write"); return; }
-    setBar(true);
     const ch = chars[idx], d = cache[ch];
     slotEls.forEach((x, i) => x.classList.toggle("now", i === idx));
     if (!d || typeof HanziWriter === "undefined") { fill(idx++); nextChar(); return; }  // nothing to write (no stroke data)
-    padHost.innerHTML = ""; hinted = new Set(); current = 0;
-    const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
-    const size = Math.min(400, (box.clientWidth || innerWidth - 32));
+    padHost.innerHTML = ""; hinted = new Set(); current = 0; firstHere = 0; showing = false;
+    // Measure the bar at its tallest (with the Next character button), then show the slim writing bar.
+    setBar(false, true); const barH = $("revBar").getBoundingClientRect().height; setBar(true);
+    $("reviewScreen").scrollTop = 0;
+    const top = padHost.getBoundingClientRect().top, room = innerHeight - barH - top - 58;  // 58: the color line, the coach line and a margin
+    const size = Math.max(180, Math.min(400, box.clientWidth || innerWidth - 32, Math.floor(room)));
     const { wrap, pad, hint } = padHolder(padHost, size); curWrap = wrap;
     hint.onclick = () => {
       if (!writer) return; writer.highlightStroke(current); if (!hinted.has(current)) { hinted.add(current); stats.hints++; }
       coach.innerHTML = lead + "That stroke is highlighted. Trace it.";
     };
+    const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
     writer = HanziWriter.create(pad, ch, {
       width: size, height: size, padding: 12,
       charDataLoader: (c, onLoad) => onLoad({ strokes: d.s, medians: d.md }),
@@ -2835,31 +2946,49 @@ function writeFront(w) {
       outlineColor: col("--grid"), strokeColor: col("--surface"), drawingColor: "rgba(0,0,0,0)", highlightColor: strokeCol(d, 0),
       drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 3, markStrokeCorrectAfterMisses: false
     });
-    const ink = svgFor(ch, false, true); ink.setAttribute("class", "inkover");
+    const ink = inkSvg = svgFor(ch, false, true); ink.setAttribute("class", "inkover");
     ink.style.cssText = `position:absolute;left:12px;top:12px;width:${size - 24}px;height:${size - 24}px;pointer-events:none`;
     const inkStrokes = [...ink.querySelectorAll("g.strokes path")]; inkStrokes.forEach(x => { x.style.opacity = 0; x.style.transition = "opacity .35s ease"; });
     pad.append(ink); brushLayer(pad, size, () => d.r[current]);
     const total = d.s.length; stats.strokes += total;
-    const lead = chars.length > 1 ? `<b>Character ${idx + 1} of ${chars.length}</b> · ` : "";
+    lead = chars.length > 1 ? `<b>${idx + 1} of ${chars.length}</b> · ` : "";
     const say = m => { coach.innerHTML = lead + m; };
     say("Write it from memory, first stroke first.");
     writer.quiz({
-      onCorrectStroke: s => { if (inkStrokes[s.strokeNum]) inkStrokes[s.strokeNum].style.opacity = 1; if (!s.mistakesOnStroke && !hinted.has(s.strokeNum)) stats.first++; current = s.strokeNum + 1; if (current < total && writer) writer.updateColor("highlightColor", strokeCol(d, current)); say(`Stroke ${Math.min(current + 1, total)} of ${total}`); },
+      onCorrectStroke: s => { if (inkStrokes[s.strokeNum]) inkStrokes[s.strokeNum].style.opacity = 1; if (!s.mistakesOnStroke && !hinted.has(s.strokeNum)) { stats.first++; firstHere++; } current = s.strokeNum + 1; if (current < total && writer) writer.updateColor("highlightColor", strokeCol(d, current)); say(`Stroke ${Math.min(current + 1, total)} of ${total}`); },
       onMistake: s => { const n = s.mistakesOnStroke; if (n >= 3 && !hinted.has(s.strokeNum)) { hinted.add(s.strokeNum); stats.hints++; } say(n >= 3 ? "Here's where it goes. Trace it." : "Not quite. Try that stroke again."); },
       // A finished character stays on the pad as long as you like; you move on when you're ready.
       onComplete: () => {
-        fill(idx++); writer = null; padDone(curWrap); play("right");
+        fill(idx++); writer = null; padDone(curWrap); play("right"); showLegend(curWrap, ch);
         const more = idx < chars.length;
         coach.innerHTML = lead + (more ? "Done. Look it over, then go on." : "Done. Look it over, then check the answer.");
         setBar(false, more);
       }
     });
   };
-  // The bottom bar: Hint while you write; after a character, the way forward (next character, or the answer).
+  // Show answer for the character on the pad: it draws itself, then locks (no ✓, since you didn't write it).
+  const showChar = () => {
+    if (!writer || showing) return;
+    showing = true; try { writer.cancelQuiz(); } catch (e) {} writer = null;
+    const ch = chars[idx], d = cache[ch], total = d.s.length;
+    stats.first -= firstHere; stats.hints += total - hinted.size;  // every stroke of this character counts as hinted
+    curWrap.classList.add("shown");
+    const more = idx + 1 < chars.length;
+    coach.innerHTML = lead + "Here's how it's written.";
+    revBar("Watch it drawn", "Show answer", "⟳", () => reveal("show"), [], "guessacts");
+    animate(inkSvg, ch, 1, () => {
+      if (!box.isConnected || revSide) return;
+      fill(idx++); padDone(curWrap); showLegend(curWrap, ch);
+      if (!more) { setTimeout(() => { if (box.isConnected && !revSide) reveal("write"); }, 900); return; }
+      coach.innerHTML = lead + "Study it, then go on.";
+      setBar(false, true);
+    });
+  };
+  // The bottom bar: slim while you write (Show answer shows just this character); after a character, the way forward.
   function setBar(writing, more) {
-    if (writing) revBar("Write it from memory", "Show answer", "⟳", () => reveal("show"), [], "guessacts", "Say it to yourself, then write. Stuck? Tap Hint on the pad.");
+    if (writing) revBar("Write it from memory", "Show this one", "⟳", showChar, [], "guessacts");
     else revBar(more ? "Character done" : "Word done", "Show answer", "⟳", () => reveal(more ? "show" : "write"),
-      [btn(more ? "Next character ›" : "See answer", "btn", () => more ? nextChar() : reveal("write"))], "guessacts one", more ? "Take your time. Go on when you're ready." : "Take your time, then see how you did.");
+      [btn(more ? "Next character ›" : "See answer", "btn", () => more ? nextChar() : reveal("write"))], "guessacts one", more ? "Go on when you're ready." : "Then see how you did.");
   }
   nextChar();
 }
@@ -2887,7 +3016,10 @@ function showBack(w, how, st) {
     if (!quiet) play(suggest === "again" ? "wrong" : "right");
   }
   if (hinted && suggest === "good") suggest = "hard";  // needed a hint: it comes back sooner
-  ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(wPinyin(w))}</span>${sayHTML(w.word)}`));
+  // The colors used on this side (the big word and the example sentence), right under the big characters.
+  const leg = legendLine(conv(w.word) + (c && c.example ? conv(c.example) : "")), bw = box.querySelector(".revchars");
+  if (leg && bw) { box.querySelectorAll(".legline").forEach(x => x.remove()); bw.after(leg); }
+  ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${sayHTML(w.word)}`));
   ans.append(el("p", "wmean", esc(wMeaning(w))));
   if (c) {
     (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
@@ -2906,13 +3038,14 @@ function showBack(w, how, st) {
       revHist.push({ w, k, srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore } });
       const sc = rScore;
       if (g === "again") { sc.missed++; sc.repeats++; sc.run = 0; } else { if (g === "hard") sc.shaky++; else sc.right++; sc.run++; sc.best = Math.max(sc.best, sc.run); }
-      grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
+      tick(g); grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);
   });
   // Rating is the only way forward, so the bar says so; the flip button sits where "Show answer" was on the front.
   box.append(ans);
   revBar("Rate it to go to the next card", "Front", "⟲", () => { ans.remove(); showFront(); }, [...grades.children], "grades",
     `Your rating decides when it comes back.${suggest ? " The suggested one is highlighted." : ""}`);
+  const row = $("revBar").querySelector(".grades"); if (row) row.classList.add("glow");  // a light sweeps the ratings: your turn
 }
 
 // ================= settings
