@@ -2835,8 +2835,7 @@ function checkMeaning(given, target) {
 function revBar(label, flipLabel, flipIcon, onFlip, actions, cls, sub) {
   const bar = $("revBar"); bar.replaceChildren(); bar.classList.remove("glow");
   const top = el("div", "revbartop", `<span class="rl"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span>`);
-  const f = btn("", "btn ghost small flipbtn", onFlip); f.innerHTML = `<i>${flipIcon}</i>${flipLabel}`;
-  top.append(f);
+  if (flipLabel) { const f = btn("", "btn ghost small flipbtn", onFlip); f.innerHTML = `<i>${flipIcon}</i>${flipLabel}`; top.append(f); }  // no label: no flip button
   bar.append(top);
   if (actions.length) { const row = el("div", cls); actions.forEach(a => row.append(a)); bar.append(row); }  // no actions: a slim bar
 }
@@ -3003,7 +3002,7 @@ function writeFront(w) {
       onComplete: () => {
         fill(idx++); writer = null; padDone(curWrap); play("right"); showLegend(curWrap, ch);
         const more = idx < chars.length;
-        coach.innerHTML = lead + (more ? "Done. Look it over, then go on." : "Done. Look it over, then check the answer.");
+        coach.innerHTML = lead ? lead.replace(/ · $/, "") : "";  // the bar says what's next; no second message here
         setBar(false, more);
       }
     });
@@ -3022,15 +3021,16 @@ function writeFront(w) {
       if (!box.isConnected || revSide) return;
       fill(idx++); padDone(curWrap); showLegend(curWrap, ch);
       if (!more) { setTimeout(() => { if (box.isConnected && !revSide) reveal("write"); }, 900); return; }
-      coach.innerHTML = lead + "Study it, then go on.";
+      coach.innerHTML = lead ? lead.replace(/ · $/, "") : "";
       setBar(false, true);
     });
   };
   // The bottom bar: slim while you write (Show answer shows just this character); after a character, the way forward.
   function setBar(writing, more) {
     if (writing) revBar("Write it from memory", "Show this one", "⟳", showChar, [], "guessacts");
-    else revBar(more ? "Character done" : "Word done", "Show answer", "⟳", () => reveal(more ? "show" : "write"),
-      [btn(more ? "Next character ›" : "See answer", "btn", () => more ? nextChar() : reveal("write"))], "guessacts one", more ? "Go on when you're ready." : "Then see how you did.");
+    // Once a character is done there's one way forward, so the bar has one button (no Show answer beside See answer).
+    else revBar(more ? "Character done" : "Word done", null, "", null,
+      [btn(more ? "Next character ›" : "See answer", "btn", () => more ? nextChar() : reveal("write"))], "guessacts one", more ? "Look it over, then go on." : "Look it over, then see how you did.");
   }
   nextChar();
 }
