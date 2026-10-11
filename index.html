@@ -190,6 +190,11 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .revscore{display:block;font-family:var(--font-ui);font-size:.8rem;font-weight:500;color:var(--muted);margin-top:2px}
 .revscore:empty{display:none}
 .donescore{text-align:center;color:var(--muted);margin:0}
+.finish{display:grid;justify-items:center;gap:10px;padding:10px 0 20px;text-align:center}
+.finmark{width:min(46vw,190px);aspect-ratio:1}.finmark svg{width:100%;height:100%;display:block}
+.finish h3{margin:0;font-family:var(--font-brand);font-size:1.35rem;font-weight:800;letter-spacing:.04em}
+.finnext{margin:0;color:var(--fg);font-weight:600}
+.finacts{display:grid;gap:8px;width:100%;margin-top:8px}
 .revtitle{margin:0;text-align:center;font-family:var(--font-brand);font-size:1.15rem;font-weight:800}
 .ratehead{margin:6px 0 0;text-align:center;display:grid;gap:2px}
 .ratehead b{font-size:.95rem}.ratehead span{font-size:.78rem;color:var(--muted)}
@@ -2770,7 +2775,7 @@ let rq = [], rDone = 0, revHist = [];
 // The session's score: right (Good or Easy), shaky (Hard), missed (Again, which also brings the card back as a
 // repeat), and the longest run without a miss.
 let rScore = null;
-const newScore = () => ({ right: 0, shaky: 0, missed: 0, run: 0, best: 0, repeats: 0 });
+const newScore = () => ({ right: 0, shaky: 0, missed: 0, run: 0, best: 0, repeats: 0, mw: [], learned0: Object.keys(learned).length });
 const scoreText = sc => `${sc.right} right · ${sc.shaky} shaky · ${sc.missed} missed`;  // revHist: the cards already rated this session, newest last, so you can go back
 // Going back undoes the last rating: the card's schedule, the queue and the day's new-word count return to how
 // they were, and the card opens on its answer side so you can look again and rate it again.
@@ -2906,10 +2911,21 @@ function showFront() {
   $("revQuit").textContent = rq.length ? "Quit" : "My words";
   if (!rq.length) {
     prog.textContent = ""; $("revBar").replaceChildren(); $("revBar").classList.remove("glow");
-    box.append(el("p", "wmean", rDone ? `Done. ${rDone} reviewed${sc.repeats ? `, including ${rep(sc.repeats)}` : ""}.` : "Nothing to review right now."));
-    if (rDone) box.append(el("p", "donescore", `${scoreText(sc)}${sc.best > 1 ? ` · best run ${sc.best} in a row` : ""}`));
-    if (rDone) play("reward");
-    box.append(btn("Back to my words", "btn wide", () => history.back()));
+    if (!rDone) { box.append(el("p", "wmean", "Nothing to review right now."), btn("Back to my words", "btn wide", () => history.back())); return; }
+    // The finish: 完 (finished) draws itself in the lit ink, then the session in one glance, what it earned, what's next.
+    const k = srsKey(), fin = el("div", "finish"), mark = el("div", "finmark");
+    fin.append(mark, el("h3", "", "Session complete"));
+    ensure("完").then(() => { if (!fin.isConnected) return; const svg = svgFor("完", false, true); mark.append(svg); animate(svg, "完", 1.2); });
+    const gained = Object.keys(learned).length - (sc.learned0 || 0), soon = midnight() + 2 * DAY;
+    const next = myWords.filter(x => x[k] && x[k].due < soon && (k === "srs" || !x.skip)).length;
+    fin.append(el("p", "donescore", `${rDone} card${rDone === 1 ? "" : "s"}${sc.repeats ? ` (${rep(sc.repeats)})` : ""} · ${scoreText(sc)}${sc.best > 1 ? ` · best run ${sc.best}` : ""}`));
+    fin.append(el("p", "finnext", [gained > 0 ? `+${gained} learned` : "", next ? `${next} due by tomorrow` : "Nothing due tomorrow"].filter(Boolean).join(" · ")));
+    const acts = el("div", "finacts");
+    const missed = sc.mw.filter(x => myWords.includes(x));
+    if (missed.length) acts.append(btn(`Go over the ones you missed (${missed.length})`, "btn ghost wide", () => { history.back(); setTimeout(() => openLook(missed), 60); }));
+    acts.append(btn("Done", "btn wide", () => history.back()));
+    fin.append(acts); box.append(fin);
+    play("reward");
     return;
   }
   const w = rq[0];
@@ -3135,9 +3151,9 @@ function showBack(w, how, st) {
   [["again", "Again"], ["hard", "Hard"], ["good", "Good"], ["easy", "Easy"]].forEach(([g, label]) => {
     const b = el("button", `btn ghost ${g}${g === suggest ? " suggest" : ""}`, `${label}<small>${ivlText(nextIvl(w[k], g))}</small>`); b.type = "button";
     b.onclick = () => {
-      revHist.push({ w, k, srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore } });
+      revHist.push({ w, k, srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore, mw: rScore.mw.slice() } });
       const sc = rScore;
-      if (g === "again") { sc.missed++; sc.repeats++; sc.run = 0; } else { if (g === "hard") sc.shaky++; else sc.right++; sc.run++; sc.best = Math.max(sc.best, sc.run); }
+      if (g === "again") { sc.missed++; sc.repeats++; sc.run = 0; if (!sc.mw.includes(w)) sc.mw.push(w); } else { if (g === "hard") sc.shaky++; else sc.right++; sc.run++; sc.best = Math.max(sc.best, sc.run); }
       tick(g); grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);
   });
