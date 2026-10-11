@@ -297,6 +297,9 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .more{justify-self:center}
 #wikiQ{font-family:var(--font-zh),var(--font-ui)}
 #wikiQ::placeholder{font-family:var(--font-ui);font-size:.82rem}
+.randbtn{all:unset;box-sizing:border-box;cursor:pointer;display:block;width:100%;text-align:center;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-weight:500}
+.randbtn #wikiRandomZh{font-family:var(--font-zh);font-weight:600}
+.randbtn:focus-visible{outline:2px solid var(--accent)}
 .topics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .topics button{all:unset;box-sizing:border-box;cursor:pointer;display:grid;justify-items:center;gap:0;padding:5px 6px;border-radius:10px;border:1px solid var(--line);background:var(--surface);min-width:0}
 .topics button b{font-family:var(--font-zh);font-size:1rem;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -646,7 +649,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
       <button type="submit" class="btn">Search</button>
     </form>
     <h3 class="sec">Or surprise me</h3>
-    <button type="button" class="btn ghost wide" id="wikiRandom"><span lang="zh" id="wikiRandomZh">隨機條目</span> · Random article</button>
+    <button type="button" class="randbtn" id="wikiRandom"><span lang="zh" id="wikiRandomZh">隨機條目</span> · Random article</button>
     <p class="note">Real Chinese Wikipedia, written by Chinese-speaking editors. Nothing is machine-translated.</p>
     <p class="note wstatus" id="wikiStatus" hidden></p>
     <div class="list" id="wikiList"></div>
