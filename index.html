@@ -258,6 +258,9 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .ctlrow{flex-wrap:nowrap;gap:6px;align-items:flex-end}
 .ctlrow .switch,.ctlrow .listen,.sizebtn{font-size:.84rem;padding:4px 10px 4px 4px;white-space:nowrap;flex:none}
 .ctlrow .listen{padding:6px 10px 6px 9px;gap:6px}
+/* In the row, Listen keeps its width while playing (a longer label pushed the row wider than the screen): it fills instead. */
+.ctlrow .listen[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.ctlrow .listen[aria-pressed="true"] span::after{content:none}
 .ctlrow .switch .track{width:32px;height:20px}.ctlrow .switch .knob{width:14px;height:14px}
 .ctlrow .switch[aria-checked="true"] .knob{left:15px}
 .ctlrow .ctl{justify-items:start}
@@ -871,8 +874,9 @@ function speak(text) {
   u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = rate;
   speechSynthesis.speak(u);
 }
-// ---- read-along: speak lines and light up each word as it's said. The voice reports its position on most
-// devices; where it doesn't, the position is estimated from the speaking speed.
+// ---- read-along: speak the text a sentence at a time and light up the whole sentence while it's said. Short
+// utterances keep the voice from skipping words (long ones made some voices drop about one word in five), and the
+// highlight no longer has to guess where the voice is inside a sentence.
 let readToken = 0, reading = false;
 // Reading tally: each line of text counts once, after it has been on screen about 4 seconds in all (so scrolling
 // past quickly doesn't count), or when it's read aloud. Only Chinese characters are counted.
@@ -890,6 +894,29 @@ function watchLines(reader) {
   reader.querySelectorAll(".line").forEach(l => lineSeen.observe(l));
 }  // reading: a read-along is running
 function stopReading() { readToken++; reading = false; if ("speechSynthesis" in window) speechSynthesis.cancel(); document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking")); const b = $("listenBtn"); if (b) b.setAttribute("aria-pressed", "false"); }
+// A line's chunks: sentences (ending in 。！？); a sentence over about 25 characters splits at ，、；：; a stretch
+// with no punctuation at all splits every 15 or so characters, always at a word boundary.
+function chunksOf(line) {
+  const text = line._text || "", spans = line._spans || [], out = [], len = (a, b) => [...text.slice(a, b)].length;
+  const byWords = (a, b) => {  // no punctuation to split at: cut after a word once the piece reaches 15 characters
+    let s = a;
+    for (const sp of spans) { if (sp.end <= s || sp.start >= b) continue; if (len(s, sp.end) >= 15 && sp.end < b) { out.push([s, sp.end]); s = sp.end; } }
+    if (s < b) out.push([s, b]);
+  };
+  const pieces = (str, re, base) => { const r = []; let m; re.lastIndex = 0; while ((m = re.exec(str)) && m[0]) r.push([base + m.index, base + m.index + m[0].length]); return r; };
+  for (const [a, b] of pieces(text, /[^。！？!?]+[。！？!?]*[」』”"）)]*|[。！？!?]+/g, 0)) {
+    if (len(a, b) <= 25) { out.push([a, b]); continue; }
+    let cur = null;
+    for (const [c, d] of pieces(text.slice(a, b), /[^，、；：,;:]+[，、；：,;:]*|[，、；：,;:]+/g, a)) {
+      if (len(c, d) > 25) { if (cur) { out.push(cur); cur = null; } byWords(c, d); continue; }
+      if (cur && len(cur[0], d) > 25) { out.push(cur); cur = null; }
+      cur = cur ? [cur[0], d] : [c, d];
+    }
+    if (cur) out.push(cur);
+  }
+  return out.filter(([a, b]) => /[\p{Script=Han}A-Za-z0-9]/u.test(text.slice(a, b)))
+    .map(([a, b]) => ({ text: text.slice(a, b), groups: spans.filter(x => x.start < b && x.end > a).map(x => x.group) }));
+}
 function readAloud(lines, all) {
   if (!("speechSynthesis" in window) || !lines.length) return;
   const wasReading = document.querySelector(".speaking") || ($("listenBtn") && $("listenBtn").getAttribute("aria-pressed") === "true");
@@ -898,46 +925,26 @@ function readAloud(lines, all) {
   const token = readToken; reading = true;
   if (all) $("listenBtn").setAttribute("aria-pressed", "true");
   const simp = script === "simp", v = simp ? cnVoice : twVoice;
+  const queue = lines.flatMap(line => chunksOf(line).map((c, k) => ({ ...c, line, first: k === 0 })));
+  const unlight = () => document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking"));
   let n = 0;
   const next = () => {
     if (token !== readToken) return;
-    document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking"));
-    if (n >= lines.length) { reading = false; if (all) $("listenBtn").setAttribute("aria-pressed", "false"); return; }
-    const line = lines[n++], text = line._text, spans = line._spans || []; countLine(line);
-    if (all) line.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    const show = i => {
-      if (token !== readToken) return;
-      const sp = spans.find(x => i >= x.start && i < x.end) || spans.filter(x => x.start <= i).pop();
-      document.querySelectorAll(".speaking").forEach(x => { if (!sp || x !== sp.group) x.classList.remove("speaking"); });
-      if (sp) sp.group.classList.add("speaking");
-    };
-    const u = new SpeechSynthesisUtterance(text);
+    unlight();
+    if (n >= queue.length) { reading = false; if (all) $("listenBtn").setAttribute("aria-pressed", "false"); return; }
+    const c = queue[n++];
+    if (c.first) { countLine(c.line); if (all) c.line.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+    c.groups.forEach(g => g.classList.add("speaking"));
+    const u = new SpeechSynthesisUtterance(c.text);
     u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = rate;
     readAloud.current = u;  // keep a reference: some browsers drop the events of an utterance nothing points to
-    let heard = false, ended = false, timers = [];
-    const clear = () => { timers.forEach(clearTimeout); timers = []; };
-    // Our own timeline: step through the words at about the speaking speed. It starts right away (iPhones don't
-    // always report when speech starts or where it is), restarts when the voice says it has started, and stops
-    // for good the moment the voice reports real positions.
-    const per = 1000 / (4.3 * rate);
-    let total = 0;
-    const timeline = delay => {
-      clear(); let t = delay;
-      [...text].reduce((i, ch) => {
-        const at = t; timers.push(setTimeout(() => { if (!heard) show(i); }, at));
-        t += /\p{Script=Han}/u.test(ch) ? per : /[0-9]/.test(ch) ? per * .9 : /[A-Za-z]/.test(ch) ? per * .35 : /[，、；：]/.test(ch) ? per * 1.4 : /[。！？]/.test(ch) ? per * 2.2 : per * .25;
-        return i + ch.length;
-      }, 0);
-      total = t;
-    };
-    const done = () => { if (ended) return; ended = true; clear(); setTimeout(next, 120); };
-    u.onboundary = e => { if (e.name && e.name !== "word") return; if (!heard) clear(); heard = true; show(e.charIndex); };
-    u.onstart = () => { if (!heard) timeline(0); };
+    let ended = false;
+    const done = () => { if (ended) return; ended = true; setTimeout(next, 60); };
     u.onend = u.onerror = done;
-    timeline(250);
-    // If the voice never says it has finished, check whether it's still talking once the line should be over.
+    // If the voice never says it has finished, check whether it's still talking once the sentence should be over.
+    const est = [...c.text].length * 1000 / (4.3 * rate);
     const poll = () => { if (token !== readToken || ended) return; if (!speechSynthesis.speaking) done(); else setTimeout(poll, 400); };
-    setTimeout(poll, total + 400);
+    setTimeout(poll, est + 600);
     speechSynthesis.speak(u);
   };
   next();
