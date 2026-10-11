@@ -949,14 +949,28 @@ function pickVoice() {
 }
 if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 else document.documentElement.classList.add("nosay");
-function speak(text) {
+// speak(text): say it at your speech speed. With `slow` ({ k, gap }), each character is its own utterance at k times
+// your speed with a pause of `gap` ms between them. iPhone voices barely change speed on a single short word, so
+// pausing between syllables is what you can actually hear.
+function speak(text, slow) {
   text = String(text || "").replace(/[~～〜]/g, "").replace(/…|⋯/g, "，");  // a pattern's slot isn't read out
   if (!("speechSynthesis" in window) || !text) return;
   if (typeof stopReading === "function") stopReading(); else speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
   const simp = typeof script !== "undefined" && script === "simp", v = simp ? cnVoice : twVoice;
-  u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = rate;
-  speechSynthesis.speak(u);
+  const utter = (t, k) => { const u = new SpeechSynthesisUtterance(t); u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = Math.max(.1, rate * k); return u; };
+  const parts = slow ? [...text].filter(c => /\S/.test(c) && !/[，、。]/.test(c)) : [];
+  if (!slow || parts.length < 2) { const u = utter(text, slow ? slow.k : 1); speak.current = u; speechSynthesis.speak(u); return; }
+  const token = typeof readToken === "number" ? readToken : 0;
+  let i = 0;
+  const next = () => {
+    if (typeof readToken === "number" && token !== readToken) return;  // something else started speaking
+    if (i >= parts.length) return;
+    const u = utter(parts[i++], slow.k); speak.current = u;  // keep a reference so its events fire
+    let done = false; const go = () => { if (done) return; done = true; setTimeout(next, slow.gap); };
+    u.onend = u.onerror = go; setTimeout(() => { if (!speechSynthesis.speaking) go(); }, 1500);  // in case the end event never comes
+    speechSynthesis.speak(u);
+  };
+  next();
 }
 // ---- read-along: speak the text a sentence at a time and light up the whole sentence while it's said. Short
 // utterances keep the voice from skipping words (long ones made some voices drop about one word in five), and the
@@ -2808,9 +2822,10 @@ function showFront() {
   if (listen) {
     // Listening card: only the sound. Three speeds: Slowest (about half), Slower (about 70%) and Normal (your speech
     // speed). Tapping a speed plays the word at it and keeps it (remembered); Play replays at the chosen speed.
-    const SPEEDS = [["slowest", "Slowest", .5], ["slower", "Slower", .7], ["normal", "Normal", 1]];
+    // Slowest: one syllable at a time with a clear pause; Slower: a little slower with a short pause; Normal: the word.
+    const SPEEDS = [["slowest", "Slowest", { k: .7, gap: 450 }], ["slower", "Slower", { k: .85, gap: 120 }], ["normal", "Normal", null]];
     let sp = store.get("radical-listen-speed", "normal"); if (!SPEEDS.some(x => x[0] === sp)) sp = "normal";
-    const say = () => { const r0 = rate; rate = rate * SPEEDS.find(x => x[0] === sp)[2]; speak(conv(w.word)); rate = r0; };
+    const say = () => speak(conv(w.word), SPEEDS.find(x => x[0] === sp)[2]);
     const lp = el("div", "listenprompt");
     const big = el("button", "listenbig", `${SPK}<span>Play</span>`); big.type = "button"; big.onclick = say;
     const seg = el("div", "seg2 three speeds"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Speed");
