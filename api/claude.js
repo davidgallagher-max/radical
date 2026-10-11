@@ -56,11 +56,19 @@ Keep one paragraph per paragraph of the original. Write in ${trad ? "Traditional
 
 ${text}`;
 
+// Explore's daily topic chips: nine topics shaped by what the learner searches and reads, plus a few wild cards.
+const TOPICS_PROMPT = (searches, reading, avoid) => `Suggest 9 topics for an adult learner of Taiwan Mandarin to read about on Chinese Wikipedia today.
+Things they searched for recently (most used first): ${searches.length ? searches.join("; ") : "none yet"}
+Openings of texts they read recently: ${reading.length ? reading.join(" / ") : "none yet"}
+Make 6 topics close to these interests (related, not the same searches repeated) and 3 wild cards that might surprise and delight them. With no history, pick 9 varied, appealing topics (Taiwan, food, nature, science, culture).
+Each topic must be a real Chinese Wikipedia article title or a good search word, 2 to 4 characters, Traditional characters, Taiwan usage.${avoid.length ? ` Don't repeat: ${avoid.join("、")}.` : ""}
+Return ONLY JSON: {"topics":[{"zh":"台灣夜市","en":"Night markets","py":"Táiwān yèshì"}, ...]} with exactly 9 items; "en" is 1 to 2 English words, "py" is pinyin with tone marks.`;
+
 // Judge a flash card answer that the app's simple word match rejected: abbreviations, synonyms, paraphrases
 // and small typos still count.
-const JUDGE_PROMPT = (word, meaning, guess) => `A learner of Mandarin was shown the Chinese word ${word}. Its dictionary meaning is: ${meaning}
+const JUDGE_PROMPT = (word, meaning, guess, pattern) => `A learner of Mandarin was shown the Chinese ${pattern ? `grammar pattern ${word} (the ~ or … stands for whatever fills the slot)` : `word ${word}`}. Its dictionary meaning is: ${meaning}
 Asked what it means in English, they wrote: "${guess}"
-Does their answer show they know the word? Count as right: abbreviations (AI for artificial intelligence), synonyms, paraphrases, any one correct sense of the word, and small spelling mistakes. "close" means related or partly right but not really the meaning. Otherwise "wrong".
+Does their answer show they know ${pattern ? "how the pattern is used" : "the word"}? Count as right: abbreviations (AI for artificial intelligence), synonyms, paraphrases, any one correct sense of the word, and small spelling mistakes. "close" means related or partly right but not really the meaning. Otherwise "wrong".
 Return ONLY JSON: {"verdict":"right"|"close"|"wrong","note":"under 12 words, spoken to the learner"}`;
 
 async function askClaude(model, prompt, maxTokens) {
@@ -161,10 +169,19 @@ module.exports = async (req, res) => {
     if (body.action === "judge") {
       const word = String(body.word || "").trim().slice(0, 20), meaning = String(body.meaning || "").trim().slice(0, 300), guess = String(body.guess || "").trim().slice(0, 120);
       if (!word || !guess) return res.status(400).json({ error: "Nothing to check." });
-      const out = parseJSON(await askClaude(FAST_MODEL, JUDGE_PROMPT(word, meaning, guess), 120));
+      const out = parseJSON(await askClaude(FAST_MODEL, JUDGE_PROMPT(word, meaning, guess, !!body.pattern), 120));
       const verdict = out && ["right", "close", "wrong"].includes(out.verdict) ? out.verdict : null;
       if (!verdict) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       return res.status(200).json({ verdict, note: String(out.note || "").slice(0, 120) });
+    }
+    if (body.action === "topics") {
+      const list = (x, n, len) => (Array.isArray(x) ? x : []).slice(0, n).map(v => String(v || "").slice(0, len)).filter(Boolean);
+      const out = parseJSON(await askClaude(FAST_MODEL, TOPICS_PROMPT(list(body.searches, 12, 40), list(body.reading, 6, 40), list(body.avoid, 9, 8)), 700));
+      const topics = (out && Array.isArray(out.topics) ? out.topics : [])
+        .filter(t => t && typeof t.zh === "string" && /\p{Script=Han}/u.test(t.zh))
+        .map(t => ({ zh: t.zh.trim().slice(0, 8), en: String(t.en || "").slice(0, 24), py: String(t.py || "").slice(0, 40) })).slice(0, 9);
+      if (!topics.length) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      return res.status(200).json({ topics });
     }
     if (body.action === "translate") {
       const sentence = String(body.sentence || "").trim().slice(0, 600);
