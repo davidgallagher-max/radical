@@ -681,6 +681,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .res em{font-style:normal;font-size:.96rem;color:var(--muted)}
 .res .tips{font-size:.96rem}
 .res .sy span{font-size:inherit}
+.res .reszh{font-family:var(--font-zh);font-size:1.3rem}
 .res.ok{border-color:var(--on)} .res.ok em{color:var(--on)}
 .res.part{border-color:var(--whole)} .res.part em{color:var(--whole)}
 .res.no{border-color:var(--sound)} .res.no em{color:var(--sound)}
@@ -2892,6 +2893,26 @@ function checkPinyin(given, target) {
   if (noTone || wrongTone) return { ok: "part", note: noTone && !wrongTone ? "Right sounds; add the tones." : "Right sounds, a tone is off.", detail };
   return { ok: true, note: placement ? "Correct." : "Correct.", detail: placement ? detail : "" };
 }
+// Characters typed on a Listen card: the right characters (Traditional or Simplified) are full credit, tones and all.
+// A different character that sounds the same (tone included) gets sound credit, with the right one named.
+function checkChars(given, w) {
+  const clean = t => [...String(t || "")].filter(c => /\p{Script=Han}/u.test(c));
+  const g = clean(given).map(c => toTrad(c)), t = clean(w.word).filter(c => !isSlot(c)).map(c => toTrad(c));
+  const shown = conv(t.join(""));
+  if (g.join("") === t.join("")) return { ok: true, note: "Correct." };
+  const syl = sylls(numToMarks(patternPy(wPinyin(w)).toLowerCase().replace(/[\s'’·-]+/g, ""))).filter(Boolean);
+  if (g.length === t.length && syl.length === t.length) {
+    const same = s1 => s => s.toLowerCase() === s1.toLowerCase();
+    const bad = [], sound = [];
+    g.forEach((c, k) => {
+      if (c === t[k]) return;
+      const d = cache[c] || cache[toSimp(c)];
+      if (d && d.p.some(same(syl[k]))) sound.push(`${conv(t[k])}, not ${conv(c)}`); else bad.push(k);
+    });
+    if (!bad.length) return { ok: "part", note: "Right sound, different character.", detail: `<span class="tips">It's ${esc(sound.join("; "))}.</span>` };
+  }
+  return { ok: false, note: `Not quite: it's ${shown}.` };
+}
 // Meaning: generous. Any meaning phrase, or a shared content word, counts.
 const STOP = new Set("to a an the of and or in on at for with be is it one's oneself something someone sb sth".split(" "));
 const norm = t => t.toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z' ]/g, " ").replace(/\s+/g, " ").trim().replace(/^(to|a|an|the) /, "");
@@ -2922,7 +2943,7 @@ function showFront() {
   $("revScore").textContent = rDone && rq.length ? scoreText(sc) : "";
   $("revQuit").textContent = rq.length ? "Quit" : "My words";
   if (!rq.length) {
-    prog.textContent = ""; $("revBar").replaceChildren(); $("revBar").classList.remove("glow");
+    prog.textContent = ""; $("revBar").replaceChildren(); $("revBar").classList.remove("glow"); $("revPrev").style.visibility = "hidden";
     if (!rDone) { box.append(el("p", "wmean", "Nothing to review right now."), btn("Back to my words", "btn wide", () => history.back())); return; }
     // The finish: 完 (finished) draws itself in the lit ink, then the session in one glance, what it earned, what's next.
     const k = srsKey(), fin = el("div", "finish"), mark = el("div", "finmark");
@@ -2966,7 +2987,9 @@ function showFront() {
   } else box.append(bigWord(conv(w.word)));
   // Two guesses, pinyin first. Tone numbers turn into marks as you type.
   const form = el("form", "guess");
-  form.innerHTML = `<label><span>Pinyin</span><input id="gPy" type="text" inputmode="latin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="wo3 or wǒ"></label>
+  // Listen cards take pinyin or characters in one box (the phone's handwriting keyboard covers writing).
+  form.innerHTML = (listen ? `<label><span>Answer</span><input id="gPy" type="text" lang="zh" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="pinyin or 漢字"></label>`
+    : `<label><span>Pinyin</span><input id="gPy" type="text" inputmode="latin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="wo3 or wǒ"></label>`) + `
     <button type="button" class="pyprev" id="gPrev" hidden title="Use tone marks"></button>
     <label><span>Meaning</span><input id="gMean" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="in English"></label>`;
   // Clues: tap a character for a clue about it, in a fixed order: its sound (played), then its meaning, then its
@@ -2999,6 +3022,7 @@ function showFront() {
     const lp = box.querySelector(".listenprompt"); if (lp && how !== "check") lp.replaceWith(bigWord(conv(w.word)));
     let st;
     if (how === "check") {
+      if (listen && /\p{Script=Han}/u.test(py.value)) await ensure(py.value);  // readings of the typed characters, for sound credit
       const g = mean.value.trim(), local = checkMeaning(g, wMeaning(w));
       if (g && local.ok === false && store.get("radical-pw", "") && navigator.onLine !== false) {
         judging = true; const cb = $("revBar").querySelector(".guessacts .btn"); if (cb) { cb.disabled = true; cb.textContent = "Checking…"; }
@@ -3025,7 +3049,7 @@ function showFront() {
   py.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); mean.focus(); } });
   form.onsubmit = e => { e.preventDefault(); reveal("check"); };
   mean.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); reveal("check"); } });
-  showBack.guess = () => ({ py: py.value, mean: mean.value });
+  showBack.guess = () => ({ py: py.value, mean: mean.value, listen });
   setTimeout(() => py.focus(), 50);
 }
 // Writing card: pinyin, sound and meaning on one line on top; write each character in turn on the pad. The card
@@ -3136,9 +3160,10 @@ function showBack(w, how, st) {
     if (!quiet) play(suggest === "again" ? "wrong" : "right");
   }
   if (guess) {
-    const rp = checkPinyin(guess.py, wPinyin(w)), rm = (st && st.aiMean) || checkMeaning(guess.mean, wMeaning(w));
-    const mark = (label, val, r) => val.trim() ? `<div class="res ${r.ok === true ? "ok" : r.ok === "part" ? "part" : r.ok === false ? "no" : ""}"><span>${label}</span><b>${label === "Pinyin" ? pyWordHTML(numToMarks(val)) : esc(val)}</b><em>${esc(r.note || "")}</em>${r.detail ? `<div class="resdetail">${r.detail}</div>` : ""}</div>` : `<div class="res"><span>${label}</span><em>left blank</em></div>`;
-    ans.append(el("div", "results", mark("Pinyin", guess.py, rp) + mark("Meaning", guess.mean, rm)));
+    const asChars = guess.listen && /\p{Script=Han}/u.test(guess.py);
+    const rp = asChars ? checkChars(guess.py, w) : checkPinyin(guess.py, wPinyin(w)), rm = (st && st.aiMean) || checkMeaning(guess.mean, wMeaning(w));
+    const mark = (label, val, r) => val.trim() ? `<div class="res ${r.ok === true ? "ok" : r.ok === "part" ? "part" : r.ok === false ? "no" : ""}"><span>${label}</span><b${asChars && label !== "Meaning" ? ' lang="zh" class="reszh"' : ""}>${label !== "Meaning" && !asChars ? pyWordHTML(numToMarks(val)) : esc(val)}</b><em>${esc(r.note || "")}</em>${r.detail ? `<div class="resdetail">${r.detail}</div>` : ""}</div>` : `<div class="res"><span>${label}</span><em>left blank</em></div>`;
+    ans.append(el("div", "results", mark(guess.listen ? "Answer" : "Pinyin", guess.py, rp) + mark("Meaning", guess.mean, rm)));
     const score = [rp.ok, rm.ok].map(x => x === true ? 2 : x === "part" ? 1 : 0).reduce((a, b) => a + b, 0);
     suggest = score === 4 ? "good" : score >= 1 ? "hard" : "again";
     if (!quiet) play(suggest === "again" ? "wrong" : "right");
