@@ -39,7 +39,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .screen{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg);
   padding:calc(var(--top) + 12px) 16px calc(var(--bot) + var(--tabh) + 24px)}
 .screen.sub{padding-bottom:calc(var(--bot) + 24px);z-index:5}
-.inner{max-width:760px;margin:0 auto;display:grid;gap:14px}
+.inner{max-width:760px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 .tabtitle{margin:0;display:flex;align-items:baseline;gap:10px;font-family:var(--font-brand);font-size:1.5rem;font-weight:800;letter-spacing:.06em}
 .tabtitle [lang=zh]{font-family:var(--font-zh);color:var(--accent);font-weight:600}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
@@ -261,14 +261,28 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .ctlrow .switch .track{width:32px;height:20px}.ctlrow .switch .knob{width:14px;height:14px}
 .ctlrow .switch[aria-checked="true"] .knob{left:15px}
 .ctlrow .ctl{justify-items:start}
+@media (max-width:359px){.ctlrow{flex-wrap:wrap;row-gap:6px}}  /* iPhone SE: the controls take two rows rather than overlap */
 .ctlrow .ctl-label{white-space:nowrap;width:0;overflow:visible}  /* the label may run over the next button; it sits above the row */
-.sizebtn{all:unset;box-sizing:border-box;cursor:pointer;font-size:.84rem;font-weight:500;color:var(--accent);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}
-.sizebtn[aria-expanded="true"]{border-color:var(--accent)}
+/* Size: a small and a large 字; a tap opens the slider underneath and fills the button, a second tap closes it. */
+.sizebtn{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:baseline;gap:1px;font-family:var(--font-zh);font-weight:600;color:var(--accent);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px 11px 4px;white-space:nowrap;line-height:1}
+.sizebtn i{font-style:normal;font-size:.72rem}.sizebtn b{font-weight:600;font-size:1.12rem}
+.sizebtn[aria-expanded="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
 .sizepop{padding:2px 4px 4px}
-.legend{display:flex;flex-wrap:nowrap;gap:9px;font-size:.7rem;color:var(--muted);white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+/* Legend: spans the width; it shrinks to fit narrow screens (see fitLegend), and scrolls sideways only if it still
+   can't fit, with a fade on the side that has more. */
+.legrow{display:flex;align-items:center;gap:8px;min-width:0}
+.legend{flex:1;min-width:0;display:flex;flex-wrap:nowrap;justify-content:space-between;gap:.55em;font-size:var(--lf,13px);color:var(--fg);white-space:nowrap;overflow-x:auto;scrollbar-width:none}
 .legend::-webkit-scrollbar{display:none}
-.legend span{display:inline-flex;align-items:center;gap:5px}
-.legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.legend span{display:inline-flex;align-items:center;gap:.3em;flex:none}
+.legend i{width:.95em;height:.95em;border-radius:.25em;display:inline-block}
+.legend i+i{margin-left:-.15em}
+.fadeR{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent)}
+.fadeL{-webkit-mask-image:linear-gradient(to right,transparent,#000 26px);mask-image:linear-gradient(to right,transparent,#000 26px)}
+.fadeL.fadeR{-webkit-mask-image:linear-gradient(to right,transparent,#000 26px,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(to right,transparent,#000 26px,#000 calc(100% - 26px),transparent)}
+/* The menu stays reachable on a frozen bar: a small ☰ fixed at the bar's right end, shown only while it's stuck. */
+.stuckmenu{display:none;width:36px;height:36px}
+.stuckmenu svg{width:19px;height:19px}
+.stuck .stuckmenu{display:grid}
 .reader{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 10px;display:grid;gap:10px;min-width:0}
 /* Reading text sits on an even grid, like a printed Chinese page: every character gets the same square, leftover
    width is shared out evenly, words may break across lines, and punctuation takes a full square. */
@@ -413,11 +427,12 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .revstrip .btn{background:var(--surface);color:var(--accent);font-weight:600}
 .revstrip.idle{background:var(--surface);color:var(--fg);border:1px solid var(--line)}
 .revstrip.idle .btn{background:var(--accent);color:var(--surface)}
-.filters{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:4;background:var(--bg);margin:0 -16px;padding:6px 16px}
+.filterbar{display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:4;background:var(--bg);margin:0 -16px;padding:6px 16px}
+.filters{flex:1;min-width:0;display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
 .filters::-webkit-scrollbar{display:none}
 .backupnote{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.82rem;color:var(--muted);padding:8px 12px;border:1px dashed color-mix(in srgb,var(--sound) 55%,var(--line));border-radius:12px}
-.filters.stuck{border-bottom:1px solid var(--line);box-shadow:0 6px 12px -8px rgba(0,0,0,.45)}
-.filters.stuck::before{content:"";position:fixed;left:0;right:0;top:0;height:calc(var(--top) + 12px);background:var(--bg)}
+.filterbar.stuck{border-bottom:1px solid var(--line);box-shadow:0 6px 12px -8px rgba(0,0,0,.45)}
+.filterbar.stuck::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:calc(var(--top) + 14px);background:var(--bg)}
 .filters button{all:unset;cursor:pointer;font-size:.76rem;padding:5px 8px;white-space:nowrap;flex:none;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
 .filters button{display:inline-flex;align-items:center;gap:5px;--c:var(--fg)}
 .filters button[data-k=new]{--c:var(--accent)} .filters button[data-k=due]{--c:var(--sound)}
@@ -604,12 +619,15 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
     <div class="tpanel" id="readPanel">
       <h3 class="sec">Read</h3>
     <div class="bar" id="readBar">
-      <div class="legend">
-        <span><i style="background:var(--meaning)"></i>Meaning</span>
-        <span><i style="background:var(--sound)"></i>Sound</span>
-        <span><i style="background:var(--idea)"></i><i style="background:var(--idea2)"></i>Ideas</span>
-        <span><i style="background:var(--whole)"></i>Picture</span>
-        <span><i style="background:var(--part1)"></i>Unclear</span>
+      <div class="legrow">
+        <div class="legend" id="readLegend">
+          <span><i style="background:var(--meaning)"></i>Meaning</span>
+          <span><i style="background:var(--sound)"></i>Sound</span>
+          <span><i style="background:var(--idea)"></i><i style="background:var(--idea2)"></i>Ideas</span>
+          <span><i style="background:var(--whole)"></i>Picture</span>
+          <span><i style="background:var(--part1)"></i>Unclear</span>
+        </div>
+        <button type="button" class="iconbtn menubtn stuckmenu" aria-label="Menu" aria-haspopup="true"></button>
       </div>
       <div class="row ctlrow">
         <div class="ctl"><span class="ctl-label">Traditional / Simplified</span>
@@ -619,7 +637,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
           </div></div>
         <button type="button" class="switch" id="pyBtn" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Pinyin</button>
         <button type="button" class="listen" id="listenBtn" aria-pressed="false"><i></i><span>Listen</span></button>
-        <button type="button" class="sizebtn" id="sizeBtn" aria-expanded="false" aria-controls="sizePop">Size</button>
+        <button type="button" class="sizebtn" id="sizeBtn" aria-expanded="false" aria-controls="sizePop" aria-label="Text size"><i lang="zh">字</i><b lang="zh">字</b></button>
       </div>
       <div class="sizepop" id="sizePop" hidden>
         <span class="sizerow"><i lang="zh" aria-hidden="true">字</i><input type="range" id="sizeIn" min="26" max="64" step="2" value="38" aria-label="Text size"><b lang="zh" aria-hidden="true">字</b></span>
@@ -647,7 +665,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
       <h2 class="tabtitle"><span lang="zh">詞</span>My words</h2>
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
-    <div class="filters" id="filters"></div>
+    <div class="filterbar" id="filterBar"><div class="filters" id="filters"></div><button type="button" class="iconbtn menubtn stuckmenu" aria-label="Menu" aria-haspopup="true"></button></div>
     <p class="backupnote" id="backupNote" hidden></p>
     <div id="revStrip"></div>
     <div class="addbox">
@@ -1062,7 +1080,7 @@ function applyPalette() {
   document.documentElement.classList.toggle("fontmode", palette === "font");
   const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = ui.bg;
   document.querySelectorAll("#paletteGrid .pcard").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === palette));
-  document.querySelector(".legend").hidden = noColor(palette);
+  $("readLegend").hidden = noColor(palette); if (typeof fitLegend === "function") fitLegend();
 }
 const SAMPLE = [..."他河台營長"];  // together these show every color in a palette
 function buildPalettes() {
@@ -1358,6 +1376,7 @@ function showOnly(id) {
   const tabbed = id === "readScreen" || id === "wordsScreen" || id === "wikiScreen";
   $("tabbar").hidden = !tabbed;
   if (tabbed) document.querySelectorAll("[data-tab]").forEach(b => b.dataset.tab === id ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+  if (id === "readScreen" && typeof fitLegend === "function") requestAnimationFrame(() => fitLegend());
 }
 let tab = "readScreen", revSide = null;
 function setTab(id) { if (reading) stopReading(); tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); }
@@ -1609,17 +1628,38 @@ $("pyBtn").onclick = e => {
 function setCell(px) { document.documentElement.style.setProperty("--cell", px + "px"); }
 { const v = store.get("radical-size", 38); $("sizeIn").value = v; setCell(v); }
 $("sizeIn").addEventListener("input", e => { setCell(e.target.value); store.set("radical-size", +e.target.value); });
-// Size: a small button that opens the slider just under the controls; a tap anywhere else closes it.
+// Size: the 字字 button opens the slider just under the controls; a second tap, or a tap anywhere else, closes it.
 const sizeOpen = on => { $("sizePop").hidden = !on; $("sizeBtn").setAttribute("aria-expanded", on); };
 $("sizeBtn").onclick = e => { e.stopPropagation(); sizeOpen($("sizePop").hidden); };
 document.addEventListener("click", e => { if (!$("sizePop").hidden && !e.target.closest("#sizePop,#sizeBtn")) sizeOpen(false); });
-// Frozen controls: once the bar reaches the top it gets a solid edge, and the Traditional / Simplified label hides.
-function pinned(screenId, barId) {
+// A row that may be wider than the screen (legend, filters) scrolls sideways, with a soft fade on the side that has more.
+function edgeFade(box) {
+  const check = () => { const more = box.scrollWidth - box.clientWidth; box.classList.toggle("fadeL", more > 1 && box.scrollLeft > 1); box.classList.toggle("fadeR", more > 1 && box.scrollLeft < more - 1); };
+  box.addEventListener("scroll", check, { passive: true });
+  if ("ResizeObserver" in window) new ResizeObserver(check).observe(box);
+  box._fade = check; check();
+}
+// The legend is as big as the width allows: it starts at 14px and steps down (not below 9.5px) until it fits.
+function fitLegend(box = $("readLegend")) {
+  if (!box || box.hidden || !box.clientWidth) return;
+  let px = 14; box.style.setProperty("--lf", px + "px");
+  while (box.scrollWidth > box.clientWidth + 1 && px > 9.5) { px -= .5; box.style.setProperty("--lf", px + "px"); }
+  if (box._fade) box._fade();
+}
+edgeFade($("readLegend")); edgeFade($("filters"));
+addEventListener("resize", () => fitLegend());
+// Frozen controls: once the bar reaches the top it gets a solid edge, the Traditional / Simplified label hides, and a
+// small ☰ appears at its right end (the page's own menu button has scrolled away).
+function pinned(screenId, barId, onChange) {
   const sc = $(screenId), bar = $(barId);
-  const check = () => { const edge = sc.getBoundingClientRect().top + parseFloat(getComputedStyle(sc).paddingTop); bar.classList.toggle("stuck", sc.scrollTop > 0 && bar.getBoundingClientRect().top <= edge + 1); };
+  const check = () => {
+    const edge = sc.getBoundingClientRect().top + parseFloat(getComputedStyle(sc).paddingTop);
+    const on = sc.scrollTop > 0 && bar.getBoundingClientRect().top <= edge + 1;
+    if (on !== bar.classList.contains("stuck")) { bar.classList.toggle("stuck", on); if (onChange) onChange(on); }
+  };
   sc.addEventListener("scroll", check, { passive: true });
 }
-pinned("readScreen", "readBar"); pinned("wordsScreen", "filters");
+pinned("readScreen", "readBar", () => fitLegend()); pinned("wordsScreen", "filterBar", () => $("filters")._fade());
 $("listenBtn").onclick = () => readAloud([...$("reader").querySelectorAll(".line")], true);  // read the whole page, word by word
 if (store.get("radical-py", false)) { $("pyBtn").setAttribute("aria-checked", "true"); $("reader").classList.remove("nopy"); }
 
@@ -3233,7 +3273,8 @@ $("wikiRandom").onclick = async () => {
   // When 部 finishes drawing, "Tap to begin" fades in. Phones only allow sound after a touch, so the tap is what
   // lets the harp play; tapping earlier works too.
   animate(big, "部", 1.4, () => { const sp = document.getElementById("splash"); if (sp) sp.classList.add("ready"); });
-  await render();
+  await render(); fitLegend();
+  if (document.fonts) document.fonts.ready.then(() => fitLegend());
   const hide = () => { $("splash").classList.add("out"); setTimeout(() => $("splash").remove(), 500); };
   // The splash waits for a tap (the app loads behind it meanwhile).
   let done = false;
