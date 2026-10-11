@@ -40,8 +40,6 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   padding:calc(var(--top) + 12px) 16px calc(var(--bot) + var(--tabh) + 24px)}
 .screen.sub{padding-bottom:calc(var(--bot) + 24px);z-index:5}
 .inner{max-width:760px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
-.tabtitle{margin:0;display:flex;align-items:baseline;gap:10px;font-family:var(--font-brand);font-size:1.5rem;font-weight:800;letter-spacing:.06em}
-.tabtitle [lang=zh]{font-family:var(--font-zh);color:var(--accent);font-weight:600}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
 .topbar h2{margin:0;font-family:var(--font-brand);font-size:1.15rem;font-weight:800;letter-spacing:.03em;flex:1;text-align:center}
 .topbar .spacer{width:72px;display:flex;justify-content:flex-end}
@@ -240,6 +238,10 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .kind{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
 .bigpy{font-size:1.3rem;font-weight:500}
 h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+/* Each tab's name, under the brand header: a small heading with its character. Explore's own labels sit under it, quieter. */
+h3.sec.tabsec{display:flex;align-items:baseline;gap:7px;margin:2px 0 0;color:var(--fg);font-size:.8rem}
+h3.sec.tabsec [lang=zh]{font-family:var(--font-zh);font-size:1.05rem;color:var(--accent);letter-spacing:0}
+h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em}
 .saybtn{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--accent);cursor:pointer;vertical-align:middle;flex:none;padding:0}
 .saybtn svg{width:18px;height:18px}
 .saybtn.sm{width:28px;height:28px}
@@ -598,7 +600,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 <section class="screen" id="readScreen">
   <div class="inner">
     <header class="readhead">
-      <div class="brand"><svg id="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
+      <div class="brand"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
     <div class="tpanel" id="addPanel">
@@ -665,9 +667,10 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 <section class="screen" id="wordsScreen" hidden>
   <div class="inner">
     <header class="readhead">
-      <h2 class="tabtitle"><span lang="zh">詞</span>My words</h2>
+      <div class="brand"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
+    <h3 class="sec tabsec"><span lang="zh">詞</span>My words</h3>
     <div class="filterbar" id="filterBar"><div class="filters" id="filters"></div><button type="button" class="iconbtn menubtn stuckmenu" aria-label="Menu" aria-haspopup="true"></button></div>
     <p class="backupnote" id="backupNote" hidden></p>
     <div id="revStrip"></div>
@@ -709,15 +712,20 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 <!-- WIKIPEDIA -->
 <section class="screen" id="wikiScreen" hidden>
   <div class="inner">
-    <header class="readhead"><h2 class="tabtitle"><span lang="zh">探</span>Explore</h2><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></header>
-    <h3 class="sec">Pick a topic</h3>
+    <header class="readhead">
+      <div class="brand"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
+      <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
+    </header>
+    <button type="button" class="back" id="wikiBack" hidden>Back to reading</button>
+    <h3 class="sec tabsec"><span lang="zh">探</span>Explore</h3>
+    <h3 class="sec sub">Pick a topic</h3>
     <div class="topics" id="wikiTopics"></div>
-    <h3 class="sec">Or search for one</h3>
+    <h3 class="sec sub">Or search for one</h3>
     <form class="addrow" id="wikiForm">
       <input type="text" id="wikiQ" lang="zh" placeholder="Search any topic in Chinese or English" autocomplete="off" enterkeyhint="search">
       <button type="submit" class="btn">Search</button>
     </form>
-    <h3 class="sec">Or surprise me</h3>
+    <h3 class="sec sub">Or surprise me</h3>
     <button type="button" class="randbtn" id="wikiRandom"><span lang="zh" id="wikiRandomZh">隨機條目</span> · Random article</button>
     <p class="note">Real Chinese Wikipedia, written by Chinese-speaking editors. Nothing is machine-translated.</p>
     <p class="note wstatus" id="wikiStatus" hidden></p>
@@ -3270,7 +3278,7 @@ $("wikiRandom").onclick = async () => {
   { const saved = store.get("radical-text", null); if (saved !== null) $("src").value = saved; }
   upgradeKnown(); applyPalette(); onNewText(); updateCounts(); showDocBar();
   await ensure("部");
-  const mark = svgFor("部", false, true); $("brandMark").replaceWith(Object.assign(mark, { id: "brandMark" }));
+  document.querySelectorAll(".brandMark").forEach(x => { const m = svgFor("部", false, true); m.classList.add("brandMark"); x.replaceWith(m); });  // the lit 部 heads every tab
   const am = svgFor("部", false, true); am.style.width = am.style.height = "56px"; $("aboutMark").replaceWith(am);
   const big = svgFor("部", false, true); big.setAttribute("class", "mark"); $("splashMark").replaceWith(big);
   // The strokes draw over about 5 seconds, then a soft rising run on the guzheng.
