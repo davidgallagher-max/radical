@@ -732,6 +732,9 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
         <button type="button" class="listen" id="listenBtn" aria-pressed="false"><i></i><span>Listen</span></button>
         <button type="button" class="sizebtn" id="sizeBtn" aria-expanded="false" aria-controls="sizePop" aria-label="Text size"><i lang="zh">字</i><b lang="zh">字</b></button>
       </div>
+      <div class="sizepop" id="speedPop" hidden>
+        <span class="sizerow"><i lang="zh" aria-hidden="true">慢</i><input type="range" id="speedIn" min="0.5" max="1.3" step="0.05" aria-label="Reading speed"><b lang="zh" aria-hidden="true">快</b></span>
+      </div>
       <div class="sizepop" id="sizePop" hidden>
         <span class="sizerow"><i lang="zh" aria-hidden="true">字</i><input type="range" id="sizeIn" min="26" max="64" step="2" value="38" aria-label="Text size"><b lang="zh" aria-hidden="true">字</b></span>
       </div>
@@ -1031,7 +1034,7 @@ function watchLines(reader) {
   }), { root: $("readScreen"), threshold: [0, .6, 1] });
   reader.querySelectorAll(".line").forEach(l => lineSeen.observe(l));
 }  // reading: a read-along is running
-function stopReading() { readToken++; reading = false; if ("speechSynthesis" in window) speechSynthesis.cancel(); document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking")); const b = $("listenBtn"); if (b) b.setAttribute("aria-pressed", "false"); }
+function stopReading() { readToken++; reading = false; if ("speechSynthesis" in window) speechSynthesis.cancel(); document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking")); const b = $("listenBtn"); if (b) b.setAttribute("aria-pressed", "false"); if ($("speedPop")) $("speedPop").hidden = true; readAloud.restart = null; }
 // A line's chunks: sentences (ending in 。！？); a sentence over about 25 characters splits at ，、；：; a stretch
 // with no punctuation at all splits every 15 or so characters, always at a word boundary.
 function chunksOf(line) {
@@ -1061,27 +1064,30 @@ function readAloud(lines, all) {
   stopReading();
   if (all && wasReading) return;  // the Listen button toggles
   const token = readToken; reading = true;
-  if (all) $("listenBtn").setAttribute("aria-pressed", "true");
+  // Listen opens the speed slider under the controls while it plays (Size closes, so only one is open).
+  if (all) { $("listenBtn").setAttribute("aria-pressed", "true"); sizeOpen(false); $("speedIn").value = rate; $("speedPop").hidden = false; }
   const simp = script === "simp", v = simp ? cnVoice : twVoice;
   const queue = lines.flatMap(line => chunksOf(line).map((c, k) => ({ ...c, line, first: k === 0 })));
   const unlight = () => document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking"));
-  let n = 0;
+  let n = 0, gen = 0;  // gen: bumped to drop the events of a sentence that was restarted
+  // A new speed takes effect at once: the sentence being read starts over at that speed.
+  readAloud.restart = () => { if (token !== readToken || !n) return; gen++; n--; speechSynthesis.cancel(); setTimeout(next, 80); };
   const next = () => {
     if (token !== readToken) return;
     unlight();
-    if (n >= queue.length) { reading = false; if (all) $("listenBtn").setAttribute("aria-pressed", "false"); return; }
-    const c = queue[n++];
+    if (n >= queue.length) { reading = false; readAloud.restart = null; if (all) { $("listenBtn").setAttribute("aria-pressed", "false"); $("speedPop").hidden = true; } return; }
+    const my = gen, c = queue[n++];
     if (c.first) { countLine(c.line); if (all) c.line.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
     c.groups.forEach(g => g.classList.add("speaking"));
     const u = new SpeechSynthesisUtterance(c.text);
     u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = rate;
     readAloud.current = u;  // keep a reference: some browsers drop the events of an utterance nothing points to
     let ended = false;
-    const done = () => { if (ended) return; ended = true; setTimeout(next, 60); };
+    const done = () => { if (ended || my !== gen) return; ended = true; setTimeout(next, 60); };
     u.onend = u.onerror = done;
     // If the voice never says it has finished, check whether it's still talking once the sentence should be over.
     const est = [...c.text].length * 1000 / (4.3 * rate);
-    const poll = () => { if (token !== readToken || ended) return; if (!speechSynthesis.speaking) done(); else setTimeout(poll, 400); };
+    const poll = () => { if (token !== readToken || ended || my !== gen) return; if (!speechSynthesis.speaking) done(); else setTimeout(poll, 400); };
     setTimeout(poll, est + 600);
     speechSynthesis.speak(u);
   };
@@ -1759,8 +1765,13 @@ function setCell(px) { document.documentElement.style.setProperty("--cell", px +
 $("sizeIn").addEventListener("input", e => { setCell(e.target.value); store.set("radical-size", +e.target.value); });
 // Size: the 字字 button opens the slider just under the controls; a second tap, or a tap anywhere else, closes it.
 const sizeOpen = on => { $("sizePop").hidden = !on; $("sizeBtn").setAttribute("aria-expanded", on); };
-$("sizeBtn").onclick = e => { e.stopPropagation(); sizeOpen($("sizePop").hidden); };
+$("sizeBtn").onclick = e => { e.stopPropagation(); if ($("sizePop").hidden) $("speedPop").hidden = true; sizeOpen($("sizePop").hidden); };
 document.addEventListener("click", e => { if (!$("sizePop").hidden && !e.target.closest("#sizePop,#sizeBtn")) sizeOpen(false); });
+// Reading speed: the same setting as Settings → Speech speed. Dragging changes it; letting go restarts the sentence.
+const setRate = v => { rate = +v; store.set("radical-rate", rate); if ($("rate")) $("rate").value = rate; if ($("speedIn")) $("speedIn").value = rate; };
+$("speedIn").addEventListener("input", e => setRate(e.target.value));
+$("speedIn").addEventListener("change", () => { if (readAloud.restart) readAloud.restart(); });
+document.addEventListener("click", e => { if (!$("speedPop").hidden && !e.target.closest("#speedPop,#listenBtn")) $("speedPop").hidden = true; });
 // A row that may be wider than the screen (legend, filters) scrolls sideways, with a soft fade on the side that has more.
 function edgeFade(box) {
   const check = () => { const more = box.scrollWidth - box.clientWidth; box.classList.toggle("fadeL", more > 1 && box.scrollLeft > 1); box.classList.toggle("fadeR", more > 1 && box.scrollLeft < more - 1); };
@@ -3121,7 +3132,7 @@ const setLight = on => { document.documentElement.classList.toggle("nolight", !o
 setLight(store.get("radical-light", true));
 $("lightSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-light", on); setLight(on); };
 try { localStorage.removeItem("radical-tilt"); } catch (e) {}  // tilt is gone; forget the old setting
-$("rate").addEventListener("input", e => { rate = +e.target.value; store.set("radical-rate", rate); });
+$("rate").addEventListener("input", e => setRate(e.target.value));
 $("rateTest").onclick = () => speak("你好，歡迎使用 Radical。我們在登山口附近搭帳篷。");
 $("backupBtn").onclick = async () => {
   store.set("radical-backup-at", Date.now()); store.set("radical-rev-since-backup", 0); setTimeout(showBackupNote, 0);
