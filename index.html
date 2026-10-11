@@ -483,6 +483,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .pyprev span{font-size:.72rem;color:var(--muted);margin-left:4px}
 .guessacts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .guessacts.three{grid-template-columns:1fr 1fr 1fr}
+.guessacts.one{grid-template-columns:1fr}
 .hintbox{display:grid;gap:6px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,transparent);font-size:.92rem}
 .hintbox p{margin:0}
 .cluechar{cursor:pointer;transition:transform .12s ease}
@@ -2508,7 +2509,8 @@ function writeFront(w) {
   const fill = i => { const ch = chars[i]; slotEls[i].replaceChildren(cache[ch] ? glyphFor(ch, true) : el("span", "plain", esc(ch))); slotEls[i].classList.add("done"); };
   const nextChar = () => {
     if (!box.isConnected || revSide) return;
-    if (idx >= chars.length) { setTimeout(() => { if (!revSide && box.isConnected) reveal("write"); }, 500); return; }
+    if (idx >= chars.length) { reveal("write"); return; }
+    setBar(true);
     const ch = chars[idx], d = cache[ch];
     slotEls.forEach((x, i) => x.classList.toggle("now", i === idx));
     if (!d || typeof HanziWriter === "undefined") { fill(idx++); nextChar(); return; }  // nothing to write (no stroke data)
@@ -2537,13 +2539,24 @@ function writeFront(w) {
     writer.quiz({
       onCorrectStroke: s => { if (inkStrokes[s.strokeNum]) inkStrokes[s.strokeNum].style.opacity = 1; if (!s.mistakesOnStroke && !hinted.has(s.strokeNum)) stats.first++; current = s.strokeNum + 1; say(`Stroke ${Math.min(current + 1, total)} of ${total}`); },
       onMistake: s => { const n = s.mistakesOnStroke; if (n >= 3 && !hinted.has(s.strokeNum)) { hinted.add(s.strokeNum); stats.hints++; } say(n >= 3 ? "Here's where it goes. Trace it." : "Not quite. Try that stroke again."); },
-      onComplete: () => { fill(idx++); setTimeout(nextChar, 350); }
+      // A finished character stays on the pad as long as you like; you move on when you're ready.
+      onComplete: () => {
+        fill(idx++); writer = null; play("tap");
+        const more = idx < chars.length;
+        coach.innerHTML = lead + (more ? "Done. Look it over, then go on." : "Done. Look it over, then check the answer.");
+        setBar(false, more);
+      }
     });
   };
-  revBar("Write it from memory", "Show answer", "⟳", () => reveal("show"), [btn("Hint", "btn ghost", () => {
-    if (!writer) return; writer.highlightStroke(current); if (!hinted.has(current)) { hinted.add(current); stats.hints++; }
-    coach.innerHTML = "That stroke is highlighted. Trace it.";
-  })], "guessacts", "Say it to yourself, then write. Tap Hint for the next stroke.");
+  // The bottom bar: Hint while you write; after a character, the way forward (next character, or the answer).
+  function setBar(writing, more) {
+    if (writing) revBar("Write it from memory", "Show answer", "⟳", () => reveal("show"), [btn("Hint", "btn ghost", () => {
+      if (!writer) return; writer.highlightStroke(current); if (!hinted.has(current)) { hinted.add(current); stats.hints++; }
+      coach.innerHTML = "That stroke is highlighted. Trace it.";
+    })], "guessacts", "Say it to yourself, then write. Tap Hint for the next stroke.");
+    else revBar(more ? "Character done" : "Word done", "Show answer", "⟳", () => reveal(more ? "show" : "write"),
+      [btn(more ? "Next character ›" : "See answer", "btn", () => more ? nextChar() : reveal("write"))], "guessacts one", more ? "Take your time. Go on when you're ready." : "Take your time, then see how you did.");
+  }
   nextChar();
 }
 function showBack(w, how, st) {
