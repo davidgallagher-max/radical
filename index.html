@@ -174,7 +174,10 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .flipbtn{justify-self:center}
 /* Flash cards: pinyin in plain ink (no tone colors), so the characters' colors stay the only color on the card. */
 #reviewScreen .bigpy span,#reviewScreen .cell .py span,#reviewScreen .res b span,#reviewScreen .sy span,#reviewScreen .minigloss .pp{color:var(--fg)!important}
-.wtabrow{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.wtabrow{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+#wordScript{display:flex;justify-content:flex-end}
+.scriptpick{display:inline-flex;flex-direction:column;align-items:center;gap:3px}
+.scriptpick .sclabel{font-size:.68rem;letter-spacing:.04em;color:var(--muted);white-space:nowrap}
 .revhead{display:flex;align-items:center;justify-content:center;gap:12px}
 .seg.minseg button{font-size:1rem;padding:5px 11px}
 .revbar{position:fixed;left:0;right:0;bottom:0;padding:10px max(16px,calc((100vw - 760px) / 2)) calc(var(--bot) + 12px);background:color-mix(in srgb,var(--bg) 92%,transparent);
@@ -358,6 +361,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .revhead span{flex:1;color:var(--muted);font-size:.88rem}
 .revhead .btn{padding:10px 22px;font-weight:700}
 .seg2{display:grid;grid-template-columns:repeat(4,minmax(max-content,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg2.two{grid-template-columns:repeat(2,1fr)}
 .seg2 button{all:unset;cursor:pointer;text-align:center;white-space:nowrap;padding:9px 5px;font-size:.88rem;font-weight:500;color:var(--fg)}
 .seg2 button+button{border-left:1px solid var(--line)}
 .seg2 button span{color:var(--muted);font-size:.8rem;margin-left:2px}
@@ -438,6 +442,13 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .drawn .dim{opacity:.55}
 .ex{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .revctx b{color:var(--fg);font-weight:600}
+.wslots{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.wslot{width:52px;height:52px;border:1.5px dashed var(--line);border-radius:10px;display:grid;place-items:center}
+.wslot.now{border-style:solid;border-color:var(--accent)}
+.wslot.done{border-style:solid}
+.wslot svg{width:44px;height:44px}
+.writewrap{display:flex;justify-content:center}
+.writeprompt{justify-content:center}
 .revans{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:14px}
 .grades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .grades button{display:grid;gap:2px;justify-items:center;padding:10px 4px}
@@ -576,7 +587,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 <section class="screen sub" id="wordScreen" hidden>
   <div class="inner">
     <div class="topbar"><button type="button" class="back" data-back id="wordBack">Back</button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
-    <div class="wtabrow"><div class="wtabs" id="wtabs"></div><div id="wordScript"></div></div>
+    <div class="wtabrow"><div id="wordScript"></div><div class="wtabs" id="wtabs"></div></div>
     <div class="pager" id="pager"></div>
   </div>
 </section>
@@ -761,21 +772,21 @@ function speak(text) {
 }
 // ---- read-along: speak lines and light up each word as it's said. The voice reports its position on most
 // devices; where it doesn't, the position is estimated from the speaking speed.
-let readToken = 0;
-function stopReading() { readToken++; if ("speechSynthesis" in window) speechSynthesis.cancel(); document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking")); const b = $("listenBtn"); if (b) b.setAttribute("aria-pressed", "false"); }
+let readToken = 0, reading = false;  // reading: a read-along is running
+function stopReading() { readToken++; reading = false; if ("speechSynthesis" in window) speechSynthesis.cancel(); document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking")); const b = $("listenBtn"); if (b) b.setAttribute("aria-pressed", "false"); }
 function readAloud(lines, all) {
   if (!("speechSynthesis" in window) || !lines.length) return;
   const wasReading = document.querySelector(".speaking") || ($("listenBtn") && $("listenBtn").getAttribute("aria-pressed") === "true");
   stopReading();
   if (all && wasReading) return;  // the Listen button toggles
-  const token = readToken;
+  const token = readToken; reading = true;
   if (all) $("listenBtn").setAttribute("aria-pressed", "true");
   const simp = script === "simp", v = simp ? cnVoice : twVoice;
   let n = 0;
   const next = () => {
     if (token !== readToken) return;
     document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking"));
-    if (n >= lines.length) { if (all) $("listenBtn").setAttribute("aria-pressed", "false"); return; }
+    if (n >= lines.length) { reading = false; if (all) $("listenBtn").setAttribute("aria-pressed", "false"); return; }
     const line = lines[n++], text = line._text, spans = line._spans || [];
     if (all) line.scrollIntoView({ block: "nearest", behavior: "smooth" });
     const show = i => {
@@ -1241,8 +1252,8 @@ function showOnly(id) {
   if (tabbed) document.querySelectorAll("[data-tab]").forEach(b => b.dataset.tab === id ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
 }
 let tab = "readScreen", revSide = null;
-function setTab(id) { tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); }
-function go(id) { stack.push(id); showOnly(id); $(id).scrollTop = 0; try { history.pushState({ r: stack.length }, ""); } catch (e) {} }
+function setTab(id) { if (reading) stopReading(); tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); }
+function go(id) { if (reading) stopReading(); stack.push(id); showOnly(id); $(id).scrollTop = 0; try { history.pushState({ r: stack.length }, ""); } catch (e) {} }
 function back() {
   if (!stack.length) return;
   const leaving = stack.pop();
@@ -1272,7 +1283,7 @@ async function render() {
   if (!Object.keys(cache).length) reader.innerHTML = '<p class="loading">Drawing…</p>';
   await ensure(text);
   if (token !== renderToken) return;
-  reader.innerHTML = ""; unpick(); if (typeof stopReading === "function" && document.querySelector(".speaking")) stopReading();
+  reader.innerHTML = ""; unpick(); if (reading) stopReading();  // new text on screen: the voice stops with it
   if (!text.trim()) { reader.innerHTML = '<p class="note">Paste or type Chinese above, or use Photo/File, or Explore.</p>'; return; }
   // Every character is a drawing, so very long texts are shown in parts.
   if (doc && doc.lv) reader.append(el("p", "simpnote", `${doc.lv === "easy" ? "Easiest" : "Easier"} version, rewritten by AI. Check anything important against the Original.`));
@@ -1389,8 +1400,15 @@ function miniReader(text, mark) {
     gloss.innerHTML = `<b lang="zh">${esc(g.word)}</b><span class="pp">${esc(g.py)}</span><span class="pm">${esc(g.mean || "")}</span>${sayHTML(g.word, true)}`;
     // + Add: save it to My words (with this sentence as where you met it) without leaving the card.
     const add = el("button", "btn small miniadd"); add.type = "button";
-    const idle = () => { const have = findWord(g.word); add.textContent = have ? "✓ In my words" : "+ Add"; add.classList.toggle("ghost", !!have); add.disabled = !!have; };
-    add.onclick = async e => { e.stopPropagation(); add.disabled = true; const w = await addEntry(g.word, { context: text.split(/\n+/).find(l => l.includes(g.word)) || text }); play("right"); idle(); ensureCard(w).catch(() => {}); };
+    const idle = () => { const have = findWord(g.word); add.textContent = have ? "✓ In my words" : "+ Add"; add.classList.toggle("ghost", !!have); add.classList.remove("confirm"); add.disabled = false; };
+    add.onclick = async e => {
+      e.stopPropagation();
+      const have = findWord(g.word);
+      if (have) {  // saved already: first tap asks, second tap removes
+        if (!add.classList.contains("confirm")) { add.classList.add("confirm"); add.textContent = "Remove?"; setTimeout(() => { if (add.isConnected && add.classList.contains("confirm")) idle(); }, 4000); return; }
+        myWords.splice(myWords.indexOf(have), 1); saveWords(); idle(); return;
+      }
+      add.disabled = true; const w = await addEntry(g.word, { context: text.split(/\n+/).find(l => l.includes(g.word)) || text }); play("right"); idle(); ensureCard(w).catch(() => {}); };
     idle(); gloss.append(add);
     gloss.hidden = false;
   };
@@ -1460,12 +1478,14 @@ let sessionBase = null;
 function sessionScript(k, rerender) { if (k === script) return; if (sessionBase === null) sessionBase = script; script = k; rerender(); }
 function endSession() { if (sessionBase !== null && script !== sessionBase) { script = sessionBase; showScript(); render(); } sessionBase = null; }
 function scriptToggle(rerender) {
+  const wrap = el("div", "scriptpick", '<span class="sclabel">Traditional / Simplified</span>');
   const seg = el("div", "seg minseg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Traditional or Simplified, for this visit");
   [["trad", "繁"], ["simp", "简"]].forEach(([k, label]) => {
     const b = el("button", "", label); b.type = "button"; b.setAttribute("aria-pressed", script === k);
     b.onclick = () => sessionScript(k, rerender); seg.append(b);
   });
-  return seg;
+  wrap.append(seg);
+  return wrap;
 }
 $("pyBtn").onclick = e => {
   const b = e.currentTarget, on = b.getAttribute("aria-checked") !== "true";
@@ -1546,8 +1566,28 @@ const wPinyin = w => (w.card && w.card.pinyin) || w.pinyin || "";
 const wMeaning = w => (w.card && w.card.meaning) || w.meaning || "";
 const findWord = word => myWords.find(w => w.word === word || (w.card && (w.card.word === word || w.card.simplified === word))) || myWords.find(w => toTrad(w.word) === toTrad(word));  // either script finds it
 // Add a word right away with its dictionary entry; Claude's card follows in the background when a password is set.
+// The sentence a word was met in. A "line" from an article can be a whole paragraph, so keep only the sentence
+// with the word, and if that's still long, the clauses right around it.
+function sentenceOf(text, word) {
+  text = String(text || "").trim(); if (!text) return "";
+  const has = x => x.includes(word) || x.includes(toTrad(word)) || x.includes(toSimp(word));
+  const sents = text.match(/[^。！？!?；;\n]+[。！？!?；;」』”"]*/g) || [text];
+  let out = (sents.find(has) || sents[0]).trim();
+  if ([...out].length > 40) {
+    const parts = out.match(/[^，、,：:]+[，、,：:]?/g) || [out];
+    let i = parts.findIndex(has); if (i < 0) i = 0;
+    let a = i, b = i, t = parts[i];
+    while ([...t].length < 24 && (a > 0 || b < parts.length - 1)) {
+      if (b < parts.length - 1) t += parts[++b];
+      if ([...t].length < 24 && a > 0) t = parts[--a] + t;
+    }
+    out = (a > 0 ? "…" : "") + t.replace(/[，、,：:]$/, "") + (b < parts.length - 1 ? "…" : "");
+  }
+  return out;
+}
 async function addEntry(word, extra = {}) {
   await ensure(word);
+  if (extra.context) extra = { ...extra, context: sentenceOf(extra.context, word) };
   const d = lookup(word);
   const e = { word, added: localDay(), ...(d ? { pinyin: d[2] || d[1], meaning: d[3] } : {}), ...extra };
   for (const k of Object.keys(e)) if (e[k] === "" || e[k] == null) delete e[k];
@@ -1586,8 +1626,11 @@ function cardPending(w, onReady) {
 const NEW_PER_DAY = 10, DAY = 864e5;
 function localDay(t = Date.now()) { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 function midnight(t = Date.now()) { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
-function newLeft() { const n = store.get("radical-newday", {}); return NEW_PER_DAY - (n.day === localDay() ? n.n : 0); }
-function countNew() { const day = localDay(), n = store.get("radical-newday", {}); store.set("radical-newday", { day, n: (n.day === day ? n.n : 0) + 1 }); }
+// Reading cards use w.srs; writing cards keep their own schedule in w.wsrs, so writing a word badly
+// doesn't push back a word you read fine (and the other way round).
+const dayKey = k => k === "wsrs" ? "radical-newday-w" : "radical-newday";
+function newLeft(k = "srs") { const n = store.get(dayKey(k), {}); return NEW_PER_DAY - (n.day === localDay() ? n.n : 0); }
+function countNew(k = "srs") { const day = localDay(), n = store.get(dayKey(k), {}); store.set(dayKey(k), { day, n: (n.day === day ? n.n : 0) + 1 }); }
 // Known words stay in rotation, but rarely: each one comes back after a long, slightly random wait (2 to 6 months),
 // so now and then one turns up as a surprise check. Missing it makes it Active again.
 const KNOWN_MIN = 60, KNOWN_SPAN = 120;
@@ -1601,10 +1644,10 @@ function setStatus(w, st) {
 }
 // Older lists marked words known with no schedule; give those a far-off check date once.
 function upgradeKnown() { let n = 0; myWords.forEach(w => { if (w.skip && (!w.srs || !w.srs.due)) { w.srs = w.srs || freshSrs(); w.srs.ivl = knownWait(); w.srs.due = midnight() + Math.round(Math.random() * KNOWN_SPAN + 30) * DAY; n++; } }); if (n) saveWords(); }
-function reviewQueue() {
+function reviewQueue(k = "srs") {
   const now = Date.now();
-  const due = myWords.filter(w => w.srs && w.srs.due && w.srs.due <= now).sort((a, b) => a.srs.due - b.srs.due);
-  const fresh = myWords.filter(w => !w.skip && !w.srs).slice(0, Math.max(0, newLeft()));
+  const due = myWords.filter(w => w[k] && w[k].due && w[k].due <= now && (k === "srs" || !w.skip)).sort((a, b) => a[k].due - b[k].due);
+  const fresh = myWords.filter(w => !w.skip && !w[k]).slice(0, Math.max(0, newLeft(k)));
   return [...due, ...fresh];
 }
 function nextIvl(s, g) {
@@ -1613,12 +1656,12 @@ function nextIvl(s, g) {
   const m = { hard: 1.2, good: s.ease, easy: s.ease * 1.3 }[g];
   return Math.max(s.ivl + (g === "easy" ? 2 : 1), Math.round(s.ivl * m));
 }
-function grade(w, g) {
-  if (!w.srs) { w.srs = { ivl: 0, ease: 2.5, reps: 0, lapses: 0, due: 0 }; countNew(); }
-  const s = w.srs, ivl = nextIvl(s, g);
-  if (w.skip && (g === "again" || g === "hard")) w.skip = false;  // a known word you missed becomes Active again
+function grade(w, g, k = "srs") {
+  if (!w[k]) { w[k] = freshSrs(); countNew(k); }
+  const s = w[k], ivl = nextIvl(s, g);
+  if (k === "srs" && w.skip && (g === "again" || g === "hard")) w.skip = false;  // a known word you missed becomes Active again
   if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); }
-  else { s.ivl = w.skip ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
+  else { s.ivl = k === "srs" && w.skip ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
   saveWords();
 }
 const ivlText = d => d === 0 ? "soon" : d === 1 ? "1 day" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
@@ -1721,7 +1764,11 @@ function addBtn(word = wordState.word) {
   const idle = () => { const w = findWord(word); b.textContent = w ? "✓ In my words" : (word === s.word ? "+ Add" : `+ Add ${word}`); b.className = w ? "btn ghost addbtn" : "btn addbtn"; b.disabled = false; };
   idle();
   b.onclick = async () => {
-    if (findWord(word)) { b.textContent = "Already saved"; setTimeout(idle, 1200); return; }
+    const have = findWord(word);
+    if (have) {  // saved already: first tap asks, second tap removes
+      if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.textContent = "Remove?"; setTimeout(() => { if (b.isConnected && b.classList.contains("confirm")) idle(); }, 4000); return; }
+      myWords.splice(myWords.indexOf(have), 1); saveWords(); idle(); if (word === s.word) refreshWordPage(); return;
+    }
     b.disabled = true;
     const w = await addEntry(word, { context: s.context && s.context !== word ? s.context : undefined });
     play("right"); idle(); if (word === s.word) refreshWordPage();
@@ -1746,7 +1793,6 @@ function savedCard(w) {
     }
     if ((c.related || []).length) box.append(el("p", "note", "Related: " + c.related.map(r => `<b lang="zh">${esc(r.word)}</b> ${esc(r.pinyin)} ${esc(r.meaning)}`).join(" · ")));
   }
-  if (w.context) { box.append(el("p", "note metin", `Met in your reading · ${esc(w.added || "")}`)); box.append(miniReader(conv(w.context), conv(w.word))); }
   box.append(el("p", "note", dueText(w)));
   const acts = el("div", "row");
   if (!c) box.prepend(cardPending(w, refreshWordPage));
@@ -1803,6 +1849,45 @@ function charPage(ch, i) {
   return page;
 }
 
+// Brush ink for writing: your stroke is drawn as a wet brush mark while you write (thick when slow, thin
+// when quick, soft edges), then fades as the finished stroke appears in its color. The writing engine still
+// judges the stroke; its own thin line is made invisible.
+function brushLayer(pad, size) {
+  const cv = document.createElement("canvas"), dpr = Math.min(3, devicePixelRatio || 1);
+  cv.width = cv.height = Math.round(size * dpr); cv.className = "brush";
+  cv.style.cssText = `position:absolute;left:0;top:0;width:${size}px;height:${size}px;pointer-events:none`;
+  pad.append(cv);
+  const g = cv.getContext("2d"); g.scale(dpr, dpr);
+  const ink = getComputedStyle(document.documentElement).getPropertyValue("--fg").trim() || "#1a1a1a";
+  const base = size * 0.072;
+  let last = null, w = 0, fade = null;
+  const pos = e => { const r = pad.getBoundingClientRect(); return { x: (e.clientX - r.left) * size / r.width, y: (e.clientY - r.top) * size / r.height, t: e.timeStamp }; };
+  const dab = (x, y, r) => {
+    g.fillStyle = ink;
+    g.globalAlpha = .82; g.beginPath(); g.arc(x, y, r / 2, 0, Math.PI * 2); g.fill();
+    g.globalAlpha = .12; g.beginPath(); g.arc(x + (Math.random() - .5) * r * .18, y + (Math.random() - .5) * r * .18, r * .53, 0, Math.PI * 2); g.fill();  // soft, uneven edge
+  };
+  const move = p => {
+    const d = Math.hypot(p.x - last.x, p.y - last.y); if (d < .6) return;
+    const v = d / Math.max(1, p.t - last.t), target = base * Math.max(.38, Math.min(1.2, 1.2 - v * .75));
+    const n = Math.ceil(d / 1.2);
+    for (let i = 1; i <= n; i++) { w += (target - w) * .06; dab(last.x + (p.x - last.x) * i / n, last.y + (p.y - last.y) * i / n, w); }
+    last = p;
+  };
+  pad.addEventListener("pointerdown", e => {
+    clearTimeout(fade); cv.style.transition = "none"; cv.style.opacity = 1; g.clearRect(0, 0, size, size);
+    last = pos(e); w = base * .55; dab(last.x, last.y, w);
+  }, true);
+  pad.addEventListener("pointermove", e => {
+    if (!last) return;
+    (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(ev => move(pos(ev)));
+  }, true);
+  const up = () => {
+    if (!last) return; last = null;
+    fade = setTimeout(() => { cv.style.transition = "opacity .5s ease"; cv.style.opacity = 0; }, 180);
+  };
+  pad.addEventListener("pointerup", up, true); pad.addEventListener("pointercancel", up, true); pad.addEventListener("pointerleave", e => { if (e.target === pad) up(); }, true);  // leaving the pad itself, not a line inside it
+}
 // Writing practice: hints only on request or after 5 misses on a stroke. Grid starts on.
 function practice(top, ch, onBack) {
   const d = cache[ch];
@@ -1818,7 +1903,7 @@ function practice(top, ch, onBack) {
     width: size, height: size, padding: 12,
     charDataLoader: (c, onLoad) => onLoad({ strokes: d.s, medians: d.md }),
     showCharacter: false, showOutline: false,
-    outlineColor: col("--grid"), strokeColor: col("--surface"), drawingColor: col("--accent"), highlightColor: col("--sound"),
+    outlineColor: col("--grid"), strokeColor: col("--surface"), drawingColor: "rgba(0,0,0,0)", highlightColor: col("--sound"),
     drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 5, markStrokeCorrectAfterMisses: false
   });
   // Each stroke you get right appears in its component color with the same 3D finish as the big characters.
@@ -1826,7 +1911,7 @@ function practice(top, ch, onBack) {
   const ink = svgFor(ch, false, true); ink.setAttribute("class", "inkover");
   ink.style.cssText = `position:absolute;left:12px;top:12px;width:${size - 24}px;height:${size - 24}px;pointer-events:none`;
   const inkStrokes = [...ink.querySelectorAll("g.strokes path")]; inkStrokes.forEach(x => { x.style.opacity = 0; x.style.transition = "opacity .35s ease"; });
-  box.append(ink);
+  box.append(ink); brushLayer(box, size);
   const showInk = i => { if (inkStrokes[i]) inkStrokes[i].style.opacity = 1; };
   const guides = el("div", "btnrow");
   const toggle = (label, on, fn) => {
@@ -1858,11 +1943,14 @@ function practice(top, ch, onBack) {
 let filter = "all", pending = null;
 // Flash cards: choose which words (due, new, learning, all) and how many, then start.
 let revMode = store.get("radical-revmode", "due"), revCount = store.get("radical-revcount", 20);
+// Read: see the word, recall its sound and meaning. Write: hear it and see the meaning, write the characters.
+let revHow = store.get("radical-revhow", "read");
+const srsKey = () => revHow === "write" ? "wsrs" : "srs";
 function pool(mode) {
-  const live = myWords.filter(w => !w.skip);
-  if (mode === "due") return reviewQueue();
-  if (mode === "new") return live.filter(w => !w.srs);
-  if (mode === "learning") return live.filter(w => wStatus(w) === "learning");  // Active: in rotation, not due yet
+  const live = myWords.filter(w => !w.skip), k = srsKey();
+  if (mode === "due") return reviewQueue(k);
+  if (mode === "new") return live.filter(w => !w[k]);
+  if (mode === "learning") return live.filter(w => w[k] && w[k].due > Date.now());  // Active: in rotation, not due yet
   return live;
 }
 function buildQueue(mode, count) {
@@ -1889,9 +1977,16 @@ function renderStrip() {
   const head = el("div", "revhead", `<b>Flash cards</b><span>${nCards ? `${nCards} card${nCards === 1 ? "" : "s"}` : (myWords.length ? "Nothing in this set" : "Add words to start")}</span>`);
   const go_ = btn("Start", "btn", () => openReview(revMode, revCount)); go_.disabled = !nCards;
   head.append(go_);
+  const hows = el("div", "seg2 two");
+  [["read", "Read"], ["write", "Write"]].forEach(([k, label]) => {
+    const b = el("button", "", label); b.type = "button"; b.setAttribute("aria-pressed", revHow === k);
+    b.onclick = () => { revHow = k; store.set("radical-revhow", k); renderStrip(); }; hows.append(b);
+  });
+  const howRow = el("div", "row revcount", '<span class="note">Practice?</span>');
   const typeRow = el("div", "row revcount", '<span class="note">What type?</span>'), countRow = el("div", "row revcount", '<span class="note">How many?</span>');
-  typeRow.append(modes); countRow.append(counts);
-  box.append(head, typeRow, countRow);
+  howRow.append(hows); typeRow.append(modes); countRow.append(counts);
+  box.append(head, howRow, typeRow, countRow);
+  if (revHow === "write") box.append(el("p", "note", "Write: you hear the word and see its meaning, then write the characters from memory. Writing keeps its own schedule."));
   if (revMode === "due") box.append(el("p", "note", "Due: words whose review date has come, plus up to 10 new words a day."));
   if (revMode === "learning") box.append(el("p", "note", "Active: words in rotation that aren't due yet. Reviewing them early is fine."));
   strip.append(box);
@@ -2245,12 +2340,13 @@ function showFront() {
     return;
   }
   const w = rq[0];
-  prog.textContent = `· ${rq.length} left${w.srs ? "" : " · new"}`;
+  prog.textContent = `· ${rq.length} left${w[srsKey()] ? "" : " · new"}`;
   revSide = null;
   $("revScript").replaceChildren(scriptToggle(async () => {  // 繁/简 for the whole set; the card you're on is redrawn
     const back = revSide; await ensure(rq.map(x => conv(x.word) + conv(x.context || "") + conv((x.card && x.card.example) || "")).join(""));
-    showFront(); if (back) showFront.reveal(back.how === "check" ? "show" : back.how);
+    showFront(); if (back) showFront.reveal(back.how === "check" ? "show" : back.how, back.stats);
   }));
+  if (revHow === "write") { writeFront(w); return; }
   box.append(bigWord(conv(w.word)));
   // Two guesses, pinyin first. Tone numbers turn into marks as you type.
   const form = el("form", "guess");
@@ -2271,11 +2367,76 @@ function showFront() {
   showBack.guess = () => ({ py: py.value, mean: mean.value });
   setTimeout(() => py.focus(), 50);
 }
-function showBack(w, how) {
-  const box = $("revCard"), c = w.card, ans = el("div", "revans");
+// Writing card: pinyin, sound and meaning on top; write each character in turn on the pad.
+// Hints come after 3 misses on a stroke, or from the Hint button. The rating suggestion comes from how it went.
+function writeFront(w) {
+  const box = $("revCard"), word = conv(w.word), chars = [...word];
+  box.append(el("div", "wpy writeprompt", `<span class="bigpy">${pyWordHTML(wPinyin(w))}</span>${sayHTML(w.word)}`));
+  box.append(el("p", "wmean", esc(wMeaning(w))));
+  const slots = el("div", "wslots"), slotEls = chars.map(() => slots.appendChild(el("span", "wslot")));
+  const padHost = el("div", "writewrap"), coach = el("p", "coach");
+  box.append(slots, padHost, coach);
+  const stats = { strokes: 0, first: 0, hints: 0 };
+  let writer = null, idx = 0, current = 0, hinted = new Set();
+  const reveal = (how, st = stats) => {
+    if (writer) { try { writer.cancelQuiz(); } catch (e) {} writer = null; }
+    revSide = { how, stats: st }; box.innerHTML = ""; box.append(bigWord(word)); showBack(w, how, st);
+  };
+  showFront.reveal = reveal;
+  const fill = i => { const ch = chars[i]; slotEls[i].replaceChildren(cache[ch] ? svgFor(ch, false, true) : el("span", "plain", esc(ch))); slotEls[i].classList.add("done"); };
+  const nextChar = () => {
+    if (!box.isConnected || revSide) return;
+    if (idx >= chars.length) { setTimeout(() => { if (!revSide && box.isConnected) reveal("write"); }, 500); return; }
+    const ch = chars[idx], d = cache[ch];
+    slotEls.forEach((x, i) => x.classList.toggle("now", i === idx));
+    if (!d || typeof HanziWriter === "undefined") { fill(idx++); nextChar(); return; }  // nothing to write (no stroke data)
+    padHost.innerHTML = ""; hinted = new Set(); current = 0;
+    const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+    const size = Math.min(240, Math.floor(innerWidth * 0.62));
+    const pad = el("div", "pad gridon"); padHost.append(pad);
+    const lay = document.createElementNS(NS, "svg"); lay.setAttribute("class", "gridlay"); lay.setAttribute("viewBox", "0 0 1024 1024");
+    lay.innerHTML = '<g class="grid"><line x1="0" y1="512" x2="1024" y2="512"/><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="0" x2="1024" y2="1024"/><line x1="1024" y1="0" x2="0" y2="1024"/></g>';
+    pad.append(lay);
+    writer = HanziWriter.create(pad, ch, {
+      width: size, height: size, padding: 12,
+      charDataLoader: (c, onLoad) => onLoad({ strokes: d.s, medians: d.md }),
+      showCharacter: false, showOutline: false,
+      outlineColor: col("--grid"), strokeColor: col("--surface"), drawingColor: "rgba(0,0,0,0)", highlightColor: col("--sound"),
+      drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 3, markStrokeCorrectAfterMisses: false
+    });
+    const ink = svgFor(ch, false, true); ink.setAttribute("class", "inkover");
+    ink.style.cssText = `position:absolute;left:12px;top:12px;width:${size - 24}px;height:${size - 24}px;pointer-events:none`;
+    const inkStrokes = [...ink.querySelectorAll("g.strokes path")]; inkStrokes.forEach(x => { x.style.opacity = 0; x.style.transition = "opacity .35s ease"; });
+    pad.append(ink); brushLayer(pad, size);
+    const total = d.s.length; stats.strokes += total;
+    const lead = chars.length > 1 ? `<b>Character ${idx + 1} of ${chars.length}</b> · ` : "";
+    const say = m => { coach.innerHTML = lead + m; };
+    say("Write it from memory, first stroke first.");
+    writer.quiz({
+      onCorrectStroke: s => { if (inkStrokes[s.strokeNum]) inkStrokes[s.strokeNum].style.opacity = 1; if (!s.mistakesOnStroke && !hinted.has(s.strokeNum)) stats.first++; current = s.strokeNum + 1; say(`Stroke ${Math.min(current + 1, total)} of ${total}`); },
+      onMistake: s => { const n = s.mistakesOnStroke; if (n >= 3 && !hinted.has(s.strokeNum)) { hinted.add(s.strokeNum); stats.hints++; } say(n >= 3 ? "Here's where it goes. Trace it." : "Not quite. Try that stroke again."); },
+      onComplete: () => { fill(idx++); setTimeout(nextChar, 350); }
+    });
+  };
+  revBar("Write it from memory", "Show answer", "⟳", () => reveal("show"), [btn("Hint", "btn ghost", () => {
+    if (!writer) return; writer.highlightStroke(current); if (!hinted.has(current)) { hinted.add(current); stats.hints++; }
+    coach.innerHTML = "That stroke is highlighted. Trace it.";
+  })], "guessacts", "Say it to yourself, then write. Tap Hint for the next stroke.");
+  nextChar();
+}
+function showBack(w, how, st) {
+  const box = $("revCard"), c = w.card, ans = el("div", "revans"), k = srsKey();
   const guess = how === "check" && showBack.guess ? showBack.guess() : null;
   let suggest = how === "know" ? "good" : how === "show" ? "again" : null;
   if (how === "know") play("right");
+  if (how === "write" && st && st.strokes) {
+    // First-try strokes and hints decide the suggestion: clean is Good, a slip or one hint is Hard, more is Again.
+    const r = st.first / st.strokes;
+    suggest = !st.hints && r >= .9 ? "good" : st.hints <= 1 && r >= .6 ? "hard" : "again";
+    const cls = suggest === "good" ? "ok" : suggest === "hard" ? "part" : "no";
+    ans.append(el("div", "results", `<div class="res ${cls}"><span>Writing</span><b>${st.first} of ${st.strokes} strokes right the first time</b><em>${st.hints ? `${st.hints} hint${st.hints === 1 ? "" : "s"}` : "No hints."}</em></div>`));
+    play(suggest === "again" ? "wrong" : "right");
+  }
   if (guess) {
     const rp = checkPinyin(guess.py, wPinyin(w)), rm = checkMeaning(guess.mean, wMeaning(w));
     const mark = (label, val, r) => val.trim() ? `<div class="res ${r.ok === true ? "ok" : r.ok === "part" ? "part" : r.ok === false ? "no" : ""}"><span>${label}</span><b>${label === "Pinyin" ? pyWordHTML(numToMarks(val)) : esc(val)}</b><em>${esc(r.note || "")}</em>${r.detail ? `<div class="resdetail">${r.detail}</div>` : ""}</div>` : `<div class="res"><span>${label}</span><em>left blank</em></div>`;
@@ -2298,8 +2459,8 @@ function showBack(w, how) {
   } else ans.append(cardPending(w, () => { if (ans.isConnected) { ans.remove(); showBack(w, how); } }));
   const grades = el("div", "grades");
   [["again", "Again"], ["hard", "Hard"], ["good", "Good"], ["easy", "Easy"]].forEach(([g, label]) => {
-    const b = el("button", `btn ghost ${g}${g === suggest ? " suggest" : ""}`, `${label}<small>${ivlText(nextIvl(w.srs, g))}</small>`); b.type = "button";
-    b.onclick = () => { grade(w, g); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
+    const b = el("button", `btn ghost ${g}${g === suggest ? " suggest" : ""}`, `${label}<small>${ivlText(nextIvl(w[k], g))}</small>`); b.type = "button";
+    b.onclick = () => { grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);
   });
   // Rating is the only way forward, so the bar says so; the flip button sits where "Show answer" was on the front.
@@ -2375,6 +2536,7 @@ function showDocBar() {
 }
 async function showDocPage(i) {
   if (!doc) return;
+  if (reading) stopReading();  // turning the page stops the voice right away, before any rewrite or loading
   i = Math.max(0, Math.min(doc.pages.length - 1, i));
   if (doc.pages[i] == null) {
     if (!pdfFile) { busy("Open the PDF again (Photo/File) to read pages not loaded yet."); return; }
