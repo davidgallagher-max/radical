@@ -42,6 +42,11 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .inner{max-width:760px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;min-height:44px}
 .topbar .spacer{justify-self:end}
+/* On every page that opens on top (word page, flash cards, Review, Settings...), the top bar stays pinned while the
+   page scrolls under it: Back, 部 RADICAL and ☰ are always in reach. A solid band covers the notch area above it. */
+.screen.sub .topbar{position:sticky;top:0;z-index:5;margin:0 -16px;padding:0 16px;background:var(--bg)}
+.screen.sub .topbar::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:calc(var(--top) + 14px);background:var(--bg)}
+.screen.sub .topbar.stuck{border-bottom:1px solid var(--line);box-shadow:0 6px 12px -8px rgba(0,0,0,.45)}
 .topbar .back{display:block;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;line-height:44px}
 .topbar .back::before{display:inline-block;vertical-align:1px}
 .topbar h2{margin:0;font-family:var(--font-brand);font-size:1.15rem;font-weight:800;letter-spacing:.03em;flex:1;text-align:center}
@@ -949,7 +954,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: opens an email with the app version and device filled in. The address is in the page's code, so
 // anyone can read it: use a dedicated address, not a personal one. Empty: the menu item stays hidden.
-const APP_VERSION = "v27", FEEDBACK_TO = "";
+const APP_VERSION = "v28", FEEDBACK_TO = "";
 $("feedbackBtn").hidden = !FEEDBACK_TO;
 $("feedbackBtn").onclick = () => {
   closeMenu();
@@ -1789,6 +1794,8 @@ pinned("readScreen", "readBar", () => fitLegend()); pinned("wordsScreen", "filte
   const sc = $(id), head = sc.querySelector(".readhead");
   sc.addEventListener("scroll", () => sc.classList.toggle("collapsed", sc.scrollTop > head.offsetTop + head.offsetHeight - 8), { passive: true });
 });
+// Sub-page top bars get an edge once the page scrolls under them.
+document.querySelectorAll(".screen.sub").forEach(sc => { const tb = sc.querySelector(".topbar"); if (tb) sc.addEventListener("scroll", () => tb.classList.toggle("stuck", sc.scrollTop > 4), { passive: true }); });
 // The brand, wherever it shows, goes back to the top of the page you're on.
 document.querySelectorAll(".topbrand").forEach(b => b.onclick = () => { const sc = b.closest(".screen"); if (sc) sc.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); });
 $("listenBtn").onclick = () => readAloud([...$("reader").querySelectorAll(".line")], true);  // read the whole page, word by word
