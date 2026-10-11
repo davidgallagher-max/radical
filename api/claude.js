@@ -1,7 +1,11 @@
 // Radical's only server code. It holds the Anthropic API key (from Vercel's
 // environment variables, never from the page) and passes requests to Claude:
 // study cards, translations, word lists, photo text, and Wikipedia search help.
-// The page must send the APP_PASSWORD, so strangers can't spend your credits.
+// Requests must come from a signed-in account (the page sends its Supabase access
+// token), so strangers can't spend your credits. The old shared APP_PASSWORD still
+// works while it's set in Vercel; delete it there to retire it completely.
+// Accounts, sync and the AI cost log live in _account.js.
+const account = require("./_account.js");
 
 const API = "https://api.anthropic.com/v1/messages";
 const CARD_MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-5-5";
@@ -81,7 +85,7 @@ Asked what it means in English, they wrote: "${guess}"
 Does their answer show they know ${pattern ? "how the pattern is used" : "the word"}? Count as right: abbreviations (AI for artificial intelligence), synonyms, paraphrases, any one correct sense of the word, and small spelling mistakes. "close" means related or partly right but not really the meaning. Otherwise "wrong".
 Return ONLY JSON: {"verdict":"right"|"close"|"wrong","note":"under 12 words, spoken to the learner"}`;
 
-async function askClaude(model, prompt, maxTokens) {
+async function askAI(model, prompt, maxTokens) {
   const r = await fetch(API, {
     method: "POST",
     headers: {
@@ -96,7 +100,7 @@ async function askClaude(model, prompt, maxTokens) {
     const msg = (data.error && data.error.message) || `AI service error ${r.status}`;
     throw Object.assign(new Error(msg), { status: r.status });
   }
-  return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+  return { text: (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim(), usage: data.usage || {} };
 }
 
 function parseJSON(text) {
@@ -108,14 +112,33 @@ function parseJSON(text) {
 
 module.exports = async (req, res) => {
   if (req.method !== "POST" && req.method !== "GET") return res.status(405).json({ error: "Use GET or POST." });
+  const body = req.method === "GET" ? (req.query || {})
+    : typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+  // Public: the account service's address and publishable key (both are meant to be in the page), and whether the
+  // keys are set up (names only, never values).
+  if (body.action === "config") { res.setHeader("Cache-Control", "no-store"); return res.status(200).json(account.config()); }
+  if (body.action === "status") {
+    const st = account.status();
+    if (st.ok) { try { await account.ensureBucket(); } catch (e) { st.ok = false; st.error = e.message; } }
+    return res.status(200).json(st);
+  }
+  const user = await account.userOf(req);
+  const byPassword = !user && !!process.env.APP_PASSWORD && req.headers["x-app-password"] === process.env.APP_PASSWORD;
+  if (!user && !byPassword) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+  const who = user ? user.id : "password";
+  try {
+    if (body.action === "sync") {
+      if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+      if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
+      return res.status(200).json(await account.sync(user, body.data || {}));
+    }
+  } catch (e) { return res.status(500).json({ error: e.message }); }
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: "No API key on the server. Add ANTHROPIC_API_KEY in Vercel, Settings, Environment Variables, then redeploy." });
   }
-  if (!process.env.APP_PASSWORD || req.headers["x-app-password"] !== process.env.APP_PASSWORD) {
-    return res.status(401).json({ error: "Wrong or missing password. Set it in Radical's settings (the gear)." });
-  }
-  const body = req.method === "GET" ? (req.query || {})
-    : typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+  // A high daily safety stop per person; every AI call is logged with its estimated cost.
+  if ((await account.spentToday(who)) >= account.DAILY_CAP()) return res.status(429).json({ error: "Today's AI limit is reached. It resets tomorrow; reading, saving and flash cards still work." });
+  const askClaude = async (model, prompt, maxTokens) => { const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage); return r.text; };
   try {
     if (body.action === "card") {
       const word = String(body.word || "").trim().slice(0, 20);
