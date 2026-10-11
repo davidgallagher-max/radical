@@ -1722,6 +1722,7 @@ async function addEntry(word, extra = {}) {
 }
 async function makeCard(w) {
   const { card } = await claude({ action: "card", word: w.word });
+  if (!card || typeof card !== "object") throw new Error("The card didn't come back. Try again.");  // otherwise the wait could loop
   w.card = card; saveWords(); return w;
 }
 // Saved words always get their full card: it's made the first time the word is opened or reviewed (or right after
