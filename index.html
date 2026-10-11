@@ -180,7 +180,7 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .ratehead b{font-size:.95rem}.ratehead span{font-size:.78rem;color:var(--muted)}
 .flipbtn{justify-self:center}
 /* Flash cards: pinyin in plain ink (no tone colors), so the characters' colors stay the only color on the card. */
-#reviewScreen .bigpy span,#reviewScreen .cell .py span,#reviewScreen .res b span,#reviewScreen .sy span,#reviewScreen .minigloss .pp{color:var(--fg)!important}
+#reviewScreen .bigpy span,#reviewScreen .cell .py span,#reviewScreen .res b span,#reviewScreen .sy span,#reviewScreen .minigloss .pp,#lookScreen .bigpy span,#lookScreen .cell .py span,#lookScreen .minigloss .pp{color:var(--fg)!important}
 .wtabrow{display:flex;flex-direction:column;align-items:stretch;gap:8px}
 #wordScript{display:flex;justify-content:flex-end}
 .scriptpick{display:inline-flex;flex-direction:column;align-items:center;gap:3px}
@@ -488,6 +488,14 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .selrow{display:flex;align-items:center;gap:8px}
 .selrow b{flex:1;font-size:.92rem}
 .selrow .btn{flex:1;white-space:nowrap;padding-left:8px;padding-right:8px}.selrow:first-child .btn{flex:none}
+.lookbtn{font-size:.95rem;padding:11px}
+.lookhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.lookhead .revtitle{text-align:left}
+.lookcard{min-height:50vh;touch-action:pan-y}
+.looknav{position:sticky;bottom:calc(var(--bot) + 10px);display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:6px}
+.looknav .btn{padding:13px;font-size:1rem}
+.lookacts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.lookend{display:grid;gap:12px;justify-items:center;text-align:center;padding:30px 0}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--line)}
 .dot.new{background:transparent;box-shadow:inset 0 0 0 2px var(--accent)}
 .dot.due{background:var(--sound)}
@@ -692,6 +700,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
       </div>
       <div class="preview" id="preview" hidden></div>
     </div>
+    <button type="button" class="btn ghost wide lookbtn" id="lookBtn" hidden></button>
     <div class="wordlist" id="wordList"></div>
   </div>
 </section>
@@ -713,6 +722,17 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
     <button type="button" class="revprev" id="revPrev" style="visibility:hidden">‹ Previous card</button>
     <div id="revCard" class="revcard"></div>
     <div class="revbar" id="revBar"></div>
+  </div>
+</section>
+
+<!-- REVIEW LIST: look through words card by card, no grading -->
+<section class="screen sub" id="lookScreen" hidden>
+  <div class="inner">
+    <div class="topbar"><button type="button" class="back" data-back>Back to my words</button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="lookhead"><h2 class="revtitle">Review <span class="note" id="lookProg"></span></h2>
+      <button type="button" class="switch small" id="shuffleSw" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Shuffle</button></div>
+    <div id="lookCard" class="revcard lookcard"></div>
+    <div class="looknav"><button type="button" class="btn ghost" id="lookPrev">‹ Previous</button><button type="button" class="btn" id="lookNext">Next ›</button></div>
   </div>
 </section>
 
@@ -2272,6 +2292,10 @@ function renderWords() {
     list.append(r);
   });
   for (const w of picks) if (!myWords.includes(w)) picks.delete(w);
+  // Review: look through these words card by card. With words checked, just those (in list order).
+  const lb = $("lookBtn"), sel = shown.filter(w => picks.has(w)), set = picks.size ? (sel.length ? sel : [...picks]) : shown;
+  lb.hidden = !set.length; lb.textContent = picks.size ? `Review selection (${set.length})` : `Review ${set.length === 1 ? "this word" : `these ${set.length}`}`;
+  lb.onclick = () => openLook(set);
   renderSelBar(shown);
   if (!myWords.length) $("addStatus").textContent = "Add a word you're learning, paste a list, or import a file.";
 }
@@ -2309,7 +2333,7 @@ function statusMenu(anchor, ws) {
     if (!chosen || chosen === cur) return;
     ws.forEach(w => setStatus(w, chosen)); saveWords(); play("right"); closeStatusMenu();
     if (ws.length > 1) picks.clear();
-    renderWords(); updateCounts();
+    renderWords(); updateCounts(); if (!$("lookScreen").hidden) showLook();
   };
   const foot = el("div", "stfoot"); foot.append(cancel, save); m.append(foot);
   paint();
@@ -2333,7 +2357,7 @@ function renderSelBar(shown) {
     btn(all ? "Select none" : `Select all ${shown.length}`, "btn ghost small", () => { if (all) shown.forEach(w => picks.delete(w)); else shown.forEach(w => picks.add(w)); renderWords(); }),
     btn("✕", "btn ghost small selx", () => { picks.clear(); renderWords(); }));
   const acts = el("div", "selrow");
-  const study = btn("Study these", "btn", () => { const ws = [...picks]; picks.clear(); renderWords(); openReviewWith(ws); });
+  const study = btn(`Flash cards (${picks.size})`, "btn", () => { const ws = [...picks]; picks.clear(); renderWords(); openReviewWith(ws); });
   const stat = btn("Set status ▾", "btn ghost", e => statusMenu(e.currentTarget, [...picks]));
   const del = btn("Remove", "btn ghost", () => {
     if (del.dataset.sure !== "1") { del.dataset.sure = "1"; del.textContent = `Remove ${picks.size}?`; del.classList.add("confirm"); return; }
@@ -2489,6 +2513,74 @@ function restoreProgress(list) {
   let n = 0;
   list.forEach(e => { const have = findWord(e.word); if (!have) return; for (const k of ["card", "srs", "wsrs", "context", "skip"]) if (!have[k] && e[k]) { have[k] = e[k]; n++; } });  // wsrs: the writing schedule
   if (n) saveWords();
+}
+
+// ================= review list: every card face up, one at a time, in list order (or shuffled). No grading,
+// no score, the schedule never changes. Shuffle only reorders the cards you haven't seen yet; the ones behind
+// you keep their order, so ‹ always goes back to what you just saw.
+let look = null, lookShuffle = store.get("radical-look-shuffle", false);
+const shuffled = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+async function openLook(ws) {
+  look = { base: ws.slice(), order: lookShuffle ? shuffled(ws) : ws.slice(), i: 0 };
+  $("shuffleSw").setAttribute("aria-checked", lookShuffle);
+  go("lookScreen");
+  await ensure(ws.map(w => w.word + conv(w.word)).join(""));
+  showLook();
+}
+$("shuffleSw").onclick = () => {
+  lookShuffle = !lookShuffle; store.set("radical-look-shuffle", lookShuffle); $("shuffleSw").setAttribute("aria-checked", lookShuffle);
+  if (!look) return;
+  const seen = look.order.slice(0, Math.min(look.i + 1, look.order.length)), rest = look.base.filter(w => !seen.includes(w));
+  look.order = [...seen, ...(lookShuffle ? shuffled(rest) : rest)];
+  showLook();
+};
+function lookMove(d) {
+  if (!look) return; const n = look.order.length, i = Math.max(0, Math.min(n, look.i + d));  // i === n is the end card
+  if (i === look.i) return; look.i = i; play("tap"); showLook(); $("lookScreen").scrollTop = 0;
+}
+$("lookPrev").onclick = () => lookMove(-1); $("lookNext").onclick = () => lookMove(1);
+{ let x0 = null, y0 = 0;  // swipe left or right on the card
+  $("lookCard").addEventListener("touchstart", e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  $("lookCard").addEventListener("touchend", e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 && !e.target.closest(".mini")) lookMove(dx < 0 ? 1 : -1); }); }
+document.addEventListener("keydown", e => { if ($("lookScreen").hidden || e.target.closest("input,textarea")) return; if (e.key === "ArrowRight") lookMove(1); if (e.key === "ArrowLeft") lookMove(-1); });
+function showLook() {
+  const box = $("lookCard"), n = look.order.length; box.innerHTML = "";
+  $("lookPrev").disabled = look.i === 0;
+  if (look.i >= n) {  // the end
+    $("lookProg").textContent = ""; $("lookNext").disabled = true;
+    const end = el("div", "lookend", `<p class="wmean">That's all ${n}.</p>`);
+    end.append(btn("Start over", "btn", () => { look.order = lookShuffle ? shuffled(look.base) : look.base.slice(); look.i = 0; showLook(); }),
+      btn("Back to my words", "btn ghost", () => history.back()));
+    box.append(end); return;
+  }
+  $("lookNext").disabled = false; $("lookNext").textContent = look.i === n - 1 ? "Finish ›" : "Next ›";
+  $("lookProg").textContent = `· Card ${look.i + 1} of ${n}`;
+  const w = look.order[look.i];
+  const paint = () => {
+    if ($("lookScreen").hidden || look.order[look.i] !== w) return;
+    box.innerHTML = ""; const c = w.card;
+    box.append(bigWord(conv(w.word)));
+    box.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(wPinyin(w))}</span>${sayHTML(w.word)}`));
+    box.append(el("p", "wmean", esc(wMeaning(w))));
+    if (c) {
+      (c.chars || []).forEach(x => box.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
+      if (c.example) {
+        const ex = el("div", "wcard"); ex.append(miniReader(conv(c.example), conv(w.word)));
+        const en = el("p", "exp", esc(c.example_en)); en.hidden = true; ex.append(en);
+        if (c.example_en) ex.append(btn("Show English", "btn ghost small", e => { en.hidden = !en.hidden; e.target.textContent = en.hidden ? "Show English" : "Hide English"; }));
+        box.append(ex);
+      }
+    } else {
+      if (w.context) { const ex = el("div", "wcard"); ex.append(miniReader(conv(w.context), conv(w.word))); box.append(ex); }
+      if (store.get("radical-pw", "")) box.append(cardPending(w, paint));
+    }
+    const acts = el("div", "lookacts");
+    acts.append(btn(w.skip ? "Put back in review" : "I know this", "btn ghost small", () => { setStatus(w, w.skip ? "learning" : "known"); saveWords(); play("right"); paint(); }),
+      btn(`Status: ${STATUS_NAME[wStatus(w)]} ▾`, "btn ghost small", e => statusMenu(e.currentTarget, [w])));
+    box.append(acts);
+  };
+  paint();
 }
 
 // ================= review
