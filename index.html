@@ -658,8 +658,9 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
       <div class="brand"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
+    <h3 class="sec tabsec"><span lang="zh">讀</span>My text</h3>
     <div class="tpanel" id="addPanel">
-      <h3 class="sec">Add text</h3>
+      <h3 class="sec sub">Add text</h3>
       <div class="toolbar">
         <label class="tool" title="Take a photo, or open a photo, PDF, Word file, e-book, subtitles, text or spreadsheet"><span class="ti">拍</span>Photo/File
           <input type="file" id="fileIn" accept="image/*,application/pdf,.pdf,.docx,.txt,.text,.md,.html,.htm,.epub,.srt,.vtt,.ass,.csv,.tsv,.xlsx" hidden></label>
@@ -677,7 +678,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 我負責學區的審計工作。</textarea>
     </div>
     <div class="tpanel" id="readPanel">
-      <h3 class="sec">Read</h3>
+      <h3 class="sec sub">Read</h3>
     <div class="bar" id="readBar">
       <div class="legrow">
         <div class="legend" id="readLegend">
@@ -916,7 +917,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: opens an email with the app version and device filled in. The address is in the page's code, so
 // anyone can read it: use a dedicated address, not a personal one. Empty: the menu item stays hidden.
-const APP_VERSION = "v25", FEEDBACK_TO = "";
+const APP_VERSION = "v26", FEEDBACK_TO = "";
 $("feedbackBtn").hidden = !FEEDBACK_TO;
 $("feedbackBtn").onclick = () => {
   closeMenu();
