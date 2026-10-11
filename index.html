@@ -339,10 +339,18 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .glue>*{min-width:0}
 .glue .glyph:not(.latin){text-align:left}
 .glue .latin{text-align:center}
-.linectl{display:inline-flex;gap:5px;align-items:center;align-self:center;grid-column:span 3;justify-self:start;padding-left:4px}
+.linectl{display:inline-flex;gap:5px;align-items:center;align-self:center;grid-column:span 5;justify-self:start;padding-left:4px}
 .enbtn{font-size:.72rem;font-weight:600;letter-spacing:.04em;color:var(--accent);background:var(--surface);border:1px solid var(--line);border-radius:14px;height:28px;padding:0 9px;cursor:pointer}
 .trans{margin:-2px 0 4px;padding:8px 12px;border-left:3px solid var(--accent);font-size:.96rem;background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:0 8px 8px 0}
 .loading{color:var(--muted);font-size:.9rem}
+.exbtn{white-space:nowrap}.exbtn [lang=zh]{font-family:var(--font-zh);font-size:.9rem;font-weight:600}
+.exbtn.on{border-color:var(--idea);color:var(--idea)}
+.linectl{flex-wrap:nowrap}
+.explain{margin:-2px 0 6px;padding:9px 12px;border-left:3px solid var(--idea);font-size:.92rem;line-height:1.5;background:color-mix(in srgb,var(--idea) 7%,transparent);border-radius:0 8px 8px 0;display:grid;gap:6px}
+.explain p,.explain ul{margin:0}.explain ul{padding-left:1.1em;display:grid;gap:3px}
+.explain b[lang=zh]{font-family:var(--font-zh);font-weight:600;color:var(--fg)}
+.explain .exw{color:var(--muted)}
+.explain.err{border-left-color:var(--sound)}
 
 .toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .tool{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.85rem;font-weight:500;color:var(--accent);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 4px;cursor:pointer}
@@ -1584,6 +1592,13 @@ function buildLine(lineText, onTap, withEN = true) {
   say.onclick = e => { e.stopPropagation(); readAloud([line]); };
   ctl.append(say);
   if (withEN) { const en = btn("EN", "enbtn"); en.title = "Translate this line"; en.onclick = () => translateLine(lineText, line, en); ctl.append(en); }
+  // 解 Explain: the sentence's structure, its grammar points and any word used in a less obvious sense. The button says
+  // "解 Explain" until it has been used a few times, then just 解.
+  if (/\p{Script=Han}/u.test(lineText)) {
+    const ex = el("button", "enbtn exbtn", store.get("radical-explain-uses", 0) >= 3 ? '<span lang="zh">解</span>' : '<span lang="zh">解</span> Explain');
+    ex.type = "button"; ex.title = "Explain this sentence's grammar"; ex.onclick = e => { e.stopPropagation(); explainLine(lineText, line, ex); };
+    ctl.append(ex);
+  }
   line.append(ctl);
   return line;
 }
@@ -1830,6 +1845,33 @@ async function claude(payload) {
   if (r.status === 404) throw new Error("Online features only work on the live site, not the Mac test server.");
   if (!r.ok) throw new Error(data.error || `Something went wrong (${r.status}).`);
   return data;
+}
+// Explanations are kept once made (the same sentence never costs twice); at most 300 are kept, oldest dropped first.
+const explainCache = store.get("radical-explain", {});
+function explainHTML(r) {
+  const zh = t => `<b lang="zh">${esc(t)}</b>`;
+  let h = r.structure ? `<p class="exs">${esc(r.structure)}</p>` : "";
+  if ((r.points || []).length) h += `<ul class="exp">${r.points.map(x => `<li>${zh(x.pattern)} ${esc(x.note)}</li>`).join("")}</ul>`;
+  if ((r.words || []).length) h += `<p class="exw">${r.words.map(x => `${zh(x.word)} ${esc(x.note)}`).join(" · ")}</p>`;
+  return h || `<p class="exs">Nothing tricky here: it reads the way it looks.</p>`;
+}
+async function explainLine(text, line, b) {
+  const box0 = [line.nextElementSibling, line.nextElementSibling && line.nextElementSibling.nextElementSibling].find(x => x && x.classList.contains("explain"));
+  if (box0) { const failed = box0.classList.contains("err"); box0.remove(); b.classList.remove("on"); if (!failed) return; }
+  const box = el("div", "explain"); box.lang = "en";
+  const after = line.nextElementSibling && line.nextElementSibling.classList.contains("trans") ? line.nextElementSibling : line;
+  after.after(box); b.classList.add("on");
+  store.set("radical-explain-uses", store.get("radical-explain-uses", 0) + 1);
+  if (explainCache[text]) { box.innerHTML = explainHTML(explainCache[text]); return; }
+  box.innerHTML = '<p class="exs loading">Explaining…</p>'; b.disabled = true;
+  try {
+    const r = await claude({ action: "explain", sentence: text, trad: script !== "simp" });
+    explainCache[text] = { structure: r.structure, points: r.points, words: r.words };
+    const keys = Object.keys(explainCache); while (keys.length > 300) delete explainCache[keys.shift()];
+    store.set("radical-explain", explainCache);
+    box.innerHTML = explainHTML(explainCache[text]);
+  } catch (e) { box.innerHTML = `<p class="exs">${esc(e.message)}</p>`; box.classList.add("err"); }
+  b.disabled = false;
 }
 const transCache = store.get("radical-trans", {});
 async function translateLine(text, line, b) {

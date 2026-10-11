@@ -56,6 +56,16 @@ Keep one paragraph per paragraph of the original. Write in ${trad ? "Traditional
 
 ${text}`;
 
+// Explain one sentence for a learner: how it's built, the grammar points in it, and words used in a less obvious sense.
+const EXPLAIN_PROMPT = (sentence, trad) => `Explain this Mandarin sentence to an adult learner at about intermediate level (Taiwan Mandarin, ${trad ? "Traditional" : "Simplified"} characters).
+Sentence: ${sentence}
+
+Return ONLY JSON with these keys:
+{"structure":"one or two short sentences on how the sentence is built (topic, main verb, what the clauses do)",
+ "points":[{"pattern":"the grammar pattern as it appears, e.g. 把…V完 or 是…的","note":"what it does in THIS sentence, one sentence"}],
+ "words":[{"word":"a word","note":"its meaning here, only when it differs from the first dictionary sense or is easy to misread"}]}
+0 to 4 points, 0 to 3 words; leave out anything obvious. Plain English, no jargon a learner wouldn't know; if you use a grammar term, say what it means. Use ${trad ? "Traditional" : "Simplified"} characters in patterns and words.`;
+
 // Explore's daily topic chips: nine topics shaped by what the learner searches and reads, plus a few wild cards.
 const TOPICS_PROMPT = (searches, reading, avoid) => `Suggest 9 topics for an adult learner of Taiwan Mandarin to read about on Chinese Wikipedia today.
 Things they searched for recently (most used first): ${searches.length ? searches.join("; ") : "none yet"}
@@ -173,6 +183,16 @@ module.exports = async (req, res) => {
       const verdict = out && ["right", "close", "wrong"].includes(out.verdict) ? out.verdict : null;
       if (!verdict) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       return res.status(200).json({ verdict, note: String(out.note || "").slice(0, 120) });
+    }
+    if (body.action === "explain") {
+      const sentence = String(body.sentence || "").trim().slice(0, 300);
+      if (!sentence) return res.status(400).json({ error: "Nothing to explain." });
+      const out = parseJSON(await askClaude(CARD_MODEL, EXPLAIN_PROMPT(sentence, body.trad !== false), 900));
+      if (!out) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      const list = (x, n) => (Array.isArray(x) ? x : []).filter(v => v && typeof v === "object").slice(0, n);
+      return res.status(200).json({ structure: String(out.structure || "").slice(0, 400),
+        points: list(out.points, 4).map(p => ({ pattern: String(p.pattern || "").slice(0, 30), note: String(p.note || "").slice(0, 300) })).filter(p => p.pattern),
+        words: list(out.words, 3).map(w => ({ word: String(w.word || "").slice(0, 12), note: String(w.note || "").slice(0, 200) })).filter(w => w.word) });
     }
     if (body.action === "topics") {
       const list = (x, n, len) => (Array.isArray(x) ? x : []).slice(0, n).map(v => String(v || "").slice(0, len)).filter(Boolean);
