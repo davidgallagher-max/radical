@@ -1885,6 +1885,7 @@ async function addEntry(word, extra = {}) {
   if (!e.meaning && [...word].length === 1 && cache[word]) e.meaning = cache[word].d;
   myWords.unshift(e); saveWords();
   unlearn(word); logDay("n");  // bringing a learned word back means it needs work again
+  queueCard(e);
   return e;
 }
 async function makeCard(w) {
@@ -1901,6 +1902,21 @@ function ensureCard(w) {
   if (!cardJobs.has(w.word)) cardJobs.set(w.word, makeCard(w).finally(() => cardJobs.delete(w.word)));
   return cardJobs.get(w.word);
 }
+// Every saved word gets its card made right after it's added, two at a time in the background (so a pasted list of
+// 80 words doesn't fire 80 requests at once). Offline, the queue waits for the connection; words still missing a
+// card (from an earlier offline session or a failure) are queued again each time the app starts.
+const cardQueue = []; let cardBusy = 0;
+function queueCard(w) { if (!w || w.card || cardQueue.includes(w)) return; cardQueue.push(w); pumpCards(); }
+function pumpCards() {
+  if (!store.get("radical-pw", "")) return;
+  if (navigator.onLine === false) return;  // the "online" event starts it again
+  while (cardBusy < 2 && cardQueue.length) {
+    const w = cardQueue.shift(); if (w.card || !myWords.includes(w)) continue;
+    cardBusy++;
+    ensureCard(w).then(() => { if (!$("wordsScreen").hidden) renderWords(); }).catch(() => {}).finally(() => { cardBusy--; setTimeout(pumpCards, 400); });
+  }
+}
+addEventListener("online", pumpCards);
 function cardPending(w, onReady) {
   const box = el("div", "cardwait");
   const start = () => {
@@ -2098,7 +2114,7 @@ function addBtn(word = wordState.word) {
     b.disabled = true;
     const w = await addEntry(word, { context: s.context && s.context !== word ? s.context : undefined });
     play("right"); idle(); if (word === s.word) refreshWordPage();
-    if (store.get("radical-pw", "")) makeCard(w).then(refreshWordPage).catch(() => {});
+    ensureCard(w).then(refreshWordPage).catch(() => {});
   };
   return b;
 }
@@ -2585,7 +2601,7 @@ async function commitPending(isBackup) {
     if (d && !entry.pinyin) entry.pinyin = d[2] || d[1];
     if (d && !entry.meaning) entry.meaning = d[3];
     if (!entry.meaning && [...entry.word].length === 1 && cache[entry.word]) entry.meaning = cache[entry.word].d;
-    myWords.unshift(entry); n++; unlearn(entry.word); logDay("n");
+    myWords.unshift(entry); n++; unlearn(entry.word); logDay("n"); queueCard(entry);
   }
   saveWords(); closePreview(); $("addWord").value = ""; growAdd();
   $("addStatus").textContent = `Added ${n} word${n === 1 ? "" : "s"}.`; play("right");
@@ -2606,7 +2622,7 @@ $("addGo").onclick = async () => {
     const entry = await addEntry(w.word, { pinyin: w.pinyin, meaning: w.meaning, skip: w.skip });
     $("addWord").value = ""; growAdd(); renderWords();
     st.textContent = `Added ${entry.word}.`; play("right");
-    if (store.get("radical-pw", "")) makeCard(entry).then(() => { renderWords(); refreshWordPage(); }).catch(() => {});
+    ensureCard(entry).then(() => { renderWords(); refreshWordPage(); }).catch(() => {});
     return;
   }
   showPreview(found, null);
@@ -3100,7 +3116,7 @@ async function openSettings(welcome) {
   $("pw").value = store.get("radical-pw", "");
   go("settingsScreen");
 }
-function saveSettings() { store.set("radical-pw", $("pw").value.trim()); store.set("radical-palette", palette); }
+function saveSettings() { store.set("radical-pw", $("pw").value.trim()); store.set("radical-palette", palette); myWords.filter(w => !w.card).forEach(queueCard); }
 $("pw").addEventListener("change", saveSettings);
 $("startBtn").onclick = () => { saveSettings(); history.back(); };
 $("soundSw").setAttribute("aria-checked", soundOn);
@@ -3585,6 +3601,7 @@ $("wikiRandom").onclick = async () => {
   animate(big, "部", 1.4, () => { const sp = document.getElementById("splash"); if (sp) sp.classList.add("ready"); });
   await render(); fitLegend();
   fetchDaily();  // the day's Explore chips, fetched once a day in the background
+  myWords.filter(w => !w.card).forEach(queueCard);  // cards still missing (added offline, or a request failed)
   if (document.fonts) document.fonts.ready.then(() => fitLegend());
   const hide = () => { $("splash").classList.add("out"); setTimeout(() => $("splash").remove(), 500); };
   // The splash waits for a tap (the app loads behind it meanwhile).
