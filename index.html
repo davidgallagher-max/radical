@@ -2676,6 +2676,17 @@ function prevCard() {
   $("reviewScreen").scrollTop = 0;
 }
 $("revPrev").onclick = prevCard;
+// Quit: with nothing rated it just leaves; once a card is rated it asks first, showing how far you got and the score.
+// (Ratings are saved as you go, so quitting loses nothing.) On the Done screen the button is Back to my words.
+$("revQuit").onclick = () => {
+  if (!rDone || !rq.length) { history.back(); return; }
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard");
+  card.innerHTML = `<h3>End this session?</h3><p>${rDone} of ${rDone + rq.length} done · ${scoreText(rScore)}</p><p class="note">Your ratings so far are saved.</p>`;
+  const row = el("div", "row"), stay = btn("Keep going", "btn ghost", () => sheet.remove()), quit = btn("Quit", "btn", () => { sheet.remove(); history.back(); });
+  row.append(stay, quit); card.append(row); sheet.append(card);
+  sheet.onclick = ev => { if (ev.target === sheet) sheet.remove(); };
+  document.body.append(sheet); stay.focus();
+};
 // Flash cards for a hand-picked set of words (from the selection bar), shuffled, schedule ignored for choosing.
 async function openReviewWith(ws) {
   rq = ws.slice(); for (let i = rq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rq[i], rq[j]] = [rq[j], rq[i]]; }
@@ -2784,6 +2795,7 @@ function showFront() {
   $("revPrev").style.visibility = revHist.length ? "visible" : "hidden";  // keeps its space, so the card never jumps
   const sc = rScore || (rScore = newScore()), rep = n => `${n} repeat${n === 1 ? "" : "s"}`;
   $("revScore").textContent = rDone && rq.length ? scoreText(sc) : "";
+  $("revQuit").textContent = rq.length ? "Quit" : "Back to my words";
   if (!rq.length) {
     prog.textContent = ""; $("revBar").replaceChildren();
     box.append(el("p", "wmean", rDone ? `Done. ${rDone} reviewed${sc.repeats ? `, including ${rep(sc.repeats)}` : ""}.` : "Nothing to review right now."));
