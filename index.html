@@ -2283,7 +2283,7 @@ $("importFile").onchange = async e => {
 // A backup file restores cards and review progress onto words that are already in the list.
 function restoreProgress(list) {
   let n = 0;
-  list.forEach(e => { const have = findWord(e.word); if (!have) return; for (const k of ["card", "srs", "context", "skip"]) if (!have[k] && e[k]) { have[k] = e[k]; n++; } });
+  list.forEach(e => { const have = findWord(e.word); if (!have) return; for (const k of ["card", "srs", "wsrs", "context", "skip"]) if (!have[k] && e[k]) { have[k] = e[k]; n++; } });  // wsrs: the writing schedule
   if (n) saveWords();
 }
 
