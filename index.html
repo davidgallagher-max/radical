@@ -155,9 +155,11 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .minipy[aria-pressed="true"]{color:var(--bg);background:var(--accent);border-color:var(--accent)}
 .minibody{display:grid;gap:8px}
 .word.target .cell{box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--accent) 70%,transparent)}
-.minigloss{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;border-radius:12px;background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.minigloss{position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 44px 8px 12px;border-radius:12px;background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .minigloss b{font-family:var(--font-zh);font-size:1.25rem}
 .minigloss .pp{color:var(--accent);font-weight:500}
+.miniclose{all:unset;cursor:pointer;position:absolute;top:50%;right:6px;transform:translateY(-50%);width:30px;height:30px;display:grid;place-items:center;border-radius:50%;font-size:1.3rem;line-height:1;color:var(--muted)}
+.miniclose:hover,.miniclose:focus-visible{color:var(--fg);background:color-mix(in srgb,var(--fg) 10%,transparent)}
 .minigloss .pm{color:var(--muted);font-size:.9rem;flex:1;min-width:120px}
 .cardwait{display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--muted);padding:6px 2px}
 .cardwait .shimmer{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .9s linear infinite}
@@ -168,6 +170,11 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .sheetcard h3{margin:0;font-family:var(--font-brand);font-size:1.2rem}
 .sheetcard p{margin:0;line-height:1.5}
 .sheetcard .row .btn{flex:1;padding:12px}
+.revprev{all:unset;cursor:pointer;justify-self:start;align-self:start;font-size:.9rem;font-weight:600;color:var(--accent);padding:6px 4px}
+.revprev:focus-visible{outline:2px solid var(--accent);border-radius:6px}
+.revscore{display:block;font-family:var(--font-ui);font-size:.8rem;font-weight:500;color:var(--muted);margin-top:2px}
+.revscore:empty{display:none}
+.donescore{text-align:center;color:var(--muted);margin:0}
 .revtitle{margin:0;text-align:center;font-family:var(--font-brand);font-size:1.15rem;font-weight:800}
 .ratehead{margin:6px 0 0;text-align:center;display:grid;gap:2px}
 .ratehead b{font-size:.95rem}.ratehead span{font-size:.78rem;color:var(--muted)}
@@ -338,6 +345,9 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .pad>svg.gridlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}
 .pad.gridon>svg.gridlay{display:block}
 .pad>svg:not(.gridlay){position:relative}
+/* The writing pad is practice paper in both themes: warm rice paper, a red guide grid, black ink. */
+.pad.paper{background:#F3EDE0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .28 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");border-color:#D6CBB4;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+.pad.paper .grid line{stroke:rgba(178,58,42,.42);stroke-width:5;stroke-dasharray:22 16;stroke-linecap:butt}
 .coach{margin:0;font-size:.88rem;color:var(--muted);text-align:center;min-height:2.5em;max-width:300px}
 .coach b{color:var(--fg)}
 .grid line{stroke:color-mix(in srgb,var(--muted) 60%,transparent);stroke-width:9;stroke-linecap:round;stroke-dasharray:0.1 26}
@@ -438,6 +448,15 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .revctx{text-align:center;margin:0}
 .drawn{display:inline-flex;flex-wrap:wrap;align-items:center;gap:0;vertical-align:middle}
 .drawn svg{width:var(--ds);height:var(--ds)}
+.fontglyph{font-family:var(--font-zh);color:var(--fg);display:grid;place-items:center;line-height:1;font-weight:500}
+.cell .fontglyph{width:var(--cell,38px);height:var(--cell,38px);font-size:calc(var(--cell,38px) * .82)}
+.drawn .fontglyph{width:var(--ds);height:var(--ds);font-size:calc(var(--ds) * .82)}
+.revchars .fontglyph{width:min(140px,38vw);height:min(140px,38vw);font-size:min(112px,30vw);border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.wslot .fontglyph{width:44px;height:44px;font-size:36px}
+.wchars .fontglyph{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.preview2 .fontglyph{width:50px;height:50px;font-size:42px}
+.fontmode .glyph.latin{animation:none;background:none;color:var(--fg);filter:none}
+.fontmode .lit3d{filter:none!important}
 .drawn .dg{font-family:var(--font-zh);font-size:calc(var(--ds) * .82);line-height:var(--ds);color:var(--muted);width:calc(var(--ds) * .55);text-align:center}
 .drawn .dim{opacity:.55}
 .ex{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
@@ -457,16 +476,29 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .grades .suggest{background:var(--accent);color:var(--surface);box-shadow:none}
 .grades .again.suggest{background:var(--sound);color:var(--surface)}
 .guess{display:grid;gap:8px}
-.guess label{display:grid;grid-template-columns:5.2em 1fr;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+.guess label{display:grid;grid-template-columns:5.6em 1fr;align-items:center;gap:8px;font-size:1.1rem;color:var(--muted)}
+.guess input::placeholder{color:var(--muted);opacity:.45}
 .guess input{font-size:1.1rem;padding:11px 12px}
 .pyprev{justify-self:start;margin:-2px 0 0 calc(5.2em + 8px);font-size:1.1rem;padding:4px 10px;border-radius:8px;border:1px dashed var(--line);background:var(--surface);cursor:pointer}
 .pyprev span{font-size:.72rem;color:var(--muted);margin-left:4px}
 .guessacts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.guessacts.three{grid-template-columns:1fr 1fr 1fr}
+.hintbox{display:grid;gap:6px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,transparent);font-size:.92rem}
+.hintbox p{margin:0}
+.cluechar{cursor:pointer;transition:transform .12s ease}
+.cluechar:active{transform:scale(.96)}
+.cluechar:focus{outline:none}
+.cluechar:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:12px}
+.cluechar.nomore{animation:nomore .35s}
+@keyframes nomore{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.hintbox .hz{font-family:var(--font-zh);font-size:1.15rem}
 .guessacts .btn{padding:12px 6px}
 .results{display:grid;gap:6px}
-.res{display:grid;grid-template-columns:5.2em 1fr;gap:2px 8px;align-items:baseline;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:.95rem}
-.res span{color:var(--muted);font-size:.8rem;grid-row:span 2}
-.res em{font-style:normal;font-size:.8rem;color:var(--muted)}
+.res{display:grid;grid-template-columns:5.2em 1fr;gap:2px 8px;align-items:baseline;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:1.14rem}
+.res span{color:var(--muted);font-size:.96rem;grid-row:span 2}
+.res em{font-style:normal;font-size:.96rem;color:var(--muted)}
+.res .tips{font-size:.96rem}
+.res .sy span{font-size:inherit}
 .res.ok{border-color:var(--on)} .res.ok em{color:var(--on)}
 .res.part{border-color:var(--whole)} .res.part em{color:var(--whole)}
 .res.no{border-color:var(--sound)} .res.no em{color:var(--sound)}
@@ -596,7 +628,8 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 <section class="screen sub" id="reviewScreen" hidden>
   <div class="inner">
     <div class="topbar"><button type="button" class="back" data-back>Back to my words</button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
-    <div class="revhead"><h2 class="revtitle">Flash cards <span class="note" id="revProg"></span></h2><div id="revScript"></div></div>
+    <div class="revhead"><h2 class="revtitle">Flash cards <span class="note" id="revProg"></span><span class="revscore" id="revScore"></span></h2><div id="revScript"></div></div>
+    <button type="button" class="revprev" id="revPrev" style="visibility:hidden">‹ Previous card</button>
     <div id="revCard" class="revcard"></div>
     <div class="revbar" id="revBar"></div>
   </div>
@@ -942,7 +975,8 @@ const PALETTES = {
     lightUI: { bg: "#F0F0F7", surface: "#FCFCFF", line: "#D9D9EA", fg: "#17172E", muted: "#5F5D80", accent: "#5B3FD0", grid: "#E5E5F2" },
     dark:  ["#FFB65C","#A98BFF","#5ED6E8","#FF8BB0","#FFB65C","#FFD27A","#8C8AA8","#8C8AA8","#3A3C5E"],
     light: ["#C27408","#6A4BD8","#0F8FA3","#C2416E","#C27408","#A87F10","#6E6C8C","#6E6C8C","#AAABC6"] },
-  original: { name: "Original", blurb: "Plain ink, no color" }
+  original: { name: "Plain ink", blurb: "Drawn strokes in one ink, no color" },
+  font: { name: "Original", blurb: "The normal font: no drawing, color or light" }
 };
 const OLD = { jade: "scholar", pop: "observatory", earth: "lacquer" };
 let palette = store.get("radical-palette", null);
@@ -954,14 +988,16 @@ const darkQ = matchMedia("(prefers-color-scheme: dark)");
 const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : darkQ.matches; };
 // The dictionary radical usually carries the meaning, so it takes the meaning color; unexplained parts share one color.
 const roleColor = (key, i) => PALETTES[key][isDark() ? "dark" : "light"][i === 8 ? 6 : i];  // strokes not tied to any part read as "origin unclear" too
-const uiOf = key => PALETTES[key === "original" ? "scholar" : key][isDark() ? "darkUI" : "lightUI"];
+const noColor = k => k === "original" || k === "font";  // Plain ink and Original: one ink color, no legend
+const uiOf = key => PALETTES[noColor(key) ? "scholar" : key][isDark() ? "darkUI" : "lightUI"];
 function applyPalette() {
   const root = document.documentElement.style, ui = uiOf(palette);
   for (const k in ui) root.setProperty(`--${k}`, ui[k]);
-  ROLES.forEach((r, i) => root.setProperty(`--${r}`, palette === "original" ? "var(--fg)" : roleColor(palette, i)));
+  ROLES.forEach((r, i) => root.setProperty(`--${r}`, noColor(palette) ? "var(--fg)" : roleColor(palette, i)));
+  document.documentElement.classList.toggle("fontmode", palette === "font");
   const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = ui.bg;
   document.querySelectorAll("#paletteGrid .pcard").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === palette));
-  document.querySelector(".legend").hidden = palette === "original";
+  document.querySelector(".legend").hidden = noColor(palette);
 }
 const SAMPLE = [..."他河台營長"];  // together these show every color in a palette
 function buildPalettes() {
@@ -969,9 +1005,9 @@ function buildPalettes() {
   Object.entries(PALETTES).forEach(([key, p]) => {
     const b = el("button", "pcard"); b.type = "button"; b.dataset.p = key;
     const prev = el("span", "preview2"), ui = uiOf(key);
-    ROLES.forEach((r, i) => prev.style.setProperty(`--${r}`, key === "original" ? "var(--fg)" : roleColor(key, i)));
+    ROLES.forEach((r, i) => prev.style.setProperty(`--${r}`, noColor(key) ? "var(--fg)" : roleColor(key, i)));
     b.style.background = ui.bg; b.style.color = ui.fg;
-    SAMPLE.forEach(c => { if (cache[c]) prev.append(svgFor(c, false)); });
+    SAMPLE.forEach(c => { if (cache[c]) prev.append(glyphFor(c, false, key)); });
     b.append(prev, el("span", "plabel", `<b>${p.name}${key === "scholar" ? " · default" : ""}</b><span style="color:${ui.muted}">${p.blurb}</span>`));
     b.onclick = () => { palette = key; store.set("radical-palette", key); applyPalette(); };
     grid.append(b);
@@ -1079,8 +1115,15 @@ function svgFor(ch, grid, light) {
     g.append(path);
   });
   svg.append(g);
-  if (light && d) addLight(svg, d);
+  if (light && d && palette !== "font") addLight(svg, d);
   return svg;
+}
+// Reading text, sentences, flash cards and the word page show characters through this: the normal font when the
+// Original look is chosen, the drawn strokes otherwise. (Stroke order and writing always use the drawing.)
+function glyphFor(ch, light, key = palette) {
+  if (key !== "font") return svgFor(ch, false, light);
+  const sp = el("span", "fontglyph", esc(ch)); sp.lang = "zh"; sp.setAttribute("role", "img"); sp.setAttribute("aria-label", ch);
+  return sp;
 }
 // ---- moving light: a soft highlight that glides over the strokes. It follows the phone's tilt when allowed,
 // otherwise it drifts slowly on its own.
@@ -1119,7 +1162,7 @@ function addLight(svg, d) {
 // to each character (no shared gradients), so Safari is happy and no script runs per frame.
 let glintN = 0;
 function lightReader(reader) {
-  if (palette === "original") return;
+  if (noColor(palette)) return;
   const th = PALETTES[palette] || PALETTES.scholar, iris = th.sheen === "iris", c = th.sheen && !iris ? th.sheen : "#fff";
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const box = reader.getBoundingClientRect(); if (!box.width) return;
@@ -1234,7 +1277,7 @@ function drawn(text, size = 34, mark) {
     const chars = [...text], hit = new Set();
     if (mark) { let i = text.indexOf(mark); while (i >= 0) { const start = [...text.slice(0, i)].length; for (let k = 0; k < [...mark].length; k++) hit.add(start + k); i = text.indexOf(mark, i + mark.length); } }
     chars.forEach((ch, k) => {
-      const node = cache[ch] ? svgFor(ch, false) : el("span", "dg", esc(ch));
+      const node = cache[ch] ? glyphFor(ch, false) : el("span", "dg", esc(ch));
       if (mark && !hit.has(k)) node.classList.add("dim");
       box.append(node);
     });
@@ -1328,7 +1371,7 @@ function buildLine(lineText, onTap, withEN = true) {
         const d = cache[ch], b = el("button", "cell"); b.type = "button";
         b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", `${ch} ${tok.syl[k] || ""}`);
         const py = el("span", "py" + (tok.chars.length === 1 && d.p.length > 1 ? " multi" : ""), pyHTML(tok.syl[k]));
-        b.append(py, svgFor(ch, false));
+        b.append(py, glyphFor(ch, false));
         b.onclick = e => { e.stopPropagation(); onTap(group, tok, lineText); };
         if (run) flush();
         group.append(b);
@@ -1410,6 +1453,9 @@ function miniReader(text, mark) {
       }
       add.disabled = true; const w = await addEntry(g.word, { context: text.split(/\n+/).find(l => l.includes(g.word)) || text }); play("right"); idle(); ensureCard(w).catch(() => {}); };
     idle(); gloss.append(add);
+    const x = el("button", "miniclose", "×"); x.type = "button"; x.setAttribute("aria-label", "Close");
+    x.onclick = e => { e.stopPropagation(); clear(); };
+    gloss.append(x);
     gloss.hidden = false;
   };
   const paint = () => {
@@ -1743,7 +1789,7 @@ function wordPage() {
   const row = el("div", "wchars");
   s.chars.forEach((ch, i) => {
     const b = el("button"); b.type = "button"; b.setAttribute("aria-label", `Open ${ch}`);
-    const svg = svgFor(ch, true, true); svg.style.width = svg.style.height = size + "px";
+    const svg = glyphFor(ch, true); svg.style.width = svg.style.height = size + "px"; svg.style.fontSize = Math.round(size * .8) + "px";
     b.append(svg); b.onclick = () => goPage(i + 1); row.append(b);
   });
   page.append(row);
@@ -1819,7 +1865,7 @@ function charPage(ch, i) {
   page.append(top);
   const showView = () => {
     top.innerHTML = "";
-    const svg = svgFor(ch, true, true); top.append(svg);
+    const svg = svgFor(ch, false, true); top.append(svg);
     const row = el("div", "btnrow");
     row.append(btn("Stroke order", "btn ghost", () => animate(svg, ch)), btn("Write it", "btn", () => practice(top, ch, showView)));
     top.append(row);
@@ -1849,44 +1895,58 @@ function charPage(ch, i) {
   return page;
 }
 
-// Brush ink for writing: your stroke is drawn as a wet brush mark while you write (thick when slow, thin
-// when quick, soft edges), then fades as the finished stroke appears in its color. The writing engine still
-// judges the stroke; its own thin line is made invisible.
+// The writing pad as practice paper: the finished strokes take the light palette's colors so they read on paper,
+// whatever the app's theme.
+const PAPER = "#F3EDE0";
+function paperPad(pad) {
+  pad.classList.add("paper");
+  ROLES.forEach((r, i) => pad.style.setProperty(`--${r}`, noColor(palette) ? "#1C1A20" : PALETTES[palette].light[i === 8 ? 6 : i]));
+  pad.style.setProperty("--fg", "#1C1A20");
+}
+// Brush ink: your stroke is laid down as black ink while you write. It swells when you press on slowly,
+// thins when you move fast (with a little dry-brush streaking), and tapers off where you lift. The writing
+// engine still judges the stroke; its own line is invisible. The ink fades as the finished stroke appears.
 function brushLayer(pad, size) {
   const cv = document.createElement("canvas"), dpr = Math.min(3, devicePixelRatio || 1);
   cv.width = cv.height = Math.round(size * dpr); cv.className = "brush";
   cv.style.cssText = `position:absolute;left:0;top:0;width:${size}px;height:${size}px;pointer-events:none`;
   pad.append(cv);
   const g = cv.getContext("2d"); g.scale(dpr, dpr);
-  const ink = getComputedStyle(document.documentElement).getPropertyValue("--fg").trim() || "#1a1a1a";
-  const base = size * 0.072;
-  let last = null, w = 0, fade = null;
+  const INK = "22,20,26", base = size * .05;
+  let last = null, w = 0, dir = { x: 0, y: 0 }, fade = null;
   const pos = e => { const r = pad.getBoundingClientRect(); return { x: (e.clientX - r.left) * size / r.width, y: (e.clientY - r.top) * size / r.height, t: e.timeStamp }; };
-  const dab = (x, y, r) => {
-    g.fillStyle = ink;
-    g.globalAlpha = .82; g.beginPath(); g.arc(x, y, r / 2, 0, Math.PI * 2); g.fill();
-    g.globalAlpha = .12; g.beginPath(); g.arc(x + (Math.random() - .5) * r * .18, y + (Math.random() - .5) * r * .18, r * .53, 0, Math.PI * 2); g.fill();  // soft, uneven edge
+  const dab = (x, y, r, a = .92) => {
+    g.fillStyle = `rgba(${INK},${a})`; g.beginPath(); g.arc(x, y, Math.max(.4, r / 2), 0, Math.PI * 2); g.fill();
   };
   const move = p => {
-    const d = Math.hypot(p.x - last.x, p.y - last.y); if (d < .6) return;
-    const v = d / Math.max(1, p.t - last.t), target = base * Math.max(.38, Math.min(1.2, 1.2 - v * .75));
-    const n = Math.ceil(d / 1.2);
-    for (let i = 1; i <= n; i++) { w += (target - w) * .06; dab(last.x + (p.x - last.x) * i / n, last.y + (p.y - last.y) * i / n, w); }
-    last = p;
+    const dx = p.x - last.x, dy = p.y - last.y, d = Math.hypot(dx, dy); if (d < .5) return;
+    const v = d / Math.max(1, p.t - last.t);                            // px per ms
+    const target = base * Math.max(.32, Math.min(1.2, 1.25 - v * .55));  // slow = full brush, fast = thin
+    const dry = Math.max(0, Math.min(.6, (v - .9) * .5));               // fast strokes break up a little
+    const n = Math.ceil(d / .9);
+    for (let i = 1; i <= n; i++) {
+      w += (target - w) * .07;
+      const x = last.x + dx * i / n, y = last.y + dy * i / n;
+      dab(x, y, w, dry && Math.random() < dry ? .35 + Math.random() * .3 : .92);
+    }
+    dir = { x: dx / d, y: dy / d, v }; last = p;
   };
   pad.addEventListener("pointerdown", e => {
     clearTimeout(fade); cv.style.transition = "none"; cv.style.opacity = 1; g.clearRect(0, 0, size, size);
-    last = pos(e); w = base * .55; dab(last.x, last.y, w);
+    last = pos(e); w = base * .7; dir = { x: 0, y: 0, v: 0 };
+    dab(last.x, last.y, base * .8, .88);  // the brush touching down
   }, true);
-  pad.addEventListener("pointermove", e => {
-    if (!last) return;
-    (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(ev => move(pos(ev)));
-  }, true);
+  pad.addEventListener("pointermove", e => { if (last) (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(ev => move(pos(ev))); }, true);
   const up = () => {
-    if (!last) return; last = null;
-    fade = setTimeout(() => { cv.style.transition = "opacity .5s ease"; cv.style.opacity = 0; }, 180);
+    if (!last) return;
+    // Lift-off: the brush tip trails a little further and narrows to a point.
+    const len = Math.min(10, 3 + (dir.v || 0) * 6);
+    for (let i = 1; i <= len; i++) { const k = i / len; dab(last.x + dir.x * i, last.y + dir.y * i, w * (1 - k) ** 1.3, .9); }
+    last = null;
+    fade = setTimeout(() => { cv.style.transition = "opacity .5s ease"; cv.style.opacity = 0; }, 200);
   };
-  pad.addEventListener("pointerup", up, true); pad.addEventListener("pointercancel", up, true); pad.addEventListener("pointerleave", e => { if (e.target === pad) up(); }, true);  // leaving the pad itself, not a line inside it
+  pad.addEventListener("pointerup", up, true); pad.addEventListener("pointercancel", up, true);
+  pad.addEventListener("pointerleave", e => { if (e.target === pad) up(); }, true);  // leaving the pad itself, not a line inside it
 }
 // Writing practice: hints only on request or after 5 misses on a stroke. Grid starts on.
 function practice(top, ch, onBack) {
@@ -1898,12 +1958,12 @@ function practice(top, ch, onBack) {
   const box = el("div", "pad gridon"); top.append(box);
   const lay = document.createElementNS(NS, "svg"); lay.setAttribute("class", "gridlay"); lay.setAttribute("viewBox", "0 0 1024 1024");
   lay.innerHTML = '<g class="grid"><line x1="0" y1="512" x2="1024" y2="512"/><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="0" x2="1024" y2="1024"/><line x1="1024" y1="0" x2="0" y2="1024"/></g>';
-  box.append(lay);
+  box.append(lay); paperPad(box);
   const writer = HanziWriter.create(box, ch, {
     width: size, height: size, padding: 12,
     charDataLoader: (c, onLoad) => onLoad({ strokes: d.s, medians: d.md }),
     showCharacter: false, showOutline: false,
-    outlineColor: col("--grid"), strokeColor: col("--surface"), drawingColor: "rgba(0,0,0,0)", highlightColor: col("--sound"),
+    outlineColor: "#D8CDB8", strokeColor: PAPER, drawingColor: "rgba(0,0,0,0)", highlightColor: col("--sound"),
     drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 5, markStrokeCorrectAfterMisses: false
   });
   // Each stroke you get right appears in its component color with the same 3D finish as the big characters.
@@ -2228,23 +2288,40 @@ function restoreProgress(list) {
 }
 
 // ================= review
-let rq = [], rDone = 0;
+let rq = [], rDone = 0, revHist = [];
+// The session's score: right (Good or Easy), shaky (Hard), missed (Again, which also brings the card back as a
+// repeat), and the longest run without a miss.
+let rScore = null;
+const newScore = () => ({ right: 0, shaky: 0, missed: 0, run: 0, best: 0, repeats: 0 });
+const scoreText = sc => `${sc.right} right · ${sc.shaky} shaky · ${sc.missed} missed`;  // revHist: the cards already rated this session, newest last, so you can go back
+// Going back undoes the last rating: the card's schedule, the queue and the day's new-word count return to how
+// they were, and the card opens on its answer side so you can look again and rate it again.
+function prevCard() {
+  const h = revHist.pop(); if (!h) return;
+  if (h.srs === undefined) delete h.w[h.k]; else h.w[h.k] = h.srs;
+  if (h.skip === undefined) delete h.w.skip; else h.w.skip = h.skip;
+  store.set(dayKey(h.k), h.newday || {}); saveWords();
+  rq = h.rq; rDone = h.rDone; rScore = h.score;
+  showFront(); if (showFront.reveal) showFront.reveal("prev");
+  $("reviewScreen").scrollTop = 0;
+}
+$("revPrev").onclick = prevCard;
 // Flash cards for a hand-picked set of words (from the selection bar), shuffled, schedule ignored for choosing.
 async function openReviewWith(ws) {
   rq = ws.slice(); for (let i = rq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rq[i], rq[j]] = [rq[j], rq[i]]; }
-  rDone = 0; go("reviewScreen");
+  rDone = 0; revHist = []; rScore = newScore(); go("reviewScreen");
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
 }
 async function openReview(mode = "due", count = "all") {
-  rq = buildQueue(mode, count); rDone = 0;
+  rq = buildQueue(mode, count); rDone = 0; revHist = []; rScore = newScore();
   go("reviewScreen");
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
 }
 function bigWord(word) {
   const box = el("div", "revchars"); box.lang = "zh";
-  [...word].forEach(ch => box.append(cache[ch] ? svgFor(ch, true, true) : el("span", "plain", esc(ch))));
+  [...word].forEach(ch => box.append(cache[ch] ? glyphFor(ch, true) : el("span", "plain", esc(ch))));
   return box;
 }
 // ---- answer checking
@@ -2332,15 +2409,19 @@ function revBar(label, flipLabel, flipIcon, onFlip, actions, cls, sub) {
 function showFront() {
   if (rq && rq[0]) ensureCard(rq[0]).catch(() => {});  // have the full card ready by the time the answer shows
   const box = $("revCard"), prog = $("revProg"); box.innerHTML = "";
+  $("revPrev").style.visibility = revHist.length ? "visible" : "hidden";  // keeps its space, so the card never jumps
+  const sc = rScore || (rScore = newScore()), rep = n => `${n} repeat${n === 1 ? "" : "s"}`;
+  $("revScore").textContent = rDone && rq.length ? scoreText(sc) : "";
   if (!rq.length) {
     prog.textContent = ""; $("revBar").replaceChildren();
-    box.append(el("p", "wmean", rDone ? `Done. ${rDone} card${rDone === 1 ? "" : "s"} reviewed.` : "Nothing to review right now."));
+    box.append(el("p", "wmean", rDone ? `Done. ${rDone} reviewed${sc.repeats ? `, including ${rep(sc.repeats)}` : ""}.` : "Nothing to review right now."));
+    if (rDone) box.append(el("p", "donescore", `${scoreText(sc)}${sc.best > 1 ? ` · best run ${sc.best} in a row` : ""}`));
     if (rDone) play("reward");
     box.append(btn("Back to my words", "btn wide", () => history.back()));
     return;
   }
   const w = rq[0];
-  prog.textContent = `· ${rq.length} left${w[srsKey()] ? "" : " · new"}`;
+  prog.textContent = `· Card ${rDone + 1} of ${rDone + rq.length}${sc.repeats ? ` · ${rep(sc.repeats)}` : ""}${w[srsKey()] ? "" : " · new"}`;
   revSide = null;
   $("revScript").replaceChildren(scriptToggle(async () => {  // 繁/简 for the whole set; the card you're on is redrawn
     const back = revSide; await ensure(rq.map(x => conv(x.word) + conv(x.context || "") + conv((x.card && x.card.example) || "")).join(""));
@@ -2353,10 +2434,51 @@ function showFront() {
   form.innerHTML = `<label><span>Pinyin</span><input id="gPy" type="text" inputmode="latin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="wo3 or wǒ"></label>
     <button type="button" class="pyprev" id="gPrev" hidden title="Use tone marks"></button>
     <label><span>Meaning</span><input id="gMean" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="in English"></label>`;
-  const reveal = how => { form.remove(); revSide = { how }; showBack(w, how); };
+  // Clues: tap a character for a random clue about it (its pinyin, its meaning, or its sound), each kind once
+  // per character. The guess boxes stay as they are. Any clue caps the suggested rating at Hard.
+  const hintBox = el("div", "hintbox"); hintBox.hidden = true;
+  let used = 0;
+  const big = box.querySelector(".revchars"), word = conv(w.word), wchars = [...word];
+  const syl = sylls(numToMarks(String(wPinyin(w)).toLowerCase().replace(/[\s'’·-]+/g, ""))).filter(Boolean);
+  const given = wchars.map(() => new Set());
+  [...big.children].forEach((node, i) => {
+    const ch = wchars[i], d = cache[ch]; if (!ch) return;
+    node.classList.add("cluechar"); node.setAttribute("tabindex", "0"); node.setAttribute("aria-label", `Clue for ${ch}`);
+    const clue = () => {
+      const kinds = ["pinyin", "meaning", "sound"].filter(k => !given[i].has(k) && (k !== "meaning" || (d && d.d)) && (k !== "pinyin" || syl[i] || d));
+      if (!kinds.length) { node.classList.add("nomore"); setTimeout(() => node.classList.remove("nomore"), 400); return; }
+      const k = kinds[Math.floor(Math.random() * kinds.length)]; given[i].add(k); used++;
+      const tag = `<span lang="zh" class="hz">${esc(ch)}</span>`;
+      if (k === "pinyin") hintBox.append(el("p", "", `${tag} <b>Pinyin:</b> ${pyHTML(syl[i] || d.p[0])}`));
+      if (k === "meaning") hintBox.append(el("p", "", `${tag} <b>Meaning:</b> ${esc(d.d.split(/;/).slice(0, 2).join(";"))}`));
+      if (k === "sound") { speak(ch); hintBox.append(el("p", "", `${tag} <b>Sound:</b> ${sayHTML(ch, true)}`)); }
+      hintBox.hidden = false;
+    };
+    node.addEventListener("click", clue);
+    node.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clue(); } });
+  });
+  let judging = false;
+  const reveal = async how => {
+    if (judging) return;
+    let st;
+    if (how === "check") {
+      const g = mean.value.trim(), local = checkMeaning(g, wMeaning(w));
+      if (g && local.ok === false && store.get("radical-pw", "") && navigator.onLine !== false) {
+        judging = true; const cb = $("revBar").querySelector(".guessacts .btn"); if (cb) { cb.disabled = true; cb.textContent = "Checking…"; }
+        try {
+          const r = await Promise.race([claude({ action: "judge", word: w.word, meaning: wMeaning(w), guess: g }), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 8000))]);
+          const ok = r.verdict === "right" ? true : r.verdict === "close" ? "part" : false;
+          st = { aiMean: { ok, note: r.note || (ok === true ? "Correct." : ok ? "Close." : "Not quite.") } };
+        } catch (e) {}
+        judging = false;
+        if (!box.isConnected || revSide) return;
+      }
+    }
+    form.remove(); hintBox.remove(); revSide = { how }; showBack.hints = used; showBack(w, how, st);
+  };
   showFront.reveal = reveal;
-  box.append(form);
-  revBar("Guess, then check", "Show answer", "⟳", () => reveal("show"), [btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know"))], "guessacts", "Type what you remember, or just say it to yourself.");
+  box.append(form, hintBox);
+  revBar("Guess, then check", "Show answer", "⟳", () => reveal("show"), [btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know"))], "guessacts", "Stuck? Tap a character for a clue.");
   const py = $("gPy"), mean = $("gMean");
   // Typing tone numbers (ta1) shows the marked form below; tap it to swap it in.
   py.addEventListener("input", () => { const pv = $("gPrev"), m = numToMarks(py.value); pv.hidden = !/\d/.test(py.value); pv.innerHTML = `${pyWordHTML(m)} <span>tap to use</span>`; });
@@ -2383,7 +2505,7 @@ function writeFront(w) {
     revSide = { how, stats: st }; box.innerHTML = ""; box.append(bigWord(word)); showBack(w, how, st);
   };
   showFront.reveal = reveal;
-  const fill = i => { const ch = chars[i]; slotEls[i].replaceChildren(cache[ch] ? svgFor(ch, false, true) : el("span", "plain", esc(ch))); slotEls[i].classList.add("done"); };
+  const fill = i => { const ch = chars[i]; slotEls[i].replaceChildren(cache[ch] ? glyphFor(ch, true) : el("span", "plain", esc(ch))); slotEls[i].classList.add("done"); };
   const nextChar = () => {
     if (!box.isConnected || revSide) return;
     if (idx >= chars.length) { setTimeout(() => { if (!revSide && box.isConnected) reveal("write"); }, 500); return; }
@@ -2396,12 +2518,12 @@ function writeFront(w) {
     const pad = el("div", "pad gridon"); padHost.append(pad);
     const lay = document.createElementNS(NS, "svg"); lay.setAttribute("class", "gridlay"); lay.setAttribute("viewBox", "0 0 1024 1024");
     lay.innerHTML = '<g class="grid"><line x1="0" y1="512" x2="1024" y2="512"/><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="0" x2="1024" y2="1024"/><line x1="1024" y1="0" x2="0" y2="1024"/></g>';
-    pad.append(lay);
+    pad.append(lay); paperPad(pad);
     writer = HanziWriter.create(pad, ch, {
       width: size, height: size, padding: 12,
       charDataLoader: (c, onLoad) => onLoad({ strokes: d.s, medians: d.md }),
       showCharacter: false, showOutline: false,
-      outlineColor: col("--grid"), strokeColor: col("--surface"), drawingColor: "rgba(0,0,0,0)", highlightColor: col("--sound"),
+      outlineColor: "#D8CDB8", strokeColor: PAPER, drawingColor: "rgba(0,0,0,0)", highlightColor: col("--sound"),
       drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 3, markStrokeCorrectAfterMisses: false
     });
     const ink = svgFor(ch, false, true); ink.setAttribute("class", "inkover");
@@ -2428,23 +2550,26 @@ function showBack(w, how, st) {
   const box = $("revCard"), c = w.card, ans = el("div", "revans"), k = srsKey();
   const guess = how === "check" && showBack.guess ? showBack.guess() : null;
   let suggest = how === "know" ? "good" : how === "show" ? "again" : null;
-  if (how === "know") play("right");
+  if (how === "know" && !(st && st.quiet)) play("right");
+  const hintsUsed = showBack.hints || 0; showBack.hints = 0;
+  const hinted = how !== "write" && hintsUsed > 0, quiet = st && st.quiet;
   if (how === "write" && st && st.strokes) {
     // First-try strokes and hints decide the suggestion: clean is Good, a slip or one hint is Hard, more is Again.
     const r = st.first / st.strokes;
     suggest = !st.hints && r >= .9 ? "good" : st.hints <= 1 && r >= .6 ? "hard" : "again";
     const cls = suggest === "good" ? "ok" : suggest === "hard" ? "part" : "no";
     ans.append(el("div", "results", `<div class="res ${cls}"><span>Writing</span><b>${st.first} of ${st.strokes} strokes right the first time</b><em>${st.hints ? `${st.hints} hint${st.hints === 1 ? "" : "s"}` : "No hints."}</em></div>`));
-    play(suggest === "again" ? "wrong" : "right");
+    if (!quiet) play(suggest === "again" ? "wrong" : "right");
   }
   if (guess) {
-    const rp = checkPinyin(guess.py, wPinyin(w)), rm = checkMeaning(guess.mean, wMeaning(w));
+    const rp = checkPinyin(guess.py, wPinyin(w)), rm = (st && st.aiMean) || checkMeaning(guess.mean, wMeaning(w));
     const mark = (label, val, r) => val.trim() ? `<div class="res ${r.ok === true ? "ok" : r.ok === "part" ? "part" : r.ok === false ? "no" : ""}"><span>${label}</span><b>${label === "Pinyin" ? pyWordHTML(numToMarks(val)) : esc(val)}</b><em>${esc(r.note || "")}</em>${r.detail ? `<div class="resdetail">${r.detail}</div>` : ""}</div>` : `<div class="res"><span>${label}</span><em>left blank</em></div>`;
     ans.append(el("div", "results", mark("Pinyin", guess.py, rp) + mark("Meaning", guess.mean, rm)));
     const score = [rp.ok, rm.ok].map(x => x === true ? 2 : x === "part" ? 1 : 0).reduce((a, b) => a + b, 0);
     suggest = score === 4 ? "good" : score >= 1 ? "hard" : "again";
-    play(suggest === "again" ? "wrong" : "right");
+    if (!quiet) play(suggest === "again" ? "wrong" : "right");
   }
+  if (hinted && suggest === "good") suggest = "hard";  // needed a hint: it comes back sooner
   ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(wPinyin(w))}</span>${sayHTML(w.word)}`));
   ans.append(el("p", "wmean", esc(wMeaning(w))));
   if (c) {
@@ -2456,11 +2581,15 @@ function showBack(w, how, st) {
       if (c.example_en) ex.append(btn("Show English", "btn ghost small", e => { en.hidden = !en.hidden; e.target.textContent = en.hidden ? "Show English" : "Hide English"; }));
       ans.append(ex);
     }
-  } else ans.append(cardPending(w, () => { if (ans.isConnected) { ans.remove(); showBack(w, how); } }));
+  } else ans.append(cardPending(w, () => { if (ans.isConnected) { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true }); } }));
   const grades = el("div", "grades");
   [["again", "Again"], ["hard", "Hard"], ["good", "Good"], ["easy", "Easy"]].forEach(([g, label]) => {
     const b = el("button", `btn ghost ${g}${g === suggest ? " suggest" : ""}`, `${label}<small>${ivlText(nextIvl(w[k], g))}</small>`); b.type = "button";
-    b.onclick = () => { grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
+    b.onclick = () => {
+      revHist.push({ w, k, srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore } });
+      const sc = rScore;
+      if (g === "again") { sc.missed++; sc.repeats++; sc.run = 0; } else { if (g === "hard") sc.shaky++; else sc.right++; sc.run++; sc.best = Math.max(sc.best, sc.run); }
+      grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);
   });
   // Rating is the only way forward, so the bar says so; the flip button sits where "Show answer" was on the front.

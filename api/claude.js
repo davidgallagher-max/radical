@@ -56,6 +56,13 @@ Keep one paragraph per paragraph of the original. Write in ${trad ? "Traditional
 
 ${text}`;
 
+// Judge a flash card answer that the app's simple word match rejected: abbreviations, synonyms, paraphrases
+// and small typos still count.
+const JUDGE_PROMPT = (word, meaning, guess) => `A learner of Mandarin was shown the Chinese word ${word}. Its dictionary meaning is: ${meaning}
+Asked what it means in English, they wrote: "${guess}"
+Does their answer show they know the word? Count as right: abbreviations (AI for artificial intelligence), synonyms, paraphrases, any one correct sense of the word, and small spelling mistakes. "close" means related or partly right but not really the meaning. Otherwise "wrong".
+Return ONLY JSON: {"verdict":"right"|"close"|"wrong","note":"under 12 words, spoken to the learner"}`;
+
 async function askClaude(model, prompt, maxTokens) {
   const r = await fetch(API, {
     method: "POST",
@@ -150,6 +157,14 @@ module.exports = async (req, res) => {
       if (!text) return res.status(400).json({ error: "Nothing to simplify." });
       const out = await askClaude(FAST_MODEL, SIMPLIFY_PROMPT(text, level, body.trad !== false), 2000);
       return res.status(200).json({ text: out });
+    }
+    if (body.action === "judge") {
+      const word = String(body.word || "").trim().slice(0, 20), meaning = String(body.meaning || "").trim().slice(0, 300), guess = String(body.guess || "").trim().slice(0, 120);
+      if (!word || !guess) return res.status(400).json({ error: "Nothing to check." });
+      const out = parseJSON(await askClaude(FAST_MODEL, JUDGE_PROMPT(word, meaning, guess), 120));
+      const verdict = out && ["right", "close", "wrong"].includes(out.verdict) ? out.verdict : null;
+      if (!verdict) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      return res.status(200).json({ verdict, note: String(out.note || "").slice(0, 120) });
     }
     if (body.action === "translate") {
       const sentence = String(body.sentence || "").trim().slice(0, 600);
