@@ -97,8 +97,11 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .btnrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);width:100%}
-/* My text: two soft panels. Default is a filled panel; html.outline-panels swaps to thin outlines. */
-.tpanel{background:var(--surface);border-radius:20px;padding:14px 14px 16px;display:grid;gap:12px;min-width:0}
+/* My text: two panels a touch darker than the page, with a fine outline, so the characters glow on them. */
+:root{--panel:color-mix(in srgb,var(--bg) 94%,#000)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--panel:color-mix(in srgb,var(--bg) 75%,#000)}}
+:root[data-theme="dark"]{--panel:color-mix(in srgb,var(--bg) 75%,#000)}
+.tpanel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px 14px 16px;display:grid;gap:12px;min-width:0}
 .tpanel h3.sec{margin:0}
 .tpanel>*{min-width:0}
 .tpanel .docbar{min-width:0}
@@ -119,12 +122,11 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .wfirst{font-family:var(--font-zh);font-size:1.02rem;line-height:1.7;margin:0}
 .wstatus{font-size:.92rem;color:var(--fg)}
 .reader .note a{color:var(--accent)}
-.sizer{display:grid;gap:3px;flex:1;min-width:150px}
 .sizerow{display:flex;align-items:center;gap:8px;color:var(--muted);font-family:var(--font-zh)}
 .sizerow i{font-style:normal;font-size:.8rem}.sizerow b{font-weight:400;font-size:1.25rem}
 #sizeIn{flex:1;accent-color:var(--accent);min-width:0}
-.glyph.speaking{border-radius:6px;background:color-mix(in srgb,var(--accent) 30%,transparent);box-shadow:inset 0 -3px 0 var(--accent);opacity:1}
-.word.speaking .cell{background:color-mix(in srgb,var(--accent) 30%,transparent);box-shadow:inset 0 -3px 0 var(--accent)}
+.glyph.speaking{border-radius:6px;background:color-mix(in srgb,var(--accent) 42%,transparent);box-shadow:inset 0 -3px 0 var(--accent);opacity:1}
+.word.speaking .cell{background:color-mix(in srgb,var(--accent) 42%,transparent);box-shadow:inset 0 -3px 0 var(--accent)}
 .listen{display:inline-flex;align-items:center;gap:8px;font-size:.95rem;font-weight:500;color:var(--accent);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:7px 14px 7px 11px;cursor:pointer}
 .listen i{width:0;height:0;border-left:10px solid currentColor;border-top:6px solid transparent;border-bottom:6px solid transparent}
 .listen[aria-pressed="true"] i{width:10px;height:11px;border:0;border-left:3.5px solid currentColor;border-right:3.5px solid currentColor}
@@ -186,7 +188,7 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .scriptpick{display:inline-flex;flex-direction:column;align-items:center;gap:3px}
 .scriptpick .sclabel{font-size:.68rem;letter-spacing:.04em;color:var(--muted);white-space:nowrap}
 .revhead{display:flex;align-items:center;justify-content:center;gap:12px}
-.seg.minseg button{font-size:1rem;padding:5px 11px}
+.seg.minseg button{font-size:.95rem;padding:4px 10px}
 .revbar{position:fixed;left:0;right:0;bottom:0;padding:10px max(16px,calc((100vw - 760px) / 2)) calc(var(--bot) + 12px);background:color-mix(in srgb,var(--bg) 92%,transparent);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);display:grid;gap:8px;z-index:2}
 .revbar:empty{display:none}
@@ -225,7 +227,7 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .switch[aria-checked="true"] .knob{left:19px}
 .switch.small{font-size:.85rem;padding:5px 11px 5px 5px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg button{font-family:var(--font-zh);font-size:1.35rem;line-height:1;background:var(--surface);color:var(--muted);border:0;padding:8px 18px;cursor:pointer}
+.seg button{font-family:var(--font-zh);font-size:1.05rem;line-height:1;background:var(--surface);color:var(--muted);border:0;padding:5px 12px;cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
 .ctl{display:grid;gap:3px}
@@ -248,16 +250,32 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .readhead{display:flex;justify-content:space-between;align-items:center}
 .readhead .row{gap:8px}
 .bar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;justify-content:space-between}
-.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.74rem;color:var(--muted)}
+/* The reading controls stay pinned at the top while the text scrolls under them. */
+#readBar{position:sticky;top:0;z-index:4;display:grid;gap:8px;margin:0 -14px;padding:8px 14px;background:var(--panel)}
+#readBar.stuck{border-bottom:1px solid var(--line);box-shadow:0 6px 12px -8px rgba(0,0,0,.45)}
+#readBar.stuck::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:calc(var(--top) + 14px);background:var(--panel)}
+#readBar.stuck .ctl-label{display:none}
+.ctlrow{flex-wrap:nowrap;gap:6px;align-items:flex-end}
+.ctlrow .switch,.ctlrow .listen,.sizebtn{font-size:.84rem;padding:4px 10px 4px 4px;white-space:nowrap;flex:none}
+.ctlrow .listen{padding:6px 10px 6px 9px;gap:6px}
+.ctlrow .switch .track{width:32px;height:20px}.ctlrow .switch .knob{width:14px;height:14px}
+.ctlrow .switch[aria-checked="true"] .knob{left:15px}
+.ctlrow .ctl{justify-items:start}
+.ctlrow .ctl-label{white-space:nowrap;width:0;overflow:visible}  /* the label may run over the next button; it sits above the row */
+.sizebtn{all:unset;box-sizing:border-box;cursor:pointer;font-size:.84rem;font-weight:500;color:var(--accent);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}
+.sizebtn[aria-expanded="true"]{border-color:var(--accent)}
+.sizepop{padding:2px 4px 4px}
+.legend{display:flex;flex-wrap:nowrap;gap:9px;font-size:.7rem;color:var(--muted);white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.legend::-webkit-scrollbar{display:none}
 .legend span{display:inline-flex;align-items:center;gap:5px}
-.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
 .reader{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 10px;display:grid;gap:10px;min-width:0}
 /* Reading text sits on an even grid, like a printed Chinese page: every character gets the same square, leftover
    width is shared out evenly, words may break across lines, and punctuation takes a full square. */
 .line{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cell,38px),1fr));align-items:end;row-gap:6px}
 .word{display:contents}
 .cell{background:none;border:0;border-radius:6px;padding:0;cursor:pointer;display:grid;justify-items:center;color:var(--fg);min-width:0}
-.cell[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.cell[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 28%,transparent)}
 .cell svg{width:var(--cell,38px);height:var(--cell,38px);display:block}
 .cell .py{font-size:min(.74rem,calc(var(--cell,38px) * .32));font-weight:500;min-height:1.05em;line-height:1.05;white-space:nowrap}
 .cell .py.multi{text-decoration:underline dotted;text-underline-offset:3px}
@@ -558,15 +576,15 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
     </div>
     <div class="tpanel" id="readPanel">
       <h3 class="sec">Read</h3>
-    <div class="bar">
+    <div class="bar" id="readBar">
       <div class="legend">
         <span><i style="background:var(--meaning)"></i>Meaning</span>
         <span><i style="background:var(--sound)"></i>Sound</span>
-        <span><i style="background:var(--idea)"></i><i style="background:var(--idea2)"></i>Two ideas</span>
+        <span><i style="background:var(--idea)"></i><i style="background:var(--idea2)"></i>Ideas</span>
         <span><i style="background:var(--whole)"></i>Picture</span>
-        <span><i style="background:var(--part1)"></i>Origin unclear</span>
+        <span><i style="background:var(--part1)"></i>Unclear</span>
       </div>
-      <div class="row">
+      <div class="row ctlrow">
         <div class="ctl"><span class="ctl-label">Traditional / Simplified</span>
           <div class="seg" role="group" aria-label="Script">
             <button type="button" data-script="trad" aria-pressed="true">繁</button>
@@ -574,8 +592,10 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
           </div></div>
         <button type="button" class="switch" id="pyBtn" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Pinyin</button>
         <button type="button" class="listen" id="listenBtn" aria-pressed="false"><i></i><span>Listen</span></button>
-        <label class="sizer"><span class="ctl-label">Text size</span>
-          <span class="sizerow"><i lang="zh" aria-hidden="true">字</i><input type="range" id="sizeIn" min="26" max="64" step="2" value="38" aria-label="Text size"><b lang="zh" aria-hidden="true">字</b></span></label>
+        <button type="button" class="sizebtn" id="sizeBtn" aria-expanded="false" aria-controls="sizePop">Size</button>
+      </div>
+      <div class="sizepop" id="sizePop" hidden>
+        <span class="sizerow"><i lang="zh" aria-hidden="true">字</i><input type="range" id="sizeIn" min="26" max="64" step="2" value="38" aria-label="Text size"><b lang="zh" aria-hidden="true">字</b></span>
       </div>
     </div>
     <div class="docbar" id="docbar" hidden>
@@ -1543,6 +1563,17 @@ $("pyBtn").onclick = e => {
 function setCell(px) { document.documentElement.style.setProperty("--cell", px + "px"); }
 { const v = store.get("radical-size", 38); $("sizeIn").value = v; setCell(v); }
 $("sizeIn").addEventListener("input", e => { setCell(e.target.value); store.set("radical-size", +e.target.value); });
+// Size: a small button that opens the slider just under the controls; a tap anywhere else closes it.
+const sizeOpen = on => { $("sizePop").hidden = !on; $("sizeBtn").setAttribute("aria-expanded", on); };
+$("sizeBtn").onclick = e => { e.stopPropagation(); sizeOpen($("sizePop").hidden); };
+document.addEventListener("click", e => { if (!$("sizePop").hidden && !e.target.closest("#sizePop,#sizeBtn")) sizeOpen(false); });
+// Frozen controls: once the bar reaches the top it gets a solid edge, and the Traditional / Simplified label hides.
+function pinned(screenId, barId) {
+  const sc = $(screenId), bar = $(barId);
+  const check = () => { const edge = sc.getBoundingClientRect().top + parseFloat(getComputedStyle(sc).paddingTop); bar.classList.toggle("stuck", sc.scrollTop > 0 && bar.getBoundingClientRect().top <= edge + 1); };
+  sc.addEventListener("scroll", check, { passive: true });
+}
+pinned("readScreen", "readBar"); pinned("wordsScreen", "filters");
 $("listenBtn").onclick = () => readAloud([...$("reader").querySelectorAll(".line")], true);  // read the whole page, word by word
 if (store.get("radical-py", false)) { $("pyBtn").setAttribute("aria-checked", "true"); $("reader").classList.remove("nopy"); }
 
