@@ -825,6 +825,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
     <hr>
     <button type="button" data-go="settings"><span class="mi">設</span>Settings</button>
     <button type="button" data-go="about"><span class="mi">部</span>About</button>
+    <button type="button" id="feedbackBtn" hidden><span class="mi">信</span>Send feedback</button>
   </nav>
 </div>
 
@@ -913,6 +914,16 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
   else if (g === "settings") openSettings(false);
   else if (g === "about") go("aboutScreen");
 });
+// Send feedback: opens an email with the app version and device filled in. The address is in the page's code, so
+// anyone can read it: use a dedicated address, not a personal one. Empty: the menu item stays hidden.
+const APP_VERSION = "v25", FEEDBACK_TO = "";
+$("feedbackBtn").hidden = !FEEDBACK_TO;
+$("feedbackBtn").onclick = () => {
+  closeMenu();
+  const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua);
+  const body = `\n\n\n---\nRadical ${APP_VERSION} · ${dev ? dev[0] : "device"} · ${screen.width}×${screen.height} · ${ua}`;
+  location.href = `mailto:${FEEDBACK_TO}?subject=${encodeURIComponent(`Radical feedback (${APP_VERSION})`)}&body=${encodeURIComponent(body)}`;
+};
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("menu").hidden) { e.stopImmediatePropagation(); closeMenu(); } }, true);
 
 const cache = {}, shardLoads = {}, words = {}, wordLoads = {};
