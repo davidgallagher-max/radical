@@ -144,8 +144,6 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 @keyframes drift1{0%,100%{transform:translate(-280px,-240px)}30%{transform:translate(200px,-160px)}60%{transform:translate(240px,230px)}80%{transform:translate(-150px,180px)}}
 @keyframes drift2{0%,100%{transform:translate(260px,-220px)}35%{transform:translate(-200px,40px)}70%{transform:translate(120px,260px)}}
 @keyframes drift3{0%,100%{transform:translate(-60px,280px)}25%{transform:translate(-280px,-120px)}55%{transform:translate(160px,-260px)}80%{transform:translate(280px,120px)}}
-/* Tilt shifts every spark the same way, on top of its drift. */
-.tiltshift{transform:translate(calc(var(--tx, 0) * 1px), calc(var(--ty, 0) * 1px));transition:transform .15s linear}
 .nolight .lacq,.nolight .sheen{display:none}
 .nolight .lit3d{filter:none!important}
 @media (prefers-reduced-motion:reduce){.spark{animation:none;display:none}}
@@ -855,8 +853,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
     <div class="panel">
       <div class="row" style="justify-content:space-between"><span>Sounds (gongs, guzheng, dizi, erhu)</span><button type="button" class="switch small" id="soundSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
       <div class="row" style="justify-content:space-between"><span>Light on the characters</span><button type="button" class="switch small" id="lightSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
-      <div class="row" style="justify-content:space-between"><span>Light follows the phone's tilt</span><button type="button" class="switch small" id="tiltSw" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span></button></div>
-      <p class="note">Sounds play at the moments that count: checking an answer, adding a word, finishing a character in writing practice, finishing a review, and when an easier page arrives. Picked at random from five per moment. The light gives characters a lacquer finish with soft sparks drifting over them; with tilt on, tipping the phone moves the light.</p>
+      <p class="note">Sounds play at the moments that count: checking an answer, adding a word, finishing a character in writing practice, finishing a review, and when an easier page arrives. Picked at random from five per moment. The light gives characters a lacquer finish with soft sparks drifting over them.</p>
     </div>
     <h3 class="sec">Speech speed</h3>
     <div class="panel">
@@ -1304,10 +1301,10 @@ function glyphFor(ch, light, key = palette) {
   const sp = el("span", "fontglyph", esc(ch)); sp.lang = "zh"; sp.setAttribute("role", "img"); sp.setAttribute("aria-label", ch);
   return sp;
 }
-// ---- moving light: a soft highlight that glides over the strokes. It follows the phone's tilt when allowed,
-// otherwise it drifts slowly on its own.
+// ---- moving light: a soft highlight that drifts slowly over the strokes. (Tilt, where the phone's angle moved
+// the light, was removed in v27: iPhones asked for motion access on every launch.)
 const lit = new Set();
-let lightId = 0, tilt = null, tiltFrame = 0;
+let lightId = 0;
 function sheenStops(k = 1) {
   const th = PALETTES[palette] || PALETTES.scholar, iris = th.sheen === "iris";
   const c = th.sheen && !iris ? th.sheen : "#fff", a = (th.sheenA || .4) * k;
@@ -1352,7 +1349,7 @@ function lightReader(reader) {
     const paths = d.s.map(p => `<path transform="scale(1,-1) translate(0,-900)" d="${p}"/>`).join("");  // clipPath can't hold a <g>
     const plain = d.s.map(p => `<path d="${p}"/>`).join(""), B = 30;
     // A soft spark of light that drifts slowly over the strokes, each character on its own path and timing,
-    // so the page shimmers rather than sweeps. Tilt (when on) shifts every spark together; the drift never stops.
+    // so the page shimmers rather than sweeps; the drift never stops.
     const spark = iris
       ? `<stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset=".25" stop-color="#9BF6FF" stop-opacity=".45"/><stop offset=".55" stop-color="#FFB3E6" stop-opacity=".3"/><stop offset="1" stop-color="#FFE29A" stop-opacity="0"/>`
       : `<stop offset="0" stop-color="${c}" stop-opacity=".6"/><stop offset=".22" stop-color="${c}" stop-opacity=".45"/><stop offset=".55" stop-color="${c}" stop-opacity=".22"/><stop offset="1" stop-color="${c}" stop-opacity="0"/>`;
@@ -1368,7 +1365,7 @@ function lightReader(reader) {
       + `<rect width="1024" height="1024" fill="#000" opacity=".5" mask="url(#md${n})"/>`
       + `<g clip-path="url(#gc${n})"><rect width="1024" height="1024" fill="url(#gl${n})"/>`
       + `<rect width="1024" height="1024" fill="#fff" opacity=".3" mask="url(#mh${n})"/>`
-      + (still ? "" : `<g class="tiltshift"><g class="spark p${path}" style="animation-duration:${dur}s;animation-delay:${delay}s"><circle cx="512" cy="512" r="300" fill="url(#gs${n})"/></g></g>`)
+      + (still ? "" : `<g class="spark p${path}" style="animation-duration:${dur}s;animation-delay:${delay}s"><circle cx="512" cy="512" r="300" fill="url(#gs${n})"/></g>`)
       + `</g>`;
     svg.append(g);
   });
@@ -1382,31 +1379,13 @@ function lightTick(now) {
     for (const svg of lit) {
       if (!svg.isConnected) { lit.delete(svg); continue; }
       if (!svg.getClientRects().length || !svg._pt) continue;
-      // The point light wanders on a slow loop; tilt nudges it on top. Picture space: 0..1024, y down.
+      // The point light wanders on a slow loop. Picture space: 0..1024, y down.
       const t = now / 1000 + svg._ph;
       let x = 512 + Math.cos(t * .45) * 420, y = 470 + Math.sin(t * .31) * 380;
-      if (tilt) { x += tilt.g * 11; y += tilt.b * 11; }
       svg._pt.setAttribute("x", x.toFixed(0)); svg._pt.setAttribute("y", y.toFixed(0));
     }
   }
   if (lit.size && !matchMedia("(prefers-reduced-motion: reduce)").matches) requestAnimationFrame(lightTick); else lightRunning = false;
-}
-function useTilt(on) {
-  store.set("radical-tilt", on);
-  if (!on) { tilt = null; document.documentElement.style.removeProperty("--tx"); document.documentElement.style.removeProperty("--ty"); return; }
-  const listen = () => window.addEventListener("deviceorientation", e => {
-    if (e.beta == null) return;
-    tilt = { b: Math.max(-35, Math.min(35, e.beta - 45)), g: Math.max(-45, Math.min(45, e.gamma)) };
-    // The reading text's glint follows too: one number for the whole page, set at most once a frame.
-    if (!tiltFrame) tiltFrame = requestAnimationFrame(() => {
-      tiltFrame = 0; if (!tilt) return;
-      const root = document.documentElement;
-      root.style.setProperty("--tx", (tilt.g * 7).toFixed(0)); root.style.setProperty("--ty", (tilt.b * 7).toFixed(0));
-    });
-  });
-  const D = window.DeviceOrientationEvent;
-  if (D && typeof D.requestPermission === "function") D.requestPermission().then(r => { if (r === "granted") listen(); }).catch(() => {});
-  else listen();
 }
 let animToken = 0;
 function animate(svg, ch, speed = 1, onDone) {
@@ -3068,21 +3047,7 @@ $("soundSw").onclick = e => { soundOn = !soundOn; store.set("radical-sound", sou
 const setLight = on => { document.documentElement.classList.toggle("nolight", !on); $("lightSw").setAttribute("aria-checked", on); };
 setLight(store.get("radical-light", true));
 $("lightSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-light", on); setLight(on); };
-$("tiltSw").setAttribute("aria-checked", store.get("radical-tilt", false));
-// Turning tilt on explains itself first, then the iPhone asks its own question.
-$("tiltSw").onclick = e => {
-  const sw = e.currentTarget, on = sw.getAttribute("aria-checked") !== "true";
-  if (!on) { sw.setAttribute("aria-checked", false); useTilt(false); return; }
-  const D = window.DeviceOrientationEvent, asks = D && typeof D.requestPermission === "function";
-  if (!asks) { sw.setAttribute("aria-checked", true); useTilt(true); return; }
-  const sheet = el("div", "sheet"), card = el("div", "sheetcard");
-  card.innerHTML = `<h3>Light that follows your hand</h3><p>Tipping your phone moves the light across the characters, like turning a lacquer box toward a lamp.</p><p class="note">Radical only reads the phone's angle. Never the camera, microphone or location, and nothing leaves your phone.</p>`;
-  const row = el("div", "row"), no = btn("Not now", "btn ghost", () => sheet.remove()), yes = btn("Allow motion", "btn", () => { sheet.remove(); sw.setAttribute("aria-checked", true); useTilt(true); });
-  row.append(no, yes); card.append(row); sheet.append(card);
-  sheet.onclick = ev => { if (ev.target === sheet) sheet.remove(); };
-  document.body.append(sheet);
-};
-if (store.get("radical-tilt", false)) { useTilt(true); document.addEventListener("click", function once() { useTilt(true); document.removeEventListener("click", once); }); }
+try { localStorage.removeItem("radical-tilt"); } catch (e) {}  // tilt is gone; forget the old setting
 $("rate").addEventListener("input", e => { rate = +e.target.value; store.set("radical-rate", rate); });
 $("rateTest").onclick = () => speak("你好，歡迎使用 Radical。我們在登山口附近搭帳篷。");
 $("backupBtn").onclick = async () => {
