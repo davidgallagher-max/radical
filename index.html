@@ -579,6 +579,17 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .grades .again{box-shadow:inset 0 0 0 1px var(--sound);color:var(--sound)}
 .grades .suggest{background:var(--accent);color:var(--surface);box-shadow:none}
 .grades .again.suggest{background:var(--sound);color:var(--surface)}
+/* On the answer side a light sweeps across the ratings two or three times, then a faint glow stays; the suggested
+   one pulses. With reduced motion, just the steady glow. */
+.grades.glow{position:relative;border-radius:12px;isolation:isolate;animation:rowglow 3.4s ease-out forwards}
+.grades.glow::after{content:"";position:absolute;inset:-3px;border-radius:14px;pointer-events:none;z-index:1;
+  background:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--accent) 45%,transparent) 50%,transparent 70%);background-size:300% 100%;background-repeat:no-repeat;
+  animation:sweep 1.1s ease-in-out 3;opacity:.9;mix-blend-mode:screen}
+.grades.glow .suggest{animation:pulse 1.4s ease-in-out 4}
+@keyframes sweep{from{background-position:150% 0}to{background-position:-50% 0}}
+@keyframes rowglow{0%{box-shadow:0 0 0 0 transparent}40%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 60%,transparent),0 0 22px color-mix(in srgb,var(--accent) 40%,transparent)}100%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent),0 0 12px color-mix(in srgb,var(--accent) 18%,transparent)}}
+@keyframes pulse{0%,100%{transform:none}50%{transform:scale(1.05)}}
+@media (prefers-reduced-motion:reduce){.grades.glow{animation:none;box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent),0 0 12px color-mix(in srgb,var(--accent) 18%,transparent)}.grades.glow::after{display:none}.grades.glow .suggest{animation:none}}
 .guess{display:grid;gap:8px}
 .guess label{display:grid;grid-template-columns:5.6em 1fr;align-items:center;gap:8px;font-size:1.1rem;color:var(--muted)}
 .guess input::placeholder{color:var(--muted);opacity:.45}
@@ -1074,6 +1085,8 @@ const KIT = {
     () => { zheng(0, pen(0), .6, 1, 2.4); erhu(.1, [[pen(5), .4], [pen(7), .4], [pen(8), .35], [pen(7), .9]]); },
     () => { [0, .09, .18].forEach((d, k) => woodblock(d, 1200 + k * 220, .45)); for (let k = 0; k < 6; k++) zheng(.3 + k * .06, pen(5 + k), .5, 1, 1.8); dizi(.72, pen(10), .9, .3, pen(9)); }]
 };
+// Rating tick: one short woodblock knock, low for Again, middle for Hard, bright for Good and Easy.
+function tick(g) { if (!soundOn) return; try { woodblock(0, g === "again" ? 380 : g === "hard" ? 700 : 1250, .55); } catch (e) {} }
 const lastPlayed = {};
 let soundOn = store.get("radical-sound", true);
 function play(kind) {
@@ -1885,11 +1898,16 @@ function reviewQueue(k = "srs") {
   const fresh = myWords.filter(w => !w.skip && !w[k]).slice(0, Math.max(0, newLeft(k)));
   return [...due, ...fresh];
 }
+// Days until a card comes back. New or just-missed cards: Again soon, Hard later today (a few hours), Good tomorrow,
+// Easy in 4 days. Cards with a history: Hard < Good < Easy, at least a day apart, so the four buttons always differ.
+const LATER = 4 / 24;  // "later today": about four hours, as a fraction of a day
 function nextIvl(s, g) {
   if (g === "again") return 0;
-  if (!s || !s.reps) return { hard: 1, good: 1, easy: 4 }[g];
-  const m = { hard: 1.2, good: s.ease, easy: s.ease * 1.3 }[g];
-  return Math.max(s.ivl + (g === "easy" ? 2 : 1), Math.round(s.ivl * m));
+  if (!s || !s.reps) return { hard: LATER, good: 1, easy: 4 }[g];
+  const hard = Math.max(s.ivl + 1, Math.round(s.ivl * 1.2));
+  const good = Math.max(hard + 1, Math.round(s.ivl * s.ease));
+  const easy = Math.max(good + 1, Math.round(s.ivl * s.ease * 1.3));
+  return { hard, good, easy }[g];
 }
 // ---- progress record. Each day keeps a small tally (c: cards reviewed, r: characters read, n: new words), and a
 // separate list remembers learned words even after their cards are deleted. A word is learned once it's marked
@@ -1917,11 +1935,12 @@ function grade(w, g, k = "srs") {
   if (k === "srs" && w.skip && (g === "again" || g === "hard")) w.skip = false;  // a known word you missed becomes Active again
   logDay("c"); store.set("radical-rev-since-backup", store.get("radical-rev-since-backup", 0) + 1);
   if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); unlearn(w.word); }
+  else if (ivl < 1) { s.ivl = 0; s.reps++; s.due = Date.now() + ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); }  // later today
   else { s.ivl = k === "srs" && w.skip ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
   if (g !== "again") learn(w);
   saveWords();
 }
-const ivlText = d => d === 0 ? "soon" : d === 1 ? "1 day" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
+const ivlText = d => d === 0 ? "soon" : d < 1 ? "later today" : d === 1 ? "1 day" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
 const wStatus = w => w.skip ? "known" : !w.srs ? "new" : w.srs.due <= Date.now() ? "due" : "learning";
 function dueText(w) {
   if (w.skip) return `Known: comes back now and then for a quick check (next around ${localDay(w.srs && w.srs.due)}).`;
@@ -2989,13 +3008,14 @@ function showBack(w, how, st) {
       revHist.push({ w, k, srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore } });
       const sc = rScore;
       if (g === "again") { sc.missed++; sc.repeats++; sc.run = 0; } else { if (g === "hard") sc.shaky++; else sc.right++; sc.run++; sc.best = Math.max(sc.best, sc.run); }
-      grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
+      tick(g); grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);
   });
   // Rating is the only way forward, so the bar says so; the flip button sits where "Show answer" was on the front.
   box.append(ans);
   revBar("Rate it to go to the next card", "Front", "⟲", () => { ans.remove(); showFront(); }, [...grades.children], "grades",
     `Your rating decides when it comes back.${suggest ? " The suggested one is highlighted." : ""}`);
+  const row = $("revBar").querySelector(".grades"); if (row) row.classList.add("glow");  // a light sweeps the ratings: your turn
 }
 
 // ================= settings
