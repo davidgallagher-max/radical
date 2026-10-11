@@ -391,8 +391,14 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .revhead .btn{padding:10px 22px;font-weight:700}
 .seg2{display:grid;grid-template-columns:repeat(4,minmax(max-content,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg2.two{grid-template-columns:repeat(2,1fr)}
+.seg2.three{grid-template-columns:repeat(3,1fr)}
 .seg2 button{all:unset;cursor:pointer;text-align:center;white-space:nowrap;padding:9px 5px;font-size:.88rem;font-weight:500;color:var(--fg)}
 .seg2 button+button{border-left:1px solid var(--line)}
+/* Flash card choices: the chosen one is an outlined pill inside the row, so Start is the only solid button. */
+.revpanel .seg2{padding:2px}
+.revpanel .seg2 button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);border-radius:8px;font-weight:700}
+.revpanel .seg2 button[aria-pressed="true"] span{color:var(--accent)}
+.revpanel .seg2 button[aria-pressed="true"]+button,.revpanel .seg2 button:has(+button[aria-pressed="true"]){border-color:transparent}
 .seg2 button span{color:var(--muted);font-size:.8rem;margin-left:2px}
 .seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
 .seg2 button[aria-pressed="true"] span{color:inherit;opacity:.8}
@@ -1729,7 +1735,7 @@ function localDay(t = Date.now()) { const d = new Date(t); return `${d.getFullYe
 function midnight(t = Date.now()) { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
 // Reading cards use w.srs; writing cards keep their own schedule in w.wsrs, so writing a word badly
 // doesn't push back a word you read fine (and the other way round).
-const dayKey = k => k === "wsrs" ? "radical-newday-w" : "radical-newday";
+const dayKey = k => k === "wsrs" ? "radical-newday-w" : k === "lsrs" ? "radical-newday-l" : "radical-newday";
 function newLeft(k = "srs") { const n = store.get(dayKey(k), {}); return NEW_PER_DAY - (n.day === localDay() ? n.n : 0); }
 function countNew(k = "srs") { const day = localDay(), n = store.get(dayKey(k), {}); store.set(dayKey(k), { day, n: (n.day === day ? n.n : 0) + 1 }); }
 // Known words stay in rotation, but rarely: each one comes back after a long, slightly random wait (2 to 6 months),
@@ -2078,8 +2084,8 @@ let filter = "all", pending = null;
 // Flash cards: choose which words (due, new, learning, all) and how many, then start.
 let revMode = store.get("radical-revmode", "due"), revCount = store.get("radical-revcount", 20);
 // Read: see the word, recall its sound and meaning. Write: hear it and see the meaning, write the characters.
-let revHow = store.get("radical-revhow", "read");
-const srsKey = () => revHow === "write" ? "wsrs" : "srs";
+let revHow = store.get("radical-revhow", "read");  // read, write or listen; each keeps its own schedule
+const srsKey = () => revHow === "write" ? "wsrs" : revHow === "listen" ? "lsrs" : "srs";
 function pool(mode) {
   const live = myWords.filter(w => !w.skip), k = srsKey();
   if (mode === "due") return reviewQueue(k);
@@ -2111,8 +2117,8 @@ function renderStrip() {
   const head = el("div", "revhead", `<b>Flash cards</b><span>${nCards ? `${nCards} card${nCards === 1 ? "" : "s"}` : (myWords.length ? "Nothing in this set" : "Add words to start")}</span>`);
   const go_ = btn("Start", "btn", () => openReview(revMode, revCount)); go_.disabled = !nCards;
   head.append(go_);
-  const hows = el("div", "seg2 two");
-  [["read", "Read"], ["write", "Write"]].forEach(([k, label]) => {
+  const hows = el("div", "seg2 three");
+  [["read", "Read"], ["write", "Write"], ["listen", "Listen"]].forEach(([k, label]) => {
     const b = el("button", "", label); b.type = "button"; b.setAttribute("aria-pressed", revHow === k);
     b.onclick = () => { revHow = k; store.set("radical-revhow", k); renderStrip(); }; hows.append(b);
   });
@@ -2121,6 +2127,7 @@ function renderStrip() {
   howRow.append(hows); typeRow.append(modes); countRow.append(counts);
   box.append(head, howRow, typeRow, countRow);
   if (revHow === "write") box.append(el("p", "note", "Write: you hear the word and see its meaning, then write the characters from memory. Writing keeps its own schedule."));
+  if (revHow === "listen") box.append(el("p", "note", "Listen: you hear the word without seeing it, then type its pinyin and meaning. Listening keeps its own schedule."));
   if (revMode === "due") box.append(el("p", "note", "Due: words whose review date has come, plus up to 10 new words a day."));
   if (revMode === "learning") box.append(el("p", "note", "Active: words in rotation that aren't due yet. Reviewing them early is fine."));
   strip.append(box);
@@ -2511,7 +2518,16 @@ function showFront() {
     showFront(); if (back) showFront.reveal(back.how === "check" ? "show" : back.how, back.stats);
   }));
   if (revHow === "write") { writeFront(w); return; }
-  box.append(bigWord(conv(w.word)));
+  const listen = revHow === "listen";
+  if (listen) {
+    // Listening card: only the sound. Play it again, or slower, as often as you like.
+    const say = slow => { const r0 = rate; if (slow) rate = rate * .65; speak(conv(w.word)); rate = r0; };
+    const lp = el("div", "listenprompt");
+    const big = el("button", "listenbig", `${SPK}<span>Play</span>`); big.type = "button"; big.onclick = () => say(false);
+    const slow = btn("Slower", "btn ghost small", () => say(true));
+    lp.append(big, slow); box.append(lp);
+    setTimeout(() => { if (lp.isConnected) say(false); }, 250);
+  } else box.append(bigWord(conv(w.word)));
   // Two guesses, pinyin first. Tone numbers turn into marks as you type.
   const form = el("form", "guess");
   form.innerHTML = `<label><span>Pinyin</span><input id="gPy" type="text" inputmode="latin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="wo3 or wǒ"></label>
@@ -2521,7 +2537,7 @@ function showFront() {
   // per character. The guess boxes stay as they are. Any clue caps the suggested rating at Hard.
   const hintBox = el("div", "hintbox"); hintBox.hidden = true;
   let used = 0;
-  const big = box.querySelector(".revchars"), word = conv(w.word), wchars = [...word];
+  const big = box.querySelector(".revchars") || el("div"), word = conv(w.word), wchars = [...word];
   const syl = sylls(numToMarks(String(wPinyin(w)).toLowerCase().replace(/[\s'’·-]+/g, ""))).filter(Boolean);
   const given = wchars.map(() => new Set());
   [...big.children].forEach((node, i) => {
@@ -2543,6 +2559,7 @@ function showFront() {
   let judging = false;
   const reveal = async how => {
     if (judging) return;
+    const lp = box.querySelector(".listenprompt"); if (lp && how !== "check") lp.replaceWith(bigWord(conv(w.word)));
     let st;
     if (how === "check") {
       const g = mean.value.trim(), local = checkMeaning(g, wMeaning(w));
@@ -2557,11 +2574,12 @@ function showFront() {
         if (!box.isConnected || revSide) return;
       }
     }
+    const lp2 = box.querySelector(".listenprompt"); if (lp2) lp2.replaceWith(bigWord(conv(w.word)));
     form.remove(); hintBox.remove(); revSide = { how }; showBack.hints = used; showBack(w, how, st);
   };
   showFront.reveal = reveal;
   box.append(form, hintBox);
-  revBar("Guess, then check", "Show answer", "⟳", () => reveal("show"), [btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know"))], "guessacts", "Stuck? Tap a character for a clue.");
+  revBar(listen ? "Listen, then type it" : "Guess, then check", "Show answer", "⟳", () => reveal("show"), [btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know"))], "guessacts", listen ? "Type the pinyin and meaning of what you hear." : "Stuck? Tap a character for a clue.");
   const py = $("gPy"), mean = $("gMean");
   // Typing tone numbers (ta1) shows the marked form below; tap it to swap it in.
   py.addEventListener("input", () => { const pv = $("gPrev"), m = numToMarks(py.value); pv.hidden = !/\d/.test(py.value); pv.innerHTML = `${pyWordHTML(m)} <span>tap to use</span>`; });
