@@ -894,9 +894,9 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
     </div>
     <h3 class="sec">Sound and motion</h3>
     <div class="panel">
-      <div class="row" style="justify-content:space-between"><span>Sounds (gongs, guzheng, dizi, erhu)</span><button type="button" class="switch small" id="soundSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
+      <div class="row" style="justify-content:space-between"><span>Sounds (guzheng and woodblock)</span><button type="button" class="switch small" id="soundSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
       <div class="row" style="justify-content:space-between"><span>Light on the characters</span><button type="button" class="switch small" id="lightSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
-      <p class="note">Sounds play at the moments that count: checking an answer, adding a word, finishing a character in writing practice, finishing a review, and when an easier page arrives. Picked at random from five per moment. The light gives characters a lacquer finish with soft sparks drifting over them.</p>
+      <p class="note">Sounds play at the moments that count: checking an answer, adding a word, finishing a character in writing practice, finishing a review, and when an easier page arrives. Each moment has a few variations. The light gives characters a lacquer finish with soft sparks drifting over them.</p>
     </div>
     <h3 class="sec">Speech speed</h3>
     <div class="panel">
@@ -1095,7 +1095,7 @@ function readAloud(lines, all) {
 }
 document.addEventListener("click", e => { const b = e.target.closest("[data-say]"); if (b) { e.stopPropagation(); speak(b.dataset.say); } }, true);
 
-// ================= sound kit: Chinese instruments made in the browser (opera gongs, woodblock, guzheng, dizi, erhu).
+// ================= sound kit: guzheng and woodblock, made in the browser.
 // Each moment has five variants and plays one at random, never the same one twice in a row.
 let actx;
 const ctx = () => { actx ||= new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); return actx; };
@@ -1110,52 +1110,23 @@ function noiseBuf(dur) { const c = ctx(), b = c.createBuffer(1, Math.max(1, c.sa
 function hit(t0, dur, f, q, vol) { const c = ctx(), t = at(t0), n = c.createBufferSource(); n.buffer = noiseBuf(dur);
   const fl = c.createBiquadFilter(); fl.type = "bandpass"; fl.frequency.value = f; fl.Q.value = q; const g = c.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
   n.connect(fl).connect(g).connect(master()); n.start(t); }
-function gong(t0, f, dur, vol, glide) { const c = ctx(), t = at(t0);
-  [[1, 1], [1.48, .6], [2.06, .45], [2.93, .3], [3.82, .18], [5.1, .1]].forEach(([m, v], k) => {
-    const o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(f * m, t); o.frequency.exponentialRampToValueAtTime(f * m * glide, t + Math.min(.6, dur * .4));
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol * v, t + .008 + k * .01); g.gain.exponentialRampToValueAtTime(.0001, t + dur / (1 + k * .25));
-    o.connect(g).connect(master()); o.start(t); o.stop(t + dur + .1); });
-  hit(t0, .12, f * 3, 1.5, vol * .6); }
 function woodblock(t0, f = 900, vol = .7) { const c = ctx(), t = at(t0), o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * .92, t + .08);
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + .12); o.connect(g).connect(master()); o.start(t); o.stop(t + .15); hit(t0, .03, f * 2.2, 8, vol * .5); }
-function drum(t0, vol = .9) { const c = ctx(), t = at(t0), o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(55, t + .3);
-  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + .45); o.connect(g).connect(master()); o.start(t); o.stop(t + .5); hit(t0, .06, 800, 1, vol * .3); }
 function zheng(t0, f, vol = .75, bend = 1, dur = 2.4) { const c = ctx(), t = at(t0), sr = c.sampleRate, N = Math.round(sr / f), len = Math.round(sr * dur);
   const b = c.createBuffer(1, len, sr), d = b.getChannelData(0), buf = new Float32Array(N).map(() => Math.random() * 2 - 1);
   for (let i = 0; i < len; i++) { const j = i % N, nx = (j + 1) % N; d[i] = buf[j]; buf[j] = .5 * (buf[j] + buf[nx]) * .998; }
   const src = c.createBufferSource(); src.buffer = b; if (bend !== 1) { src.playbackRate.setValueAtTime(1, t + .25); src.playbackRate.linearRampToValueAtTime(bend, t + .55); }
   const hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 120; const g = c.createGain(); g.gain.value = vol; src.connect(hp).connect(g).connect(master()); src.start(t); }
-function dizi(t0, f, dur, vol = .32, slideFrom) { const c = ctx(), t = at(t0);
-  const o = c.createOscillator(), o2 = c.createOscillator(), buzz = c.createOscillator(), g = c.createGain(), gb = c.createGain(), vib = c.createOscillator(), vg = c.createGain();
-  buzz.type = "sawtooth";
-  [o, o2, buzz].forEach((x, k) => { const m = [1, 2, 1][k]; if (slideFrom) { x.frequency.setValueAtTime(slideFrom * m, t); x.frequency.exponentialRampToValueAtTime(f * m, t + .12); } else x.frequency.setValueAtTime(f * m, t); });
-  vib.frequency.value = 5.6; vg.gain.value = f * .012; vib.connect(vg); [o, o2, buzz].forEach(x => vg.connect(x.frequency));
-  const g2 = c.createGain(); g2.gain.value = .25; o2.connect(g2).connect(g);
-  const bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = f * 4; bp.Q.value = 3; buzz.connect(bp).connect(gb); gb.gain.value = .06; gb.connect(g); o.connect(g);
-  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .06); g.gain.setValueAtTime(vol, t + dur - .12); g.gain.linearRampToValueAtTime(0, t + dur);
-  g.connect(master()); [o, o2, buzz, vib].forEach(x => { x.start(t); x.stop(t + dur + .05); });
-  const n = c.createBufferSource(); n.buffer = noiseBuf(dur); const nb = c.createBiquadFilter(); nb.type = "bandpass"; nb.frequency.value = f * 2; nb.Q.value = 1; const ng = c.createGain();
-  ng.gain.setValueAtTime(0, t); ng.gain.linearRampToValueAtTime(.05, t + .03); ng.gain.linearRampToValueAtTime(.015, t + dur); n.connect(nb).connect(ng).connect(master()); n.start(t); }
-function erhu(t0, notes, vol = .22) { const c = ctx(), t = at(t0), o = c.createOscillator(), g = c.createGain(), vib = c.createOscillator(), vg = c.createGain();
-  o.type = "sawtooth"; let tt = t; o.frequency.setValueAtTime(notes[0][0] * .94, tt); o.frequency.exponentialRampToValueAtTime(notes[0][0], tt + .12);
-  notes.forEach(([f, d], k) => { if (k) o.frequency.exponentialRampToValueAtTime(f, tt + .14); tt += d; });
-  vib.frequency.value = 6; vg.gain.setValueAtTime(0, t + .2); vg.gain.linearRampToValueAtTime(notes[0][0] * .018, t + .5); vib.connect(vg).connect(o.frequency);
-  const f1 = c.createBiquadFilter(); f1.type = "peaking"; f1.frequency.value = 900; f1.Q.value = 2; f1.gain.value = 9;
-  const f2 = c.createBiquadFilter(); f2.type = "peaking"; f2.frequency.value = 2600; f2.Q.value = 3; f2.gain.value = 6;
-  const lp = c.createBiquadFilter(); lp.frequency.value = 4200;
-  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .1); g.gain.setValueAtTime(vol, tt - .15); g.gain.linearRampToValueAtTime(0, tt);
-  o.connect(f1).connect(f2).connect(lp).connect(g).connect(master()); o.start(t); o.stop(tt + .05); vib.start(t); vib.stop(tt + .05); }
 const D5 = [293.66, 329.63, 369.99, 440, 493.88];  // Chinese pentatonic on D
 const pen = k => D5[((k % 5) + 5) % 5] * Math.pow(2, Math.floor(k / 5));
 const pick = a => a[Math.floor(Math.random() * a.length)];
+// Only the two instruments that sound real when made in the browser: the guzheng pluck and the woodblock.
+// Anything good rises; a miss is one soft low pluck (no drum, no falling gong).
 const KIT = {
-  tap: [() => woodblock(0, 980), () => woodblock(0, 520, .8), () => zheng(0, pen(pick([5, 6, 7])), .6, 1, 1.3), () => dizi(0, pen(pick([7, 8])), .22, .3), () => { woodblock(0, 1500, .55); woodblock(.07, 1350, .4); }],
-  right: [() => gong(0, 230, 2.6, .5, .96), () => zheng(0, pen(7), .8, 1.06), () => erhu(0, [[pen(6), .3], [pen(5), .85]]), () => { dizi(0, pen(5), .2, .3); dizi(.18, pen(7), .45, .32, pen(6)); }, () => { woodblock(0, 1500, .5); zheng(.08, pen(9), .7, 1, 1.6); }],
-  wrong: [() => drum(0), () => zheng(0, pen(0) / 2, .7, .97, 1.2), () => erhu(0, [[pen(2), .3], [pen(4), .6]]), () => gong(0, 520, 1.1, .45, 1.12), () => dizi(0, pen(4), .5, .28, pen(6))],
-  reward: [() => { drum(0, .8); gong(.05, 140, 4.5, .7, .93); }, () => { for (let k = 0; k < 10; k++) zheng(k * .045, pen(k), .45, 1, 1.8); zheng(.65, pen(10), .8, 1.05, 2.6); },
-    () => { gong(0, 180, 3.5, .35, .95); dizi(.15, pen(5), .5, .3, pen(4)); dizi(.7, pen(7), .4, .3); dizi(1.15, pen(8), 1.1, .32, pen(9)); },
-    () => { zheng(0, pen(0), .6, 1, 2.4); erhu(.1, [[pen(5), .4], [pen(7), .4], [pen(8), .35], [pen(7), .9]]); },
-    () => { [0, .09, .18].forEach((d, k) => woodblock(d, 1200 + k * 220, .45)); for (let k = 0; k < 6; k++) zheng(.3 + k * .06, pen(5 + k), .5, 1, 1.8); dizi(.72, pen(10), .9, .3, pen(9)); }]
+  tap: [() => woodblock(0, 980, .55), () => woodblock(0, 1250, .45), () => zheng(0, pen(pick([7, 8])), .4, 1, 1.1)],
+  right: [[5, 7], [6, 8], [4, 7], [5, 9]].map(([a, b]) => () => { zheng(0, pen(a), .55, 1, 1.4); zheng(.11, pen(b), .65, 1, 1.9); }),
+  wrong: [() => zheng(0, pen(0), .42, 1, 1.1), () => zheng(0, pen(1), .4, 1, 1.1)],
+  reward: [0, 1, 2].map(o => () => { for (let k = 0; k < 6; k++) zheng(k * .075, pen(o + 3 + k), .45, 1, 2); zheng(.5, pen(o + 10), .7, 1, 2.8); })
 };
 // Rating tick: one short woodblock knock, low for Again, middle for Hard, bright for Good and Easy.
 function tick(g) { if (!soundOn) return; try { woodblock(0, g === "again" ? 380 : g === "hard" ? 700 : 1250, .55); } catch (e) {} }
