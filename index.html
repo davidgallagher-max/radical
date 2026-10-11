@@ -3493,7 +3493,7 @@ async function wikiSearch(q, knownEn) {
 wikiSearch.n = 0;
 $("wikiForm").onsubmit = e => { e.preventDefault(); markChip(null); wikiSearch($("wikiQ").value); };
 $("wikiRandom").onclick = async () => {
-  markChip(null); wikiSearch.n++; wStat("Finding something…"); skeleton();
+  markChip(null); wikiSearch.n++; wStat("Finding something…"); skeleton(); $("wikiStatus").scrollIntoView({ behavior: "smooth", block: "start" });
   try {
     // Ask for several random articles and take the one with the longest introduction (skips stubs).
     const j = await wget("action=query&generator=random&grnnamespace=0&grnlimit=12&prop=extracts&exintro=1&explaintext=1&exlimit=12");
