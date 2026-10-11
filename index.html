@@ -170,7 +170,8 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .sheetcard h3{margin:0;font-family:var(--font-brand);font-size:1.2rem}
 .sheetcard p{margin:0;line-height:1.5}
 .sheetcard .row .btn{flex:1;padding:12px}
-.revprev{all:unset;cursor:pointer;justify-self:start;align-self:start;font-size:.9rem;font-weight:600;color:var(--accent);padding:6px 4px}
+.revprev{all:unset;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--accent);padding:6px 4px;white-space:nowrap}  /* sits in the top bar, between Quit and the menu */
+@media (max-width:359px){#reviewScreen .scriptpick .sclabel{display:none}#reviewScreen .revtitle{font-size:1rem}}
 .revprev:focus-visible{outline:2px solid var(--accent);border-radius:6px}
 .revscore{display:block;font-family:var(--font-ui);font-size:.8rem;font-weight:500;color:var(--muted);margin-top:2px}
 .revscore:empty{display:none}
@@ -556,6 +557,17 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 @keyframes inkglow{0%{filter:none}35%{filter:drop-shadow(0 0 10px color-mix(in srgb,var(--accent) 70%,transparent)) brightness(1.15)}100%{filter:none}}
 @media (prefers-reduced-motion:reduce){.padwrap.done .padtick,.padwrap.done .inkover{animation:none}}
 .writeprompt{justify-content:center}
+/* Writing card, compact: pinyin, speaker and meaning share one line; slim slots; a one-line coach. */
+.wprompt1{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;row-gap:2px;text-align:center}
+.wprompt1 .bigpy{font-size:1.2rem}
+.wprompt1 .wm1{color:var(--muted);font-size:.95rem}
+#reviewScreen .revcard:has(.wprompt1){gap:8px}
+.wslots.slim .wslot{width:38px;height:38px;border-radius:8px}
+.wslots.slim .wslot svg{width:32px;height:32px}
+.wslots.slim .wslot .fontglyph{width:32px;height:32px;font-size:26px}
+.coach.one{min-height:0;max-width:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.85rem}
+.padwrap.shown .padtick{display:none!important}
+.padwrap.shown .pad{border-color:var(--line);box-shadow:none}
 .listenprompt{display:grid;justify-items:center;gap:10px;padding:18px 0 8px}
 .listenbig{all:unset;cursor:pointer;display:grid;justify-items:center;gap:6px;width:132px;height:132px;place-content:center;border-radius:50%;border:2px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:600}
 .listenbig svg{width:44px;height:44px}
@@ -728,9 +740,8 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 <!-- REVIEW -->
 <section class="screen sub" id="reviewScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back>Back to my words</button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="topbar"><button type="button" class="back" data-back id="revQuit">Quit</button><button type="button" class="revprev" id="revPrev" style="visibility:hidden">‹ Previous card</button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
     <div class="revhead"><h2 class="revtitle">Flash cards <span class="note" id="revProg"></span><span class="revscore" id="revScore"></span></h2><div id="revScript"></div></div>
-    <button type="button" class="revprev" id="revPrev" style="visibility:hidden">‹ Previous card</button>
     <div id="revCard" class="revcard"></div>
     <div class="revbar" id="revBar"></div>
   </div>
@@ -2739,8 +2750,8 @@ function revBar(label, flipLabel, flipIcon, onFlip, actions, cls, sub) {
   const top = el("div", "revbartop", `<span class="rl"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span>`);
   const f = btn("", "btn ghost small flipbtn", onFlip); f.innerHTML = `<i>${flipIcon}</i>${flipLabel}`;
   top.append(f);
-  const row = el("div", cls); actions.forEach(a => row.append(a));
-  bar.append(top, row);
+  bar.append(top);
+  if (actions.length) { const row = el("div", cls); actions.forEach(a => row.append(a)); bar.append(row); }  // no actions: a slim bar
 }
 function showFront() {
   if (rq && rq[0]) ensureCard(rq[0]).catch(() => {});  // have the full card ready by the time the answer shows
@@ -2836,38 +2847,44 @@ function showFront() {
   showBack.guess = () => ({ py: py.value, mean: mean.value });
   setTimeout(() => py.focus(), 50);
 }
-// Writing card: pinyin, sound and meaning on top; write each character in turn on the pad.
-// Hints come after 3 misses on a stroke, or from the Hint button. The rating suggestion comes from how it went.
+// Writing card: pinyin, sound and meaning on one line on top; write each character in turn on the pad. The card
+// fits one screen: the pad is sized to the room left above the bottom bar (measured at its tallest), so the bar never
+// covers it. Hints come after 3 misses on a stroke, or from the Hint button. The rating suggestion comes from how it went.
+// Show answer, while writing, shows just the character you're on: it draws itself on the pad, locks, and all its
+// strokes count as hinted; then on to the next character (after the last one, the answer side).
 function writeFront(w) {
-  const box = $("revCard"), word = conv(w.word), chars = [...word];
-  box.append(el("div", "wpy writeprompt", `<span class="bigpy">${pyWordHTML(wPinyin(w))}</span>${sayHTML(w.word)}`));
-  box.append(el("p", "wmean", esc(wMeaning(w))));
-  const slots = el("div", "wslots"), slotEls = chars.map(() => slots.appendChild(el("span", "wslot")));
-  const padHost = el("div", "writewrap"), coach = el("p", "coach");
+  const box = $("revCard"), word = conv(w.word), chars = [...word].filter(c => !isSlot(c));
+  box.append(el("div", "wprompt1", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${sayHTML(w.word, true)}<span class="wm1">${esc(wMeaning(w))}</span>`));
+  const slots = el("div", "wslots slim"), slotEls = chars.map(() => slots.appendChild(el("span", "wslot")));
+  const padHost = el("div", "writewrap"), coach = el("p", "coach one");
   box.append(slots, padHost, coach);
   const stats = { strokes: 0, first: 0, hints: 0 };
-  let writer = null, idx = 0, current = 0, hinted = new Set(), curWrap = null;
+  let writer = null, idx = 0, current = 0, hinted = new Set(), curWrap = null, firstHere = 0, showing = false;
   const reveal = (how, st = stats) => {
     if (writer) { try { writer.cancelQuiz(); } catch (e) {} writer = null; }
     revSide = { how, stats: st }; box.innerHTML = ""; box.append(bigWord(word)); showBack(w, how, st);
   };
   showFront.reveal = reveal;
   const fill = i => { const ch = chars[i]; slotEls[i].replaceChildren(cache[ch] ? glyphFor(ch, true) : el("span", "plain", esc(ch))); slotEls[i].classList.add("done"); };
+  let lead = "", inkSvg = null;
   const nextChar = () => {
     if (!box.isConnected || revSide) return;
     if (idx >= chars.length) { reveal("write"); return; }
-    setBar(true);
     const ch = chars[idx], d = cache[ch];
     slotEls.forEach((x, i) => x.classList.toggle("now", i === idx));
     if (!d || typeof HanziWriter === "undefined") { fill(idx++); nextChar(); return; }  // nothing to write (no stroke data)
-    padHost.innerHTML = ""; hinted = new Set(); current = 0;
-    const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
-    const size = Math.min(400, (box.clientWidth || innerWidth - 32));
+    padHost.innerHTML = ""; hinted = new Set(); current = 0; firstHere = 0; showing = false;
+    // Measure the bar at its tallest (with the Next character button), then show the slim writing bar.
+    setBar(false, true); const barH = $("revBar").getBoundingClientRect().height; setBar(true);
+    $("reviewScreen").scrollTop = 0;
+    const top = padHost.getBoundingClientRect().top, room = innerHeight - barH - top - 58;  // 58: the color line, the coach line and a margin
+    const size = Math.max(150, Math.min(400, box.clientWidth || innerWidth - 32, Math.floor(room)));
     const { wrap, pad, hint } = padHolder(padHost, size); curWrap = wrap;
     hint.onclick = () => {
       if (!writer) return; writer.highlightStroke(current); if (!hinted.has(current)) { hinted.add(current); stats.hints++; }
       coach.innerHTML = lead + "That stroke is highlighted. Trace it.";
     };
+    const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
     writer = HanziWriter.create(pad, ch, {
       width: size, height: size, padding: 12,
       charDataLoader: (c, onLoad) => onLoad({ strokes: d.s, medians: d.md }),
@@ -2875,31 +2892,49 @@ function writeFront(w) {
       outlineColor: col("--grid"), strokeColor: col("--surface"), drawingColor: "rgba(0,0,0,0)", highlightColor: strokeCol(d, 0),
       drawingWidth: 22, leniency: 1.3, showHintAfterMisses: 3, markStrokeCorrectAfterMisses: false
     });
-    const ink = svgFor(ch, false, true); ink.setAttribute("class", "inkover");
+    const ink = inkSvg = svgFor(ch, false, true); ink.setAttribute("class", "inkover");
     ink.style.cssText = `position:absolute;left:12px;top:12px;width:${size - 24}px;height:${size - 24}px;pointer-events:none`;
     const inkStrokes = [...ink.querySelectorAll("g.strokes path")]; inkStrokes.forEach(x => { x.style.opacity = 0; x.style.transition = "opacity .35s ease"; });
     pad.append(ink); brushLayer(pad, size, () => d.r[current]);
     const total = d.s.length; stats.strokes += total;
-    const lead = chars.length > 1 ? `<b>Character ${idx + 1} of ${chars.length}</b> · ` : "";
+    lead = chars.length > 1 ? `<b>${idx + 1} of ${chars.length}</b> · ` : "";
     const say = m => { coach.innerHTML = lead + m; };
     say("Write it from memory, first stroke first.");
     writer.quiz({
-      onCorrectStroke: s => { if (inkStrokes[s.strokeNum]) inkStrokes[s.strokeNum].style.opacity = 1; if (!s.mistakesOnStroke && !hinted.has(s.strokeNum)) stats.first++; current = s.strokeNum + 1; if (current < total && writer) writer.updateColor("highlightColor", strokeCol(d, current)); say(`Stroke ${Math.min(current + 1, total)} of ${total}`); },
+      onCorrectStroke: s => { if (inkStrokes[s.strokeNum]) inkStrokes[s.strokeNum].style.opacity = 1; if (!s.mistakesOnStroke && !hinted.has(s.strokeNum)) { stats.first++; firstHere++; } current = s.strokeNum + 1; if (current < total && writer) writer.updateColor("highlightColor", strokeCol(d, current)); say(`Stroke ${Math.min(current + 1, total)} of ${total}`); },
       onMistake: s => { const n = s.mistakesOnStroke; if (n >= 3 && !hinted.has(s.strokeNum)) { hinted.add(s.strokeNum); stats.hints++; } say(n >= 3 ? "Here's where it goes. Trace it." : "Not quite. Try that stroke again."); },
       // A finished character stays on the pad as long as you like; you move on when you're ready.
       onComplete: () => {
-        fill(idx++); writer = null; padDone(curWrap); play("right");
+        fill(idx++); writer = null; padDone(curWrap); play("right"); showLegend(curWrap, ch);
         const more = idx < chars.length;
         coach.innerHTML = lead + (more ? "Done. Look it over, then go on." : "Done. Look it over, then check the answer.");
         setBar(false, more);
       }
     });
   };
-  // The bottom bar: Hint while you write; after a character, the way forward (next character, or the answer).
+  // Show answer for the character on the pad: it draws itself, then locks (no ✓, since you didn't write it).
+  const showChar = () => {
+    if (!writer || showing) return;
+    showing = true; try { writer.cancelQuiz(); } catch (e) {} writer = null;
+    const ch = chars[idx], d = cache[ch], total = d.s.length;
+    stats.first -= firstHere; stats.hints += total - hinted.size;  // every stroke of this character counts as hinted
+    curWrap.classList.add("shown");
+    const more = idx + 1 < chars.length;
+    coach.innerHTML = lead + "Here's how it's written.";
+    revBar("Watch it drawn", "Show answer", "⟳", () => reveal("show"), [], "guessacts");
+    animate(inkSvg, ch, 1, () => {
+      if (!box.isConnected || revSide) return;
+      fill(idx++); padDone(curWrap); showLegend(curWrap, ch);
+      if (!more) { setTimeout(() => { if (box.isConnected && !revSide) reveal("write"); }, 900); return; }
+      coach.innerHTML = lead + "Study it, then go on.";
+      setBar(false, true);
+    });
+  };
+  // The bottom bar: slim while you write (Show answer shows just this character); after a character, the way forward.
   function setBar(writing, more) {
-    if (writing) revBar("Write it from memory", "Show answer", "⟳", () => reveal("show"), [], "guessacts", "Say it to yourself, then write. Stuck? Tap Hint on the pad.");
+    if (writing) revBar("Write it from memory", "Show this one", "⟳", showChar, [], "guessacts");
     else revBar(more ? "Character done" : "Word done", "Show answer", "⟳", () => reveal(more ? "show" : "write"),
-      [btn(more ? "Next character ›" : "See answer", "btn", () => more ? nextChar() : reveal("write"))], "guessacts one", more ? "Take your time. Go on when you're ready." : "Take your time, then see how you did.");
+      [btn(more ? "Next character ›" : "See answer", "btn", () => more ? nextChar() : reveal("write"))], "guessacts one", more ? "Go on when you're ready." : "Then see how you did.");
   }
   nextChar();
 }
