@@ -181,6 +181,16 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .sheetcard h3{margin:0;font-family:var(--font-brand);font-size:1.2rem}
 .sheetcard p{margin:0;line-height:1.5}
 .sheetcard .row .btn{flex:1;padding:12px}
+.tourcard{gap:14px;padding-top:24px}
+.tourpage{display:grid;gap:10px;min-height:230px;align-content:start}
+.tourpage p{color:var(--fg);line-height:1.55;font-size:.98rem}
+.tourpage b{color:var(--accent)}
+.tourchar{justify-self:center;width:120px;height:120px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+.tourchar svg{width:100%;height:100%}
+.tourico{width:15px;height:15px;vertical-align:-2px;color:var(--accent)}
+.tourzh{font-family:var(--font-zh);font-weight:600;color:var(--accent)}
+.tourdots{display:flex;justify-content:center;gap:6px}
+.tourdots i{width:7px;height:7px;border-radius:50%;background:var(--line)}.tourdots i.on{background:var(--accent)}
 .revprev{all:unset;cursor:pointer;font-family:var(--font-ui);font-size:.82rem;font-weight:600;color:var(--accent);padding:2px 0;white-space:nowrap}  /* under the card count */
 /* One line under the title: ‹ Previous card on the left, the running score on the right. */
 .revsub{display:flex;align-items:baseline;justify-content:space-between;gap:10px;min-height:1.4em;margin-top:-6px}
@@ -882,6 +892,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
     <button type="button" data-go="history"><span class="mi">歷</span>History</button>
     <hr>
     <button type="button" data-go="settings"><span class="mi">設</span>Settings</button>
+    <button type="button" data-go="tour"><span class="mi">導</span>How it works</button>
     <button type="button" data-go="about"><span class="mi">部</span>About</button>
     <button type="button" id="feedbackBtn" hidden><span class="mi">信</span>Send feedback</button>
   </nav>
@@ -972,6 +983,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
   else if (g === "history") $("histBtn").click();
   else if (g === "settings") openSettings(false);
   else if (g === "about") go("aboutScreen");
+  else if (g === "tour") showTour();
 });
 // Send feedback: opens an email with the app version and device filled in. The address is in the page's code, so
 // anyone can read it: use a dedicated address, not a personal one. Empty: the menu item stays hidden.
@@ -3176,7 +3188,36 @@ async function openSettings(welcome) {
 }
 function saveSettings() { store.set("radical-pw", $("pw").value.trim()); store.set("radical-palette", palette); myWords.filter(w => !w.card).forEach(queueCard); }
 $("pw").addEventListener("change", saveSettings);
-$("startBtn").onclick = () => { saveSettings(); history.back(); };
+$("startBtn").onclick = () => { saveSettings(); history.back(); setTimeout(showTour, 400); };
+// ---- the walkthrough: three short cards (the colors, reading, saving and studying). Shown once, after the color
+// choice on a first launch (or once to existing users), and any time from the menu (導 How it works).
+async function showTour() {
+  await ensure("河");
+  const sheet = el("div", "sheet tour"), card = el("div", "sheetcard tourcard");
+  const B = t => `<b>${t}</b>`;
+  const pages = [
+    () => { const f = el("div", "tourpage"); const big = el("div", "tourchar"); big.append(svgFor("河", false, true)); f.append(big);
+      f.append(el("h3", "", "Every character, in color"), el("p", "", `Each part is colored by its job: ${B("meaning")} (what it's about), ${B("sound")} (a hint at how it's said), two ${B("ideas")} combined, a ${B("picture")}, or ${B("unclear")} where the origin isn't recorded. In 河 (river), 氵 is water, the meaning, and 可 kě gives the sound, hé.`));
+      const l = legendLine("河"); if (l) f.insertBefore(l, f.children[1]); return f; },
+    () => { const f = el("div", "tourpage");
+      f.append(el("h3", "", "Reading"), el("p", "", `Paste or open any Chinese text. ${B("Tap a word once")} to see its pinyin and meaning; ${B("tap again")} to open it: its characters, their parts and how to write them.`),
+        el("p", "", `Under each line: ${SPK.replace("<svg", '<svg class="tourico"')} listen, ${B("EN")} translate, <span lang="zh" class="tourzh">解</span> explain the grammar. ${B("Listen")} at the top reads the whole page, with a speed slider.`)); return f; },
+    () => { const f = el("div", "tourpage");
+      f.append(el("h3", "", "Saving and studying"), el("p", "", `${B("+ Add")} puts a word in My words, with the sentence you met it in. Flash cards come three ways: ${B("Read")} (say it), ${B("Write")} (write it from memory) and ${B("Listen")} (hear it). Your ratings decide when each word comes back.`),
+        el("p", "", `${B("Review")} goes through your words face up, no grading. ${B("Explore")} finds real Chinese Wikipedia articles at your level.`)); return f; }
+  ];
+  let i = 0;
+  const close = () => { sheet.remove(); store.set("radical-tour-seen", true); };
+  const paint = () => {
+    card.innerHTML = ""; card.append(pages[i]());
+    const dots = el("div", "tourdots", pages.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join(""));
+    const row = el("div", "row");
+    row.append(btn(i ? "‹ Back" : "Skip", "btn ghost", () => { if (i) { i--; paint(); } else close(); }), btn(i < pages.length - 1 ? "Next ›" : "Start reading", "btn", () => { if (i < pages.length - 1) { i++; paint(); } else close(); }));
+    card.append(dots, row);
+  };
+  sheet.onclick = ev => { if (ev.target === sheet) close(); };
+  sheet.append(card); document.body.append(sheet); paint();
+}
 $("soundSw").setAttribute("aria-checked", soundOn);
 $("soundSw").onclick = e => { soundOn = !soundOn; store.set("radical-sound", soundOn); e.currentTarget.setAttribute("aria-checked", soundOn); if (soundOn) play("tap"); };
 // Light on/off: off gives flat ink, with no finish, glint or sheen anywhere.
@@ -3664,7 +3705,7 @@ $("wikiRandom").onclick = async () => {
   const hide = () => { $("splash").classList.add("out"); setTimeout(() => $("splash").remove(), 500); };
   // The splash waits for a tap (the app loads behind it meanwhile).
   let done = false;
-  const finish = () => { if (done) return; done = true; hide(); if (firstRun) openSettings(true); };
+  const finish = () => { if (done) return; done = true; hide(); if (firstRun) openSettings(true); else if (!store.get("radical-tour-seen", false)) setTimeout(showTour, 600); };
   $("splash").onclick = () => { harp(); finish(); };
 })();
 </script>
