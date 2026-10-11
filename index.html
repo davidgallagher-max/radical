@@ -2667,12 +2667,13 @@ function prevCard() {
   $("reviewScreen").scrollTop = 0;
 }
 $("revPrev").onclick = prevCard;
-// Quit: with nothing rated it just leaves; once a card is rated it asks first, showing how far you got and the score.
-// (Ratings are saved as you go, so quitting loses nothing.) On the Done screen the button is Back to my words.
+// Quit always asks first (a stray tap would throw away the set you picked), showing how far you got and the score.
+// Ratings are saved as you go, so quitting loses nothing. On the Done screen the button is Back to my words.
 $("revQuit").onclick = () => {
-  if (!rDone || !rq.length) { history.back(); return; }
+  if (!rq.length) { history.back(); return; }
   const sheet = el("div", "sheet"), card = el("div", "sheetcard");
-  card.innerHTML = `<h3>End this session?</h3><p>${rDone} of ${rDone + rq.length} done · ${scoreText(rScore)}</p><p class="note">Your ratings so far are saved.</p>`;
+  card.innerHTML = rDone ? `<h3>End this session?</h3><p>${rDone} of ${rDone + rq.length} done · ${scoreText(rScore)}</p><p class="note">Your ratings so far are saved.</p>`
+    : `<h3>End this session?</h3><p>Nothing rated yet.</p>`;
   const row = el("div", "row"), stay = btn("Keep going", "btn ghost", () => sheet.remove()), quit = btn("Quit", "btn", () => { sheet.remove(); history.back(); });
   row.append(stay, quit); card.append(row); sheet.append(card);
   sheet.onclick = ev => { if (ev.target === sheet) sheet.remove(); };
