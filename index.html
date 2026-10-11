@@ -407,9 +407,13 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
 .revstrip .btn{background:var(--surface);color:var(--accent);font-weight:600}
 .revstrip.idle{background:var(--surface);color:var(--fg);border:1px solid var(--line)}
 .revstrip.idle .btn{background:var(--accent);color:var(--surface)}
-.filters{display:flex;gap:5px;flex-wrap:wrap}
-.filters button{all:unset;cursor:pointer;font-size:.8rem;padding:5px 9px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
-.filters button{display:inline-flex;align-items:center;gap:6px;--c:var(--fg)}
+.filters{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:4;background:var(--bg);margin:0 -16px;padding:6px 16px}
+.filters::-webkit-scrollbar{display:none}
+.backupnote{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.82rem;color:var(--muted);padding:8px 12px;border:1px dashed color-mix(in srgb,var(--sound) 55%,var(--line));border-radius:12px}
+.filters.stuck{border-bottom:1px solid var(--line);box-shadow:0 6px 12px -8px rgba(0,0,0,.45)}
+.filters.stuck::before{content:"";position:fixed;left:0;right:0;top:0;height:calc(var(--top) + 12px);background:var(--bg)}
+.filters button{all:unset;cursor:pointer;font-size:.76rem;padding:5px 8px;white-space:nowrap;flex:none;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.filters button{display:inline-flex;align-items:center;gap:5px;--c:var(--fg)}
 .filters button[data-k=new]{--c:var(--accent)} .filters button[data-k=due]{--c:var(--sound)}
 .filters button[data-k=learning]{--c:var(--meaning)} .filters button[data-k=known]{--c:var(--muted)}
 .filters button{border-color:color-mix(in srgb,var(--c) 55%,var(--line));color:var(--fg)}
@@ -621,6 +625,7 @@ h3.sec{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;letter-spacing:.
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
     <div class="filters" id="filters"></div>
+    <p class="backupnote" id="backupNote" hidden></p>
     <div id="revStrip"></div>
     <div class="addbox">
       <div class="addrow">
@@ -2090,8 +2095,17 @@ function renderStrip() {
   if (revMode === "learning") box.append(el("p", "note", "Active: words in rotation that aren't due yet. Reviewing them early is fine."));
   strip.append(box);
 }
+// Backup reminder: your words live only on this phone, so after a week or 100 reviews without a backup, say so.
+function showBackupNote() {
+  const box = $("backupNote"), at = store.get("radical-backup-at", 0), revs = store.get("radical-rev-since-backup", 0);
+  const since = Date.now() - (at || store.get("radical-first-use", Date.now())), days = Math.floor(since / DAY);
+  box.hidden = !myWords.length || (days < 7 && revs < 100);
+  if (box.hidden) return;
+  box.innerHTML = `${at ? `Last backup: ${days} day${days === 1 ? "" : "s"} ago` : "No backup yet"}${revs ? ` · ${revs} review${revs === 1 ? "" : "s"} since` : ""}. Your words are only on this phone. `;
+  box.append(btn("Save now", "btn ghost small", () => $("backupBtn").click()));
+}
 function renderWords() {
-  renderStrip();
+  renderStrip(); showBackupNote();
   const counts = { all: myWords.length, due: 0, new: 0, learning: 0, known: 0 };
   myWords.forEach(w => counts[wStatus(w)]++);
   const f = $("filters"); f.innerHTML = "";
@@ -2686,8 +2700,9 @@ if (store.get("radical-tilt", false)) { useTilt(true); document.addEventListener
 $("rate").addEventListener("input", e => { rate = +e.target.value; store.set("radical-rate", rate); });
 $("rateTest").onclick = () => speak("你好，歡迎使用 Radical。我們在登山口附近搭帳篷。");
 $("backupBtn").onclick = async () => {
+  store.set("radical-backup-at", Date.now()); store.set("radical-rev-since-backup", 0); setTimeout(showBackupNote, 0);
   const name = `radical-words-${localDay()}.json`;
-  const blob = new Blob([JSON.stringify({ app: "Radical", saved: new Date().toISOString(), words: myWords }, null, 1)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify({ app: "Radical", saved: new Date().toISOString(), words: myWords, learned, days: store.get("radical-days", {}) }, null, 1)], { type: "application/json" });
   const file = new File([blob], name, { type: "application/json" });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e.name === "AbortError") return; }
