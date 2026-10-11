@@ -614,17 +614,17 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .grades .again{box-shadow:inset 0 0 0 1px var(--sound);color:var(--sound)}
 .grades .suggest{background:var(--accent);color:var(--surface);box-shadow:none}
 .grades .again.suggest{background:var(--sound);color:var(--surface)}
-/* On the answer side a light sweeps across the ratings two or three times, then a faint glow stays; the suggested
-   one pulses. With reduced motion, just the steady glow. */
-.grades.glow{position:relative;border-radius:12px;isolation:isolate;animation:rowglow 3.4s ease-out forwards}
-.grades.glow::after{content:"";position:absolute;inset:-3px;border-radius:14px;pointer-events:none;z-index:1;
-  background:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--accent) 45%,transparent) 50%,transparent 70%);background-size:300% 100%;background-repeat:no-repeat;
-  animation:sweep 1.1s ease-in-out 3;opacity:.9;mix-blend-mode:screen}
-.grades.glow .suggest{animation:pulse 1.4s ease-in-out 4}
+/* On the answer side a light sweeps across the whole rating bar two or three times, then a faint glowing edge stays;
+   the suggested rating pulses. With reduced motion, just the steady glow. */
+.revbar.glow{animation:barglow 3.4s ease-out forwards}
+.revbar.glow::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--accent) 30%,transparent) 50%,transparent 70%);background-size:300% 100%;background-repeat:no-repeat;
+  animation:sweep 1.2s ease-in-out 3 forwards;mix-blend-mode:screen}
+.revbar.glow .suggest{animation:pulse 1.4s ease-in-out 4}
 @keyframes sweep{from{background-position:150% 0}to{background-position:-50% 0}}
-@keyframes rowglow{0%{box-shadow:0 0 0 0 transparent}40%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 60%,transparent),0 0 22px color-mix(in srgb,var(--accent) 40%,transparent)}100%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent),0 0 12px color-mix(in srgb,var(--accent) 18%,transparent)}}
+@keyframes barglow{0%{box-shadow:inset 0 0 0 0 transparent}40%{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--accent) 80%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--accent) 55%,transparent),inset 0 0 26px color-mix(in srgb,var(--accent) 30%,transparent),0 -6px 24px color-mix(in srgb,var(--accent) 28%,transparent)}100%{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--accent) 55%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent),inset 0 0 16px color-mix(in srgb,var(--accent) 14%,transparent),0 -4px 16px color-mix(in srgb,var(--accent) 14%,transparent)}}
 @keyframes pulse{0%,100%{transform:none}50%{transform:scale(1.05)}}
-@media (prefers-reduced-motion:reduce){.grades.glow{animation:none;box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent),0 0 12px color-mix(in srgb,var(--accent) 18%,transparent)}.grades.glow::after{display:none}.grades.glow .suggest{animation:none}}
+@media (prefers-reduced-motion:reduce){.revbar.glow{animation:none;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--accent) 55%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent),inset 0 0 16px color-mix(in srgb,var(--accent) 14%,transparent)}.revbar.glow::after{display:none}.revbar.glow .suggest{animation:none}}
 .guess{display:grid;gap:8px}
 .guess label{display:grid;grid-template-columns:5.6em 1fr;align-items:center;gap:8px;font-size:1.1rem;color:var(--muted)}
 .guess input::placeholder{color:var(--muted);opacity:.45}
@@ -2844,7 +2844,7 @@ function checkMeaning(given, target) {
 // The flash card controls live in one bar at the bottom of the screen, so they're always in the same place:
 // a label and the flip button on top (Show answer on the front, Front on the back), the main actions below.
 function revBar(label, flipLabel, flipIcon, onFlip, actions, cls, sub) {
-  const bar = $("revBar"); bar.replaceChildren();
+  const bar = $("revBar"); bar.replaceChildren(); bar.classList.remove("glow");
   const top = el("div", "revbartop", `<span class="rl"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span>`);
   const f = btn("", "btn ghost small flipbtn", onFlip); f.innerHTML = `<i>${flipIcon}</i>${flipLabel}`;
   top.append(f);
@@ -2859,7 +2859,7 @@ function showFront() {
   $("revScore").textContent = rDone && rq.length ? scoreText(sc) : "";
   $("revQuit").textContent = rq.length ? "Quit" : "My words";
   if (!rq.length) {
-    prog.textContent = ""; $("revBar").replaceChildren();
+    prog.textContent = ""; $("revBar").replaceChildren(); $("revBar").classList.remove("glow");
     box.append(el("p", "wmean", rDone ? `Done. ${rDone} reviewed${sc.repeats ? `, including ${rep(sc.repeats)}` : ""}.` : "Nothing to review right now."));
     if (rDone) box.append(el("p", "donescore", `${scoreText(sc)}${sc.best > 1 ? ` · best run ${sc.best} in a row` : ""}`));
     if (rDone) play("reward");
@@ -3098,7 +3098,7 @@ function showBack(w, how, st) {
   box.append(ans);
   revBar("Rate it to go to the next card", "Front", "⟲", () => { ans.remove(); showFront(); }, [...grades.children], "grades",
     `Your rating decides when it comes back.${suggest ? " The suggested one is highlighted." : ""}`);
-  const row = $("revBar").querySelector(".grades"); if (row) row.classList.add("glow");  // a light sweeps the ratings: your turn
+  $("revBar").classList.add("glow");  // a light sweeps the whole rating bar: your turn
 }
 
 // ================= settings
