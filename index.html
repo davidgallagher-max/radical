@@ -590,6 +590,9 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .guessacts.one{grid-template-columns:1fr}
 .hintbox{display:grid;gap:6px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,transparent);font-size:.92rem}
 .hintbox p{margin:0}
+.cluespot{min-height:2.6em;align-content:center;justify-items:center;text-align:center;padding:8px 12px}
+.cluespot .cluehint{color:var(--muted);font-size:.85rem}
+.cluespot p{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
 .cluechar{cursor:pointer;transition:transform .12s ease}
 .cluechar:active{transform:scale(.96)}
 .cluechar:focus{outline:none}
@@ -2790,25 +2793,26 @@ function showFront() {
   form.innerHTML = `<label><span>Pinyin</span><input id="gPy" type="text" inputmode="latin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="wo3 or wǒ"></label>
     <button type="button" class="pyprev" id="gPrev" hidden title="Use tone marks"></button>
     <label><span>Meaning</span><input id="gMean" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="in English"></label>`;
-  // Clues: tap a character for a random clue about it (its pinyin, its meaning, or its sound), each kind once
-  // per character. The guess boxes stay as they are. Any clue caps the suggested rating at Hard.
-  const hintBox = el("div", "hintbox"); hintBox.hidden = true;
+  // Clues: tap a character for a clue about it, in a fixed order: its sound (played), then its meaning, then its
+  // pinyin; after that a tap plays the sound again. One clue shows at a time, right under the big characters (where
+  // the "Stuck?" line was), and each replaces the last. Every character keeps its own place in the order.
+  // The guess boxes stay as they are. Any clue caps the suggested rating at Hard.
+  const hintBox = el("div", "hintbox cluespot"); hintBox.innerHTML = '<p class="cluehint">Stuck? Tap a character for a clue.</p>';
   let used = 0;
   const big = box.querySelector(".revchars") || el("div"), word = conv(w.word), wchars = [...word];
-  const syl = sylls(numToMarks(String(wPinyin(w)).toLowerCase().replace(/[\s'’·-]+/g, ""))).filter(Boolean);
-  const given = wchars.map(() => new Set());
+  const syl = sylls(numToMarks(patternPy(wPinyin(w)).toLowerCase().replace(/[\s'’·-]+/g, ""))).filter(Boolean);
+  const sylOf = []; { let k = 0; wchars.forEach((c, i) => { if (!isSlot(c)) sylOf[i] = syl[k++]; }); }
+  const step = wchars.map(() => 0);
   [...big.children].forEach((node, i) => {
-    const ch = wchars[i], d = cache[ch]; if (!ch) return;
+    const ch = wchars[i], d = cache[ch]; if (!ch || !d || isSlot(ch)) return;
     node.classList.add("cluechar"); node.setAttribute("tabindex", "0"); node.setAttribute("aria-label", `Clue for ${ch}`);
+    const order = ["sound", ...(d.d ? ["meaning"] : []), "pinyin"];
     const clue = () => {
-      const kinds = ["pinyin", "meaning", "sound"].filter(k => !given[i].has(k) && (k !== "meaning" || (d && d.d)) && (k !== "pinyin" || syl[i] || d));
-      if (!kinds.length) { node.classList.add("nomore"); setTimeout(() => node.classList.remove("nomore"), 400); return; }
-      const k = kinds[Math.floor(Math.random() * kinds.length)]; given[i].add(k); used++;
+      const k = step[i] < order.length ? order[step[i]] : "sound"; step[i]++; used++;
       const tag = `<span lang="zh" class="hz">${esc(ch)}</span>`;
-      if (k === "pinyin") hintBox.append(el("p", "", `${tag} <b>Pinyin:</b> ${pyHTML(syl[i] || d.p[0])}`));
-      if (k === "meaning") hintBox.append(el("p", "", `${tag} <b>Meaning:</b> ${esc(d.d.split(/;/).slice(0, 2).join(";"))}`));
-      if (k === "sound") { speak(ch); hintBox.append(el("p", "", `${tag} <b>Sound:</b> ${sayHTML(ch, true)}`)); }
-      hintBox.hidden = false;
+      if (k === "sound") { speak(ch); hintBox.innerHTML = `<p>${tag} <b>Sound:</b> ${sayHTML(ch, true)}</p>`; }
+      if (k === "meaning") hintBox.innerHTML = `<p>${tag} <b>Meaning:</b> ${esc(d.d.split(/;/).slice(0, 2).join(";"))}</p>`;
+      if (k === "pinyin") hintBox.innerHTML = `<p>${tag} <b>Pinyin:</b> ${pyHTML(sylOf[i] || d.p[0])}</p>`;
     };
     node.addEventListener("click", clue);
     node.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clue(); } });
@@ -2835,8 +2839,9 @@ function showFront() {
     form.remove(); hintBox.remove(); revSide = { how }; showBack.hints = used; showBack(w, how, st);
   };
   showFront.reveal = reveal;
-  box.append(form, hintBox);
-  revBar(listen ? "Listen, then type it" : "Guess, then check", "Show answer", "⟳", () => reveal("show"), [btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know"))], "guessacts", listen ? "Type the pinyin and meaning of what you hear." : "Stuck? Tap a character for a clue.");
+  if (!listen) big.after(hintBox);
+  box.append(form);
+  revBar(listen ? "Listen, then type it" : "Guess, then check", "Show answer", "⟳", () => reveal("show"), [btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know"))], "guessacts", listen ? "Type the pinyin and meaning of what you hear." : "");
   const py = $("gPy"), mean = $("gMean");
   // Typing tone numbers (ta1) shows the marked form below; tap it to swap it in.
   py.addEventListener("input", () => { const pv = $("gPrev"), m = numToMarks(py.value); pv.hidden = !/\d/.test(py.value); pv.innerHTML = `${pyWordHTML(m)} <span>tap to use</span>`; });
