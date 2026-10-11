@@ -572,6 +572,9 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .listenbig{all:unset;cursor:pointer;display:grid;justify-items:center;gap:6px;width:132px;height:132px;place-content:center;border-radius:50%;border:2px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:600}
 .listenbig svg{width:44px;height:44px}
 .listenbig:active{transform:scale(.97)}
+.seg2.speeds{width:min(100%,320px);padding:2px}
+.seg2.speeds button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);border-radius:8px;font-weight:700}
+.seg2.speeds button[aria-pressed="true"]+button,.seg2.speeds button:has(+button[aria-pressed="true"]){border-color:transparent}
 .revans{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:14px}
 .grades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .grades button{display:grid;gap:2px;justify-items:center;padding:10px 4px}
@@ -2799,13 +2802,17 @@ function showFront() {
   if (revHow === "write") { writeFront(w); return; }
   const listen = revHow === "listen";
   if (listen) {
-    // Listening card: only the sound. Play it again, or slower, as often as you like.
-    const say = slow => { const r0 = rate; if (slow) rate = rate * .65; speak(conv(w.word)); rate = r0; };
+    // Listening card: only the sound. Three speeds: Slowest (about half), Slower (about 70%) and Normal (your speech
+    // speed). Tapping a speed plays the word at it and keeps it (remembered); Play replays at the chosen speed.
+    const SPEEDS = [["slowest", "Slowest", .5], ["slower", "Slower", .7], ["normal", "Normal", 1]];
+    let sp = store.get("radical-listen-speed", "normal"); if (!SPEEDS.some(x => x[0] === sp)) sp = "normal";
+    const say = () => { const r0 = rate; rate = rate * SPEEDS.find(x => x[0] === sp)[2]; speak(conv(w.word)); rate = r0; };
     const lp = el("div", "listenprompt");
-    const big = el("button", "listenbig", `${SPK}<span>Play</span>`); big.type = "button"; big.onclick = () => say(false);
-    const slow = btn("Slower", "btn ghost small", () => say(true));
-    lp.append(big, slow); box.append(lp);
-    setTimeout(() => { if (lp.isConnected) say(false); }, 250);
+    const big = el("button", "listenbig", `${SPK}<span>Play</span>`); big.type = "button"; big.onclick = say;
+    const seg = el("div", "seg2 three speeds"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Speed");
+    SPEEDS.forEach(([k, label]) => { const b = btn(label, "", () => { sp = k; store.set("radical-listen-speed", k); seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); say(); }); b.setAttribute("aria-pressed", k === sp); seg.append(b); });
+    lp.append(big, seg); box.append(lp);
+    setTimeout(() => { if (lp.isConnected) say(); }, 250);
   } else box.append(bigWord(conv(w.word)));
   // Two guesses, pinyin first. Tone numbers turn into marks as you type.
   const form = el("form", "guess");
