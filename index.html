@@ -855,7 +855,22 @@ function speak(text) {
 }
 // ---- read-along: speak lines and light up each word as it's said. The voice reports its position on most
 // devices; where it doesn't, the position is estimated from the speaking speed.
-let readToken = 0, reading = false;  // reading: a read-along is running
+let readToken = 0, reading = false;
+// Reading tally: each line of text counts once, after it has been on screen about 4 seconds in all (so scrolling
+// past quickly doesn't count), or when it's read aloud. Only Chinese characters are counted.
+const hanIn = t => (String(t || "").match(/\p{Script=Han}/gu) || []).length;
+function countLine(line) { if (!line || line._counted || !line.isConnected) return; line._counted = true; logDay("r", hanIn(line._text)); }
+let lineSeen = null;
+function watchLines(reader) {
+  if (!("IntersectionObserver" in window)) return;
+  if (lineSeen) lineSeen.disconnect();
+  lineSeen = new IntersectionObserver(entries => entries.forEach(en => {
+    const line = en.target;
+    if (en.isIntersecting && en.intersectionRatio > .6) { if (!line._t) line._t = setTimeout(() => countLine(line), 4000); }
+    else if (line._t) { clearTimeout(line._t); line._t = null; }
+  }), { root: $("readScreen"), threshold: [0, .6, 1] });
+  reader.querySelectorAll(".line").forEach(l => lineSeen.observe(l));
+}  // reading: a read-along is running
 function stopReading() { readToken++; reading = false; if ("speechSynthesis" in window) speechSynthesis.cancel(); document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking")); const b = $("listenBtn"); if (b) b.setAttribute("aria-pressed", "false"); }
 function readAloud(lines, all) {
   if (!("speechSynthesis" in window) || !lines.length) return;
@@ -870,7 +885,7 @@ function readAloud(lines, all) {
     if (token !== readToken) return;
     document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking"));
     if (n >= lines.length) { reading = false; if (all) $("listenBtn").setAttribute("aria-pressed", "false"); return; }
-    const line = lines[n++], text = line._text, spans = line._spans || [];
+    const line = lines[n++], text = line._text, spans = line._spans || []; countLine(line);
     if (all) line.scrollIntoView({ block: "nearest", behavior: "smooth" });
     const show = i => {
       if (token !== readToken) return;
@@ -1398,6 +1413,7 @@ async function render() {
   }
   if (doc && doc.credit && doc.url) reader.append(el("p", "note", `Text: <a href="${esc(doc.url)}" target="_blank" rel="noopener">${esc(doc.credit)}</a>`));
   requestAnimationFrame(() => lightReader(reader));
+  watchLines(reader);
 }
 // One line of reading text, drawn on the grid. `onTap(group, tok, lineText)` decides what tapping a word does.
 function buildLine(lineText, onTap, withEN = true) {
@@ -1701,6 +1717,7 @@ async function addEntry(word, extra = {}) {
   if (!e.pinyin && word.length && [...word].every(c => cache[c])) e.pinyin = [...word].map(c => cache[c].p[0]).join(" ");
   if (!e.meaning && [...word].length === 1 && cache[word]) e.meaning = cache[word].d;
   myWords.unshift(e); saveWords();
+  unlearn(word); logDay("n");  // bringing a learned word back means it needs work again
   return e;
 }
 async function makeCard(w) {
@@ -1744,7 +1761,7 @@ const KNOWN_MIN = 60, KNOWN_SPAN = 120;
 const knownWait = (ivl = 0) => Math.max(ivl, KNOWN_MIN + Math.round(Math.random() * KNOWN_SPAN));
 function freshSrs() { return { ivl: 0, ease: 2.5, reps: 0, lapses: 0, due: 0 }; }
 function setStatus(w, st) {
-  if (st === "known") { w.skip = true; w.srs = w.srs || freshSrs(); w.srs.ivl = knownWait(w.srs.ivl); w.srs.due = midnight() + w.srs.ivl * DAY; }
+  if (st === "known") { w.skip = true; w.srs = w.srs || freshSrs(); w.srs.ivl = knownWait(w.srs.ivl); w.srs.due = midnight() + w.srs.ivl * DAY; if (typeof learn === "function") learn(w); }
   else if (st === "due") { w.skip = false; w.srs = w.srs || freshSrs(); w.srs.due = Date.now() - 1000; }
   else if (st === "learning") { w.skip = false; w.srs = w.srs || freshSrs(); if (!w.srs.reps) w.srs.reps = 1; w.srs.ivl = Math.min(w.srs.ivl || 1, 7) || 1; w.srs.due = midnight() + w.srs.ivl * DAY; }
   else if (st === "new") { w.skip = false; delete w.srs; }
@@ -1763,12 +1780,34 @@ function nextIvl(s, g) {
   const m = { hard: 1.2, good: s.ease, easy: s.ease * 1.3 }[g];
   return Math.max(s.ivl + (g === "easy" ? 2 : 1), Math.round(s.ivl * m));
 }
+// ---- progress record. Each day keeps a small tally (c: cards reviewed, r: characters read, n: new words), and a
+// separate list remembers learned words even after their cards are deleted. A word is learned once it's marked
+// Known or its review gap reaches three weeks; it drops off the list if you miss it (Again) or add it back.
+// Recorded now, shown in a later version ("This week" card and the opening screen).
+const isLearned = w => !!w.skip || ["srs", "wsrs", "lsrs"].some(k => w[k] && w[k].ivl >= 21);
+function logDay(field, n = 1) {
+  if (!n) return;
+  const d = store.get("radical-days", {}), k = localDay(); d[k] = d[k] || {}; d[k][field] = (d[k][field] || 0) + n;
+  const keys = Object.keys(d).sort(); while (keys.length > 400) delete d[keys.shift()];
+  store.set("radical-days", d);
+}
+let learned = store.get("radical-learned", null);
+if (!learned) { learned = {}; myWords.forEach(w => { if (isLearned(w)) learned[w.word] = w.added || localDay(); }); store.set("radical-learned", learned); }
+function learn(w) { if (!learned[w.word] && isLearned(w)) { learned[w.word] = localDay(); store.set("radical-learned", learned); } }
+function unlearn(word) {
+  let changed = false;
+  [word, typeof toTrad === "function" ? toTrad(word) : word, typeof toSimp === "function" ? toSimp(word) : word].forEach(x => { if (learned[x]) { delete learned[x]; changed = true; } });
+  if (changed) store.set("radical-learned", learned);
+}
+if (!store.get("radical-first-use", null)) store.set("radical-first-use", Date.now());
 function grade(w, g, k = "srs") {
   if (!w[k]) { w[k] = freshSrs(); countNew(k); }
   const s = w[k], ivl = nextIvl(s, g);
   if (k === "srs" && w.skip && (g === "again" || g === "hard")) w.skip = false;  // a known word you missed becomes Active again
-  if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); }
+  logDay("c"); store.set("radical-rev-since-backup", store.get("radical-rev-since-backup", 0) + 1);
+  if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); unlearn(w.word); }
   else { s.ivl = k === "srs" && w.skip ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
+  if (g !== "again") learn(w);
   saveWords();
 }
 const ivlText = d => d === 0 ? "soon" : d === 1 ? "1 day" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
@@ -2267,7 +2306,7 @@ function parseLine(line) {
 async function findWords(text) {
   text = text.trim();
   if (/^[\[{]/.test(text)) {
-    try { const j = JSON.parse(text); return { list: Array.isArray(j) ? j : j.words || [], backup: true }; } catch (e) {}
+    try { const j = JSON.parse(text); return { list: Array.isArray(j) ? j : j.words || [], backup: true, extra: Array.isArray(j) ? null : j }; } catch (e) {}
   }
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   let list = [], messy = false;
@@ -2334,7 +2373,7 @@ async function commitPending(isBackup) {
     if (d && !entry.pinyin) entry.pinyin = d[2] || d[1];
     if (d && !entry.meaning) entry.meaning = d[3];
     if (!entry.meaning && [...entry.word].length === 1 && cache[entry.word]) entry.meaning = cache[entry.word].d;
-    myWords.unshift(entry); n++;
+    myWords.unshift(entry); n++; unlearn(entry.word); logDay("n");
   }
   saveWords(); closePreview(); $("addWord").value = ""; growAdd();
   $("addStatus").textContent = `Added ${n} word${n === 1 ? "" : "s"}.`; play("right");
@@ -2365,12 +2404,22 @@ $("importFile").onchange = async e => {
   if (!files.length) return;
   $("addStatus").textContent = "Reading…";
   const all = { list: [] };
-  for (const f of files) { const r = await findWords(await f.text()); all.list.push(...r.list); all.backup ||= r.backup; all.viaAuto ||= r.viaAuto; }
+  for (const f of files) { const r = await findWords(await f.text()); all.list.push(...r.list); all.backup ||= r.backup; all.viaAuto ||= r.viaAuto; if (r.extra) all.extra = r.extra; }
   $("addStatus").textContent = "";
-  if (all.backup) restoreProgress(all.list);
+  if (all.backup) { restoreProgress(all.list); restoreRecord(all.extra); }
   showPreview(all, files.length === 1 ? files[0].name : `${files.length} files`);
 };
 // A backup file restores cards and review progress onto words that are already in the list.
+// A backup also restores the learned list and the daily tallies (merged with what's here, keeping the larger counts).
+function restoreRecord(j) {
+  if (!j) return;
+  if (j.learned && typeof j.learned === "object") { Object.assign(learned, j.learned); store.set("radical-learned", learned); }
+  if (j.days && typeof j.days === "object") {
+    const d = store.get("radical-days", {});
+    for (const [day, v] of Object.entries(j.days)) { d[day] = d[day] || {}; for (const [f, n] of Object.entries(v || {})) d[day][f] = Math.max(d[day][f] || 0, +n || 0); }
+    store.set("radical-days", d);
+  }
+}
 function restoreProgress(list) {
   let n = 0;
   list.forEach(e => { const have = findWord(e.word); if (!have) return; for (const k of ["card", "srs", "wsrs", "context", "skip"]) if (!have[k] && e[k]) { have[k] = e[k]; n++; } });  // wsrs: the writing schedule
