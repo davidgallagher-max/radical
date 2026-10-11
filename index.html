@@ -496,6 +496,17 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .looknav .btn{padding:13px;font-size:1rem}
 .lookacts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .lookend{display:grid;gap:12px;justify-items:center;text-align:center;padding:30px 0}
+.slotbox{display:inline-block;width:min(140px,38vw);height:min(140px,38vw);border:2px dashed color-mix(in srgb,var(--muted) 60%,transparent);border-radius:12px;opacity:.7}
+.slotbox.sm{width:.85em;height:.85em;border-width:1.5px;border-radius:4px;vertical-align:-.05em;margin:0 1px}
+.wchars .slotbox,.revchars .slotbox{flex:none}
+.pattag{align-self:center;font-family:var(--font-ui);font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;vertical-align:middle}
+.wz .pattag{font-size:.6rem;padding:1px 6px}
+.revchars .pattag{flex-basis:100%;text-align:center;border:0;padding:0}
+.legline{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font-size:.74rem;color:var(--muted)}
+.legline span{display:inline-flex;align-items:center;gap:4px}
+.legline i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.legline i+i{margin-left:-2px}
+.writewrap{flex-direction:column;align-items:center;gap:6px}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--line)}
 .dot.new{background:transparent;box-shadow:inset 0 0 0 2px var(--accent)}
 .dot.due{background:var(--sound)}
@@ -902,6 +913,7 @@ function pickVoice() {
 if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 else document.documentElement.classList.add("nosay");
 function speak(text) {
+  text = String(text || "").replace(/[~～〜]/g, "").replace(/…|⋯/g, "，");  // a pattern's slot isn't read out
   if (!("speechSynthesis" in window) || !text) return;
   if (typeof stopReading === "function") stopReading(); else speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
@@ -1929,7 +1941,7 @@ function wordFacts() {
   const s = wordState, saved = findWord(s.word), d = lookup(s.word);
   let syl = s.syl && s.syl.length === s.chars.length ? s.syl : null;
   // Your saved pinyin (Taiwan readings) wins over the mainland dictionary, except in Simplified mode.
-  if (!syl && saved && wPinyin(saved) && script !== "simp") { const p = sylls(wPinyin(saved).replace(/\s+/g, "")); if (p.length === s.chars.length) syl = p; }
+  if (!syl && saved && wPinyin(saved) && script !== "simp") { const p = sylls(patternPy(wPinyin(saved)).replace(/\s+/g, "")); if (p.length === s.chars.length) syl = p; }
   if (!syl && d) { const p = (script !== "simp" && d[2] || d[1]).split(" "); if (p.length === s.chars.length) syl = p; }
   if (!syl || syl.length !== s.chars.length) syl = s.chars.map(c => cache[c].p[0]);
   const mean = (saved && wMeaning(saved)) || s.mean || (d && d[3]) || (s.chars.length === 1 ? cache[s.chars[0]].d : "");
@@ -1970,14 +1982,20 @@ function goPage(i) { const p = $("pager"); p.scrollTo({ left: i * p.clientWidth,
 function wordPage() {
   const s = wordState, { saved, syl, mean } = wordFacts(), c = saved && saved.card;
   const page = el("div", "wpage");
-  const size = Math.min(Math.floor((Math.min(innerWidth, 760) - 48) / s.chars.length) - 4, 150);
+  const all = [...s.word].filter(c => cache[c] || isSlot(c));  // a pattern keeps its slot, drawn as a dotted box
+  const size = Math.min(Math.floor((Math.min(innerWidth, 760) - 48) / all.length) - 4, 150);
   const row = el("div", "wchars");
-  s.chars.forEach((ch, i) => {
+  let k = 0;
+  all.forEach(ch => {
+    if (isSlot(ch)) { const sb = slotBox(); sb.style.width = sb.style.height = size + "px"; row.append(sb); return; }
+    const i = k++;
     const b = el("button"); b.type = "button"; b.setAttribute("aria-label", `Open ${ch}`);
     const svg = glyphFor(ch, true); svg.style.width = svg.style.height = size + "px"; svg.style.fontSize = Math.round(size * .8) + "px";
     b.append(svg); b.onclick = () => goPage(i + 1); row.append(b);
   });
   page.append(row);
+  if (isPattern(s.word)) page.append(el("div", "kind", "Pattern · the box stands for whatever fills it"));
+  { const l = legendLine(s.chars.join("")); if (l) page.append(l); }
   const py = el("div", "wpy", `<span class="bigpy">${syl.map(pyHTML).join(" ")}</span>${sayHTML(s.word)}`);
   py.append(addBtn());
   page.append(py);
@@ -2203,6 +2221,25 @@ function practice(top, ch, onBack) {
   );
 }
 
+// ---- grammar patterns: a saved item like ~到 or 一…就 has a slot (~ or …) for whatever fills it. The slot shows as
+// a muted dotted box with a "Pattern" label; pinyin checks and writing skip it; the meaning judge is told.
+const isSlot = c => /^[~～〜…⋯]$/.test(c) || c === "...";
+const isPattern = word => [...String(word || "")].some(isSlot);
+const patternPy = p => String(p || "").replace(/[~～〜…⋯]|\.\.\./g, " ").replace(/\s+/g, " ").trim();
+const slotBox = () => { const b = el("span", "slotbox"); b.setAttribute("aria-label", "blank"); return b; };
+const slotHTML = word => [...String(word || "")].map(c => isSlot(c) ? '<span class="slotbox sm" aria-label="blank"></span>' : esc(c)).join("") + (isPattern(word) ? ' <span class="pattag">Pattern</span>' : "");
+
+// ---- color lines: a slim legend showing only the colors the characters on screen actually use.
+const LEG = [["meaning", "Meaning", ["meaning", "radical"]], ["sound", "Sound", ["sound"]], ["idea", "Ideas", ["idea", "idea2"]], ["whole", "Picture", ["whole"]], ["part1", "Unclear", ["part1", "part2", "part3"]]];
+function legendLine(text) {
+  if (noColor(palette)) return null;
+  const used = new Set(); [...String(text || "")].forEach(c => { const d = cache[c]; if (d) d.s.forEach((_, i) => used.add(d.r[i] || "part3")); });
+  const items = LEG.filter(([, , rs]) => rs.some(r => used.has(r)));
+  if (!items.length) return null;
+  return el("div", "legline", items.map(([k, label, rs]) => `<span>${(k === "idea" ? rs.filter(r => used.has(r)) : [k]).map(r => `<i style="background:var(--${r})"></i>`).join("")}${label}</span>`).join(""));
+}
+function showLegend(after, text) { const l = legendLine(text); if (l && after && !(after.nextElementSibling && after.nextElementSibling.classList.contains("legline"))) after.after(l); }
+
 // ================= words screen
 let filter = "all", pending = null;
 // Flash cards: choose which words (due, new, learning, all) and how many, then start.
@@ -2284,7 +2321,7 @@ function renderWords() {
     const st = wStatus(w), on = picks.has(w);
     const r = el("div", "wrow" + (on ? " sel" : ""));
     r.innerHTML = `<button type="button" class="wsel" role="checkbox" aria-checked="${on}" aria-label="Select ${esc(w.word)}"><i></i></button>`
-      + `<button type="button" class="wmain"><span class="wz" lang="zh">${esc(w.word)}</span><span class="wm">${esc(wMeaning(w))}</span></button>`
+      + `<button type="button" class="wmain"><span class="wz" lang="zh">${slotHTML(w.word)}</span><span class="wm">${esc(wMeaning(w))}</span></button>`
       + `<button type="button" class="wdot" aria-label="Status: ${STATUS_NAME[st]}. Change"><i class="dot ${st}"></i></button>`;
     r.querySelector(".wsel").onclick = () => { on ? picks.delete(w) : picks.add(w); renderWords(); };
     r.querySelector(".wmain").onclick = () => openWord(w.word, { context: w.context });
@@ -2561,7 +2598,8 @@ function showLook() {
     if ($("lookScreen").hidden || look.order[look.i] !== w) return;
     box.innerHTML = ""; const c = w.card;
     box.append(bigWord(conv(w.word)));
-    box.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(wPinyin(w))}</span>${sayHTML(w.word)}`));
+    { const l = legendLine(conv(w.word) + (c && c.example ? conv(c.example) : w.context ? conv(w.context) : "")); if (l) box.append(l); }
+    box.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${sayHTML(w.word)}`));
     box.append(el("p", "wmean", esc(wMeaning(w))));
     if (c) {
       (c.chars || []).forEach(x => box.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
@@ -2617,7 +2655,8 @@ async function openReview(mode = "due", count = "all") {
 }
 function bigWord(word) {
   const box = el("div", "revchars"); box.lang = "zh";
-  [...word].forEach(ch => box.append(cache[ch] ? glyphFor(ch, true) : el("span", "plain", esc(ch))));
+  [...word].forEach(ch => box.append(isSlot(ch) ? slotBox() : cache[ch] ? glyphFor(ch, true) : el("span", "plain", esc(ch))));
+  if (isPattern(word)) box.append(el("span", "pattag", "Pattern"));
   return box;
 }
 // ---- answer checking
@@ -2655,6 +2694,7 @@ function soundTip(g, t) {
   return "";
 }
 function checkPinyin(given, target) {
+  given = patternPy(given); target = patternPy(target);  // a pattern's slot (~到 → dào) isn't part of the answer
   if (!given.trim()) return { ok: null };
   if (!target) return { ok: null, note: "No pinyin on file to check against." };
   const a = pyKey(given), b = pyKey(target);
@@ -2772,7 +2812,7 @@ function showFront() {
       if (g && local.ok === false && store.get("radical-pw", "") && navigator.onLine !== false) {
         judging = true; const cb = $("revBar").querySelector(".guessacts .btn"); if (cb) { cb.disabled = true; cb.textContent = "Checking…"; }
         try {
-          const r = await Promise.race([claude({ action: "judge", word: w.word, meaning: wMeaning(w), guess: g }), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 8000))]);
+          const r = await Promise.race([claude({ action: "judge", word: w.word, meaning: wMeaning(w), guess: g, pattern: isPattern(w.word) }), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 8000))]);
           const ok = r.verdict === "right" ? true : r.verdict === "close" ? "part" : false;
           st = { aiMean: { ok, note: r.note || (ok === true ? "Correct." : ok ? "Close." : "Not quite.") } };
         } catch (e) {}
@@ -2887,7 +2927,10 @@ function showBack(w, how, st) {
     if (!quiet) play(suggest === "again" ? "wrong" : "right");
   }
   if (hinted && suggest === "good") suggest = "hard";  // needed a hint: it comes back sooner
-  ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(wPinyin(w))}</span>${sayHTML(w.word)}`));
+  // The colors used on this side (the big word and the example sentence), right under the big characters.
+  const leg = legendLine(conv(w.word) + (c && c.example ? conv(c.example) : "")), bw = box.querySelector(".revchars");
+  if (leg && bw) { box.querySelectorAll(".legline").forEach(x => x.remove()); bw.after(leg); }
+  ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${sayHTML(w.word)}`));
   ans.append(el("p", "wmean", esc(wMeaning(w))));
   if (c) {
     (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
