@@ -692,13 +692,19 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .hitem button.load{all:unset;cursor:pointer;display:grid;gap:3px;min-width:0}
 .hitem .ht{font-family:var(--font-zh);font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .panel{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
-.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
-.pcard{display:grid;gap:8px;text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
-.pcard[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
-.pcard .preview2{display:flex;gap:2px}
-.pcard .preview2 svg{width:50px;height:50px}
-.plabel{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.plabel span{font-size:.8rem;color:var(--muted)}
+.pgrid{display:grid;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.pcard{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;text-align:left;background:none;color:var(--fg);border:0;border-top:1px solid var(--line);padding:10px 12px;cursor:pointer;font:inherit}
+.pcard:first-child{border-top:0}
+.pcard[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.pcard .preview2{display:flex;gap:1px}
+.pcard .preview2 svg{width:30px;height:30px}
+.pcard .preview2 .fontglyph{width:30px;height:30px;font-size:25px}
+.plabel{display:grid;gap:1px;min-width:0;line-height:1.25}
+.plabel b{font-size:.9rem}
+.plabel span{font-size:.75rem;color:var(--muted)}
+.pcard .ptick{color:var(--accent);font-weight:700;visibility:hidden}
+.pcard[aria-pressed="true"] .ptick{visibility:visible}
+@media (max-width:360px){.pcard .preview2 svg,.pcard .preview2 .fontglyph{width:25px;height:25px}.pcard .preview2 .fontglyph{font-size:21px}}
 .rate{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:.85rem;color:var(--muted)}
 .rate input{width:100%;accent-color:var(--accent)}
 .about p{font-size:.85rem;color:var(--muted);margin:0;line-height:1.5}
@@ -1240,15 +1246,15 @@ function applyPalette() {
   $("readLegend").hidden = noColor(palette); if (typeof fitLegend === "function") fitLegend();
 }
 const SAMPLE = [..."他河台營長"];  // together these show every color in a palette
+const sample = () => SAMPLE.map(c => script === "simp" ? toSimp(c) : c);
 function buildPalettes() {
   const grid = $("paletteGrid"); grid.innerHTML = "";
   Object.entries(PALETTES).forEach(([key, p]) => {
     const b = el("button", "pcard"); b.type = "button"; b.dataset.p = key;
     const prev = el("span", "preview2"), ui = uiOf(key);
     ROLES.forEach((r, i) => prev.style.setProperty(`--${r}`, noColor(key) ? "var(--fg)" : roleColor(key, i)));
-    b.style.background = ui.bg; b.style.color = ui.fg;
-    SAMPLE.forEach(c => { if (cache[c]) prev.append(glyphFor(c, false, key)); });
-    b.append(prev, el("span", "plabel", `<b>${p.name}${key === "scholar" ? " · default" : ""}</b><span style="color:${ui.muted}">${p.blurb}</span>`));
+    sample().forEach(c => { if (cache[c]) prev.append(glyphFor(c, false, key)); });
+    b.append(prev, el("span", "plabel", `<b>${p.name}${key === "scholar" ? " · default" : ""}</b><span>${p.blurb}</span>`), el("span", "ptick", "✓"));
     b.onclick = () => { palette = key; store.set("radical-palette", key); applyPalette(); };
     grid.append(b);
   });
@@ -1541,7 +1547,20 @@ function detect(t) {
   const diff = (a, b) => [...a].filter((c, i) => c !== [...b][i]).length;
   return diff(t, toTrad(t)) > diff(t, toSimp(t)) ? "simp" : "trad";
 }
-const showScript = () => { document.querySelectorAll("[data-script]").forEach(x => x.setAttribute("aria-pressed", x.dataset.script === script)); srcHint(); if (typeof wikiLabels === "function") wikiLabels(); };
+// The interface's own Chinese (tab bar, headings, menu, About) follows 繁/简 too; only the 繁/简 buttons stay as they are.
+// The page is written in traditional; each text node remembers its original so switching back is exact.
+const uiOrig = new WeakMap();
+function uiScript() {
+  document.querySelectorAll("#tabbar, #menu, h3.tabsec, .about, .ti, .uizh").forEach(r => {
+    const tw = document.createTreeWalker(r, NodeFilter.SHOW_TEXT); let n;
+    while ((n = tw.nextNode())) {
+      if (!uiOrig.has(n)) { if (!/[\u3400-\u9fff]/.test(n.nodeValue) || n.parentElement.closest("[data-script]")) continue; uiOrig.set(n, n.nodeValue); }
+      n.nodeValue = script === "simp" ? toSimp(uiOrig.get(n)) : uiOrig.get(n);
+    }
+  });
+}
+const showScript = () => { document.querySelectorAll("[data-script]").forEach(x => x.setAttribute("aria-pressed", x.dataset.script === script)); srcHint(); uiScript(); if (typeof wikiLabels === "function") wikiLabels(); if (typeof buildPalettes === "function" && $("paletteGrid").childElementCount) ensure(sample().join("")).then(buildPalettes); };
+uiScript();
 function currentText() { const t = $("src").value; return script === typed ? t : script === "trad" ? toTrad(t) : toSimp(t); }
 let renderToken = 0;
 async function render() {
@@ -3142,7 +3161,7 @@ function showFront() {
   // Two guesses, pinyin first. Tone numbers turn into marks as you type.
   const form = el("form", "guess");
   // Listen cards take pinyin or characters in one box (the phone's handwriting keyboard covers writing).
-  form.innerHTML = (listen ? `<label><span>Answer</span><input id="gPy" type="text" lang="zh" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="pinyin or 漢字"></label>`
+  form.innerHTML = (listen ? `<label><span>Answer</span><input id="gPy" type="text" lang="zh" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="pinyin or ${script === "simp" ? "汉字" : "漢字"}"></label>`
     : `<label><span>Pinyin</span><input id="gPy" type="text" inputmode="latin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="wo3 or wǒ"></label>`) + `
     <button type="button" class="pyprev" id="gPrev" hidden title="Use tone marks"></button>
     <label><span>Meaning</span><input id="gMean" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="in English"></label>`;
@@ -3357,7 +3376,7 @@ function showBack(w, how, st) {
 
 // ================= settings
 async function openSettings(welcome) {
-  await ensure(SAMPLE.join(""));
+  await ensure(SAMPLE.join("") + sample().join(""));
   buildPalettes();
   $("setTitle").textContent = welcome ? "Pick your colors" : "Settings";
   $("setIntro").hidden = !welcome; $("acctHead").hidden = $("acctPanel").hidden = welcome;  // first launch: just the colors $("startBtn").hidden = !welcome; $("setBack").style.visibility = welcome ? "hidden" : "";
