@@ -69,6 +69,13 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .menupanel>button:active,.menupanel>button:focus-visible{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .menupanel .mi{font-family:var(--font-zh);font-size:1.25rem;font-weight:600;width:1.6em;text-align:center;color:var(--accent)}
 .menupanel hr{border:0;border-top:1px solid var(--line);margin:8px 4px}
+.menupanel>button.aitally{margin-top:auto;display:block;font-size:.78rem;font-weight:500;color:var(--muted);padding:10px;line-height:1.4;border-top:1px solid var(--line);border-radius:0}
+.aibreak{font-size:.85rem}
+.aibreak table{width:100%;border-collapse:collapse;margin:4px 0 12px}
+.aibreak td{padding:3px 0;border-bottom:1px solid var(--line)}
+.aibreak td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.aboutlink{margin:0 0 10px}
+.linkish{all:unset;cursor:pointer;color:var(--accent);font-weight:600}
 @keyframes slidein{from{transform:translateX(100%)}to{transform:none}}
 @keyframes fade{from{opacity:0}}
 @media (prefers-reduced-motion:reduce){.menuback,.menupanel{animation:none}}
@@ -907,6 +914,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
     <hr>
     <button type="button" data-go="about"><span class="mi">部</span>About</button>
     <button type="button" id="feedbackBtn" hidden><span class="mi">信</span>Send feedback</button>
+    <button type="button" class="aitally" id="aiTally" hidden></button>
   </nav>
 </div>
 
@@ -980,6 +988,7 @@ const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentCol
 const MENU = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6.5h16v2H4zm0 4.5h16v2H4zm0 4.5h16v2H4z"/></svg>';
 function openMenu() {
   $("menu").hidden = false; $("menu").querySelector("[data-go]:not([hidden])").focus();
+  if (typeof aiTally === "function") aiTally();
 }
 let viaMenu = false;  // the next page go() opens came from the menu
 const closeMenu = () => { $("menu").hidden = true; };
@@ -996,7 +1005,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: opens an email with the app version and device filled in. The address is in the page's code, so
 // anyone can read it: use a dedicated address, not a personal one. Empty: the menu item stays hidden.
-const APP_VERSION = "v30", FEEDBACK_TO = "";
+const APP_VERSION = "v31", FEEDBACK_TO = "";
 $("feedbackBtn").hidden = !FEEDBACK_TO;
 $("feedbackBtn").onclick = () => {
   closeMenu();
@@ -1947,11 +1956,48 @@ async function signIn(email, code) {
   catch (e) { j = await sbAuth("verify", { type: "signup", email, token: code }).catch(() => { throw e; }); }  // a brand-new account's first code
   // Before your words meet the account for the first time, a copy stays on this phone, just in case.
   store.set("radical-presync", { at: Date.now(), words: myWords, learned, days: store.get("radical-days", {}) });
-  setSession(j);
+  setSession(j); store.set("radical-owner", null);
   const n = myWords.length, m = await syncNow(true);
   return m ? m.words.length - n : 0;
 }
-function signOut() { setSession(null); store.set("radical-synced", 0); }
+function signOut() { setSession(null); store.set("radical-synced", 0); store.set("radical-owner", null); }
+
+// ---- AI use, as estimates. Everyone sees their own month in Settings → Account; owners (OWNER_EMAILS on the
+// server) also get a tally of everyone's use at the bottom of the menu, with a breakdown by feature and by person.
+async function fetchUsage() {
+  const token = session && await accessToken(); if (!token) return null;
+  try {
+    const r = await fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: "usage" }) });
+    if (!r.ok) return null;
+    const j = await r.json(); store.set("radical-owner", !!j.owner); if (j.all) store.set("radical-ai-tally", j.all);
+    return j;
+  } catch (e) { return null; }
+}
+const money = x => x >= .01 ? `$${x.toFixed(2)}` : x > 0 ? "under 1¢" : "$0";
+const AI_NAMES = { card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
+  zhquery: "Explore search", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
+function tallyText(a) { return `AI today: ${a.today.calls} call${a.today.calls === 1 ? "" : "s"} · ${money(a.today.cost)} · this month ${money(a.month.cost)} (all users)`; }
+function aiTally() {
+  const b = $("aiTally");
+  if (!session || store.get("radical-owner", null) === false) { b.hidden = true; return; }
+  const last = store.get("radical-ai-tally", null);
+  if (last && store.get("radical-owner", false)) { b.hidden = false; b.textContent = tallyText(last); }
+  fetchUsage().then(j => { if (j && j.all) { b.hidden = false; b.textContent = tallyText(j.all); } else if (!j || !j.owner) b.hidden = true; });
+}
+$("aiTally").onclick = () => {
+  const a = store.get("radical-ai-tally", null); if (!a) return;
+  closeMenu();
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard aibreak");
+  const rows = (list, f) => `<table>${list.map(f).join("")}</table>`;
+  const acts = Object.entries(a.byAction).sort((x, y) => y[1].cost - x[1].cost);
+  card.innerHTML = `<h3>AI use (estimates)</h3><p>${esc(tallyText(a))}</p>`
+    + `<p><b>By feature, this month</b></p>` + rows(acts, ([k, v]) => `<tr><td>${esc(AI_NAMES[k] || k)}</td><td>${v.calls} · ${money(v.cost)}</td></tr>`)
+    + `<p><b>By person, this month</b></p>` + rows(a.byPerson, p => `<tr><td>${esc(p.who)}</td><td>${p.calls} · ${money(p.month)}${p.today ? ` (today ${money(p.today)})` : ""}</td></tr>`)
+    + `<p class="note">Costs are estimated from token counts and list prices.</p>`;
+  const row = el("div", "row"); row.append(btn("Close", "btn", () => sheet.remove())); card.append(row); sheet.append(card);
+  sheet.onclick = ev => { if (ev.target === sheet) sheet.remove(); };
+  document.body.append(sheet);
+};
 
 // ---- sync. Every word carries t, the time it last changed on this phone; the account keeps the newest copy of each.
 // A removed word leaves a note (word -> when) so another phone can't bring it back. Changes go up a few seconds after
@@ -2009,7 +2055,9 @@ function renderAccount() {
     const row = el("div", "row");
     const now = btn("Sync now", "btn ghost small", async () => { now.disabled = true; msg.textContent = "Syncing…"; try { await syncNow(); store.set("radical-sync-error", ""); } catch (e) { msg.textContent = e.message; } now.disabled = false; });
     row.append(now, btn("Sign out", "btn ghost small", () => { signOut(); renderAccount(); }));
-    box.append(row, msg);
+    const ai = el("p", "note acctai"); box.append(ai, row, msg);
+    fetchUsage().then(j => { if (!j || !ai.isConnected) return;
+      ai.textContent = j.ai === false ? "The AI features aren't turned on for this account yet." : `AI this month: ${j.me.month >= .01 ? "about " : ""}${money(j.me.month)}`; });
   } else {
     box.append(el("p", "note", "Sign in to keep your words in your account, on every phone you use. We email you a 6-digit code; no password."));
     const email = el("input"); email.type = "email"; email.id = "acctEmail"; email.placeholder = "Your email"; email.autocomplete = "email"; email.value = acctEmail;

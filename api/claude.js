@@ -132,13 +132,22 @@ module.exports = async (req, res) => {
       if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
       return res.status(200).json(await account.sync(user, body.data || {}));
     }
+    // Your AI use this month (and everyone's, for owners). The page shows it as an estimate.
+    if (body.action === "usage") {
+      if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+      if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
+      res.setHeader("Cache-Control", "no-store");
+      return res.status(200).json({ ...(await account.usage(user)), owner: account.isOwner(user), ai: account.mayUseAI(user) });
+    }
   } catch (e) { return res.status(500).json({ error: e.message }); }
+  // While testing: if TESTER_EMAILS is set, only those people get the AI features (reading and cards still work).
+  if (user && !account.mayUseAI(user)) return res.status(403).json({ error: "The AI features aren't turned on for this account yet. Reading, saving words and flash cards all work.", notester: true });
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: "No API key on the server. Add ANTHROPIC_API_KEY in Vercel, Settings, Environment Variables, then redeploy." });
   }
   // A high daily safety stop per person; every AI call is logged with its estimated cost.
   if ((await account.spentToday(who)) >= account.DAILY_CAP()) return res.status(429).json({ error: "Today's AI limit is reached. It resets tomorrow; reading, saving and flash cards still work." });
-  const askClaude = async (model, prompt, maxTokens) => { const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage); return r.text; };
+  const askClaude = async (model, prompt, maxTokens) => { const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage, user && user.email); return r.text; };
   try {
     if (body.action === "card") {
       const word = String(body.word || "").trim().slice(0, 20);

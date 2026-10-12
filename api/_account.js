@@ -68,6 +68,21 @@ async function putJSON(path, obj) {
   });
   if (!r.ok) throw new Error(`Storage write ${r.status} ${(await r.text()).slice(0, 160)}`);
 }
+// Names directly under a folder (files and subfolders), e.g. list("usage") -> user ids.
+async function list(prefix) {
+  await ensureBucket();
+  const out = [];
+  for (let offset = 0; ; offset += 1000) {
+    const r = await fetch(`${SB_URL()}/storage/v1/object/list/${BUCKET}`, {
+      method: "POST", headers: { ...keyHeaders(SB_SECRET()), "content-type": "application/json" },
+      body: JSON.stringify({ prefix, limit: 1000, offset, sortBy: { column: "name", order: "asc" } })
+    });
+    if (!r.ok) throw new Error(`Storage list ${r.status}`);
+    const page = await r.json();
+    out.push(...page.map(x => x.name).filter(n => n && n !== ".emptyFolderPlaceholder"));
+    if (page.length < 1000) return out;
+  }
+}
 const day = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);
 
 // ---- sync: the account keeps one merged copy. Each word carries t (when it last changed on some device); the newer
@@ -118,14 +133,57 @@ function costOf(model, usage) {
 }
 const usagePath = who => `usage/${who}/${day()}.json`;
 async function spentToday(who) { if (!status().ok) return 0; try { const u = await getJSON(usagePath(who)); return (u && u.total) || 0; } catch (e) { return 0; } }
-async function logUse(who, action, model, usage) {
+async function logUse(who, action, model, usage, email) {
   if (!status().ok) return;
   try {
     const path = usagePath(who), u = (await getJSON(path)) || { total: 0, calls: [] }, cost = costOf(model, usage);
+    if (email) u.email = email;
     u.total = +(u.total + cost).toFixed(6);
     u.calls.push([Date.now(), action, model, (usage && usage.input_tokens) || 0, (usage && usage.output_tokens) || 0, +cost.toFixed(6)]);
     await putJSON(path, u);
   } catch (e) { /* logging never blocks the answer */ }
 }
 
-module.exports = { status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, DAILY_CAP, costOf };
+// ---- who may do what. Emails come from Vercel env vars, separated by commas or spaces.
+//   OWNER_EMAILS   see everyone's AI use (the tally in the menu)
+//   TESTER_EMAILS  if set, only these people (and owners) get the AI features; anyone can still sign in and read.
+const emails = name => env(name).toLowerCase().split(/[\s,;]+/).filter(Boolean);
+const isOwner = user => !!(user && user.email) && emails("OWNER_EMAILS").includes(user.email.toLowerCase());
+const mayUseAI = user => { const t = emails("TESTER_EMAILS"); return !t.length || (!!(user && user.email) && (t.includes(user.email.toLowerCase()) || isOwner(user))); };
+
+// ---- AI use: your own this month, and for owners, everyone's today and this month (by feature and by person).
+async function usage(user) {
+  const today = day(), month = today.slice(0, 7);
+  const monthOf = async id => {
+    const files = (await list(`usage/${id}`)).filter(n => n.startsWith(month) && n.endsWith(".json"));
+    return Promise.all(files.map(async n => ({ day: n.slice(0, 10), u: (await getJSON(`usage/${id}/${n}`)) || { total: 0, calls: [] } })));
+  };
+  const mine = await monthOf(user.id);
+  const out = { month, me: { month: +mine.reduce((a, f) => a + (f.u.total || 0), 0).toFixed(4), calls: mine.reduce((a, f) => a + (f.u.calls || []).length, 0) } };
+  if (!isOwner(user)) return out;
+  const all = { today: { calls: 0, cost: 0 }, month: { calls: 0, cost: 0 }, byAction: {}, byPerson: [] };
+  for (const id of await list("usage")) {
+    const fs = id === user.id ? mine : await monthOf(id);
+    if (!fs.length) continue;
+    let email = (fs.find(f => f.u.email) || {}).u?.email || "";
+    if (!email && id !== "password") { const d = await getJSON(`users/${id}/data.json`).catch(() => null); email = (d && d.email) || ""; }
+    const p = { who: id === "password" ? "app password" : email || id.slice(0, 8), today: 0, month: 0, calls: 0 };
+    for (const f of fs) for (const c of f.u.calls || []) {
+      const [, action, , , , cost] = c, isToday = f.day === today;
+      p.month += cost; p.calls++; all.month.cost += cost; all.month.calls++;
+      if (isToday) { p.today += cost; all.today.cost += cost; all.today.calls++; }
+      const a = all.byAction[action] || (all.byAction[action] = { calls: 0, cost: 0, today: 0 });
+      a.calls++; a.cost += cost; if (isToday) a.today++;
+    }
+    all.byPerson.push(p);
+  }
+  const r4 = x => +x.toFixed(4);
+  all.today.cost = r4(all.today.cost); all.month.cost = r4(all.month.cost);
+  for (const a of Object.values(all.byAction)) a.cost = r4(a.cost);
+  all.byPerson.forEach(p => { p.today = r4(p.today); p.month = r4(p.month); });
+  all.byPerson.sort((a, b) => b.month - a.month);
+  out.all = all;
+  return out;
+}
+
+module.exports = { status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, DAILY_CAP, costOf, isOwner, mayUseAI, usage };
