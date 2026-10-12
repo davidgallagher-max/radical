@@ -2132,8 +2132,11 @@ function cardPending(w, onReady) {
 
 // ================= review scheduling (spaced repetition)
 const NEW_PER_DAY = 10, DAY = 864e5;
-function localDay(t = Date.now()) { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
-function midnight(t = Date.now()) { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+// The app's day starts at 4am, not midnight: a session that runs past midnight still belongs to the evening it
+// started in, and "tomorrow" means after you've slept. Due dates, the daily new-word limit and the tallies all use it.
+const DAY_START_H = 4;
+function localDay(t = Date.now()) { const d = new Date(t - DAY_START_H * 36e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+function midnight(t = Date.now()) { const d = new Date(t - DAY_START_H * 36e5); d.setHours(DAY_START_H, 0, 0, 0); return d.getTime(); }  // the start of the app's day (4am)
 // Reading cards use w.srs; writing cards keep their own schedule in w.wsrs, so writing a word badly
 // doesn't push back a word you read fine (and the other way round).
 const dayKey = k => k === "wsrs" ? "radical-newday-w" : k === "lsrs" ? "radical-newday-l" : "radical-newday";
@@ -2163,7 +2166,9 @@ function reviewQueue(k = "srs") {
 const LATER = 4 / 24;  // "later today": about four hours, as a fraction of a day
 function nextIvl(s, g) {
   if (g === "again") return 0;
-  if (!s || !s.reps) return { hard: LATER, good: 1, easy: 4 }[g];
+  // New or just-missed cards. "Later today" only while it still lands by about 10pm; in the evening (from 6pm, and
+  // until the day turns at 4am) Hard means tomorrow and Good two days, so the four buttons never mean the same thing.
+  if (!s || !s.reps) { const h = new Date().getHours(), evening = h >= 18 || h < DAY_START_H; return (evening ? { hard: 1, good: 2, easy: 4 } : { hard: LATER, good: 1, easy: 4 })[g]; }
   const hard = Math.max(s.ivl + 1, Math.round(s.ivl * 1.2));
   const good = Math.max(hard + 1, Math.round(s.ivl * s.ease));
   const easy = Math.max(good + 1, Math.round(s.ivl * s.ease * 1.3));
@@ -2200,13 +2205,13 @@ function grade(w, g, k = "srs") {
   if (g !== "again") learn(w);
   saveWords();
 }
-const ivlText = d => d === 0 ? "soon" : d < 1 ? "later today" : d === 1 ? "1 day" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
+const ivlText = d => d === 0 ? "this round" : d < 1 ? "later today" : d === 1 ? "tomorrow" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
 const wStatus = w => w.skip ? "known" : !w.srs ? "new" : w.srs.due <= Date.now() ? "due" : "learning";
 function dueText(w) {
   if (w.skip) return `Known: comes back now and then for a quick check (next around ${localDay(w.srs && w.srs.due)}).`;
   if (!w.srs) return "New: not reviewed yet.";
   if (w.srs.due <= Date.now()) return "Due for review now.";
-  return `Next review ${localDay(w.srs.due)} (every ${ivlText(w.srs.ivl)}).`;
+  return `Next review ${localDay(w.srs.due)} (every ${w.srs.ivl <= 1 ? "day" : ivlText(w.srs.ivl)}).`;
 }
 function updateCounts() {
   const n = reviewQueue().length;
