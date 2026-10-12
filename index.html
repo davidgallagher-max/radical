@@ -632,6 +632,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .listenbig{all:unset;cursor:pointer;display:grid;justify-items:center;gap:6px;width:132px;height:132px;place-content:center;border-radius:50%;border:2px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:600}
 .listenbig svg{width:44px;height:44px}
 .listenbig:active{transform:scale(.97)}
+.listenprompt .insent{padding:8px 16px;font-size:.9rem}
 .seg2.speeds{width:min(100%,320px);padding:2px}
 .seg2.speeds button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);border-radius:8px;font-weight:700}
 .seg2.speeds button[aria-pressed="true"]+button,.seg2.speeds button:has(+button[aria-pressed="true"]){border-color:transparent}
@@ -1041,7 +1042,7 @@ function speak(text, slow) {
   const simp = typeof script !== "undefined" && script === "simp", v = simp ? cnVoice : twVoice;
   const utter = (t, k) => { const u = new SpeechSynthesisUtterance(t); u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = Math.max(.1, rate * k); return u; };
   const parts = slow ? [...text].filter(c => /\S/.test(c) && !/[，、。]/.test(c)) : [];
-  if (!slow || parts.length < 2) { const u = utter(text, slow ? slow.k : 1); speak.current = u; speechSynthesis.speak(u); return; }
+  if (!slow || !slow.gap || parts.length < 2) { const u = utter(text, slow ? slow.k : 1); speak.current = u; speechSynthesis.speak(u); return; }
   const token = typeof readToken === "number" ? readToken : 0;
   let i = 0;
   const next = () => {
@@ -1097,7 +1098,7 @@ function chunksOf(line) {
   return out.filter(([a, b]) => /[\p{Script=Han}A-Za-z0-9]/u.test(text.slice(a, b)))
     .map(([a, b]) => ({ text: text.slice(a, b), groups: spans.filter(x => x.start < b && x.end > a).map(x => x.group) }));
 }
-function readAloud(lines, all) {
+function readAloud(lines, all, k = 1) {
   if (!("speechSynthesis" in window) || !lines.length) return;
   const wasReading = document.querySelector(".speaking") || ($("listenBtn") && $("listenBtn").getAttribute("aria-pressed") === "true");
   stopReading();
@@ -1119,20 +1120,24 @@ function readAloud(lines, all) {
     if (c.first) { countLine(c.line); if (all) c.line.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
     c.groups.forEach(g => g.classList.add("speaking"));
     const u = new SpeechSynthesisUtterance(c.text);
-    u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = rate;
+    u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = Math.max(.1, rate * (all ? 1 : k));
     readAloud.current = u;  // keep a reference: some browsers drop the events of an utterance nothing points to
     let ended = false;
     const done = () => { if (ended || my !== gen) return; ended = true; setTimeout(next, 60); };
     u.onend = u.onerror = done;
     // If the voice never says it has finished, check whether it's still talking once the sentence should be over.
-    const est = [...c.text].length * 1000 / (4.3 * rate);
+    const est = [...c.text].length * 1000 / (4.3 * rate * (all ? 1 : k));
     const poll = () => { if (token !== readToken || ended || my !== gen) return; if (!speechSynthesis.speaking) done(); else setTimeout(poll, 400); };
     setTimeout(poll, est + 600);
     speechSynthesis.speak(u);
   };
   next();
 }
-document.addEventListener("click", e => { const b = e.target.closest("[data-say]"); if (b) { e.stopPropagation(); speak(b.dataset.say); } }, true);
+// Speakers alternate: the first tap is your normal speed, tapping the same one again plays it at about 70%, then
+// normal again, and so on. A pause of about 8 seconds (or another speaker) starts back at normal.
+const altSpeed = (() => { let key = null, t = 0, slow = false;
+  return k => { const now = Date.now(); slow = k === key && now - t < 8000 ? !slow : false; key = k; t = now; return slow ? .7 : 1; }; })();
+document.addEventListener("click", e => { const b = e.target.closest("[data-say]"); if (b) { e.stopPropagation(); const k = altSpeed(b.dataset.say); speak(b.dataset.say, k < 1 ? { k } : null); } }, true);
 
 // ================= sound kit: guzheng and woodblock, made in the browser.
 // Each moment has a few variations and plays one at random, never the same one twice in a row.
@@ -1628,7 +1633,7 @@ function buildLine(lineText, onTap, withEN = true) {
   line._text = lineText; line._spans = spans.filter(x => x.group.classList.contains("glyph") || x.group.querySelector(".cell")).sort((a, b) => a.start - b.start);
   const ctl = el("span", "linectl");
   const say = el("button", "saybtn sm", SPK); say.type = "button"; say.setAttribute("aria-label", "Read this line aloud");
-  say.onclick = e => { e.stopPropagation(); readAloud([line]); };
+  say.onclick = e => { e.stopPropagation(); readAloud([line], false, altSpeed(line)); };
   ctl.append(say);
   if (withEN) { const en = btn("EN", "enbtn"); en.title = "Translate this line"; en.onclick = () => translateLine(lineText, line, en); ctl.append(en); }
   // 解 Explain: the sentence's structure, its grammar points and any word used in a less obvious sense. The button says
@@ -3155,7 +3160,12 @@ function showFront() {
     const big = el("button", "listenbig", `${SPK}<span>Play</span>`); big.type = "button"; big.onclick = say;
     const seg = el("div", "seg2 three speeds"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Speed");
     SPEEDS.forEach(([k, label]) => { const b = btn(label, "", () => { sp = k; store.set("radical-listen-speed", k); seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); say(); }); b.setAttribute("aria-pressed", k === sp); seg.append(b); });
-    lp.append(big, seg); box.append(lp);
+    lp.append(big, seg);
+    // In a sentence: plays the card's example sentence (never shown) so the word is heard in use; tapping again
+    // plays it slower, then normal again. It's context, not a clue, so it doesn't cap the rating.
+    const ex = (w.card && w.card.example) || w.context || "";
+    if (ex && ex !== w.word) { const b = btn("In a sentence", "btn ghost insent", () => { const k = altSpeed("sent:" + ex); speak(conv(ex), k < 1 ? { k } : null); }); lp.append(b); }
+    box.append(lp);
     setTimeout(() => { if (lp.isConnected) say(); }, 250);
   } else box.append(bigWord(conv(w.word)));
   // Two guesses, pinyin first. Tone numbers turn into marks as you type.
