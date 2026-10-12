@@ -2,6 +2,21 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v31
+
+- Ratings make sense at night. The app's day now starts at 4am (for "tomorrow", the daily new-word limit and the tallies). From 6pm a new or missed card's Hard means tomorrow and Good two days, instead of "later today". Again reads "this round" and one day reads "tomorrow".
+- Flash cards end with "Another N" (the same kind of set, with the real count, when anything is left), "Go over the ones you missed" when there were misses, and Done. The back arrow is gone on that screen.
+- The 詞 badge shows the same number as the Due filter. The Start row splits Today's set, e.g. "27 cards · 19 due + 8 new" (known words back for their check are counted as "known").
+- Every speaker alternates: tap once for normal speed, again for about 70%, and back. After about 8 seconds it starts at normal again. Works on reading lines, card sentences and the word page.
+- Listen cards have "In a sentence": it plays the word's example sentence without showing it (tap again for slower). It doesn't lower the rating; it's hidden when there's no example.
+- All of the app's own Chinese follows 繁/简: the tab bar, headings, the menu, the size button and placeholders. Only the 繁 and 简 buttons stay as they are.
+- While Listen plays, the speed slider comes back after Size closes, and a stray tap no longer hides it. Size closes itself 4 seconds after the last touch.
+- The walkthrough waits for the opening harp to finish.
+- Settings: the themes are compact rows in one panel, still with all five sample characters, and a ✓ on the one in use.
+- The menu: History, Settings, How it works, Save a backup (moved from Settings), About, and Send feedback once there's an address. The tabs are no longer in it. Pages opened from the menu say "‹ Menu" and go back to it. About starts with "See how it works".
+- Testers: if TESTER_EMAILS is set in Vercel, only those people get the AI features; anyone can still sign in, read, save words and study.
+- Settings → Account shows your own AI use this month as an estimate. Owners (OWNER_EMAILS) see a tally of everyone's AI use at the bottom of the menu; tap it for a breakdown by feature and by person.
+
 ## v30
 
 - Accounts: Settings → Account. Enter your email, type the 6-digit code it sends (from login@upslopelabs.com), and you're signed in. Your words go into your account and sync across every phone you sign in on, a few seconds after each change and whenever the app opens. A copy of this phone's words is kept on the phone the first time.
