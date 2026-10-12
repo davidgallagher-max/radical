@@ -1775,14 +1775,23 @@ function setCell(px) { document.documentElement.style.setProperty("--cell", px +
 { const v = store.get("radical-size", 38); $("sizeIn").value = v; setCell(v); }
 $("sizeIn").addEventListener("input", e => { setCell(e.target.value); store.set("radical-size", +e.target.value); });
 // Size: the 字字 button opens the slider just under the controls; a second tap, or a tap anywhere else, closes it.
-const sizeOpen = on => { $("sizePop").hidden = !on; $("sizeBtn").setAttribute("aria-expanded", on); };
-$("sizeBtn").onclick = e => { e.stopPropagation(); if ($("sizePop").hidden) $("speedPop").hidden = true; sizeOpen($("sizePop").hidden); };
+// Size and the Listen speed share the space under the controls. Size can take it for a moment; when Size closes, the
+// speed slider comes back if Listen is still playing. Size also closes itself 4 seconds after your last touch.
+let sizeTimer = 0;
+const listening = () => $("listenBtn").getAttribute("aria-pressed") === "true";
+const sizeIdle = () => { clearTimeout(sizeTimer); sizeTimer = setTimeout(() => sizeOpen(false), 4000); };
+const sizeOpen = on => {
+  $("sizePop").hidden = !on; $("sizeBtn").setAttribute("aria-expanded", on);
+  if (on) { $("speedPop").hidden = true; sizeIdle(); } else { clearTimeout(sizeTimer); if (listening()) $("speedPop").hidden = false; }
+};
+$("sizeBtn").onclick = e => { e.stopPropagation(); sizeOpen($("sizePop").hidden); };
+["pointerdown", "input"].forEach(ev => $("sizePop").addEventListener(ev, sizeIdle));
 document.addEventListener("click", e => { if (!$("sizePop").hidden && !e.target.closest("#sizePop,#sizeBtn")) sizeOpen(false); });
 // Reading speed: the same setting as Settings → Speech speed. Dragging changes it; letting go restarts the sentence.
 const setRate = v => { rate = +v; store.set("radical-rate", rate); if ($("rate")) $("rate").value = rate; if ($("speedIn")) $("speedIn").value = rate; };
 $("speedIn").addEventListener("input", e => setRate(e.target.value));
 $("speedIn").addEventListener("change", () => { if (readAloud.restart) readAloud.restart(); });
-document.addEventListener("click", e => { if (!$("speedPop").hidden && !e.target.closest("#speedPop,#listenBtn")) $("speedPop").hidden = true; });
+// (The speed slider stays while Listen plays; it goes away when Listen stops.)
 // A row that may be wider than the screen (legend, filters) scrolls sideways, with a soft fade on the side that has more.
 function edgeFade(box) {
   const check = () => { const more = box.scrollWidth - box.clientWidth; box.classList.toggle("fadeL", more > 1 && box.scrollLeft > 1); box.classList.toggle("fadeR", more > 1 && box.scrollLeft < more - 1); };
@@ -3876,7 +3885,7 @@ $("wikiRandom").onclick = async () => {
   const hide = () => { $("splash").classList.add("out"); setTimeout(() => $("splash").remove(), 500); };
   // The splash waits for a tap (the app loads behind it meanwhile).
   let done = false;
-  const finish = () => { if (done) return; done = true; hide(); if (firstRun) openSettings(true); else if (!store.get("radical-tour-seen", false)) setTimeout(showTour, 600); };
+  const finish = () => { if (done) return; done = true; hide(); if (firstRun) openSettings(true); else if (!store.get("radical-tour-seen", false)) setTimeout(showTour, 3200); };  // after the harp has rung out
   $("splash").onclick = () => { harp(); finish(); };
 })();
 </script>
