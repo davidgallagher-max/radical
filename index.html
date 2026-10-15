@@ -241,13 +241,23 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .docfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid var(--line);margin-top:4px}
 /* Peek strip: first tap on a word shows it here; a second tap (or tapping the strip) opens the word page. */
 .peek{position:fixed;left:12px;right:12px;bottom:calc(var(--tabh) + var(--bot) + 10px);max-width:736px;margin:0 auto;z-index:3;
-  display:flex;align-items:center;gap:10px;padding:9px 10px 9px 14px;border-radius:16px;background:var(--surface);
+  display:grid;gap:4px;padding:8px 10px 8px 8px;border-radius:16px;background:var(--surface);
   box-shadow:0 0 0 1px var(--line),0 12px 30px rgba(0,0,0,.35);animation:peekin .18s ease;cursor:pointer}
-.peek .pw{font-family:var(--font-zh);font-size:1.35rem;font-weight:600;flex:none}
-.peek .pt{min-width:0;flex:1;display:grid;line-height:1.25}
-.peek .pp{font-size:.95rem;font-weight:500;color:var(--accent)}
-.peek .pm{font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.peek .prow{display:flex;align-items:center;gap:6px;min-width:0}
+.peek .ptiles{display:flex;gap:2px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.peek .ptiles::-webkit-scrollbar{display:none}
+.peek .ptile{all:unset;cursor:default;font-family:var(--font-zh);font-size:1.35rem;font-weight:600;line-height:1;padding:5px 3px;border-radius:7px;flex:none}
+.peek .ptile.end{cursor:pointer;box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--accent) 55%,transparent)}
+.peek .ptile.end:active{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.peek .pgrow{all:unset;cursor:pointer;flex:none;width:30px;height:34px;display:grid;place-items:center;border-radius:9px;font-size:1.3rem;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.peek .pgrow:disabled{opacity:.25;cursor:default}
+.peek .prow .saybtn{margin-left:auto}
+.peek .pt{min-width:0;flex:1;display:flex;align-items:baseline;gap:8px;line-height:1.25;padding-left:6px}
+.peek .pp{font-size:.95rem;font-weight:500;color:var(--accent);flex:none}
+.peek .pm{font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.peek .padd{flex:none}
 .peek .popen{flex:none;font-size:.8rem;font-weight:600;color:var(--accent);padding:6px 4px}
+.reader .cell{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 @keyframes peekin{from{opacity:0;transform:translateY(8px)}}
 .srcform{position:relative;display:flex}
 #srcIn{font-family:var(--font-zh);font-size:1.05rem;line-height:1.4;height:46px;min-height:46px;max-height:46px;resize:none;overflow:hidden;white-space:nowrap;padding:11px 50px 11px 14px;border-radius:12px}
@@ -1668,7 +1678,9 @@ function buildLine(lineText, onTap, withEN = true) {
         b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", `${ch} ${tok.syl[k] || ""}`);
         const py = el("span", "py" + (tok.chars.length === 1 && d.p.length > 1 ? " multi" : ""), pyHTML(tok.syl[k]));
         b.append(py, glyphFor(ch, false));
-        b.onclick = e => { e.stopPropagation(); onTap(group, tok, lineText); };
+        b._ch = ch; b._syl = tok.syl[k]; b._at = start + tok.chars.slice(0, k).join("").length;
+        b.onclick = e => { e.stopPropagation(); if (b._held) { b._held = false; return; } onTap(group, tok, lineText, b); };
+        if (onTap === readerTap) holdToPick(b);
         if (run) flush();
         group.append(b);
       } else { if (!run) runAt = start + tok.chars.slice(0, k).join("").length; run += ch; }
@@ -1693,10 +1705,23 @@ function buildLine(lineText, onTap, withEN = true) {
   return line;
 }
 // In the reader: first tap picks a word (highlight + peek strip), second tap opens it.
-function readerTap(group, tok, lineText) {
-  const open = () => openWord(tok.chars.join(""), { context: lineText, syl: tok.syl, mean: tok.mean, tw: tok.tw });
-  if (picked && picked.group === group) { open(); return; }
-  pickWord(group, tok, open);
+function readerTap(group, tok, lineText, cell) {
+  const line = group.closest(".line"), cells = [...line.querySelectorAll(".cell")], i = cells.indexOf(cell);
+  if (picked && picked.line === line && i >= picked.a && i <= picked.b) { picked.open(); return; }  // second tap opens
+  const gc = [...group.querySelectorAll(".cell")];
+  pickSpan(line, cells.indexOf(gc[0]), cells.indexOf(gc[gc.length - 1]), tok);
+}
+// Long-press a character: a new selection of just that character (then grow it with ‹ ›).
+function holdToPick(b) {
+  let t = 0, x0 = 0, y0 = 0;
+  const stop = () => { clearTimeout(t); t = 0; };
+  b.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; stop(); t = setTimeout(() => {
+    t = 0; b._held = true; const line = b.closest(".line"), cells = [...line.querySelectorAll(".cell")], i = cells.indexOf(b);
+    pickSpan(line, i, i); if (navigator.vibrate) navigator.vibrate(8);
+  }, 450); });
+  b.addEventListener("pointermove", e => { if (t && Math.hypot(e.clientX - x0, e.clientY - y0) > 8) stop(); });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(ev => b.addEventListener(ev, stop));
+  b.addEventListener("contextmenu", e => e.preventDefault());
 }
 let renderLimit = 1500;
 // Line-breaking rules for Chinese: closing punctuation (，。）」) never starts a line, opening (（「) never ends one.
@@ -1780,21 +1805,48 @@ function miniReader(text, mark) {
   return box;
 }
 // ================= picking a word in the reader: first tap highlights and peeks, second tap opens
+// The selection is a run of characters on one line (cells a..b). It starts as the dictionary's word; ‹ › take in
+// the next character on that side, and tapping the first or last character drops it. Any run can be opened or added.
 let picked = null;
-function pickWord(group, tok, open) {
+function pickSpan(line, a, b, tok) {
   unpick(true);
-  group.querySelectorAll(".cell").forEach(x => x.setAttribute("aria-pressed", "true"));
-  picked = { group, open };
-  const { word, py, mean } = wordGloss(tok);
+  const cells = [...line.querySelectorAll(".cell")], text = line._text;
+  cells.slice(a, b + 1).forEach(x => x.setAttribute("aria-pressed", "true"));
+  const word = text.slice(cells[a]._at, cells[b]._at + cells[b]._ch.length).replace(/\s+/g, "");
+  const span = cells.slice(a, b + 1), syl = span.map(c => c._syl || (cache[c._ch] ? cache[c._ch].p[0] : ""));
+  const isTok = tok && tok.chars.join("") === word;
+  let g;
+  if (isTok) g = wordGloss(tok);
+  else {
+    const saved = findWord(word), d = lookup(word);
+    const py = (saved && script !== "simp" && wPinyin(saved)) || (d ? (script !== "simp" && d[2] || d[1]).replace(/\s+/g, "") : syl.join(""));
+    let mean = (saved && wMeaning(saved)) || (d && d[3]) || (span.length === 1 && cache[word] ? cache[word].d : "");
+    mean = String(mean || "").split(/[\/;]/).map(x => x.trim()).filter(Boolean).slice(0, 2).join("; ");
+    g = { word, py, mean: mean || "Not one dictionary word; Add makes a card for it" };
+  }
+  const open = () => openWord(word, isTok ? { context: text, syl: tok.syl, mean: tok.mean, tw: tok.tw } : { context: text, syl });
+  picked = { line, a, b, open, tok };
   const peek = $("peek");
-  peek.innerHTML = `<span class="pw" lang="zh">${esc(word)}</span><span class="pt"><span class="pp">${esc(py)}</span><span class="pm">${esc(mean || "Tap again for details")}</span></span>${sayHTML(word, true)}<span class="popen">Open ›</span>`;
+  const tiles = span.map((c, k) => `<button type="button" class="ptile${span.length > 1 && (k === 0 || k === span.length - 1) ? " end" : ""}" data-k="${k}" lang="zh"${span.length > 1 && (k === 0 || k === span.length - 1) ? ` aria-label="Drop ${esc(c._ch)}"` : ' tabindex="-1"'}>${esc(c._ch)}</button>`).join("");
+  peek.innerHTML = `<div class="prow"><button type="button" class="pgrow" data-d="-1" aria-label="Take in the character before"${a === 0 ? " disabled" : ""}>‹</button><span class="ptiles">${tiles}</span><button type="button" class="pgrow" data-d="1" aria-label="Take in the character after"${b === cells.length - 1 ? " disabled" : ""}>›</button>${sayHTML(word, true)}</div>`
+    + `<div class="prow"><span class="pt"><span class="pp">${esc(g.py)}</span><span class="pm">${esc(g.mean || "Tap again for details")}</span></span><span class="popen">Open ›</span></div>`;
+  peek.querySelectorAll(".pgrow").forEach(x => x.onclick = e => { e.stopPropagation(); const d = +x.dataset.d; pickSpan(line, d < 0 ? a - 1 : a, d > 0 ? b + 1 : b, tok); });
+  peek.querySelectorAll(".ptile.end").forEach(x => x.onclick = e => { e.stopPropagation(); const k = +x.dataset.k; pickSpan(line, k === 0 ? a + 1 : a, k === 0 ? b : b - 1, tok); });
+  // + Add for the selection (✓ once it's in your words; tap that to open it).
+  const add = btn(findWord(word) ? "✓ Saved" : "+ Add", findWord(word) ? "btn ghost small padd" : "btn small padd", async e => {
+    e.stopPropagation();
+    if (findWord(word)) { open(); return; }
+    add.disabled = true; const w = await addEntry(word, { context: text }); play("right");
+    add.textContent = "✓ Saved"; add.className = "btn ghost small padd"; add.disabled = false; updateCounts(); ensureCard(w).catch(() => {});
+  });
+  peek.querySelector(".prow:last-child").insertBefore(add, peek.querySelector(".popen"));
   peek.hidden = false;
 }
 function unpick(keepPeek) {
   document.querySelectorAll("#reader .cell[aria-pressed=true]").forEach(x => x.setAttribute("aria-pressed", "false"));
   picked = null; if (!keepPeek) $("peek").hidden = true;
 }
-$("peek").addEventListener("click", e => { if (e.target.closest(".saybtn")) return; if (picked) picked.open(); });
+$("peek").addEventListener("click", e => { if (e.target.closest("button")) return; if (picked) picked.open(); });
 // A tap anywhere on the page that isn't a word (or a control) clears the pick.
 $("readScreen").addEventListener("click", e => {
   if (!picked || e.target.closest(".cell, #peek, button, input, textarea, label, a, .seg")) return;
