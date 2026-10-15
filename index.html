@@ -471,6 +471,30 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{all:unset;cursor:pointer;font-family:var(--font-zh);font-size:1.05rem;padding:3px 10px;border-radius:999px;border:1px solid var(--accent);color:var(--fg)}
 .chip.off{border-color:var(--line);color:var(--muted);text-decoration:line-through}
+.ymark{font-size:.68rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:999px;padding:0 6px;vertical-align:2px;margin-left:4px;white-space:nowrap}
+.classnote{margin-top:-4px}
+.mynote{font-size:.9rem;border-left:3px solid var(--accent);padding:2px 0 2px 10px;margin:4px 0;white-space:pre-wrap}
+.edpen{all:unset;cursor:pointer;color:var(--accent);font-size:1rem;padding:2px 8px;margin-left:6px;border-radius:8px;vertical-align:1px}
+.edpen:active{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.editcard{max-height:88vh;overflow:auto}
+.editcard label,.editcard .edex{display:grid;gap:4px}
+.editcard label>span,.editcard .edex>span{font-size:.8rem;font-weight:600;color:var(--muted)}
+.editcard input,.editcard textarea{font:inherit;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);resize:vertical}
+.editcard .edzh{font-family:var(--font-zh)}
+.editcard .edshow p{margin:2px 0}
+.editcard .edshow p[lang=zh]{font-family:var(--font-zh);font-size:1.15rem}
+.edacts .edreset{margin-left:auto}
+.nlist{display:grid;gap:6px}
+.nrow{all:unset;cursor:pointer;display:grid;grid-template-columns:auto 1fr;column-gap:10px;row-gap:2px;align-items:baseline;padding:8px 10px;border-radius:10px;border:1px solid var(--accent)}
+.nrow b{font-family:var(--font-zh);font-size:1.1rem;font-weight:600;grid-row:span 2}
+.nrow .np{color:var(--accent);font-size:.85rem}
+.nrow .nm{font-size:.88rem;grid-column:2}
+.nrow .nm i{color:var(--muted);font-size:.75rem}
+.nrow small{grid-column:1/-1;color:var(--muted);font-size:.75rem}
+.nrow.off{border-color:var(--line);opacity:.5}
+.nrow.long b{grid-row:auto;grid-column:1/-1}
+.nrow.long .np,.nrow.long .nm{grid-column:1/-1}
+.nrow.off b{text-decoration:line-through}
 .chip.have{border-style:dashed;border-color:var(--line);color:var(--muted)}
 .revpanel{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
 .revhead{display:flex;align-items:center;gap:10px}
@@ -2138,8 +2162,77 @@ async function translateLine(text, line, b) {
 let myWords = store.get("radical-words", []);
 resetSigs();  // what each word looked like at load, so only real changes get a new time stamp
 const saveWords = () => { stampWords(); store.set("radical-words", myWords); updateCounts(); scheduleSync(); };
-const wPinyin = w => (w.card && w.card.pinyin) || w.pinyin || "";
-const wMeaning = w => (w.card && w.card.meaning) || w.meaning || "";
+// Your own edits (w.mine: meaning, pinyin, example, example_pinyin, example_en, notes) sit on top of the shared card,
+// which everyone gets and nobody's edits change. fromClass lists the fields that came from imported class notes.
+const wPinyin = w => (w.mine && w.mine.pinyin) || (w.card && w.card.pinyin) || w.pinyin || "";
+const wMeaning = w => (w.mine && w.mine.meaning) || (w.card && w.card.meaning) || w.meaning || "";
+const cardOf = w => w && w.card && w.mine ? { ...w.card, ...w.mine } : w && w.card;
+const markOf = (w, f) => w && w.mine && w.mine[f] ? ((w.fromClass || []).includes(f) ? "from class" : "yours") : "";
+const markHTML = (w, f) => { const m = markOf(w, f); return m ? ` <span class="ymark">${m}</span>` : ""; };
+// The teacher's original English (where the import corrected it) and your own notes, under the meaning.
+function cardExtras(w) {
+  const out = [];
+  if (w.classNote) out.push(el("p", "note classnote", `Class note: ${esc(w.classNote)}`));
+  if (w.mine && w.mine.notes) out.push(el("p", "mynote", esc(w.mine.notes)));
+  return out;
+}
+// A sentence's pinyin from the dictionary, word by word (for a sentence you write yourself).
+const sentencePinyin = t => segment(t).map(tok => tok.syl && tok.syl.length === tok.chars.length && tok.syl.every(Boolean) ? tok.syl.join("") : tok.chars.join("")).join(" ").replace(/\s+([，。！？、；：,.!?])/g, "$1").trim();
+// Edit a card: meaning, pinyin, example sentence (a new one from the AI, or your own) and notes. Only what differs
+// from the standard card is kept, on your word, and it syncs with your account. Back to standard drops it all.
+function editCard(w, done) {
+  const c = w.card || {}, prev = w.mine || {}, std = { meaning: c.meaning || w.meaning || "", pinyin: c.pinyin || w.pinyin || "" };
+  const flat = x => String(x || "").normalize("NFC").replace(/[\s'’·-]+/g, "").toLowerCase();
+  let ex = { example: (cardOf(w) || {}).example || "", example_pinyin: (cardOf(w) || {}).example_pinyin || "", example_en: (cardOf(w) || {}).example_en || "" };
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard editcard");
+  card.innerHTML = `<h3>Edit <span lang="zh" class="edzh">${esc(conv(w.word))}</span></h3>
+    <label><span>Meaning</span><input id="edMean" type="text" autocomplete="off"></label>
+    <label><span>Pinyin</span><input id="edPy" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></label>
+    <div class="edex"><span>Example sentence</span><div class="edshow" id="edShow"></div><div class="row" id="edBtns"></div>
+      <textarea id="edOwn" rows="2" lang="zh" placeholder="Type or paste your own sentence" hidden></textarea></div>
+    <label><span>Notes</span><textarea id="edNotes" rows="2" placeholder="Your teacher's comments, a memory trick…"></textarea></label>
+    <p class="note edmsg" id="edMsg"></p>`;
+  const q = id => card.querySelector("#" + id);
+  q("edMean").value = wMeaning(w); q("edMean").placeholder = std.meaning;
+  q("edPy").value = wPinyin(w); q("edPy").placeholder = std.pinyin;
+  q("edPy").addEventListener("input", e => { const v = e.target.value, m = numToMarks(v); if (m !== v && /\d/.test(v)) e.target.value = m; });
+  q("edNotes").value = prev.notes || "";
+  const showEx = () => { q("edShow").innerHTML = ex.example ? `<p lang="zh">${esc(conv(ex.example))}</p><p class="note">${esc(ex.example_en)}</p>` : `<p class="note">No example yet.</p>`; };
+  showEx();
+  const fresh = btn("New sentence", "btn ghost small", async () => {
+    fresh.disabled = true; q("edMsg").textContent = "Writing a new sentence…";
+    try { const r = await claude({ action: "example", word: w.word, meaning: q("edMean").value.trim() || std.meaning, avoid: ex.example }); ex = r; showEx(); q("edOwn").hidden = true; q("edOwn").value = ""; q("edMsg").textContent = ""; }
+    catch (e) { q("edMsg").textContent = e.message; }
+    fresh.disabled = false;
+  });
+  const own = btn("Write my own", "btn ghost small", () => { const t = q("edOwn"); t.hidden = !t.hidden; if (!t.hidden) t.focus(); });
+  q("edBtns").append(fresh, own);
+  const close = () => sheet.remove();
+  const save = btn("Save", "btn", async () => {
+    save.disabled = true;
+    const mine = {};
+    const mean = q("edMean").value.trim(), py = numToMarks(q("edPy").value.trim()), notes = q("edNotes").value.trim(), mineEx = q("edOwn").value.trim();
+    if (mean && mean !== std.meaning) mine.meaning = mean;
+    if (py && flat(py) !== flat(std.pinyin)) mine.pinyin = py;
+    if (notes) mine.notes = notes;
+    if (mineEx) {  // your own sentence: pinyin from the dictionary, English from the AI service (when signed in)
+      q("edMsg").textContent = "Adding pinyin and English…";
+      await ensure(mineEx);
+      ex = { example: toTrad(mineEx), example_pinyin: sentencePinyin(toTrad(mineEx)), example_en: "" };
+      if (online()) { try { ex.example_en = (await claude({ action: "translate", sentence: mineEx })).translation || ""; } catch (e) {} }
+    }
+    if (ex.example && ex.example !== c.example) Object.assign(mine, ex);
+    const fromClass = (w.fromClass || []).filter(f => mine[f] && mine[f] === prev[f]);
+    if (Object.keys(mine).length) w.mine = mine; else delete w.mine;
+    if (fromClass.length) w.fromClass = fromClass; else delete w.fromClass;
+    saveWords(); close(); play("right"); if (done) done();
+  });
+  const row = el("div", "row edacts"); row.append(save, btn("Cancel", "btn ghost", close));
+  if (w.mine) row.append(btn("Back to standard", "btn ghost small edreset", () => { delete w.mine; delete w.fromClass; saveWords(); close(); if (done) done(); }));
+  card.append(row); sheet.append(card);
+  sheet.onclick = e => { if (e.target === sheet) close(); };
+  document.body.append(sheet); q("edMean").focus();
+}
 const findWord = word => myWords.find(w => w.word === word || (w.card && (w.card.word === word || w.card.simplified === word))) || myWords.find(w => toTrad(w.word) === toTrad(word));  // either script finds it
 // Add a word right away with its dictionary entry; Claude's card follows in the background when a password is set.
 // The sentence a word was met in. A "line" from an article can be a whole paragraph, so keep only the sentence
@@ -2364,7 +2457,7 @@ function pageNav(i) {
 function goPage(i) { const p = $("pager"); p.scrollTo({ left: i * p.clientWidth, behavior: "smooth" }); }
 
 function wordPage() {
-  const s = wordState, { saved, syl, mean } = wordFacts(), c = saved && saved.card;
+  const s = wordState, { saved, syl, mean } = wordFacts();
   const page = el("div", "wpage");
   const all = [...s.word].filter(c => cache[c] || isSlot(c));  // a pattern keeps its slot, drawn as a dotted box
   const size = Math.min(Math.floor((Math.min(innerWidth, 760) - 48) / all.length) - 4, 150);
@@ -2380,10 +2473,11 @@ function wordPage() {
   page.append(row);
   if (isPattern(s.word)) page.append(el("div", "kind", "Pattern · the box stands for whatever fills it"));
   { const l = legendLine(s.chars.join("")); if (l) page.append(l); }
-  const py = el("div", "wpy", `<span class="bigpy">${syl.map(pyHTML).join(" ")}</span>${sayHTML(s.word)}`);
+  const py = el("div", "wpy", `<span class="bigpy">${syl.map(pyHTML).join(" ")}</span>${markHTML(saved, "pinyin")}${sayHTML(s.word)}`);
   py.append(addBtn());
   page.append(py);
-  page.append(el("p", "wmean", esc(mean) + (s.tw ? ` <span class="note">(Taiwan reading)</span>` : "")));
+  page.append(el("p", "wmean", esc(mean) + markHTML(saved, "meaning") + (s.tw && !markOf(saved, "pinyin") ? ` <span class="note">(Taiwan reading)</span>` : "")));
+  if (saved) page.append(...cardExtras(saved));
   // One line, and it's the way forward: no separate arrow repeating the next character.
   const nav = el("div", "pnav"), go1 = el("button", "nx swipehint", `Swipe for each character's components and writing<i></i>`);
   go1.type = "button"; go1.onclick = () => goPage(1); nav.append(el("span"), go1);
@@ -2415,11 +2509,12 @@ function refreshWordPage() {
   first.replaceWith(wordPage()); $("pager").scrollLeft = keep;
 }
 function savedCard(w) {
-  const c = w.card, box = el("div", "wcard");
+  const c = cardOf(w), box = el("div", "wcard");
   if (c) {
     if (c.simplified && c.simplified !== w.word) box.append(el("p", "note", `Simplified: <span lang="zh-Hans" style="font-family:var(--font-zh);font-size:1.15rem">${esc(c.simplified)}</span>`));
     if (c.usage) box.append(el("p", "note", esc(c.usage)));
     if (c.example) {
+      if (markOf(w, "example")) box.append(el("p", "note", `Example${markHTML(w, "example")}`));
       box.append(miniReader(conv(c.example), conv(w.word)));
       const en = el("p", "exp", esc(c.example_en)); en.hidden = true; box.append(en);
       if (c.example_en) box.append(btn("Show English", "btn ghost small", e => { en.hidden = !en.hidden; e.target.textContent = en.hidden ? "Show English" : "Hide English"; }));
@@ -2429,6 +2524,7 @@ function savedCard(w) {
   box.append(el("p", "note", dueText(w)));
   const acts = el("div", "row");
   if (!c) box.prepend(cardPending(w, refreshWordPage));
+  acts.append(btn("✎ Edit card", "btn ghost small", () => editCard(w, refreshWordPage)));
   acts.append(btn(w.skip ? "Put back in review" : "I know this", "btn ghost small", () => { setStatus(w, w.skip ? "learning" : "known"); saveWords(); refreshWordPage(); }));
   const rm = btn("Remove", "btn ghost small", () => {
     if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove? Tap again"; setTimeout(() => { if (rm.isConnected) { rm.classList.remove("confirm"); rm.textContent = "Remove"; } }, 4000); return; }
@@ -2997,11 +3093,11 @@ function showLook() {
   const w = look.order[look.i];
   const paint = () => {
     if ($("lookScreen").hidden || look.order[look.i] !== w) return;
-    box.innerHTML = ""; const c = w.card;
+    box.innerHTML = ""; const c = cardOf(w);
     box.append(bigWord(conv(w.word)));
     { const l = legendLine(conv(w.word) + (c && c.example ? conv(c.example) : w.context ? conv(w.context) : "")); if (l) box.append(l); }
     box.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${sayHTML(w.word)}`));
-    box.append(el("p", "wmean", esc(wMeaning(w))));
+    box.append(el("p", "wmean", esc(wMeaning(w)) + markHTML(w, "meaning")), ...cardExtras(w));
     if (c) {
       (c.chars || []).forEach(x => box.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
       if (c.example) {
@@ -3209,7 +3305,7 @@ function showFront() {
   prog.textContent = `· Card ${rDone + 1} of ${rDone + rq.length}${sc.repeats ? ` · ${rep(sc.repeats)}` : ""}${w[srsKey()] ? "" : " · new"}`;
   revSide = null;
   $("revScript").replaceChildren(scriptToggle(async () => {  // 繁/简 for the whole set; the card you're on is redrawn
-    const back = revSide; await ensure(rq.map(x => conv(x.word) + conv(x.context || "") + conv((x.card && x.card.example) || "")).join(""));
+    const back = revSide; await ensure(rq.map(x => conv(x.word) + conv(x.context || "") + conv((cardOf(x) || {}).example || "")).join(""));
     showFront(); if (back) showFront.reveal(back.how === "check" ? "show" : back.how, back.stats);
   }));
   if (revHow === "write") { writeFront(w); return; }
@@ -3229,7 +3325,7 @@ function showFront() {
     lp.append(big, seg);
     // In a sentence: plays the card's example sentence (never shown) so the word is heard in use; tapping again
     // plays it slower, then normal again. It's context, not a clue, so it doesn't cap the rating.
-    const ex = (w.card && w.card.example) || w.context || "";
+    const ex = (cardOf(w) || {}).example || w.context || "";
     if (ex && ex !== w.word) { const b = btn("In a sentence", "btn ghost insent", () => { const k = altSpeed("sent:" + ex); speak(conv(ex), k < 1 ? { k } : null); }); lp.append(b); }
     box.append(lp);
     setTimeout(() => { if (lp.isConnected) say(); }, 250);
@@ -3394,7 +3490,7 @@ function writeFront(w) {
   nextChar();
 }
 function showBack(w, how, st) {
-  const box = $("revCard"), c = w.card, ans = el("div", "revans"), k = srsKey();
+  const box = $("revCard"), c = cardOf(w), ans = el("div", "revans"), k = srsKey();
   const guess = how === "check" && showBack.guess ? showBack.guess() : null;
   let suggest = how === "know" ? "good" : how === "show" ? "again" : null;
   if (how === "know" && !(st && st.quiet)) play("right");
@@ -3421,8 +3517,12 @@ function showBack(w, how, st) {
   // The colors used on this side (the big word and the example sentence), right under the big characters.
   const leg = legendLine(conv(w.word) + (c && c.example ? conv(c.example) : "")), bw = box.querySelector(".revchars");
   if (leg && bw) { box.querySelectorAll(".legline").forEach(x => x.remove()); bw.after(leg); }
-  ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${sayHTML(w.word)}`));
-  ans.append(el("p", "wmean", esc(wMeaning(w))));
+  ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${markHTML(w, "pinyin")}${sayHTML(w.word)}`));
+  // ✎ fixes the card right here; the answer side is redrawn with your version.
+  const ed = btn("✎", "edpen", () => editCard(w, () => { if (ans.isConnected) { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true }); } }));
+  ed.setAttribute("aria-label", "Edit this card");
+  const wm = el("p", "wmean", esc(wMeaning(w)) + markHTML(w, "meaning")); wm.append(ed);
+  ans.append(wm, ...cardExtras(w));
   if (c) {
     (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
     if (c.example) {
