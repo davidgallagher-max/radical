@@ -3609,17 +3609,28 @@ async function ocr(base64) {
 }
 const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
 function loadScript(src) { return new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => no(new Error("Couldn't load the PDF reader. Are you online?")); document.head.append(sc); }); }
+async function loadPdf(f) {
+  if (!window.pdfjsLib) { await loadScript(PDFJS + "pdf.min.js"); pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js"; }
+  return pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
+}
+// A PDF page drawn as a JPEG (base64), for reading it from the picture.
+async function pageJpeg(page) {
+  const vp = page.getViewport({ scale: 1 }), k = Math.min(2.5, 1800 / Math.max(vp.width, vp.height));
+  const v = page.getViewport({ scale: k }), c = document.createElement("canvas"); c.width = v.width; c.height = v.height;
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: g, viewport: v }).promise;
+  return c.toDataURL("image/jpeg", 0.85).split(",")[1];
+}
+// Some fonts (pinyin fonts especially, which draw the pinyin into each character) leave the PDF's hidden text
+// scrambled: Korean letters, private-use codes or replacement marks where characters should be. Real Chinese text
+// almost never has those, so a few of them mean the text layer can't be trusted.
+const garbled = t => (String(t).match(/[\p{Script=Hangul}\uE000-\uF8FF\uFFFD]/gu) || []).length >= 3;
 async function pdfPageText(n) {
   const page = await pdfFile.getPage(n);
   const tc = await page.getTextContent();
   let text = tc.items.map(it => it.str + (it.hasEOL ? "\n" : "")).join("");
-  // Scanned page (no text layer): draw it and have Claude read it.
-  if ((text.match(/\p{Script=Han}/gu) || []).length < 10) {
-    const vp = page.getViewport({ scale: 1 }), k = Math.min(2, 1600 / Math.max(vp.width, vp.height));
-    const v = page.getViewport({ scale: k }), c = document.createElement("canvas"); c.width = v.width; c.height = v.height;
-    await page.render({ canvasContext: c.getContext("2d"), viewport: v }).promise;
-    text = await ocr(c.toDataURL("image/jpeg", 0.85).split(",")[1]);
-  }
+  // Scanned page (no text layer) or a scrambled one: draw it and read it from the picture.
+  if ((text.match(/\p{Script=Han}/gu) || []).length < 10 || garbled(text)) text = await ocr(await pageJpeg(page));
   return text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
 }
 $("fileIn").onchange = async e => {
@@ -3629,8 +3640,7 @@ $("fileIn").onchange = async e => {
     if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) {
       if (f.size > 60e6) throw new Error("That PDF is over 60 MB. Try a smaller one.");
       busy("Opening the PDF…");
-      if (!window.pdfjsLib) { await loadScript(PDFJS + "pdf.min.js"); pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js"; }
-      pdfFile = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
+      pdfFile = await loadPdf(f);
       remember($("src").value);
       doc = { title: f.name.replace(/\.pdf$/i, ""), unit: "Page", pages: Array(pdfFile.numPages).fill(null), i: 0 };
       busy(""); await showDocPage(0);
