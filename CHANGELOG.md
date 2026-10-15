@@ -2,6 +2,14 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v32
+
+- PDFs whose hidden text is scrambled (common with fonts that print pinyin above each character) are now read from the page picture instead, so they no longer come out with Korean letters, wrong characters and missing English letters. Reading a page from a picture keeps English glosses and drops the pinyin.
+- Import class notes: the file icon in the add box on My words now takes a PDF or a photo. Every word, phrase, pattern and sentence on the page comes back as a checklist with its pinyin and meaning. The teacher's English becomes the meaning, with spelling fixed; where her English was actually wrong, the right meaning is used and hers is kept as a "Class note". Pasted lists get the same spelling fixes.
+- Edit the text you're reading: "Edit text" under the text, or in the 字字 size panel. For a PDF or article it edits the page you're on.
+- Pick your own span: after tapping a word, the strip at the bottom shows its characters with ‹ › to take in the character before or after; tap the first or last character to drop it. Long-press a character to start from just that one. "+ Add" saves whatever is selected, and a second tap on it opens it.
+- Editable cards: "Edit card" on the word page, or ✎ next to the meaning on a flash card's answer side. Change the meaning, the pinyin (for Taiwan readings), the example sentence (a new one from the AI, or write your own; pinyin and English are added) and add notes. Your version is kept on your word and syncs with your account; everyone else still gets the standard card. Edited parts are marked "yours" (or "from class"), and "Back to standard" undoes it.
+
 ## v31
 
 - Ratings make sense at night. The app's day now starts at 4am (for "tomorrow", the daily new-word limit and the tallies). From 6pm a new or missed card's Hard means tomorrow and Good two days, instead of "later today". Again reads "this round" and one day reads "tomorrow".

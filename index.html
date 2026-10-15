@@ -1046,7 +1046,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: opens an email with the app version and device filled in. The address is in the page's code, so
 // anyone can read it: use a dedicated address, not a personal one. Empty: the menu item stays hidden.
-const APP_VERSION = "v31", FEEDBACK_TO = "";
+const APP_VERSION = "v32", FEEDBACK_TO = "";
 $("feedbackBtn").hidden = !FEEDBACK_TO;
 $("feedbackBtn").onclick = () => {
   closeMenu();
