@@ -842,7 +842,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
       <div class="addrow">
         <div class="addfield">
           <textarea id="addWord" rows="1" lang="zh" placeholder="Add word(s): type or paste" autocomplete="off" autocapitalize="off"></textarea>
-          <label class="fileicon" title="Import a word list or backup file" aria-label="Import file"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M6 3h8l4 4v14H6z M14 3v4h4"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 10v7m-3-3 3 3 3-3"/></svg><input type="file" id="importFile" multiple accept=".txt,.csv,.tsv,.json,.md,text/plain,application/json" hidden></label>
+          <label class="fileicon" title="Import class notes (PDF or photo), a word list or a backup file" aria-label="Import file"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M6 3h8l4 4v14H6z M14 3v4h4"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 10v7m-3-3 3 3 3-3"/></svg><input type="file" id="importFile" multiple accept=".txt,.csv,.tsv,.json,.md,text/plain,application/json,application/pdf,.pdf,image/*,.heic" hidden></label>
         </div>
         <button type="button" class="btn" id="addGo">Add</button>
       </div>
@@ -2968,11 +2968,15 @@ function showPreview(found, source) {
     return;
   }
   pending = fresh.map(e => ({ ...e, on: true }));
-  pv.append(el("p", "note", `Found ${list.length} word${list.length === 1 ? "" : "s"}${found.viaAuto ? " (sorted out automatically)" : ""}${found.backup ? " in a backup file" : ""}` +
-    (have ? `, ${have} already in your list` : "") + (fresh.length ? ". Tap a word to leave it out." : ".")));
-  const chips = el("div", "chips");
+  const what = found.notes ? `item${list.length === 1 ? "" : "s"} in your notes` : `word${list.length === 1 ? "" : "s"}`;
+  pv.append(el("p", "note", `Found ${list.length} ${what}${found.viaAuto ? " (sorted out automatically)" : ""}${found.backup ? " in a backup file" : ""}` +
+    (have ? `, ${have} already in your list` : "") + (fresh.length ? `. Tap ${found.notes ? "one" : "a word"} to leave it out.` : ".")));
+  // Notes come as a list with their meanings (and the teacher's original where it was corrected); plain lists as chips.
+  const rows = !!found.notes, chips = el("div", rows ? "nlist" : "chips");
   pending.forEach(e => {
-    const c = el("button", "chip", esc(e.word)); c.type = "button";
+    const c = el("button", rows ? "nrow" + ([...e.word].length > 5 ? " long" : "") : "chip", rows
+      ? `<b lang="zh">${esc(e.word)}</b><span class="np">${esc(e.pinyin || "")}</span><span class="nm">${esc(e.meaning || "")}${e.kind === "sentence" || e.kind === "pattern" ? ` <i>${esc(e.kind)}</i>` : ""}</span>${e.note ? `<small>Class note: ${esc(e.note)}</small>` : ""}`
+      : esc(e.word)); c.type = "button";
     c.onclick = () => { e.on = !e.on; c.classList.toggle("off", !e.on); go_.textContent = label(); go_.disabled = !count(); };
     chips.append(c);
   });
@@ -2989,10 +2993,18 @@ async function commitPending(isBackup) {
   await ensure(take.map(e => e.word).join(""));
   let n = 0;
   for (const e of [...take].reverse()) {
-    const { on, ...rest } = e;
+    const { on, from_text, note, kind, notes, ...rest } = e;
     if (isBackup) { myWords.push(rest); n++; continue; }
     const d = lookup(rest.word);
     const entry = { added: localDay(), ...rest };
+    // The teacher's English (spelling fixed) is your meaning for this word, over the standard card's; her pinyin too,
+    // when it differs from the dictionary (a Taiwan reading). Where her English was wrong, her original is kept.
+    const mine = {}, fromClass = [];
+    if (from_text && rest.meaning) { mine.meaning = rest.meaning; fromClass.push("meaning"); }
+    const flat = x => String(x || "").normalize("NFC").replace(/[\s'’·-]+/g, "").toLowerCase();
+    if (notes && rest.pinyin && (!d || ![d[1], d[2]].some(p => flat(p) === flat(rest.pinyin)))) { mine.pinyin = rest.pinyin; fromClass.push("pinyin"); }
+    if (fromClass.length) { entry.mine = mine; entry.fromClass = fromClass; }
+    if (note) entry.classNote = note;
     if (d && !entry.pinyin) entry.pinyin = d[2] || d[1];
     if (d && !entry.meaning) entry.meaning = d[3];
     if (!entry.meaning && [...entry.word].length === 1 && cache[entry.word]) entry.meaning = cache[entry.word].d;
@@ -3022,13 +3034,38 @@ $("addGo").onclick = async () => {
   }
   showPreview(found, null);
 };
+// Class notes (a PDF or a photo): each page is read from the picture, so a pinyin font's scrambled text doesn't
+// matter. Everything the teacher wrote comes back as a checklist: words, phrases, patterns and sentences, with her
+// English (spelling fixed) as the meaning and her pinyin when it's a Taiwan reading.
+const isNotesFile = f => /^image\//.test(f.type) || f.type === "application/pdf" || /\.(pdf|heic|jpe?g|png|webp)$/i.test(f.name);
+async function readNotes(f, say) {
+  if (!online()) throw new Error("Reading class notes needs you signed in (Settings, Account).");
+  const pages = [];
+  if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) {
+    const pdf = await loadPdf(f), n = Math.min(pdf.numPages, 20);
+    for (let i = 1; i <= n; i++) { say(`Reading page ${i} of ${n}…`); pages.push(await pageJpeg(await pdf.getPage(i))); }
+  } else { say("Reading the photo…"); pages.push(await imageToJpeg(f)); }
+  const items = [];
+  for (let i = 0; i < pages.length; i++) {
+    if (pages.length > 1) say(`Sorting out page ${i + 1} of ${pages.length}…`);
+    const { items: got } = await claude({ action: "notes", image: pages[i], media_type: "image/jpeg" });
+    (got || []).forEach(x => { const word = String(x.word || "").replace(/\s+/g, "").replace(/~/g, "～"); if (word) items.push({ word, pinyin: x.pinyin || "", meaning: x.meaning || "", from_text: !!x.from_text, note: x.note || "", kind: x.kind || "", notes: true }); });
+  }
+  return items;
+}
 $("importFile").onchange = async e => {
   const files = [...e.target.files]; e.target.value = "";
   if (!files.length) return;
-  $("addStatus").textContent = "Reading…";
+  const st = $("addStatus"); st.textContent = "Reading…";
   const all = { list: [] };
-  for (const f of files) { const r = await findWords(await f.text()); all.list.push(...r.list); all.backup ||= r.backup; all.viaAuto ||= r.viaAuto; if (r.extra) all.extra = r.extra; }
-  $("addStatus").textContent = "";
+  try {
+    for (const f of files) {
+      if (isNotesFile(f)) { all.list.push(...await readNotes(f, m => st.textContent = m)); all.notes = true; continue; }
+      const r = await findWords(await f.text()); all.list.push(...r.list); all.backup ||= r.backup; all.viaAuto ||= r.viaAuto; if (r.extra) all.extra = r.extra;
+    }
+  } catch (err) { st.textContent = err.message; return; }
+  if (all.notes) await ensure(all.list.map(x => x.word).join(""));
+  st.textContent = "";
   if (all.backup) { restoreProgress(all.list); restoreRecord(all.extra); }
   showPreview(all, files.length === 1 ? files[0].name : `${files.length} files`);
 };

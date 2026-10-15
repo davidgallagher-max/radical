@@ -35,9 +35,27 @@ Give 0 to 3 related words that share a character with the word. Use Taiwan word 
 const WORDS_PROMPT = (text) => `A learner of Taiwan Mandarin pasted the text below to add words to a vocabulary list. It may be a tidy list, a messy list with pinyin and English mixed in, or sentences.
 Pick out the Chinese vocabulary items they most likely want to study: words and set phrases, not whole sentences, and skip particles and very basic words (的, 了, 我, 是) unless the text is clearly just a list.
 Keep the learner's own pinyin and English when given; otherwise give Taiwan pinyin with tone marks and a short English meaning.
-Return ONLY JSON: {"words":[{"word":"Traditional characters","pinyin":"...","meaning":"..."}]}, at most 80 items, in the order they appear.
+The English in the text often comes from a teacher's notes and can be misspelled or wrong. Fix spelling silently. If the English is actually wrong for the word (not just misspelled), give the right meaning and put the text's original English in "note".
+Set "from_text": true when the meaning comes from English in the text (even if you fixed its spelling), false when you supplied it.
+Return ONLY JSON: {"words":[{"word":"Traditional characters","pinyin":"...","meaning":"...","from_text":true,"note":""}]}, at most 80 items, in the order they appear.
 
 ${text}`;
+
+// Class notes from a photo or PDF page: every item the teacher wrote down, with her English (spelling fixed).
+const NOTES_PROMPT = `This is a page of a Taiwan Mandarin learner's class notes, typed or written by their teacher. Chinese is often printed with small pinyin above each character; there is English mixed in.
+List every Chinese item on the page the learner might study, in reading order: words, set phrases, grammar patterns (keep a gap as ～, e.g. 在～以內) and example sentences. Skip pure headings and page numbers.
+For each item:
+- "word": the Chinese exactly as written, Traditional characters, no pinyin, no spaces.
+- "kind": "word", "phrase", "pattern" or "sentence".
+- "pinyin": the pinyin printed above it if there is any (keep the teacher's Taiwan readings, e.g. 垃圾 lèsè), with tone marks, syllables of one word joined; otherwise "".
+- "meaning": the teacher's English for it, with spelling fixed. If she gave none, a short English meaning (for a sentence, its translation). If her English is wrong for the item (not just misspelled), give the right meaning.
+- "from_text": true if the meaning comes from her English, false if you supplied it.
+- "note": her original English, only when you changed what it means; otherwise "".
+Return ONLY JSON: {"items":[{"word":"","kind":"","pinyin":"","meaning":"","from_text":true,"note":""}]}, at most 60 items.`;
+
+// A fresh example sentence for a word, different from the one the learner has.
+const EXAMPLE_PROMPT = (word, meaning, avoid) => `Write one new natural Taiwan Mandarin example sentence (Traditional characters, low intermediate level) using ${word}${meaning ? ` (${meaning})` : ""}.${avoid ? ` Make it clearly different from: ${avoid}` : ""}
+Return ONLY JSON: {"example":"...","example_pinyin":"pinyin with tone marks","example_en":"English translation"}`;
 
 const TRANSLATE_PROMPT = (sentence) => `Translate this Chinese into natural English. Return only the translation, nothing else.
 
@@ -150,7 +168,7 @@ module.exports = async (req, res) => {
   const askClaude = async (model, prompt, maxTokens) => { const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage, user && user.email); return r.text; };
   try {
     if (body.action === "card") {
-      const word = String(body.word || "").trim().slice(0, 20);
+      const word = String(body.word || "").trim().slice(0, 40);
       if (!word) return res.status(400).json({ error: "No word given." });
       const text = await askClaude(CARD_MODEL, CARD_PROMPT(word), 1200);
       const card = parseJSON(text);
@@ -172,13 +190,30 @@ module.exports = async (req, res) => {
       if (!out || !Array.isArray(out.words)) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       return res.status(200).json({ words: out.words.filter(w => w && typeof w.word === "string").slice(0, 80) });
     }
+    if (body.action === "notes") {
+      const data = String(body.image || ""), type = String(body.media_type || "image/jpeg");
+      if (!data || !/^image\/(jpeg|png|webp|gif)$/.test(type)) return res.status(400).json({ error: "No usable image sent." });
+      if (data.length > 4_000_000) return res.status(413).json({ error: "That page is too large. Try a closer photo." });
+      const out = parseJSON(await askClaude(CARD_MODEL, [
+        { type: "image", source: { type: "base64", media_type: type, data } }, { type: "text", text: NOTES_PROMPT }
+      ], 4000));
+      if (!out || !Array.isArray(out.items)) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      return res.status(200).json({ items: out.items.filter(x => x && typeof x.word === "string" && /\p{Script=Han}/u.test(x.word)).slice(0, 60) });
+    }
+    if (body.action === "example") {
+      const word = String(body.word || "").trim().slice(0, 40);
+      if (!word) return res.status(400).json({ error: "No word given." });
+      const out = parseJSON(await askClaude(CARD_MODEL, EXAMPLE_PROMPT(word, String(body.meaning || "").slice(0, 120), String(body.avoid || "").slice(0, 200)), 500));
+      if (!out || !out.example) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      return res.status(200).json({ example: String(out.example), example_pinyin: String(out.example_pinyin || ""), example_en: String(out.example_en || "") });
+    }
     if (body.action === "ocr") {
       const data = String(body.image || ""), type = String(body.media_type || "image/jpeg");
       if (!data || !/^image\/(jpeg|png|webp|gif)$/.test(type)) return res.status(400).json({ error: "No usable image sent." });
       if (data.length > 4_000_000) return res.status(413).json({ error: "That image is too large. Try a closer photo." });
       const text = await askClaude(OCR_MODEL, [
         { type: "image", source: { type: "base64", media_type: type, data } },
-        { type: "text", text: "Transcribe the Chinese text in this image exactly as written (Traditional or Simplified, whichever it uses), in reading order, one line per line of the original; for vertical text, read columns right to left. Leave out page numbers, headers and anything that isn't Chinese running text. Output only the text. If there is no Chinese text, output nothing." }
+        { type: "text", text: "Transcribe the Chinese text in this image exactly as written (Traditional or Simplified, whichever it uses), in reading order, one line per line of the original; for vertical text, read columns right to left. Leave out page numbers and headers, and leave out pinyin printed above or beside the characters (ruby). Keep English words that are part of the text, such as glosses or notes, where they appear on the line. Output only the text. If there is no Chinese text, output nothing." }
       ], 2000);
       return res.status(200).json({ text });
     }
@@ -209,7 +244,7 @@ module.exports = async (req, res) => {
       return res.status(200).json({ text: out });
     }
     if (body.action === "judge") {
-      const word = String(body.word || "").trim().slice(0, 20), meaning = String(body.meaning || "").trim().slice(0, 300), guess = String(body.guess || "").trim().slice(0, 120);
+      const word = String(body.word || "").trim().slice(0, 40), meaning = String(body.meaning || "").trim().slice(0, 300), guess = String(body.guess || "").trim().slice(0, 120);
       if (!word || !guess) return res.status(400).json({ error: "Nothing to check." });
       const out = parseJSON(await askClaude(FAST_MODEL, JUDGE_PROMPT(word, meaning, guess, !!body.pattern), 120));
       const verdict = out && ["right", "close", "wrong"].includes(out.verdict) ? out.verdict : null;
