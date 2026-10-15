@@ -310,6 +310,12 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .sizebtn i{font-style:normal;font-size:.72rem}.sizebtn b{font-weight:600;font-size:1.12rem}
 .sizebtn[aria-expanded="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
 .sizepop{padding:2px 4px 4px}
+#sizePop{display:flex;align-items:center;gap:10px}
+#sizePop[hidden]{display:none}
+#sizePop .sizerow{flex:1}
+.editbtn{flex:none}
+.endedit{display:block;margin:18px auto 4px}
+.edittext textarea{font-family:var(--font-zh);font-size:1.1rem;line-height:1.6;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);min-height:40vh;resize:vertical}
 /* Legend: spans the width; it shrinks to fit narrow screens (see fitLegend), and scrolls sideways only if it still
    can't fit, with a fade on the side that has more. */
 .legrow{display:flex;align-items:center;gap:8px;min-width:0}
@@ -809,6 +815,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
       </div>
       <div class="sizepop" id="sizePop" hidden>
         <span class="sizerow"><i lang="zh" aria-hidden="true">字</i><input type="range" id="sizeIn" min="26" max="64" step="2" value="38" aria-label="Text size"><b lang="zh" aria-hidden="true">字</b></span>
+        <button type="button" class="btn ghost small editbtn" id="editTextBtn">✎ Edit text</button>
       </div>
     </div>
     <div class="docbar" id="docbar" hidden>
@@ -1623,6 +1630,7 @@ async function render() {
     const rest = all.slice(lines.length).join("").length;
     reader.append(btn(`Show more (${rest} more characters)`, "btn ghost more", () => { renderLimit += LIMIT; render(); }));
   }
+  reader.append(btn("✎ Edit text", "btn ghost small editbtn endedit", editText));
   // Long documents: the same part navigation at the bottom, so you can move on without scrolling back up.
   if (doc && doc.pages && doc.pages.length > 1) {
     const unit = doc.unit || "Page", last = doc.i >= doc.pages.length - 1, foot = el("div", "docfoot");
@@ -1792,6 +1800,27 @@ $("readScreen").addEventListener("click", e => {
   if (!picked || e.target.closest(".cell, #peek, button, input, textarea, label, a, .seg")) return;
   unpick();
 });
+// Edit the text being read (copied or photographed text is often messy). For a PDF or article it's the page you're
+// on (or its Easier version, if that's showing); the edit is kept with the document.
+function editText() {
+  sizeOpen(false);
+  const key = doc && doc.lv ? doc.i + ":" + doc.lv : null;
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard edittext");
+  card.append(el("h3", "", doc ? `Edit this ${(doc.unit || "page").toLowerCase()}` : "Edit text"));
+  const ta = el("textarea"); ta.lang = "zh"; ta.rows = 12; ta.value = $("src").value; ta.spellcheck = false; card.append(ta);
+  const close = () => sheet.remove();
+  const done = btn("Done", "btn", () => {
+    const v = ta.value.replace(/\r/g, "");
+    if (!v.trim()) { ta.focus(); return; }
+    if (doc) { if (key && doc.simp) doc.simp[key] = v; else doc.pages[doc.i] = v; saveDoc(); }
+    $("src").value = v; store.set("radical-text", v);
+    close(); onNewText(); render();
+  });
+  const row = el("div", "row"); row.append(done, btn("Cancel", "btn ghost", close)); card.append(row);
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
+  document.body.append(sheet); ta.focus();
+}
+$("editTextBtn").onclick = editText;
 function onNewText() { renderLimit = 1500; onNewText0(); }
 function onNewText0() { typed = detect($("src").value); showScript(); }  // the text never flips your 繁/简 choice
 // The input line is always empty: whatever goes in replaces the text being read, and the old text goes to History.
