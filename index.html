@@ -324,7 +324,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 #sizePop[hidden]{display:none}
 #sizePop .sizerow{flex:1}
 .editbtn{flex:none}
-.endedit{display:block;margin:18px auto 4px}
+.endrow{display:flex;justify-content:center;gap:10px;margin:18px auto 4px}
 .edittext textarea{font-family:var(--font-zh);font-size:1.1rem;line-height:1.6;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);min-height:40vh;resize:vertical}
 /* Legend: spans the width; it shrinks to fit narrow screens (see fitLegend), and scrolls sideways only if it still
    can't fit, with a fade on the side that has more. */
@@ -1741,7 +1741,8 @@ async function render() {
     const rest = all.slice(lines.length).join("").length;
     reader.append(btn(`Show more (${rest} more characters)`, "btn ghost more", () => { renderLimit += LIMIT; render(); }));
   }
-  reader.append(btn("✎ Edit text", "btn ghost small editbtn endedit", editText));
+  const endRow = el("div", "endrow"); endRow.append(btn("+ Add new words", "btn ghost small addnew", addNewWords), btn("✎ Edit text", "btn ghost small editbtn endedit", editText));
+  reader.append(endRow);
   // Long documents: the same part navigation at the bottom, so you can move on without scrolling back up.
   if (doc && doc.pages && doc.pages.length > 1) {
     const unit = doc.unit || "Page", last = doc.i >= doc.pages.length - 1, foot = el("div", "docfoot");
@@ -1974,6 +1975,25 @@ function editText() {
   document.body.append(sheet); ta.focus();
 }
 $("editTextBtn").onclick = editText;
+// Add new words: every dictionary word in the text you're reading that isn't in My words yet, as a checklist (with
+// pinyin and meaning) on My words. The most common little words (的, 了, 是…) are left out.
+const SKIP_WORDS = new Set([..."的了是在我你他她它們们嗎吗呢吧啊和也都很不有這这那就要會会說说個个上下一二三人去來来到對对"]);
+async function addNewWords() {
+  const text = currentText(); await ensure(text);
+  const seen = new Set(), list = [];
+  for (const line of text.split(/\n+/)) for (const tok of segment(line)) {
+    const word = tok.chars.join("");
+    if (!/\p{Script=Han}/u.test(word) || seen.has(word) || findWord(word)) continue;
+    if (tok.chars.length === 1 && SKIP_WORDS.has(word)) continue;
+    if (!tok.mean && !(tok.chars.length === 1 && cache[word])) continue;  // not a dictionary word: pick it yourself with the strip
+    seen.add(word);
+    const mean = String(tok.mean || (cache[word] && cache[word].d) || "").split(/[\/;]/).map(x => x.trim()).filter(Boolean).slice(0, 2).join("; ");
+    list.push({ word, pinyin: (tok.syl || []).join(""), meaning: mean });
+  }
+  setTab("wordsScreen");
+  showPreview({ list, rows: true }, null);
+  if (!list.length) $("preview").firstChild.textContent = "Every word in this text is already in your list.";
+}
 function onNewText() { renderLimit = 1500; onNewText0(); }
 function onNewText0() { typed = detect($("src").value); showScript(); }  // the text never flips your 繁/简 choice
 // The input line is always empty: whatever goes in replaces the text being read, and the old text goes to History.
@@ -3188,19 +3208,33 @@ function showPreview(found, source) {
   pv.append(el("p", "note", `Found ${list.length} ${what}${found.viaAuto ? " (sorted out automatically)" : ""}${found.backup ? " in a backup file" : ""}` +
     (have ? `, ${have} already in your list` : "") + (fresh.length ? `. Tap ${found.notes ? "one" : "a word"} to leave it out.` : ".")));
   // Notes come as a list with their meanings (and the teacher's original where it was corrected); plain lists as chips.
-  const rows = !!found.notes, chips = el("div", rows ? "nlist" : "chips");
+  const rows = !!(found.notes || found.rows), chips = el("div", rows ? "nlist" : "chips");
   pending.forEach(e => {
     const c = el("button", rows ? "nrow" + ([...e.word].length > 5 ? " long" : "") : "chip", rows
       ? `<b lang="zh">${esc(e.word)}</b><span class="np">${esc(e.pinyin || "")}</span><span class="nm">${esc(e.meaning || "")}${e.kind === "sentence" || e.kind === "pattern" ? ` <i>${esc(e.kind)}</i>` : ""}</span>${e.note ? `<small>Class note: ${esc(e.note)}</small>` : ""}`
       : esc(e.word)); c.type = "button";
     c.onclick = () => { e.on = !e.on; c.classList.toggle("off", !e.on); go_.textContent = label(); go_.disabled = !count(); };
-    chips.append(c);
+    e._el = c; chips.append(c);
   });
+  // Select all / none, and (for class notes) a switch per kind, so all the sentences can go in one tap.
+  const sync = () => { pending.forEach(e => e._el.classList.toggle("off", !e.on)); go_.textContent = label(); go_.disabled = !count(); kinds.querySelectorAll("[data-kind]").forEach(b => b.setAttribute("aria-pressed", pending.some(e => kindOf(e) === b.dataset.kind && e.on))); };
+  const kindOf = e => e.kind === "sentence" ? "sentence" : e.kind === "pattern" ? "pattern" : e.kind === "phrase" ? "phrase" : "word";
+  const kinds = el("div", "pvctl");
+  if (pending.length > 3) {
+    kinds.append(btn("Select all", "btn ghost small", () => { pending.forEach(e => e.on = true); sync(); }), btn("Select none", "btn ghost small", () => { pending.forEach(e => e.on = false); sync(); }));
+    const present = ["word", "phrase", "pattern", "sentence"].filter(k => pending.some(e => kindOf(e) === k));
+    if (rows && present.length > 1) present.forEach(k => {
+      const n = pending.filter(e => kindOf(e) === k).length;
+      const b = el("button", "kindchip", `${{ word: "Words", phrase: "Phrases", pattern: "Patterns", sentence: "Sentences" }[k]} ${n}`); b.type = "button"; b.dataset.kind = k; b.setAttribute("aria-pressed", "true");
+      b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; pending.forEach(e => { if (kindOf(e) === k) e.on = on; }); sync(); };
+      kinds.append(b);
+    });
+  }
   const count = () => pending.filter(e => e.on).length, label = () => `${source ? "Import" : "Add"} ${count()}`;
   const go_ = btn(label(), "btn", () => commitPending(found.backup));
   go_.disabled = !count();
   const acts = el("div", "row"); acts.append(go_, btn("Cancel", "btn ghost", closePreview));
-  pv.append(acts, chips);
+  pv.append(acts); if (kinds.childElementCount) pv.append(kinds); pv.append(chips);
   pv.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 function closePreview() { pending = null; $("preview").hidden = true; $("preview").innerHTML = ""; }
