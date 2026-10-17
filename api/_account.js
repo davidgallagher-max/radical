@@ -131,12 +131,19 @@ function costOf(model, usage) {
   const inTok = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
   return (inTok * p[0] + (u.output_tokens || 0) * p[1]) / 1e6;
 }
-const usagePath = who => `usage/${who}/${day()}.json`;
-async function spentToday(who) { if (!status().ok) return 0; try { const u = await getJSON(usagePath(who)); return (u && u.total) || 0; } catch (e) { return 0; } }
-async function logUse(who, action, model, usage, email) {
+// "Today" is the app's day: the page sends its own date (its day starts at 4am local time) in x-radical-day. It's
+// trusted only when it's within a day of the server's UTC date; otherwise the UTC date is used.
+function dayOf(req) {
+  const d = String((req && req.headers && req.headers["x-radical-day"]) || "");
+  if (/^\d{4}-\d\d-\d\d$/.test(d) && Math.abs(Date.parse(d + "T12:00:00Z") - Date.now()) < 2 * 864e5) return d;
+  return day();
+}
+const usagePath = (who, today = day()) => `usage/${who}/${today}.json`;
+async function spentToday(who, today) { if (!status().ok) return 0; try { const u = await getJSON(usagePath(who, today)); return (u && u.total) || 0; } catch (e) { return 0; } }
+async function logUse(who, action, model, usage, email, today) {
   if (!status().ok) return;
   try {
-    const path = usagePath(who), u = (await getJSON(path)) || { total: 0, calls: [] }, cost = costOf(model, usage);
+    const path = usagePath(who, today), u = (await getJSON(path)) || { total: 0, calls: [] }, cost = costOf(model, usage);
     if (email) u.email = email;
     u.total = +(u.total + cost).toFixed(6);
     u.calls.push([Date.now(), action, model, (usage && usage.input_tokens) || 0, (usage && usage.output_tokens) || 0, +cost.toFixed(6)]);
@@ -152,8 +159,8 @@ const isOwner = user => !!(user && user.email) && emails("OWNER_EMAILS").include
 const mayUseAI = user => { const t = emails("TESTER_EMAILS"); return !t.length || (!!(user && user.email) && (t.includes(user.email.toLowerCase()) || isOwner(user))); };
 
 // ---- AI use: your own this month, and for owners, everyone's today and this month (by feature and by person).
-async function usage(user) {
-  const today = day(), month = today.slice(0, 7);
+async function usage(user, today = day()) {
+  const month = today.slice(0, 7);
   const monthOf = async id => {
     const files = (await list(`usage/${id}`)).filter(n => n.startsWith(month) && n.endsWith(".json"));
     return Promise.all(files.map(async n => ({ day: n.slice(0, 10), u: (await getJSON(`usage/${id}/${n}`)) || { total: 0, calls: [] } })));
@@ -186,4 +193,8 @@ async function usage(user) {
   return out;
 }
 
-module.exports = { status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, DAILY_CAP, costOf, isOwner, mayUseAI, usage };
+const ownerEmails = () => emails("OWNER_EMAILS");
+// Feedback is kept as well as emailed, so nothing is lost if an email bounces.
+async function saveFeedback(user, today, entry) { if (!status().ok) return; try { await putJSON(`feedback/${today}/${Date.now()}-${String(user.id).slice(0, 8)}.json`, entry); } catch (e) {} }
+
+module.exports = { status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, DAILY_CAP, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };

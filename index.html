@@ -1003,7 +1003,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
     <button type="button" id="backupBtn"><span class="mi">存</span>Save a backup</button>
     <hr>
     <button type="button" data-go="about"><span class="mi">部</span>About</button>
-    <button type="button" id="feedbackBtn" hidden><span class="mi">信</span>Send feedback</button>
+    <button type="button" id="feedbackBtn"><span class="mi">信</span>Send feedback</button>
     <button type="button" class="aitally" id="aiTally" hidden></button>
   </nav>
 </div>
@@ -1099,15 +1099,32 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
   else if (g === "about") go("aboutScreen");
   else if (g === "tour") showTour(true);
 });
-// Send feedback: opens an email with the app version and device filled in. The address is in the page's code, so
-// anyone can read it: use a dedicated address, not a personal one. Empty: the menu item stays hidden.
-const APP_VERSION = "v32", FEEDBACK_TO = "";
-$("feedbackBtn").hidden = !FEEDBACK_TO;
+// Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
+// version, device and screen, plus an optional screenshot.
+const APP_VERSION = "v33";
+function metaLine() {
+  const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
+  return `Radical ${APP_VERSION} · ${dev ? dev[0] : "device"} · ${screen.width}×${screen.height} · screen: ${on ? on.id : "?"} · ${ua}`;
+}
 $("feedbackBtn").onclick = () => {
   closeMenu();
-  const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua);
-  const body = `\n\n\n---\nRadical ${APP_VERSION} · ${dev ? dev[0] : "device"} · ${screen.width}×${screen.height} · ${ua}`;
-  location.href = `mailto:${FEEDBACK_TO}?subject=${encodeURIComponent(`Radical feedback (${APP_VERSION})`)}&body=${encodeURIComponent(body)}`;
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard fbcard");
+  card.append(el("h3", "", "Send feedback"), el("p", "note", "Anything confusing, broken or great. It goes straight to the person making Radical, who may reply by email."));
+  const ta = el("textarea"); ta.rows = 6; ta.placeholder = "What happened, or what would you change?";
+  let shot = "";
+  const pick = el("label", "btn ghost small fbshot", "Add a screenshot"), file = el("input"); file.type = "file"; file.accept = "image/*"; file.hidden = true; pick.append(file);
+  file.onchange = async () => { const f = file.files[0]; if (!f) return; pick.firstChild.textContent = "Adding…"; try { shot = await imageToJpeg(f, 1400); pick.firstChild.textContent = "✓ Screenshot added"; } catch (e) { pick.firstChild.textContent = "Couldn't add that image"; } };
+  const msg = el("p", "note");
+  const send = btn("Send", "btn", async () => {
+    const text = ta.value.trim(); if (!text) { ta.focus(); return; }
+    send.disabled = true; msg.textContent = "Sending…";
+    try { await claude({ action: "feedback", text, meta: metaLine(), image: shot || undefined }); play("right"); card.innerHTML = ""; card.append(el("h3", "", "Thank you"), el("p", "note", "Your note was sent."), btn("Close", "btn", () => sheet.remove())); }
+    catch (e) { msg.textContent = e.message; send.disabled = false; }
+  });
+  const row = el("div", "row"); row.append(send, btn("Cancel", "btn ghost", () => sheet.remove()));
+  card.append(ta, pick, row, msg); sheet.append(card);
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.append(sheet); ta.focus();
 };
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("menu").hidden) { e.stopImmediatePropagation(); closeMenu(); } }, true);
 

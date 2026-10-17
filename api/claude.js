@@ -143,7 +143,7 @@ module.exports = async (req, res) => {
   const user = await account.userOf(req);
   const byPassword = !user && !!process.env.APP_PASSWORD && req.headers["x-app-password"] === process.env.APP_PASSWORD;
   if (!user && !byPassword) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
-  const who = user ? user.id : "password";
+  const who = user ? user.id : "password", today = account.dayOf(req);
   try {
     if (body.action === "sync") {
       if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
@@ -155,7 +155,30 @@ module.exports = async (req, res) => {
       if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
       if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
       res.setHeader("Cache-Control", "no-store");
-      return res.status(200).json({ ...(await account.usage(user)), owner: account.isOwner(user), ai: account.mayUseAI(user) });
+      return res.status(200).json({ ...(await account.usage(user, today)), owner: account.isOwner(user), ai: account.mayUseAI(user) });
+    }
+    // Feedback from the app's menu: emailed to the owners through Resend (from feedback@upslopelabs.com, replies go to
+    // the sender) and kept in storage. An optional screenshot comes as a JPEG.
+    if (body.action === "feedback") {
+      if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+      const key = process.env.RESEND_API_KEY, to = account.ownerEmails();
+      if (!key || !to.length) return res.status(500).json({ error: "Feedback isn't set up on the server yet." });
+      const text = String(body.text || "").trim().slice(0, 8000), meta = String(body.meta || "").slice(0, 400);
+      if (!text) return res.status(400).json({ error: "Write something first." });
+      const image = typeof body.image === "string" && body.image.length < 4_000_000 ? body.image : "";
+      const lab = body.kind === "lab";
+      const r = await fetch("https://api.resend.com/emails", {
+        method: "POST", headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
+        body: JSON.stringify({
+          from: "Radical feedback <feedback@upslopelabs.com>", to, reply_to: user.email,
+          subject: lab ? "Radical color lab values" : `Radical feedback from ${user.email}`,
+          text: `${text}\n\n---\nFrom: ${user.email}\n${meta}`,
+          ...(image ? { attachments: [{ filename: "screenshot.jpg", content: image }] } : {})
+        })
+      });
+      await account.saveFeedback(user, today, { at: Date.now(), email: user.email, text, meta, kind: lab ? "lab" : "feedback", image: !!image, sent: r.ok });
+      if (!r.ok) return res.status(502).json({ error: "The message couldn't be sent. It was saved; try again later." });
+      return res.status(200).json({ ok: true });
     }
   } catch (e) { return res.status(500).json({ error: e.message }); }
   // While testing: if TESTER_EMAILS is set, only those people get the AI features (reading and cards still work).
@@ -164,8 +187,8 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: "No API key on the server. Add ANTHROPIC_API_KEY in Vercel, Settings, Environment Variables, then redeploy." });
   }
   // A high daily safety stop per person; every AI call is logged with its estimated cost.
-  if ((await account.spentToday(who)) >= account.DAILY_CAP()) return res.status(429).json({ error: "Today's AI limit is reached. It resets tomorrow; reading, saving and flash cards still work." });
-  const askClaude = async (model, prompt, maxTokens) => { const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage, user && user.email); return r.text; };
+  if ((await account.spentToday(who, today)) >= account.DAILY_CAP()) return res.status(429).json({ error: "Today's AI limit is reached. It resets tomorrow; reading, saving and flash cards still work." });
+  const askClaude = async (model, prompt, maxTokens) => { const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage, user && user.email, today); return r.text; };
   try {
     if (body.action === "card") {
       const word = String(body.word || "").trim().slice(0, 40);
