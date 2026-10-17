@@ -357,6 +357,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
 .line{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cell,38px),1fr));align-items:end;row-gap:6px}
 .word{display:contents}
 .cell{background:none;border:0;border-radius:6px;padding:0;cursor:pointer;display:grid;justify-items:center;color:var(--fg);min-width:0}
+g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .cell[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 28%,transparent)}
 .cell svg{width:var(--cell,38px);height:var(--cell,38px);display:block}
 .cell .py{font-size:min(.74rem,calc(var(--cell,38px) * .32));font-weight:500;min-height:1.05em;line-height:1.05;white-space:nowrap}
@@ -1027,6 +1028,7 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
     <div class="panel acct" id="acctPanel"></div>
     <h3 class="sec">Theme</h3>
     <div class="pgrid" id="paletteGrid"></div>
+    <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
     <button type="button" class="btn wide" id="startBtn" hidden>Start reading</button>
     <h3 class="sec">Appearance</h3>
     <div class="seg themeseg" id="themeSeg" role="group" aria-label="Appearance">
@@ -1343,8 +1345,37 @@ const isDark = () => { const t = document.documentElement.dataset.theme; return 
 const roleColor = (key, i) => PALETTES[key][isDark() ? "dark" : "light"][i === 8 ? 6 : i];  // strokes not tied to any part read as "origin unclear" too
 const noColor = k => k === "original" || k === "font";  // Plain ink and Original: one ink color, no legend
 const uiOf = key => PALETTES[noColor(key) ? "scholar" : key][isDark() ? "darkUI" : "lightUI"];
+// ---- color lab (owner only): each theme's part colors can be nudged (brightness, saturation, hue) and its lighting
+// tuned (stroke weight, highlight, relief, spark). Changes are kept on this phone (radical-lab) and sent as values to be
+// built into the themes for everyone. PAL0 keeps the built-in colors; the lab's numbers are relative to them.
+const PAL0 = JSON.parse(JSON.stringify(PALETTES));
+let lab = store.get("radical-lab", {});
+const FX0 = { weight: 0, highlight: 1, relief: 1, spark: 1 };
+function labFx(key = palette) { return { ...FX0, ...(((lab || {})[key] || {}).fx || {}) }; }
+const clamp01 = x => Math.max(0, Math.min(1, x));
+function hexHsl(h) {
+  const r = parseInt(h.slice(1, 3), 16) / 255, g = parseInt(h.slice(3, 5), 16) / 255, b = parseInt(h.slice(5, 7), 16) / 255;
+  const M = Math.max(r, g, b), m = Math.min(r, g, b), l = (M + m) / 2; let s = 0, hh = 0;
+  if (M !== m) { const d = M - m; s = l > .5 ? d / (2 - M - m) : d / (M + m); hh = (M === r ? (g - b) / d + (g < b ? 6 : 0) : M === g ? (b - r) / d + 2 : (r - g) / d + 4) / 6; }
+  return [hh, s, l];
+}
+function hslHex(h, s, l) {
+  const f = n => { const k = (n + h * 12) % 12, a = s * Math.min(l, 1 - l); return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, "0"); };
+  return ("#" + f(0) + f(8) + f(4)).toUpperCase();
+}
+function labColor(key, mode, i) {
+  const base = PAL0[key][mode][i], a = (((lab[key] || {})[mode]) || {})[i];
+  if (!a || !/^#[0-9a-f]{6}$/i.test(base)) return base;
+  const [h, s, l] = hexHsl(base);
+  return hslHex(((h + (a.h || 0) / 360) % 1 + 1) % 1, clamp01(s * (a.s ?? 1)), clamp01(l * (a.l ?? 1)));
+}
+function applyLab() {
+  for (const key of Object.keys(PAL0)) for (const mode of ["dark", "light"]) if (Array.isArray(PAL0[key][mode])) PALETTES[key][mode] = PAL0[key][mode].map((c, i) => labColor(key, mode, i));
+}
+applyLab();
 function applyPalette() {
   const root = document.documentElement.style, ui = uiOf(palette);
+  root.setProperty("--sw", labFx().weight + "px");
   for (const k in ui) root.setProperty(`--${k}`, ui[k]);
   ROLES.forEach((r, i) => root.setProperty(`--${r}`, noColor(palette) ? "var(--fg)" : roleColor(palette, i)));
   document.documentElement.classList.toggle("fontmode", palette === "font");
@@ -1362,7 +1393,7 @@ function buildPalettes() {
     ROLES.forEach((r, i) => prev.style.setProperty(`--${r}`, noColor(key) ? "var(--fg)" : roleColor(key, i)));
     sample().forEach(c => { if (cache[c]) prev.append(glyphFor(c, false, key)); });
     b.append(prev, el("span", "plabel", `<b>${p.name}${key === "scholar" ? " · default" : ""}</b><span>${p.blurb}</span>`), el("span", "ptick", "✓"));
-    b.onclick = () => { palette = key; store.set("radical-palette", key); applyPalette(); };
+    b.onclick = () => { palette = key; store.set("radical-palette", key); applyPalette(); if (!$("labWrap").hidden) buildLab(); };
     grid.append(b);
   });
   applyPalette();
@@ -1374,7 +1405,7 @@ function setTheme(t) {
   store.set("radical-theme", t);
   if (t === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
   document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === t));
-  applyPalette(); if (!$("settingsScreen").hidden) buildPalettes();
+  applyPalette(); if (!$("settingsScreen").hidden) { buildPalettes(); buildLab(); }
 }
 document.querySelectorAll("[data-theme-set]").forEach(b => b.onclick = () => setTheme(b.dataset.themeSet));
 document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === store.get("radical-theme", "dark")));
@@ -1464,7 +1495,7 @@ function svgFor(ch, grid, light) {
   g.setAttribute("transform", "scale(1,-1) translate(0,-900)");
   (d ? d.s : []).forEach((p, i) => {
     const path = document.createElementNS(NS, "path");
-    path.setAttribute("d", p); path.setAttribute("fill", `var(--${d.r[i] || "part3"}, var(--part3))`);
+    path.setAttribute("d", p); path.setAttribute("fill", `var(--${d.r[i] || "part3"}, var(--part3))`); path.setAttribute("stroke", `var(--${d.r[i] || "part3"}, var(--part3))`);
     g.append(path);
   });
   svg.append(g);
@@ -1484,7 +1515,7 @@ const lit = new Set();
 let lightId = 0;
 function sheenStops(k = 1) {
   const th = PALETTES[palette] || PALETTES.scholar, iris = th.sheen === "iris";
-  const c = th.sheen && !iris ? th.sheen : "#fff", a = (th.sheenA || .4) * k;
+  const c = th.sheen && !iris ? th.sheen : "#fff", a = Math.min(1, (th.sheenA || .4) * k * labFx().highlight);
   return iris
     ? `<stop offset="0" stop-color="#9BF6FF" stop-opacity="0"/><stop offset=".36" stop-color="#9BF6FF" stop-opacity="0"/><stop offset=".45" stop-color="#9BF6FF" stop-opacity="${a}"/><stop offset=".52" stop-color="#FFB3E6" stop-opacity="${a}"/><stop offset=".6" stop-color="#FFE29A" stop-opacity=".35"/><stop offset=".68" stop-color="#FFE29A" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>`
     : `<stop offset="0" stop-color="${c}" stop-opacity="0"/><stop offset=".34" stop-color="${c}" stop-opacity="0"/><stop offset=".45" stop-color="${c}" stop-opacity="${a * .45}"/><stop offset=".5" stop-color="${c}" stop-opacity="${a}"/><stop offset=".55" stop-color="${c}" stop-opacity="${a * .45}"/><stop offset=".66" stop-color="${c}" stop-opacity="0"/><stop offset="1" stop-color="${c}" stop-opacity="0"/>`;
@@ -1493,14 +1524,14 @@ function sheenStops(k = 1) {
 // raised surface, shaded by a fixed soft light and caught by a moving point light, so they read as carved, glossy ink.
 // Only a handful are ever on screen, so the extra work is affordable.
 function addLight(svg, d) {
-  const id = "lt" + (++lightId), defs = document.createElementNS(NS, "defs");
+  const id = "lt" + (++lightId), defs = document.createElementNS(NS, "defs"), fx = labFx(), ss = +(8 * fx.relief).toFixed(2), k3 = +(.35 * fx.highlight).toFixed(3);
   defs.innerHTML = `<filter id="${id}" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
     <feGaussianBlur in="SourceAlpha" stdDeviation="16" result="b"/>
-    <feDiffuseLighting in="b" surfaceScale="8" diffuseConstant="1" lighting-color="#fff" result="d"><feDistantLight azimuth="225" elevation="52"/></feDiffuseLighting>
+    <feDiffuseLighting in="b" surfaceScale="${ss}" diffuseConstant="1" lighting-color="#fff" result="d"><feDistantLight azimuth="225" elevation="52"/></feDiffuseLighting>
     <feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.18" k2="0" k3="0" k4="0" result="shaded"/>
-    <feSpecularLighting in="b" surfaceScale="8" specularConstant=".8" specularExponent="26" lighting-color="#fff" result="s"><fePointLight x="300" y="300" z="520"/></feSpecularLighting>
+    <feSpecularLighting in="b" surfaceScale="${ss}" specularConstant=".8" specularExponent="26" lighting-color="#fff" result="s"><fePointLight x="300" y="300" z="520"/></feSpecularLighting>
     <feComposite in="s" in2="SourceAlpha" operator="in" result="sIn"/>
-    <feComposite in="shaded" in2="sIn" operator="arithmetic" k1="0" k2="1" k3=".35" k4="0" result="lit"/>
+    <feComposite in="shaded" in2="sIn" operator="arithmetic" k1="0" k2="1" k3="${k3}" k4="0" result="lit"/>
     <feComposite in="lit" in2="SourceAlpha" operator="in"/>
   </filter>`;
   svg.append(defs);
@@ -1524,25 +1555,25 @@ function lightReader(reader) {
     const ch = svg.getAttribute("aria-label"), d = cache[ch]; if (!d) return;
     const n = ++glintN;
     const paths = d.s.map(p => `<path transform="scale(1,-1) translate(0,-900)" d="${p}"/>`).join("");  // clipPath can't hold a <g>
-    const plain = d.s.map(p => `<path d="${p}"/>`).join(""), B = 30;
+    const plain = d.s.map(p => `<path d="${p}"/>`).join(""), fx = labFx(), B = Math.round(30 * fx.relief), o = (v, k) => +(v * k).toFixed(3);
     // A soft spark of light that drifts slowly over the strokes, each character on its own path and timing,
     // so the page shimmers rather than sweeps; the drift never stops.
     const spark = iris
-      ? `<stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset=".25" stop-color="#9BF6FF" stop-opacity=".45"/><stop offset=".55" stop-color="#FFB3E6" stop-opacity=".3"/><stop offset="1" stop-color="#FFE29A" stop-opacity="0"/>`
-      : `<stop offset="0" stop-color="${c}" stop-opacity=".6"/><stop offset=".22" stop-color="${c}" stop-opacity=".45"/><stop offset=".55" stop-color="${c}" stop-opacity=".22"/><stop offset="1" stop-color="${c}" stop-opacity="0"/>`;
+      ? `<stop offset="0" stop-color="#fff" stop-opacity="${o(.6, fx.spark)}"/><stop offset=".25" stop-color="#9BF6FF" stop-opacity="${o(.45, fx.spark)}"/><stop offset=".55" stop-color="#FFB3E6" stop-opacity="${o(.3, fx.spark)}"/><stop offset="1" stop-color="#FFE29A" stop-opacity="0"/>`
+      : `<stop offset="0" stop-color="${c}" stop-opacity="${o(.6, fx.spark)}"/><stop offset=".22" stop-color="${c}" stop-opacity="${o(.45, fx.spark)}"/><stop offset=".55" stop-color="${c}" stop-opacity="${o(.22, fx.spark)}"/><stop offset="1" stop-color="${c}" stop-opacity="0"/>`;
     const dur = (9 + Math.random() * 7).toFixed(1), delay = (-Math.random() * 16).toFixed(1), path = 1 + (n % 3);
     const g = document.createElementNS(NS, "g"); g.setAttribute("class", "lacq");
     g.innerHTML = `<defs><clipPath id="gc${n}">${paths}</clipPath>`
-      + `<linearGradient id="gl${n}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".38" stop-color="#fff" stop-opacity=".04"/><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".42"/></linearGradient>`
+      + `<linearGradient id="gl${n}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="${o(.16, fx.highlight)}"/><stop offset=".38" stop-color="#fff" stop-opacity="${o(.04, fx.highlight)}"/><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${o(.42, fx.relief)}"/></linearGradient>`
       + `<radialGradient id="gs${n}">${spark}</radialGradient>`
       // Bevel: a thin lit edge inside each stroke's top-left and a shaded edge inside its bottom-right, so the
       // strokes read as raised. Each edge is the stroke minus a copy of itself nudged the other way.
       + `<mask id="mh${n}" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><g transform="scale(1,-1) translate(0,-900)" fill="#fff">${plain}</g><g transform="translate(${B},${B}) scale(1,-1) translate(0,-900)" fill="#000">${plain}</g></mask>`
       + `<mask id="md${n}" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><g transform="scale(1,-1) translate(0,-900)" fill="#fff">${plain}</g><g transform="translate(${-B},${-B}) scale(1,-1) translate(0,-900)" fill="#000">${plain}</g></mask></defs>`
-      + `<rect width="1024" height="1024" fill="#000" opacity=".5" mask="url(#md${n})"/>`
+      + `<rect width="1024" height="1024" fill="#000" opacity="${o(.5, Math.min(fx.relief, 2))}" mask="url(#md${n})"/>`
       + `<g clip-path="url(#gc${n})"><rect width="1024" height="1024" fill="url(#gl${n})"/>`
-      + `<rect width="1024" height="1024" fill="#fff" opacity=".3" mask="url(#mh${n})"/>`
-      + (still ? "" : `<g class="spark p${path}" style="animation-duration:${dur}s;animation-delay:${delay}s"><circle cx="512" cy="512" r="300" fill="url(#gs${n})"/></g>`)
+      + `<rect width="1024" height="1024" fill="#fff" opacity="${o(.3, fx.highlight)}" mask="url(#mh${n})"/>`
+      + (still ? "" : `<g class="spark p${path}" style="animation-duration:${dur}s;animation-delay:${delay}s"><circle cx="512" cy="512" r="${Math.round(300 * (.6 + .4 * fx.spark))}" fill="url(#gs${n})"/></g>`)
       + `</g>`;
     svg.append(g);
   });
@@ -3755,6 +3786,92 @@ function showBack(w, how, st) {
   $("revBar").classList.add("glow");  // a light sweeps the whole rating bar: your turn
 }
 
+// ---- the color lab's panel in Settings (shown only to owners). It edits the theme in use, in the mode in use
+// (dark or light); switch either above to tune another. A live sample sits at the top.
+const LAB_ROLES = [[0, "Meaning"], [1, "Sound"], [2, "Ideas"], [3, "Ideas 2"], [5, "Picture"], [6, "Unclear"], [4, "Radical"], [7, "Unclear 2"]];
+let labPick = 0, labTimer = 0;
+function saveLab() { store.set("radical-lab", lab); }
+function labMode() { return isDark() ? "dark" : "light"; }
+function labValues() {  // what Send values reports: every edited theme's resulting colors and lighting, plus the raw nudges
+  const out = {};
+  for (const key of Object.keys(lab)) {
+    const e = lab[key] || {}; if (!Object.keys(e).length) continue;
+    out[key] = { fx: labFx(key) };
+    for (const mode of ["dark", "light"]) if (e[mode] && Object.keys(e[mode]).length) out[key][mode] = PAL0[key][mode].map((c, i) => labColor(key, mode, i));
+    out[key].nudges = e;
+  }
+  return out;
+}
+function buildLab() {
+  const wrap = $("labWrap"), box = $("labPanel");
+  wrap.hidden = store.get("radical-owner", null) !== true;
+  if (wrap.hidden) return;
+  const key = palette, mode = labMode();
+  box.innerHTML = "";
+  if (noColor(key)) { box.append(el("p", "note", "Pick a color theme above to tune it.")); return; }
+  box.append(el("p", "note", `Tuning <b>${esc(PALETTES[key].name)}</b>, ${mode} mode. Only you see this; changes apply on this phone until you send them to be built in.`));
+  const sample = el("div", "labsample"), big = el("div", "labbig");
+  const line = el("div", "reader labline nopy"); line.lang = "zh";
+  sample.append(big, line); box.append(sample);
+  const paintSample = () => {
+    big.innerHTML = ""; const g = svgFor("營", false, true); big.append(g);
+    line.innerHTML = ""; line.append(buildLine("我們在登山口附近搭帳篷", () => {}, false));
+    line.querySelectorAll(".linectl").forEach(x => x.remove());
+    requestAnimationFrame(() => lightReader(line));
+  };
+  ensure("營我們在登山口附近搭帳篷").then(paintSample);
+  const changed = () => {
+    saveLab(); applyLab(); applyPalette(); paintSample();
+    const code = box.querySelector(".labhead code"), dot = box.querySelector(".labdot.on i");
+    if (code) code.textContent = `${PAL0[key][mode][labPick]} → ${PALETTES[key][mode][labPick]}`;
+    if (dot) dot.style.background = PALETTES[key][mode][labPick];
+    clearTimeout(labTimer); labTimer = setTimeout(() => { buildPalettes(); render(); }, 600);
+  };
+  // Part colors: tap a swatch, then nudge it.
+  const sw = el("div", "labsw");
+  LAB_ROLES.forEach(([i, name]) => {
+    const b = el("button", "labdot" + (i === labPick ? " on" : "")); b.type = "button";
+    b.innerHTML = `<i style="background:${PALETTES[key][mode][i]}"></i><span>${name}</span>`;
+    b.onclick = () => { labPick = i; buildLab(); };
+    sw.append(b);
+  });
+  box.append(sw);
+  const edits = () => { lab[key] = lab[key] || {}; lab[key][mode] = lab[key][mode] || {}; return lab[key][mode]; };
+  const cur = ((lab[key] || {})[mode] || {})[labPick] || {};
+  const slider = (label, min, max, step, val, fmt, set) => {
+    const row = el("label", "labrow"), out = el("b", "", fmt(val)), r = el("input"); r.type = "range"; r.min = min; r.max = max; r.step = step; r.value = val;
+    r.oninput = () => { out.textContent = fmt(+r.value); set(+r.value); changed(); };
+    row.append(el("span", "", label), r, out); return row;
+  };
+  const pct = v => `${Math.round(v * 100)}%`;
+  const one = el("div", "labgroup");
+  one.append(el("p", "labhead", `${LAB_ROLES.find(x => x[0] === labPick)[1]} <code>${PAL0[key][mode][labPick]} → ${PALETTES[key][mode][labPick]}</code>`),
+    slider("Brightness", .4, 1.6, .02, cur.l ?? 1, pct, v => { edits()[labPick] = { ...(edits()[labPick] || {}), l: v }; }),
+    slider("Saturation", 0, 1.6, .02, cur.s ?? 1, pct, v => { edits()[labPick] = { ...(edits()[labPick] || {}), s: v }; }),
+    slider("Hue", -40, 40, 1, cur.h ?? 0, v => `${v > 0 ? "+" : ""}${v}°`, v => { edits()[labPick] = { ...(edits()[labPick] || {}), h: v }; }),
+    btn("Reset this color", "btn ghost small", () => { delete edits()[labPick]; changed(); buildLab(); }));
+  box.append(one);
+  // Lighting and weight for the whole theme (both modes).
+  const fx = labFx(key), setFx = (k, v) => { lab[key] = lab[key] || {}; lab[key].fx = { ...labFx(key), [k]: v }; };
+  const two = el("div", "labgroup");
+  two.append(el("p", "labhead", "Strokes and light (this theme)"),
+    slider("Stroke weight", 0, 40, 1, fx.weight, v => v ? `+${v}` : "normal", v => setFx("weight", v)),
+    slider("Highlight", 0, 2, .05, fx.highlight, pct, v => setFx("highlight", v)),
+    slider("Relief", 0, 2.5, .05, fx.relief, pct, v => setFx("relief", v)),
+    slider("Spark", 0, 2, .05, fx.spark, pct, v => setFx("spark", v)));
+  box.append(two);
+  const msg = el("p", "note labmsg");
+  const acts = el("div", "row");
+  acts.append(
+    btn("Send values", "btn small", async () => {
+      msg.textContent = "Sending…";
+      try { await claude({ action: "feedback", text: "Color lab values\n\n" + JSON.stringify(labValues(), null, 1), kind: "lab", meta: metaLine() }); msg.textContent = "Sent to your inbox."; play("right"); }
+      catch (e) { msg.textContent = e.message; }
+    }),
+    btn("Copy values", "btn ghost small", async () => { try { await navigator.clipboard.writeText(JSON.stringify(labValues(), null, 1)); msg.textContent = "Copied."; } catch (e) { msg.textContent = "Couldn't copy here; use Send values."; } }),
+    btn("Reset theme", "btn ghost small", () => { delete lab[key]; changed(); buildLab(); }));
+  box.append(acts, msg);
+}
 // ================= settings
 async function openSettings(welcome) {
   await ensure(SAMPLE.join("") + sample().join(""));
@@ -3763,6 +3880,7 @@ async function openSettings(welcome) {
   $("setIntro").hidden = !welcome; $("acctHead").hidden = $("acctPanel").hidden = welcome;  // first launch: just the colors $("startBtn").hidden = !welcome; $("setBack").style.visibility = welcome ? "hidden" : "";
   $("rate").value = rate; pickVoice();
   $("pw").value = store.get("radical-pw", ""); acctSent = false; renderAccount();
+  buildLab();
   go("settingsScreen");
 }
 function saveSettings() { store.set("radical-pw", $("pw").value.trim()); store.set("radical-palette", palette); myWords.filter(w => !w.card).forEach(queueCard); }
