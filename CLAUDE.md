@@ -62,19 +62,31 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 - Menu: History, Settings, How it works, Save a backup, About, Send feedback; no tabs. Pages opened from it (`MENU_PAGES`, flag `viaMenu` read by `go()`) show "‹ Menu" and `back()` reopens the menu; opened any other way they show "‹ Back". `showTour(fromMenu)`.
 - 繁/简 for the interface: `uiScript()` converts the Chinese text nodes in the tab bar, menu, headings and About (originals in `uiOrig`); add class `uizh` to include more. Settings themes are compact rows (`buildPalettes`, samples via `sample()`).
 - Counts: the 詞 badge = words with status Due (same as the filter); the Start row splits Today into due / known / new.
-- Feedback: `FEEDBACK_TO` (empty hides the menu item) and `APP_VERSION`; bump `APP_VERSION` each batch.
+- Feedback: menu 信 Send feedback opens a form (`metaLine()` adds version, device, screen); the `feedback` action emails `OWNER_EMAILS` through Resend (`RESEND_API_KEY`, from feedback@upslopelabs.com, reply-to the sender) and keeps a copy in `feedback/<day>/`. Color lab Send values uses it with `kind: "lab"`. Bump `APP_VERSION` each batch.
+- Splash: `start()` takes the tap first thing (`window.__radicalStarted`), shows `.spstat` from `weekStats()`, and catches load errors; an inline safety-net script under the splash dismisses it if the main script never starts.
+- This week and daily target: `weekStats()` (last 7 app days from `radical-days`; `u` counts learned words back for review, logged by `unlearn`), `weekCard()` at the top of My words, `updateRing()` for the ring around 詞 (`radical-target`, Settings `#targetSeg`; an `<svg>` has no `.hidden`, use the attribute).
+- Color lab (owner only, `#labWrap`, `buildLab()`): nudges in `radical-lab` = {palette: {dark|light: {roleIndex: {l, s, h}}, fx: {weight, highlight, relief, spark}}}; `PAL0` keeps the built-in colors, `applyLab()` rewrites `PALETTES`, `labFx()` feeds `lightReader`, `addLight`, `sheenStops` and `--sw` (stroke outline width on `g.strokes path`).
+- Import checklist: `showPreview` rows (`found.notes` or `found.rows`) with Select all/none and kind chips (`.pvctl`); `addNewWords()` builds the reader's list (skips `SKIP_WORDS`).
 
 ## Accounts and sync (v30, v31)
 
+- The page sends its app day (`localDay()`, 4am start) in `x-radical-day`; the server's `dayOf(req)` trusts it within a day of UTC and uses it for usage files, the daily cap and the tally's "today".
 - Sign-in is Supabase email OTP, called from the page (`sbAuth`: `otp`, then `verify` with the 6-digit code; `accessToken()` refreshes). Emails go out through Resend as login@upslopelabs.com (custom SMTP in Supabase; templates show `{{ .Token }}`). Session in `radical-session`.
 - The server (`api/_account.js`) checks the access token with Supabase and keeps data in a private Storage bucket `radical` (no tables): `users/<id>/data.json` (+ daily `backups/`), `usage/<id>/<day>.json` (every AI call: action, model, tokens, estimated cost). Prices are estimates (env `PRICE_SONNET_IN/OUT`, `PRICE_HAIKU_IN/OUT`); daily stop `RADICAL_DAILY_CAP` (default $3).
 - Sync: `saveWords()` stamps changed words with `t` (`stampWords`, comparing to `wordSig`) and records removals in `radical-deleted`; `syncNow()` posts everything, the server merges (newest `t` per word, tombstones, daily tallies by max, learned by union) and `applyMerged()` updates the word objects in place. Known gap: un-learning a word doesn't sync (learned merges by union).
-- Env vars in Vercel: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` (Secret type), plus `ANTHROPIC_API_KEY`; `APP_PASSWORD` still accepted until deleted. `OWNER_EMAILS` and `TESTER_EMAILS` (Config type, comma separated): if `TESTER_EMAILS` is set, only those (and owners) get AI actions (403 `notester` otherwise); owners see everyone's AI use.
+- Env vars in Vercel: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` (Secret type), plus `ANTHROPIC_API_KEY`; `APP_PASSWORD` still accepted until deleted. `RESEND_API_KEY` (Secret, for feedback email). `OWNER_EMAILS` and `TESTER_EMAILS` (Config type, comma separated; TESTER_EMAILS deliberately unset for now): if `TESTER_EMAILS` is set, only those (and owners) get AI actions (403 `notester` otherwise); owners see everyone's AI use.
 - AI use: usage files also store the email. The `usage` action returns your month (`me`), and for owners `all` (today, month, `byAction`, `byPerson`), listing `usage/` with the Storage list API. Settings → Account shows "AI this month: about $X"; the menu's `#aiTally` (owners only, `radical-owner`) opens a breakdown.
 
 ## Server actions (api/claude.js)
 
-`card` (GET, cached at Vercel's CDN for a year), `words`, `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips), `explain` (解, card model), `notes` (class notes page image to items, card model), `example` (a new example sentence), `sync`, `usage`; public: `config`, `status`. Fast jobs use the Haiku model; cards use Sonnet.
+`card` (GET, cached at Vercel's CDN for a year), `words`, `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips), `explain` (解, card model), `notes` (class notes page image to items, card model), `example` (a new example sentence), `sync`, `usage`, `feedback` (Resend email; not AI, no tester check); public: `config`, `status`. Fast jobs use the Haiku model; cards use Sonnet.
+
+## Next batches (decided Oct 17, 2026)
+
+- v34, data layer: card library (shared table `cards/` filled from users' cards, vocabulary and patterns only, never sentences or edits; rebuilt into bundled files on a schedule; about 5,000 common words pre-built; each card carries both scripts and both readings; Settings: "Share new words with the card library" opt-out, updates Ask first / Automatic / Never with the size shown, About line with size and date), then the Mainland/Taiwan setting, then offline mode (service worker, Home Screen recommended).
+- v35, looks: David's color lab values built in for everyone; Lacquer & Gold as default and brand if it still wins.
+- Own domain (e.g. radical.upslopelabs.com): David adds it in Vercel and a CNAME in GoDaddy; walk him through it.
+- Later: notifications (needs Home Screen on iPhone; Vercel Hobby cron is once a day), Apple/Google sign-in with the store wrap (Upslope Labs LLC, D-U-N-S).
 
 ## Open roadmap (not started)
 
@@ -85,15 +97,13 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 - Grammar mode: catalog from the HSK skeleton, AI-drafted, native-speaker reviewed; multiple-choice and word-tile tests.
 - Domain, payments ($9.99 unlock plus an AI subscription), native apps, privacy policy.
 - Real instrument recordings.
-- "This week" card on My words and one quiet line under the 部 on the opening screen, built from the progress record: days studied (e.g. 5 of 7), cards per day, characters read per day, new words, and words learned shown as "312 learned · +14 this week · 3 back for review" (gains first; losses framed as back for review). No streak cliff and never sell streak protection; if a streak is ever added, give free rest days.
-- Daily target on the tab bar (the 詞 badge shows today's progress).
+- Streaks: never sell streak protection; if a streak is ever added, give free rest days.
 - Notifications (cards due, at a chosen time): only after sign-in, since the server must know each device; iPhone needs the app on the Home Screen (iOS 16.4+).
 - AI spending cap before sharing the app: a monthly cap in the Anthropic console and a per-device daily limit in `api/claude.js`.
 - Sentence-gap cards (the example sentence with the word blanked out), once pre-built cards exist.
 - Pre-built common cards; one-hour license check before charging.
 - Save an article for later (a bookmark in Explore and the reader).
 - Articles finished per week, as a stat for the This week card.
-- Feedback address: `FEEDBACK_TO` is empty; upslopelabs.com exists now, so feedback@ (forwarded by GoDaddy) can go in.
 - Launch: app stores only (no home-screen web launch); Apple $99/yr, Google $25; move hosting off Vercel Hobby before selling; no trademark for now. Company: Upslope Labs (upslopelabs.com).
 - Branding: Scholar's Ink now; David is tempted by Lacquer & Gold. Not decided.
 

@@ -2,6 +2,18 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v33
+
+- The opening screen takes a tap at once. If the characters are slow to arrive, the page opens anyway and says it's still loading, instead of looking frozen. It also shows a quiet line of progress under 部, like "5 days this week · 312 learned".
+- This week, at the top of My words: days studied out of the last 7, cards, characters read and words added, then "312 learned · +14 this week · 3 back for review". No streaks; missing a day costs nothing.
+- Daily target: set in Settings (Off, 10, 20, 30 or 50 cards). A thin ring around 詞 on the tab bar fills as you study and turns gold when you reach it. The badge still shows the Due count.
+- Send feedback is now a form in the menu: write a note, add a screenshot if you like, and it arrives in the owner's inbox (from feedback@upslopelabs.com; replies go to the sender). A copy is kept on the server.
+- Color lab (owner only, in Settings under the themes): nudge each part color's brightness, saturation and hue, and set stroke weight, highlight, relief and spark for the theme, all live on a sample and in the reader. Send values emails the numbers so they can be built in for everyone.
+- Explore says "Searches Chinese Wikipedia" next to its name.
+- Import checklists have Select all and Select none, and for class notes a switch per kind (Words, Phrases, Patterns, Sentences), so all the sentences can be dropped in one tap.
+- "+ Add new words" under the text you're reading lists every dictionary word not yet in My words (common little words left out) as a checklist with pinyin and meaning.
+- AI use and the $3 daily stop now follow the app's day (which starts at 4am your time), not UTC. The menu re-checks owner status at most once an hour, so the AI tally appears without a visit to Settings.
+
 ## v32
 
 - PDFs whose hidden text is scrambled (common with fonts that print pinyin above each character) are now read from the page picture instead, so they no longer come out with Korean letters, wrong characters and missing English letters. Reading a page from a picture keeps English glosses and drops the pinyin.
