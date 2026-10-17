@@ -810,6 +810,13 @@ h3.sec.sub{margin-top:0;font-size:.7rem;text-transform:none;letter-spacing:.02em
   <p>Every character drawn with its meaning and sound in color.</p>
   <span class="skip">Tap to begin</span>
 </div>
+<script>
+(function () {  // safety net: if the app's script never starts, the splash still shows a message and can be dismissed
+  var s = document.getElementById("splash"), t0 = Date.now();
+  s.addEventListener("click", function () { if (!window.__radicalStarted && Date.now() - t0 > 3000) { s.classList.add("out"); setTimeout(function () { s.remove(); }, 500); } });
+  setTimeout(function () { if (!window.__radicalStarted && document.getElementById("splash")) { s.classList.add("ready"); var p = document.createElement("p"); p.className = "splerr"; p.textContent = "Radical is taking a long time to load. Check your connection, then reload."; s.appendChild(p); } }, 10000);
+})();
+</script>
 
 <!-- READ -->
 <section class="screen" id="readScreen">
@@ -4273,29 +4280,43 @@ document.querySelectorAll("#targetSeg [data-t]").forEach(b => {
   b.onclick = () => { store.set("radical-target", +b.dataset.t); document.querySelectorAll("#targetSeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); updateRing(); };
 });
 (async function start() {
-  const t0 = Date.now();
-  { const saved = store.get("radical-text", null); if (saved !== null) $("src").value = saved; }
-  upgradeKnown(); applyPalette(); onNewText(); updateCounts(); showDocBar();
-  await ensure("部");
-  document.querySelectorAll(".brandMark").forEach(x => { const m = svgFor("部", false, true); m.classList.add("brandMark"); x.replaceWith(m); });  // the lit 部 heads every tab
-  const am = svgFor("部", false, true); am.style.width = am.style.height = "56px"; $("aboutMark").replaceWith(am);
-  const big = svgFor("部", false, true); big.setAttribute("class", "mark"); $("splashMark").replaceWith(big);
-  // The strokes draw over about 5 seconds, then a soft rising run on the guzheng.
-  // (Phones only allow sound after a first tap, so on a fresh launch this may stay silent.)
-  let harped = false;
+  // The splash takes a tap from the very first moment: a tap hides it even while the app is still loading behind it
+  // (the reader shows "Drawing…" until the characters arrive), so a slow connection never looks like a frozen app.
+  window.__radicalStarted = true;
+  const sp0 = $("splash");
+  let harped = false, done = false;
   const harp = () => { if (harped || !soundOn) return; harped = true; for (let k = 0; k < 6; k++) zheng(k * .08, pen(4 + k), .38, 1, 2.4); };
-  // When 部 finishes drawing, "Tap to begin" fades in. Phones only allow sound after a touch, so the tap is what
-  // lets the harp play; tapping earlier works too.
-  animate(big, "部", 1.4, () => { const sp = document.getElementById("splash"); if (sp) sp.classList.add("ready"); });
-  await render(); fitLegend();
+  const hide = () => { sp0.classList.add("out"); setTimeout(() => sp0.remove(), 500); };
+  const finish = () => { if (done) return; done = true; hide(); if (firstRun) openSettings(true); else if (!store.get("radical-tour-seen", false)) setTimeout(showTour, 3200); };  // after the harp has rung out
+  sp0.onclick = () => { try { harp(); } catch (e) {} finish(); };
+  setTimeout(() => sp0.classList.add("ready"), 6000);  // "Tap to begin" shows even if the drawing is slow
+  // A quiet line under 部 from the progress record (nothing on a first launch).
+  try {
+    const w = weekStats(), bits = [w.n ? `${w.n} day${w.n === 1 ? "" : "s"} this week` : "", w.learned ? `${num(w.learned)} learned` : ""].filter(Boolean);
+    if (bits.length) sp0.querySelector("p").after(el("p", "spstat", bits.join(" · ")));
+  } catch (e) {}
+  $("reader").innerHTML = '<p class="loading">Drawing…</p>';
+  setTimeout(() => { const l = $("reader").querySelector(".loading"); if (l) l.textContent = "Still loading the characters. Check your connection; this page fills in when they arrive."; }, 12000);
+  try {
+    { const saved = store.get("radical-text", null); if (saved !== null) $("src").value = saved; }
+    upgradeKnown(); applyPalette(); onNewText(); updateCounts(); showDocBar(); updateRing();
+    await ensure("部");
+    document.querySelectorAll(".brandMark").forEach(x => { const m = svgFor("部", false, true); m.classList.add("brandMark"); x.replaceWith(m); });  // the lit 部 heads every tab
+    const am = svgFor("部", false, true); am.style.width = am.style.height = "56px"; $("aboutMark").replaceWith(am);
+    const big = svgFor("部", false, true); big.setAttribute("class", "mark"); $("splashMark").replaceWith(big);
+    // The strokes draw over about 5 seconds; then "Tap to begin" fades in. Phones only allow sound after a touch, so
+    // the tap is what lets the harp play.
+    animate(big, "部", 1.4, () => sp0.classList.add("ready"));
+    await render(); fitLegend();
+  } catch (e) {
+    sp0.classList.add("ready");
+    const m = el("p", "splerr", "Radical couldn't finish loading. Check your connection, then reload.");
+    if (sp0.isConnected) sp0.append(m);
+    console.error(e);
+  }
   fetchDaily();  // the day's Explore chips, fetched once a day in the background
   myWords.filter(w => !w.card).forEach(queueCard);  // cards still missing (added offline, or a request failed)
-  if (session) syncNow(true).then(() => myWords.filter(w => !w.card).forEach(queueCard));  // pull what other phones changed
+  if (session) syncNow(true).then(() => { myWords.filter(w => !w.card).forEach(queueCard); updateRing(); });  // pull what other phones changed
   if (document.fonts) document.fonts.ready.then(() => fitLegend());
-  const hide = () => { $("splash").classList.add("out"); setTimeout(() => $("splash").remove(), 500); };
-  // The splash waits for a tap (the app loads behind it meanwhile).
-  let done = false;
-  const finish = () => { if (done) return; done = true; hide(); if (firstRun) openSettings(true); else if (!store.get("radical-tour-seen", false)) setTimeout(showTour, 3200); };  // after the harp has rung out
-  $("splash").onclick = () => { harp(); finish(); };
 })();
 </script>
