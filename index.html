@@ -2129,7 +2129,7 @@ $("histBtn").onclick = () => { remember($("src").value); renderHistory(); go("hi
 async function claude(payload) {
   const token = await accessToken(), pw = store.get("radical-pw", "");
   if (!token && !pw) { openSettings(false); setTimeout(() => { const e = $("acctEmail"); if (e) e.focus(); }, 300); throw new Error("Sign in first (Settings, Account)."); }
-  const auth = token ? { Authorization: `Bearer ${token}` } : { "x-app-password": pw };
+  const auth = { ...(token ? { Authorization: `Bearer ${token}` } : { "x-app-password": pw }), "x-radical-day": localDay() };
   const get = payload.action === "card";
   const url = get ? `/api/claude?v=1&action=card&word=${encodeURIComponent(payload.word)}` : "/api/claude";
   let r;
@@ -2193,9 +2193,10 @@ function signOut() { setSession(null); store.set("radical-synced", 0); store.set
 async function fetchUsage() {
   const token = session && await accessToken(); if (!token) return null;
   try {
-    const r = await fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: "usage" }) });
+    const r = await fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}`, "x-radical-day": localDay() }, body: JSON.stringify({ action: "usage" }) });
     if (!r.ok) return null;
-    const j = await r.json(); store.set("radical-owner", !!j.owner); if (j.all) store.set("radical-ai-tally", j.all);
+    const j = await r.json(); store.set("radical-owner", !!j.owner); store.set("radical-owner-at", Date.now()); if (j.all) store.set("radical-ai-tally", j.all);
+    if (!$("settingsScreen").hidden) buildLab();
     return j;
   } catch (e) { return null; }
 }
@@ -2205,7 +2206,8 @@ const AI_NAMES = { card: "Word cards", words: "Word lists", ocr: "Photo reading"
 function tallyText(a) { return `AI today: ${a.today.calls} call${a.today.calls === 1 ? "" : "s"} · ${money(a.today.cost)} · this month ${money(a.month.cost)} (all users)`; }
 function aiTally() {
   const b = $("aiTally");
-  if (!session || store.get("radical-owner", null) === false) { b.hidden = true; return; }
+  // Not an owner last time: ask again at most once an hour (owners can be added on the server at any time).
+  if (!session || (store.get("radical-owner", null) === false && Date.now() - store.get("radical-owner-at", 0) < 36e5)) { b.hidden = true; return; }
   const last = store.get("radical-ai-tally", null);
   if (last && store.get("radical-owner", false)) { b.hidden = false; b.textContent = tallyText(last); }
   fetchUsage().then(j => { if (j && j.all) { b.hidden = false; b.textContent = tallyText(j.all); } else if (!j || !j.owner) b.hidden = true; });
