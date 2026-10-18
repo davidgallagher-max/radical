@@ -373,6 +373,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
   filter:drop-shadow(1px 1.5px 0 rgba(0,0,0,.45));animation:numshine 8s ease-in-out infinite}
 @keyframes numshine{0%,100%{background-position:100% 0}50%{background-position:0 0}}
 .nolight .glyph.latin{animation:none;background:none;color:var(--fg);filter:none}
+:root:not(.movelight) .glyph.latin{animation:none;background-position:30% 0}  /* still unless Moving light in text is on */
 .glyph.latin.speaking{background-color:transparent;box-shadow:none;border-bottom:3px solid var(--accent);border-radius:0}
 @media (prefers-reduced-motion:reduce){.glyph.latin{animation:none}}
 .glue{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-items:end}
@@ -1029,6 +1030,8 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
     <div class="panel acct" id="acctPanel"></div>
     <h3 class="sec">Theme</h3>
     <div class="pgrid" id="paletteGrid"></div>
+    <button type="button" class="switch" id="moveLight" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Moving light in text</button>
+    <p class="note">The big characters always have their slow light. In reading text, off keeps the finish still; on adds a spark that drifts over each character.</p>
     <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
     <button type="button" class="btn wide" id="startBtn" hidden>Start reading</button>
     <h3 class="sec">Appearance</h3>
@@ -1565,10 +1568,10 @@ function addLight(svg, d) {
 // the bottom right) and a soft spark that drifts over its strokes. CSS animations clipped to the strokes, all local
 // to each character (no shared gradients), so Safari is happy and no script runs per frame.
 let glintN = 0;
-function lightReader(reader) {
+function lightReader(reader, calm) {  // calm: the lit finish without the drifting spark (small panels on cards)
   if (noColor(palette)) return;
   const th = PALETTES[palette] || PALETTES.scholar, iris = th.sheen === "iris", c = th.sheen && !iris ? th.sheen : "#fff";
-  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const still = calm || !movingLight || matchMedia("(prefers-reduced-motion: reduce)").matches;
   const box = reader.getBoundingClientRect(); if (!box.width) return;
   reader.querySelectorAll(".cell svg").forEach(svg => {
     if (svg.querySelector(".lacq")) return;
@@ -1600,6 +1603,12 @@ function lightReader(reader) {
 }
 let lightRunning = false;
 let lastTick = 0;
+// The drifting spark in reading text is off unless chosen in Settings: across a page of text it pulled the eye
+// away from the characters (and flickered on cards). The big single characters keep their slow moving light.
+let movingLight = store.get("radical-moving-light", false);
+document.documentElement.classList.toggle("movelight", movingLight);
+$("moveLight").setAttribute("aria-checked", movingLight);
+$("moveLight").onclick = () => { movingLight = !movingLight; store.set("radical-moving-light", movingLight); document.documentElement.classList.toggle("movelight", movingLight); $("moveLight").setAttribute("aria-checked", movingLight); if (typeof render === "function") render(); };
 function lightTick(now) {
   lightRunning = true;
   if (now - lastTick > 33) {  // about 30 frames a second is plenty for a slow drift
@@ -1901,7 +1910,7 @@ function miniReader(text, mark) {
       body.append(line);
     });
     let tries = 0;
-    const light = () => { if (box.isConnected && body.getBoundingClientRect().width) lightReader(body); else if (tries++ < 120) requestAnimationFrame(light); };
+    const light = () => { if (box.isConnected && body.getBoundingClientRect().width) lightReader(body, true); else if (tries++ < 120) requestAnimationFrame(light); };
     light();
   };
   if ([...text].some(ch => isHan(ch) && !cache[ch])) ensure(text).then(paint); else paint();
