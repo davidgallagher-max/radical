@@ -591,6 +591,8 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revcount{flex-wrap:nowrap}
 .revcount .note{flex:none;width:72px}
 .revcount .seg2{flex:1;min-width:0}
+.revcount>.note{white-space:nowrap}
+.revmix{margin:-4px 0 0;font-size:.95rem;font-weight:600;color:var(--fg);text-align:right}
 .revstrip{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:14px;background:var(--accent);color:var(--surface)}
 .revstrip b{font-size:1.25rem}
 .revstrip span{font-size:.85rem;opacity:.9}
@@ -647,6 +649,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .selrow b{flex:1;font-size:.92rem}
 .selrow .btn{flex:1;white-space:nowrap;padding-left:8px;padding-right:8px}.selrow:first-child .btn{flex:none}
 .lookbtn{font-size:.95rem;padding:11px}
+.lookrow{display:flex;gap:8px}.lookrow .lookbtn{flex:1;width:auto}
 .lookhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .lookhead .revtitle{text-align:left}
 .lookcard{min-height:50vh;touch-action:pan-y}
@@ -937,7 +940,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
       <p class="note" id="addStatus"></p>
       <div class="preview" id="preview" hidden></div>
     </div>
-    <button type="button" class="btn ghost wide lookbtn" id="lookBtn" hidden></button>
+    <div class="lookrow"><button type="button" class="btn ghost wide lookbtn" id="lookBtn" hidden></button><button type="button" class="btn wide lookbtn" id="lookFlash" hidden></button></div>
     <div class="wordlist" id="wordList"></div>
   </div>
 </section>
@@ -3038,12 +3041,12 @@ function buildQueue(mode, count) {
 function renderStrip() {
   const strip = $("revStrip"); strip.innerHTML = "";
   const box = el("div", "revpanel");
-  const sizes = { due: pool("due").length, new: pool("new").length, learning: pool("learning").length, all: pool("all").length };
-  if (!sizes[revMode]) revMode = ["due", "new", "learning", "all"].find(k => sizes[k]) || "due";
-  const modes = el("div", "seg2");
-  // "Today" is today's set (due cards plus today's new words), not the Due filter above; the buttons carry no
-  // counts, so the only number is the one on the Start row (which matches the 詞 badge for Read).
-  [["due", "Today"], ["new", "New"], ["learning", "Active"], ["all", "All"]].forEach(([k, label]) => {
+  const sizes = { due: pool("due").length, new: pool("new").length, all: pool("all").length };
+  if (revMode === "learning") revMode = "due";  // Active was dropped from the choices
+  if (!sizes[revMode]) revMode = ["due", "new", "all"].find(k => sizes[k]) || "due";
+  const modes = el("div", "seg2 three");
+  // "Suggested" is the app's pick: due cards first, plus today's new words; its mix shows right under the choices.
+  [["due", "Suggested"], ["new", "New"], ["all", "All"]].forEach(([k, label]) => {
     const b = el("button", "", label); b.type = "button"; b.setAttribute("aria-pressed", revMode === k); b.disabled = !sizes[k];
     b.onclick = () => { revMode = k; store.set("radical-revmode", k); renderStrip(); }; modes.append(b);
   });
@@ -3055,16 +3058,17 @@ function renderStrip() {
   const nCards = Math.min(sizes[revMode], revCount === "all" ? Infinity : revCount);
   // The panel folds to its top row (which keeps Start), and remembers whether you left it open.
   const open = store.get("radical-rev-open", true);
-  const what = { due: "today", new: "new", learning: "active", all: nCards === 1 ? "card" : "cards" }[revMode], how = { read: "Read", write: "Write", listen: "Listen" }[revHow];
+  const what = { due: "suggested", new: "new", all: nCards === 1 ? "card" : "cards" }[revMode], how = { read: "Read", write: "Write", listen: "Listen" }[revHow];
   // Today's set is due cards first, then new words: the Start row says how many of each.
   // Known words back for their occasional check are counted on their own, so "due" matches the Due filter and the badge.
   const k_ = srsKey(), dueNow = myWords.filter(w => w[k_] && w[k_].due && w[k_].due <= Date.now() && (k_ === "srs" || !w.skip));
   const nDue = Math.min(nCards, dueNow.filter(w => !w.skip).length), nKnown = Math.min(nCards - nDue, dueNow.filter(w => w.skip).length), nNew = nCards - nDue - nKnown;
   const split = revMode === "due" ? [nDue ? `${nDue} due` : "", nKnown ? `${nKnown} known` : "", nNew ? `${nNew} new` : ""].filter(Boolean) : [];
   const cardsTxt = `${nCards} card${nCards === 1 ? "" : "s"}`;
+  // Open, the top line just counts the cards and the mix sits under the choices; folded, the top line has it all.
   const sub = !nCards ? (myWords.length ? "Nothing in this set" : "Add words to start")
-    : split.length ? `${split.length > 1 ? `${cardsTxt} · ${split.join(" + ")}` : split[0]}${revHow === "read" && open ? "" : ` · ${how}`}`
-    : open ? `${cardsTxt}${revHow === "read" ? "" : ` · ${how}`}` : `${nCards} ${what} · ${how}`;
+    : open ? `${cardsTxt}${revHow === "read" ? "" : ` · ${how}`}`
+    : split.length ? `${split.length > 1 ? `${cardsTxt} · ${split.join(" + ")}` : split[0]} · ${how}` : `${nCards} ${what} · ${how}`;
   const head = el("div", "revhead", `<button type="button" class="revtoggle" aria-expanded="${open}"><b>Flash cards</b><span>${sub}</span><i aria-hidden="true"></i></button>`);
   head.querySelector(".revtoggle").onclick = () => { store.set("radical-rev-open", !open); renderStrip(); };
   const go_ = btn("Start", "btn", () => openReview(revMode, revCount)); go_.disabled = !nCards;
@@ -3082,8 +3086,7 @@ function renderStrip() {
   box.append(head, howRow, typeRow, countRow);
   if (revHow === "write") box.append(el("p", "note", "Write: you hear the word and see its meaning, then write the characters from memory. Writing keeps its own schedule."));
   if (revHow === "listen") box.append(el("p", "note", "Listen: you hear the word without seeing it, then type its pinyin and meaning. Listening keeps its own schedule."));
-  if (revMode === "due") box.append(el("p", "note", "Today: words whose review date has come, plus up to 10 new words a day."));
-  if (revMode === "learning") box.append(el("p", "note", "Active: words in rotation that aren't due yet. Reviewing them early is fine."));
+  if (revMode === "due" && split.length) typeRow.after(el("p", "revmix", split.join(" + ")));
   strip.append(box);
 }
 // Backup reminder: your words live only on this phone, so after a week or 100 reviews without a backup, say so.
@@ -3100,7 +3103,7 @@ function renderWords() {
   const counts = { all: myWords.length, due: 0, new: 0, learning: 0, known: 0 };
   myWords.forEach(w => counts[wStatus(w)]++);
   const f = $("filters"); f.innerHTML = "";
-  [["all", "All"], ["new", "New"], ["due", "Due"], ["learning", "Active"], ["known", "Known"]].forEach(([k, label]) => {
+  [["all", "All"], ["new", "New"], ["due", "Due"], ["learning", "Learning"], ["known", "Known"]].forEach(([k, label]) => {
     const b = el("button", "", `${k === "all" ? "" : `<i class="dot ${k}"></i>`}${label} ${counts[k]}`); b.type = "button"; b.dataset.k = k;
     b.setAttribute("aria-pressed", filter === k); b.disabled = !counts[k] && k !== "all";
     b.onclick = () => { filter = filter === k ? "all" : k; renderWords(); }; f.append(b);
@@ -3126,14 +3129,17 @@ function renderWords() {
   const lb = $("lookBtn"), sel = shown.filter(w => picks.has(w)), set = picks.size ? (sel.length ? sel : [...picks]) : shown;
   lb.hidden = !set.length; lb.textContent = picks.size ? `Review selection (${set.length})` : `Review ${set.length === 1 ? "this word" : `these ${set.length}`}`;
   lb.onclick = () => openLook(set);
+  // A filter on (and nothing picked): flash those exact words, graded, in the mode last used.
+  const fb = $("lookFlash"); fb.hidden = !(filter !== "all" && !picks.size && shown.length);
+  fb.textContent = `Flash cards (${shown.length})`; fb.onclick = () => openReviewWith(shown);
   renderSelBar(shown);
   if (!myWords.length) $("addStatus").textContent = "Add a word you're learning, paste a list, or import a file (the page icon in the box).";
 }
 
 // ---- selecting words: circles on the left; a bar at the bottom acts on the selection.
 const picks = new Set();
-const STATUS_NAME = { new: "New", due: "Due", learning: "Active", known: "Known" };
-const STATUS_ACTS = [["due", "Review now", "Due today"], ["learning", "Active", "Back into rotation"], ["known", "Known", "Comes back rarely"], ["new", "Start over", "Progress wiped"]];
+const STATUS_NAME = { new: "New", due: "Due", learning: "Learning", known: "Known" };
+const STATUS_ACTS = [["due", "Review now", "Due today"], ["learning", "Learning", "Back into rotation"], ["known", "Known", "Comes back rarely"], ["new", "Start over", "Progress wiped"]];
 // Status menu: tapping a row only picks it; nothing changes until Save. The current status is marked "Now",
 // so you can always see what it was, and Cancel (or tapping outside) leaves everything as it was.
 function statusMenu(anchor, ws) {
