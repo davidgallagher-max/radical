@@ -2,6 +2,25 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v34
+
+- Flash cards, answering: after Check the screen scrolls so the characters, your result and the rating bar show together. While the keyboard is up the card fits above it: the characters shrink just enough to stay whole, the title and bottom bar step aside, and moving between Pinyin and Meaning doesn't scroll anything. The keyboard's return key goes Pinyin, Meaning, Check.
+- Tone buttons (1 ā, 2 á, 3 ǎ, 4 à) sit on top of the keyboard in the Pinyin box: type the syllable plainly, tap the tone, and the mark lands on the right vowel. Tone numbers still work.
+- A tone mark on the wrong letter counts as fully right; the note about where it goes stays as a tip.
+- Clues give the sound and the meaning only, never the pinyin.
+- Meaning checks: words in brackets count ("text" for 訊息, "(often a text message)"), the AI check gets longer to answer, and if it can't answer the card asks you: "was it right?" with ✓ and ✗.
+- The score counts how you answered, not the button you rate with: I know it or a right check is right, a partly right check is shaky, Show answer or a wrong check is missed. The rating only decides when the card comes back.
+- ✍ Write on the answer side: practice writing the word on the pad, with Show me and Write it again. Not graded; Back to card returns to your rating.
+- Big characters fit up to four in a row (cards, word page, Review list), wrapping only from five. Touch and hold any big character to see it full size; tap to close.
+- Card sentences have one row of controls under them: listen, 拼 Pinyin, Show English, 解, and 字 for text size and reading speed (the reader's settings). Reading a card sentence aloud no longer highlights it.
+- Flash card choices are Suggested (due cards plus today's new words, with the mix, e.g. "9 due + 10 new", shown right under the choice), New and All. Active is gone from the choices and is called Learning everywhere else. With a filter on, My words has a Flash cards button for exactly those words.
+- Reading text keeps a still light: the drifting spark across a page pulled the eye away (and flickered on cards). Big characters keep their slow light. Settings has a "Moving light in text" switch to bring the spark back.
+- Larger type across the app (about 12%, more for small labels).
+- A phone on its side: the tab bar becomes a column on the right with 部 and ☰, the reading controls sit in one row, Explore and the flash card panel use two columns, so the text gets the height.
+- English inside Chinese text reads as phrases ("City and County of Denver") instead of one word per square.
+- Explore: "Or open one at random".
+- Color lab: the sliders move each color only a little (brightness ±20%, saturation 60 to 130%, hue ±12°), so a red stays a red.
+
 ## v33
 
 - The opening screen takes a tap at once. If the characters are slow to arrive, the page opens anyway and says it's still loading, instead of looking frozen. It also shows a quiet line of progress under 部, like "5 days this week · 312 learned".
