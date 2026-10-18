@@ -676,7 +676,21 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 /* ---- review */
 .revcard{display:grid;gap:14px}
 .revchars{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
-.revchars svg{width:min(140px,38vw);height:min(140px,38vw);border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+/* Typing on a card: only the characters, the clue line and the boxes; the tone buttons sit on the keyboard. */
+#reviewScreen.typing .revhead,#reviewScreen.typing .revsub,#reviewScreen.typing #revBar{display:none}
+#reviewScreen.typing{padding-bottom:12px}
+#revCard.practicing>.revchars,#revCard.practicing>.legline{display:none}
+.tonerow{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 8px;background:color-mix(in srgb,var(--surface) 96%,transparent);border-top:1px solid var(--line)}
+.tonerow button{all:unset;cursor:pointer;text-align:center;height:44px;line-height:44px;border-radius:9px;background:var(--bg);border:1px solid var(--line);font-size:1.15rem;font-weight:600;color:var(--fg);-webkit-user-select:none;user-select:none}
+.tonerow button:active{background:color-mix(in srgb,var(--accent) 20%,var(--bg))}
+.revchars{--cs:min(140px,calc((min(100vw,760px) - 32px - (var(--n,1) - 1) * 6px) / var(--n,1)))}
+.revchars svg{width:var(--cs);height:var(--cs);border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.revchars .slotbox{width:var(--cs);height:var(--cs)}
+.holdable{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.bigview{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:grid;place-items:center;align-content:center;gap:14px;padding:calc(var(--top) + 16px) 16px calc(var(--bot) + 16px);animation:fade .15s ease;cursor:pointer}
+.bigview .bigviewglyph{width:min(86vw,62vh,560px);height:min(86vw,62vh,560px);border:1px solid var(--line);border-radius:18px;background:var(--surface)}
+.bigview .fontglyph.bigviewglyph{font-size:min(70vw,50vh,450px)}
+.bigview .legline{font-size:.95rem}
 .revchars .plain{font-family:var(--font-zh);font-size:5.5rem;line-height:1.2}
 .revctx{text-align:center;margin:0}
 .drawn{display:inline-flex;flex-wrap:wrap;align-items:center;gap:0;vertical-align:middle}
@@ -684,7 +698,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .fontglyph{font-family:var(--font-zh);color:var(--fg);display:grid;place-items:center;line-height:1;font-weight:500}
 .cell .fontglyph{width:var(--cell,38px);height:var(--cell,38px);font-size:calc(var(--cell,38px) * .82)}
 .drawn .fontglyph{width:var(--ds);height:var(--ds);font-size:calc(var(--ds) * .82)}
-.revchars .fontglyph{width:min(140px,38vw);height:min(140px,38vw);font-size:min(112px,30vw);border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.revchars .fontglyph{width:var(--cs);height:var(--cs);font-size:calc(var(--cs) * .8);border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .wslot .fontglyph{width:44px;height:44px;font-size:36px}
 .wchars .fontglyph{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .preview2 .fontglyph{width:50px;height:50px;font-size:42px}
@@ -1069,6 +1083,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
   </div>
 </section>
 
+<div class="tonerow" id="toneRow" hidden role="group" aria-label="Tone marks"><button type="button" data-t="1">1 ā</button><button type="button" data-t="2">2 á</button><button type="button" data-t="3">3 ǎ</button><button type="button" data-t="4">4 à</button></div>
 <nav class="tabbar" id="tabbar" aria-label="Main">
   <button type="button" data-tab="readScreen" aria-current="page"><span class="tz">讀</span>My text</button>
   <button type="button" data-tab="wikiScreen"><span class="tz">探</span>Explore</button>
@@ -2735,7 +2750,7 @@ function wordPage() {
   const s = wordState, { saved, syl, mean } = wordFacts();
   const page = el("div", "wpage");
   const all = [...s.word].filter(c => cache[c] || isSlot(c));  // a pattern keeps its slot, drawn as a dotted box
-  const size = Math.min(Math.floor((Math.min(innerWidth, 760) - 48) / all.length) - 4, 150);
+  const size = Math.min(Math.floor((Math.min(innerWidth, 760) - 48) / Math.min(4, all.length)) - 4, 150);  // up to 4 a row
   const row = el("div", "wchars");
   let k = 0;
   all.forEach(ch => {
@@ -2743,9 +2758,11 @@ function wordPage() {
     const i = k++;
     const b = el("button"); b.type = "button"; b.setAttribute("aria-label", `Open ${ch}`);
     const svg = glyphFor(ch, true); svg.style.width = svg.style.height = size + "px"; svg.style.fontSize = Math.round(size * .8) + "px";
-    b.append(svg); b.onclick = () => goPage(i + 1); row.append(b);
+    b.append(svg); b.onclick = () => goPage(i + 1); holdToEnlarge(b, ch); row.append(b);
   });
   page.append(row);
+  // Once: say that holding a character enlarges it.
+  if (!store.get("radical-hold-tip", false)) { page.append(el("p", "note holdtip", "Touch and hold a character to enlarge it.")); store.set("radical-hold-tip", true); }
   if (isPattern(s.word)) page.append(el("div", "kind", "Pattern · the box stands for whatever fills it"));
   { const l = legendLine(s.chars.join("")); if (l) page.append(l); }
   const py = el("div", "wpy", `<span class="bigpy">${syl.map(pyHTML).join(" ")}</span>${markHTML(saved, "pinyin")}${sayHTML(s.word)}`);
@@ -2927,7 +2944,7 @@ function padHolder(parent, size) {
 // A finished character: the pad locks, its edge turns the accent color, a ✓ shows, the grid fades, the strokes glow once.
 function padDone(wrap) { wrap.classList.add("done"); }
 // Writing practice: hints only on request or after 5 misses on a stroke. Grid starts on.
-function practice(top, ch, onBack) {
+function practice(top, ch, onBack, onCard) {
   const d = cache[ch];
   if (!d || typeof HanziWriter === "undefined") return;
   const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
@@ -2968,6 +2985,12 @@ function practice(top, ch, onBack) {
     onComplete: () => { coach.innerHTML = `<b>Finished.</b> ${firstTry} of ${total} strokes on the first try.`; padDone(wrap); play("reward"); }
   });
   hint.onclick = () => { writer.highlightStroke(current); say("That stroke is highlighted. Trace it."); };
+  if (onCard) {  // on a flash card: watch it drawn or write it again; the bar's Back to card returns
+    row.append(
+      btn("Show me", "btn ghost", () => { try { writer.cancelQuiz(); } catch (e) {} inkStrokes.forEach(x => x.style.opacity = 1); coach.textContent = "Here's how it's written."; animate(ink, ch, 1); }),
+      btn("Write it again", "btn ghost", () => { try { writer.cancelQuiz(); } catch (e) {} practice(top, ch, onBack, true); }));
+    return;
+  }
   row.append(
     btn("Start over", "btn ghost", () => { writer.cancelQuiz(); practice(top, ch, onBack); }),
     btn("Back to character", "btn ghost", () => { writer.cancelQuiz(); onBack(); })
@@ -3442,8 +3465,9 @@ function showLook() {
 
 // ================= review
 let rq = [], rDone = 0, revHist = [];
-// The session's score: right (Good or Easy), shaky (Hard), missed (Again, which also brings the card back as a
-// repeat), and the longest run without a miss.
+const revOutcome = new WeakMap();  // how the card on screen was answered (right, shaky, missed), for the tally
+// The session's score: how each card was answered (right, shaky, missed; see showBack), and the longest run without
+// a miss. Again also brings the card back as a repeat.
 let rScore = null;
 const newScore = () => ({ right: 0, shaky: 0, missed: 0, run: 0, best: 0, repeats: 0, mw: [], learned0: Object.keys(learned).length });
 const scoreText = sc => `${sc.right} right · ${sc.shaky} shaky · ${sc.missed} missed`;  // revHist: the cards already rated this session, newest last, so you can go back
@@ -3454,7 +3478,7 @@ function prevCard() {
   if (h.srs === undefined) delete h.w[h.k]; else h.w[h.k] = h.srs;
   if (h.skip === undefined) delete h.w.skip; else h.w.skip = h.skip;
   store.set(dayKey(h.k), h.newday || {}); saveWords();
-  rq = h.rq; rDone = h.rDone; rScore = h.score;
+  rq = h.rq; rDone = h.rDone; rScore = h.score; if (h.out) revOutcome.set(h.w, h.out);
   showFront(); if (showFront.reveal) showFront.reveal("prev");
   $("reviewScreen").scrollTop = 0;
 }
@@ -3485,11 +3509,38 @@ async function openReview(mode = "due", count = "all", again) {
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
 }
+// The big characters: one row for up to four (each tile sized to fit the width), wrapping only from five on.
+// Touch and hold a character to see it full size.
 function bigWord(word) {
   const box = el("div", "revchars"); box.lang = "zh";
-  [...word].forEach(ch => box.append(isSlot(ch) ? slotBox() : cache[ch] ? glyphFor(ch, true) : el("span", "plain", esc(ch))));
+  const chars = [...word]; box.style.setProperty("--n", Math.min(4, Math.max(1, chars.length)));
+  chars.forEach(ch => {
+    if (isSlot(ch)) { box.append(slotBox()); return; }
+    if (!cache[ch]) { box.append(el("span", "plain", esc(ch))); return; }
+    const g = glyphFor(ch, true); holdToEnlarge(g, ch); box.append(g);
+  });
   if (isPattern(word)) box.append(el("span", "pattag", "Pattern"));
   return box;
+}
+// Touch and hold (half a second, without moving) opens the character big, with its colors and light; a tap closes it.
+// A hold never counts as a tap, so it doesn't use up a clue or open anything.
+function holdToEnlarge(node, ch) {
+  let t = 0, x0 = 0, y0 = 0;
+  node.classList.add("holdable");
+  node.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; node._held = false; clearTimeout(t); t = setTimeout(() => { node._held = true; enlarge(ch); }, 500); });
+  node.addEventListener("pointermove", e => { if (Math.hypot(e.clientX - x0, e.clientY - y0) > 10) clearTimeout(t); });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(ev => node.addEventListener(ev, () => clearTimeout(t)));
+  node.addEventListener("click", e => { if (node._held) { node._held = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  node.addEventListener("contextmenu", e => e.preventDefault());
+}
+function enlarge(ch) {
+  if (!cache[ch] || document.querySelector(".bigview")) return;
+  try { navigator.vibrate && navigator.vibrate(8); } catch (e) {}
+  const v = el("div", "bigview"), g = glyphFor(ch, true); g.classList.add("bigviewglyph");
+  v.append(g); const l = legendLine(ch); if (l) v.append(l);
+  v.append(el("p", "note", "Tap to close"));
+  v.onclick = () => v.remove();
+  document.body.append(v);
 }
 // ---- answer checking
 // Pinyin: accepts tone marks or numbers (zhang4peng2), spaces optional, v or u: for ü.
@@ -3579,7 +3630,8 @@ function checkMeaning(given, target) {
   if (!target) return { ok: null };
   const g = norm(given), phrases = target.split(/[;,/]|\bor\b/).map(norm).filter(Boolean);
   if (phrases.some(p => p === g || (g.length > 2 && (p.includes(g) || g.includes(p))))) return { ok: true, note: "Correct." };
-  const words = new Set(phrases.join(" ").split(" ").filter(x => x.length > 2 && !STOP.has(x)));
+  // Content words anywhere in the answer count as close, including those in brackets: "(often a text message)".
+  const words = new Set([...phrases.join(" ").split(" "), ...norm(target.replace(/[()]/g, " ")).split(" ")].filter(x => x.length > 2 && !STOP.has(x)));
   if (g.split(" ").some(x => x.length > 2 && !STOP.has(x) && (words.has(x) || words.has(x.replace(/s$/, "")) || words.has(x + "s")))) return { ok: true, note: "Close enough." };
   return { ok: false, note: "Compare with the answer." };
 }
@@ -3595,7 +3647,7 @@ function revBar(label, flipLabel, flipIcon, onFlip, actions, cls, sub) {
 }
 function showFront() {
   if (rq && rq[0]) ensureCard(rq[0]).catch(() => {});  // have the full card ready by the time the answer shows
-  const box = $("revCard"), prog = $("revProg"); box.innerHTML = "";
+  const box = $("revCard"), prog = $("revProg"); box.innerHTML = ""; box.classList.remove("practicing");
   $("revPrev").style.visibility = revHist.length ? "visible" : "hidden";  // keeps its space, so the card never jumps
   const sc = rScore || (rScore = newScore()), rep = n => `${n} repeat${n === 1 ? "" : "s"}`;
   $("revScore").textContent = rDone && rq.length ? scoreText(sc) : "";
@@ -3656,14 +3708,14 @@ function showFront() {
   const form = el("form", "guess");
   // Listen cards take pinyin or characters in one box (the phone's handwriting keyboard covers writing).
   form.innerHTML = (listen ? `<label><span>Answer</span><input id="gPy" type="text" lang="zh" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="pinyin or ${script === "simp" ? "汉字" : "漢字"}"></label>`
-    : `<label><span>Pinyin</span><input id="gPy" type="text" inputmode="latin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="wo3 or wǒ"></label>`) + `
+    : `<label><span>Pinyin</span><input id="gPy" type="text" inputmode="latin" enterkeyhint="next" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="wo3 or wǒ"></label>`) + `
     <button type="button" class="pyprev" id="gPrev" hidden title="Use tone marks"></button>
-    <label><span>Meaning</span><input id="gMean" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="in English"></label>`;
-  // Clues: tap a character for a clue about it, in a fixed order: its sound (played), then its meaning, then its
-  // pinyin; after that a tap plays the sound again. One clue shows at a time, right under the big characters (where
+    <label><span>Meaning</span><input id="gMean" type="text" enterkeyhint="go" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="in English"></label>`;
+  // Clues: tap a character for a clue about it, in a fixed order: its sound (played), then its meaning; after that a
+  // tap plays the sound again. Pinyin is never a clue (it would give the answer away). One clue shows at a time, right under the big characters (where
   // the "Stuck?" line was), and each replaces the last. Every character keeps its own place in the order.
   // The guess boxes stay as they are. Any clue caps the suggested rating at Hard.
-  const hintBox = el("div", "hintbox cluespot"); hintBox.innerHTML = '<p class="cluehint">Stuck? Tap a character for a clue.</p>';
+  const hintBox = el("div", "hintbox cluespot"); hintBox.innerHTML = '<p class="cluehint">Tap a character for a clue · touch and hold to enlarge</p>';
   let used = 0;
   const big = box.querySelector(".revchars") || el("div"), word = conv(w.word), wchars = [...word];
   const syl = sylls(numToMarks(patternPy(wPinyin(w)).toLowerCase().replace(/[\s'’·-]+/g, ""))).filter(Boolean);
@@ -3672,13 +3724,12 @@ function showFront() {
   [...big.children].forEach((node, i) => {
     const ch = wchars[i], d = cache[ch]; if (!ch || !d || isSlot(ch)) return;
     node.classList.add("cluechar"); node.setAttribute("tabindex", "0"); node.setAttribute("aria-label", `Clue for ${ch}`);
-    const order = ["sound", ...(d.d ? ["meaning"] : []), "pinyin"];
+    const order = ["sound", ...(d.d ? ["meaning"] : [])];
     const clue = () => {
       const k = step[i] < order.length ? order[step[i]] : "sound"; step[i]++; used++;
       const tag = `<span lang="zh" class="hz">${esc(ch)}</span>`;
       if (k === "sound") { speak(ch); hintBox.innerHTML = `<p>${tag} <b>Sound:</b> ${sayHTML(ch, true)}</p>`; }
       if (k === "meaning") hintBox.innerHTML = `<p>${tag} <b>Meaning:</b> ${esc(d.d.split(/;/).slice(0, 2).join(";"))}</p>`;
-      if (k === "pinyin") hintBox.innerHTML = `<p>${tag} <b>Pinyin:</b> ${pyHTML(sylOf[i] || d.p[0])}</p>`;
     };
     node.addEventListener("click", clue);
     node.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clue(); } });
@@ -3691,10 +3742,12 @@ function showFront() {
     if (how === "check") {
       if (listen && /\p{Script=Han}/u.test(py.value)) await ensure(py.value);  // readings of the typed characters, for sound credit
       const g = mean.value.trim(), local = checkMeaning(g, wMeaning(w));
+      // The quick match failed: ask the AI judge. If it can't answer (slow, offline, an error), you decide (✓ / ✗).
+      if (g && local.ok === false) st = { aiMean: { ok: null, ask: true } };
       if (g && local.ok === false && online() && navigator.onLine !== false) {
         judging = true; const cb = $("revBar").querySelector(".guessacts .btn"); if (cb) { cb.disabled = true; cb.textContent = "Checking…"; }
         try {
-          const r = await Promise.race([claude({ action: "judge", word: w.word, meaning: wMeaning(w), guess: g, pattern: isPattern(w.word) }), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 8000))]);
+          const r = await Promise.race([claude({ action: "judge", word: w.word, meaning: wMeaning(w), guess: g, pattern: isPattern(w.word) }), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 15000))]);
           const ok = r.verdict === "right" ? true : r.verdict === "close" ? "part" : false;
           st = { aiMean: { ok, note: r.note || (ok === true ? "Correct." : ok ? "Close." : "Not quite.") } };
         } catch (e) {}
@@ -3717,8 +3770,52 @@ function showFront() {
   form.onsubmit = e => { e.preventDefault(); reveal("check"); };
   mean.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); reveal("check"); } });
   showBack.guess = () => ({ py: py.value, mean: mean.value, listen });
+  kbState = { card: box, inputs: [py, mean], py, tones: !listen };
   setTimeout(() => py.focus(), 50);
 }
+// ---- typing on a card. With the keyboard up, the card fits the space above it: the title, score and bottom bar step
+// aside, the big characters shrink just enough to stay whole, and the screen is sized to the visible area so the
+// phone has no reason to scroll it (switching between the two boxes moves nothing). Enter goes Pinyin → Meaning → Check.
+let kbState = null;
+function kbFit() {
+  const st = kbState, scr = $("reviewScreen"), vv = window.visualViewport, tones = $("toneRow");
+  const live = st && st.card.isConnected && !scr.hidden;
+  const focused = live && st.inputs.includes(document.activeElement);
+  const kb = vv ? innerHeight - vv.height : 0, typing = focused && kb > 120;
+  tones.hidden = !(typing && st.tones && document.activeElement === st.py);  // only with the on-screen keyboard
+  if (!tones.hidden) tones.style.bottom = (vv ? Math.max(0, innerHeight - vv.height - vv.offsetTop) : 0) + "px";
+  scr.classList.toggle("typing", typing);
+  const big = live && st.card.querySelector(".revchars");
+  if (!typing) { scr.style.height = ""; scr.style.bottom = ""; if (big) big.style.removeProperty("--cs"); return; }
+  scr.style.height = vv.height + "px"; scr.style.bottom = "auto"; window.scrollTo(0, 0);
+  const topH = scr.querySelector(".topbar").offsetHeight, form = st.card.querySelector("form.guess"), hint = st.card.querySelector(".cluespot");
+  const rest = (form ? form.offsetHeight : 0) + (hint ? hint.offsetHeight : 0) + (tones.hidden ? 0 : tones.offsetHeight) + 56;
+  if (big) {
+    big.style.removeProperty("--cs");
+    const natural = (big.querySelector("svg,.fontglyph,.slotbox") || big).getBoundingClientRect().height || 140;
+    const rows = Math.ceil([...big.children].filter(x => !x.classList.contains("pattag")).length / 4);
+    big.style.setProperty("--cs", Math.max(52, Math.min(natural, Math.floor((vv.height - topH - rest) / rows))) + "px");
+    scr.scrollTop += big.getBoundingClientRect().top - scr.querySelector(".topbar").getBoundingClientRect().bottom - 8;
+  }
+}
+if (window.visualViewport) { visualViewport.addEventListener("resize", kbFit); visualViewport.addEventListener("scroll", () => { if ($("reviewScreen").classList.contains("typing")) kbFit(); }); }
+document.addEventListener("focusin", () => setTimeout(kbFit, 30));
+document.addEventListener("focusout", () => setTimeout(kbFit, 60));
+// Tone buttons over the keyboard (Pinyin box): type a syllable plainly, tap a tone, and the mark lands on the right
+// vowel of the syllable just before the cursor; tapping another tone replaces it. The box keeps the keyboard up.
+$("toneRow").addEventListener("pointerdown", e => e.preventDefault());
+$("toneRow").addEventListener("mousedown", e => e.preventDefault());
+$("toneRow").querySelectorAll("button").forEach(b => b.onclick = () => {
+  const inp = kbState && kbState.py; if (!inp || !inp.isConnected) return;
+  const at = inp.selectionEnd ?? inp.value.length, before = inp.value.slice(0, at), after = inp.value.slice(at);
+  const m = before.match(/([a-zA-ZāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüÜ:]+)([1-5]?)$/);
+  if (!m) return;
+  const plain = [...m[1]].map(c => PLAIN[c] || c).join("").replace(/u:/gi, "ü");
+  const marked = numToMarks(plain.replace(/ü/g, "v") + b.dataset.t);
+  const nb = before.slice(0, before.length - m[0].length) + marked;
+  inp.value = nb + after; inp.setSelectionRange(nb.length, nb.length);
+  inp.dispatchEvent(new Event("input", { bubbles: true })); inp.focus();
+});
 // Writing card: pinyin, sound and meaning on one line on top; write each character in turn on the pad. The card
 // fits one screen: the pad is sized to the room left above the bottom bar (measured at its tallest), so the bar never
 // covers it. Hints come after 3 misses on a stroke, or from the Hint button. The rating suggestion comes from how it went.
@@ -3829,12 +3926,25 @@ function showBack(w, how, st) {
   if (guess) {
     const asChars = guess.listen && /\p{Script=Han}/u.test(guess.py);
     const rp = asChars ? checkChars(guess.py, w) : checkPinyin(guess.py, wPinyin(w)), rm = (st && st.aiMean) || checkMeaning(guess.mean, wMeaning(w));
+    if (rm.ask) rm.note = "Couldn't check this one: was it right?";
     const mark = (label, val, r) => val.trim() ? `<div class="res ${r.ok === true ? "ok" : r.ok === "part" ? "part" : r.ok === false ? "no" : ""}"><span>${label}</span><b${asChars && label !== "Meaning" ? ' lang="zh" class="reszh"' : ""}>${label !== "Meaning" && !asChars ? pyWordHTML(numToMarks(val)) : esc(val)}</b><em>${esc(r.note || "")}</em>${r.detail ? `<div class="resdetail">${r.detail}</div>` : ""}</div>` : `<div class="res"><span>${label}</span><em>left blank</em></div>`;
-    ans.append(el("div", "results", mark(guess.listen ? "Answer" : "Pinyin", guess.py, rp) + mark("Meaning", guess.mean, rm)));
+    const results = el("div", "results", mark(guess.listen ? "Answer" : "Pinyin", guess.py, rp) + mark("Meaning", guess.mean, rm));
+    ans.append(results);
+    // The AI couldn't judge the meaning: you say whether it was right, and the suggestion follows your answer.
+    if (rm.ask) {
+      const yn = el("div", "askrow"), redo = ok => { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true, aiMean: { ok, note: ok ? "You marked it right." : "You marked it wrong." } }); };
+      yn.append(btn("✓ Right", "btn ghost small", () => redo(true)), btn("✗ Wrong", "btn ghost small", () => redo(false)));
+      results.lastElementChild.append(yn);
+    }
     const score = [rp.ok, rm.ok].map(x => x === true ? 2 : x === "part" ? 1 : 0).reduce((a, b) => a + b, 0);
     suggest = score === 4 ? "good" : score >= 1 ? "hard" : "again";
     if (!quiet) play(suggest === "again" ? "wrong" : "right");
   }
+  // The tally records how you answered (the rating only decides when the card comes back): I know it or a fully
+  // right check is right, a partly right check is shaky, Show answer or a wrong check is missed.
+  if (how === "know") revOutcome.set(w, "right");
+  else if (how === "show") revOutcome.set(w, "missed");
+  else if (how === "check" || how === "write") revOutcome.set(w, suggest === "good" ? "right" : suggest === "hard" ? "shaky" : "missed");
   if (hinted && suggest === "good") suggest = "hard";  // needed a hint: it comes back sooner
   // The colors used on this side (the big word and the example sentence), right under the big characters.
   const leg = legendLine(conv(w.word) + (c && c.example ? conv(c.example) : "")), bw = box.querySelector(".revchars");
@@ -3857,17 +3967,60 @@ function showBack(w, how, st) {
   [["again", "Again"], ["hard", "Hard"], ["good", "Good"], ["easy", "Easy"]].forEach(([g, label]) => {
     const b = el("button", `btn ghost ${g}${g === suggest ? " suggest" : ""}`, `${label}<small>${ivlText(nextIvl(w[k], g))}</small>`); b.type = "button";
     b.onclick = () => {
-      revHist.push({ w, k, srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore, mw: rScore.mw.slice() } });
-      const sc = rScore;
-      if (g === "again") { sc.missed++; sc.repeats++; sc.run = 0; if (!sc.mw.includes(w)) sc.mw.push(w); } else { if (g === "hard") sc.shaky++; else sc.right++; sc.run++; sc.best = Math.max(sc.best, sc.run); }
+      revHist.push({ w, k, out: revOutcome.get(w), srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore, mw: rScore.mw.slice() } });
+      const sc = rScore, out = revOutcome.get(w) || (g === "again" ? "missed" : g === "hard" ? "shaky" : "right");
+      sc[out]++;
+      if (out === "missed") { sc.run = 0; if (!sc.mw.includes(w)) sc.mw.push(w); } else { sc.run++; sc.best = Math.max(sc.best, sc.run); }
+      if (g === "again") { sc.repeats++; if (!sc.mw.includes(w)) sc.mw.push(w); }
+      revOutcome.delete(w);
       tick(g); grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);
   });
   // Rating is the only way forward, so the bar says so; the flip button sits where "Show answer" was on the front.
   box.append(ans);
-  revBar("Rate it to go to the next card", "Front", "⟲", () => { ans.remove(); showFront(); }, [...grades.children], "grades",
-    `Your rating decides when it comes back.${suggest ? " The suggested one is highlighted." : ""}`);
-  $("revBar").classList.add("glow");  // a light sweeps the whole rating bar: your turn
+  revBar("Rate it to go on", "Front", "⟲", () => { ans.remove(); showFront(); }, [...grades.children], "grades",
+    suggest ? "The suggested one is lit." : "It decides when this comes back.");
+  // ✍ Practice writing: an optional detour to write the word on the pad (not graded, no schedule touched).
+  const chars = [...conv(w.word)].filter(ch => cache[ch]);
+  if (chars.length && typeof HanziWriter !== "undefined") {
+    const pw = btn("", "btn ghost small flipbtn", () => practiceOnCard(w, chars, () => { box.querySelectorAll(".revans,.cardprac").forEach(x => x.remove()); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true }); }));
+    pw.innerHTML = "<i>✍\uFE0E</i>Write"; pw.setAttribute("aria-label", "Practice writing this word");
+    $("revBar").querySelector(".revbartop").insertBefore(pw, $("revBar").querySelector(".revbartop .flipbtn"));
+  }
+  if (!quiet) { $("revBar").classList.add("glow"); placeAnswer(); }  // a light sweeps the whole rating bar: your turn
+}
+// After checking, the screen shows the characters, the result and the rating bar together; if the result is too tall
+// for that, the result wins and the characters may go partly off the top.
+function placeAnswer() {
+  const go = () => {
+    const scr = $("reviewScreen"), box = $("revCard"), big = box.querySelector(".revchars"), ans = box.querySelector(".revans");
+    if (!big || !ans || scr.hidden) return;
+    const res = ans.querySelector(".results") || ans.querySelector(".wmean") || ans;
+    const sr = scr.getBoundingClientRect(), topH = scr.querySelector(".topbar").getBoundingClientRect().bottom - sr.top, barH = $("revBar").getBoundingClientRect().height;
+    const y = n => n.getBoundingClientRect().top - sr.top + scr.scrollTop;
+    const bigTop = y(big), resBot = res.getBoundingClientRect().bottom - sr.top + scr.scrollTop, view = scr.clientHeight - barH - topH;
+    let t = bigTop - topH - 10;
+    if (resBot - t - topH > view) t = resBot - topH - view + 8;
+    scr.scrollTop = Math.max(0, t);
+  };
+  go(); setTimeout(go, 380);  // again once the keyboard has gone
+}
+// Writing practice from the answer side: each character on the pad, Show me to watch it drawn, as often as you like.
+function practiceOnCard(w, chars, back) {
+  const box = $("revCard"); box.querySelectorAll(".revans").forEach(x => x.remove());
+  const wrap = el("div", "cardprac"); box.append(wrap); box.classList.add("practicing");
+  let i = 0;
+  const pick = el("div", "seg2 pracpick"); pick.style.gridTemplateColumns = `repeat(${chars.length},1fr)`;
+  if (chars.length > 1) chars.forEach((ch, k) => { const b = btn(ch, "", () => { i = k; draw(); }); b.lang = "zh"; pick.append(b); });
+  const host = el("div", "pracpad");
+  wrap.append(...(chars.length > 1 ? [pick] : []), host);
+  const draw = () => {
+    pick.querySelectorAll("button").forEach((b, k) => b.setAttribute("aria-pressed", k === i));
+    host.innerHTML = ""; practice(host, chars[i], back, true);
+  };
+  revBar("Practice writing", "Back to card", "‹", () => { box.classList.remove("practicing"); back(); }, [], "guessacts", "Not graded. Your rating is waiting.");
+  $("reviewScreen").scrollTop = 0;
+  draw();
 }
 
 // ---- the color lab's panel in Settings (shown only to owners). It edits the theme in use, in the mode in use
@@ -3985,7 +4138,7 @@ async function showTour(fromMenu) {
       f.append(el("h3", "", "Reading"), el("p", "", `Paste or open any Chinese text. ${B("Tap a word once")} to see its pinyin and meaning; ${B("tap again")} to open it: its characters, their parts and how to write them.`),
         el("p", "", `Under each line: ${SPK.replace("<svg", '<svg class="tourico"')} listen, ${B("EN")} translate, <span lang="zh" class="tourzh">解</span> explain the grammar. ${B("Listen")} at the top reads the whole page, with a speed slider.`)); return f; },
     () => { const f = el("div", "tourpage");
-      f.append(el("h3", "", "Saving and studying"), el("p", "", `${B("+ Add")} puts a word in My words, with the sentence you met it in. Flash cards come three ways: ${B("Read")} (say it), ${B("Write")} (write it from memory) and ${B("Listen")} (hear it). Your ratings decide when each word comes back.`),
+      f.append(el("h3", "", "Saving and studying"), el("p", "", `${B("+ Add")} puts a word in My words, with the sentence you met it in. Flash cards come three ways: ${B("Read")} (say it), ${B("Write")} (write it from memory) and ${B("Listen")} (hear it). Your ratings decide when each word comes back. ${B("Touch and hold")} any big character to enlarge it.`),
         el("p", "", `${B("Review")} goes through your words face up, no grading. ${B("Explore")} finds real Chinese Wikipedia articles at your level.`)); return f; }
   ];
   let i = 0;
