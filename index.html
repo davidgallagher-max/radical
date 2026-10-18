@@ -89,6 +89,9 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tabbar .tz{font-family:var(--font-zh);font-size:1.35rem;line-height:1.1;font-weight:600}
 .badge{position:absolute;top:6px;left:calc(50% + 10px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--st-due);color:var(--bg);font-size:.7rem;font-weight:700;display:grid;place-items:center}
 .badge:empty{display:none}
+.tabbar .railx{display:none}
+.excol{display:contents}
+
 
 /* ---- wordmark and splash */
 .brand{display:flex;align-items:center;gap:8px}
@@ -312,7 +315,8 @@ h3.sec.sub{margin-top:0;font-size:.84rem;text-transform:none;letter-spacing:.02e
 #readBar.stuck::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:calc(var(--top) + 14px);background:var(--panel)}
 #readBar.stuck .ctl-label{display:none}
 .ctlrow{flex-wrap:nowrap;gap:6px;align-items:flex-end}
-.ctlrow .switch,.ctlrow .listen,.sizebtn{font-size:.84rem;padding:4px 10px 4px 4px;white-space:nowrap;flex:none}
+.ctlrow .seg button{font-size:16px;padding:5px 11px}
+.ctlrow .switch,.ctlrow .listen,.sizebtn{font-size:13.5px;padding:4px 10px 4px 4px;white-space:nowrap;flex:none}
 .ctlrow .listen{padding:6px 10px 6px 9px;gap:6px}
 /* In the row, Listen keeps its width while playing (a longer label pushed the row wider than the screen): it fills instead. */
 .ctlrow .listen[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
@@ -373,7 +377,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .glyph{font-family:var(--font-zh);font-size:calc(var(--cell,38px) * .64);line-height:var(--cell,38px);height:var(--cell,38px);color:var(--muted);align-self:end;text-align:left;padding-left:calc(var(--cell,38px) * .12)}
 .glyph{white-space:nowrap}
 /* English words and numbers: the wordmark's serif, polished like the characters, with a slow shine passing over. */
-.glyph.latin{font-family:var(--font-brand),var(--font-zh),serif;font-weight:700;font-size:calc(var(--cell,38px) * .56);text-align:center;padding:0;opacity:1;
+.glyph.latin{font-family:var(--font-brand),var(--font-zh),serif;font-weight:700;font-size:calc(var(--cell,38px) * .56);text-align:left;padding:0 0 0 calc(var(--cell,38px) * .08);white-space:nowrap;opacity:1;
   color:transparent;-webkit-background-clip:text;background-clip:text;background-size:320% 100%;
   background-image:linear-gradient(115deg,color-mix(in srgb,var(--fg) 82%,var(--accent)) 0%,var(--fg) 34%,#fff 47%,var(--fg) 58%,color-mix(in srgb,var(--fg) 55%,#000) 100%);
   filter:drop-shadow(1px 1.5px 0 rgba(0,0,0,.45));animation:numshine 8s ease-in-out infinite}
@@ -828,6 +832,35 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .acctmsg:empty,.acctstat:empty{display:none}
 .acctstat{font-size:.84rem}
 .about a{color:var(--accent)}
+/* ---- a phone on its side: the tab bar becomes a column on the right (部, the three tabs, ☰) and each tab's header
+   steps aside, so the text gets the height. Reading puts the color key and controls in one row; Explore and the
+   flash card panel go two columns. Pages that open on top (cards, word page) keep their own layout. */
+@media (orientation:landscape) and (max-height:540px){
+  :root{--rail:calc(78px + env(safe-area-inset-right,0px))}
+  .tabbar{left:auto;top:0;width:var(--rail);height:auto;grid-template-columns:1fr;grid-template-rows:auto repeat(3,64px) auto;align-content:space-evenly;
+    border-top:0;border-left:1px solid var(--line);padding:var(--top) env(safe-area-inset-right,0px) var(--bot) 0}
+  .tabbar .railx{display:grid;place-items:center;justify-self:center}
+  .tabbar .railbrand{all:unset;cursor:pointer;display:grid;place-items:center;justify-self:center;width:44px;height:44px}
+  .tabbar .railbrand svg{width:34px;height:34px}
+  .tabbar .iconbtn.railx{all:unset;cursor:pointer;justify-self:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center}
+  .tabbar .iconbtn.railx svg{width:19px;height:19px}
+  .screen:not(.sub){padding:calc(var(--top) + 8px) calc(var(--rail) + 14px) calc(var(--bot) + 16px) max(14px,env(safe-area-inset-left,0px))}
+  .screen:not(.sub) .readhead,.screen:not(.sub) .minihead{display:none}
+  #readBar,.filterbar{top:0}
+  #readBar{grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:16px}
+  #readBar .legrow{min-width:0}
+  #readBar .sizepop{grid-column:1/-1}
+  #readBar .ctl-label{display:none}
+  #readBar.stuck::before{height:calc(var(--top) + 8px)}
+  #wikiScreen .inner{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);column-gap:22px;max-width:none}
+  #wikiScreen .inner>*{grid-column:1/-1}
+  #wikiScreen .excol{display:grid;gap:12px;align-content:start;grid-column:auto}
+  .revpanel{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:18px}
+  .revpanel>*{grid-column:1/-1}
+  .revpanel>.revcount:nth-of-type(3),.revpanel>.revcount:nth-of-type(4){grid-column:auto}
+  .revpanel .revmix{grid-column:1/-1;order:1}
+  .revpanel>p.note{order:2}
+}
 </style>
 
 <div id="splash" aria-hidden="true">
@@ -986,16 +1019,20 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
     </header>
     <button type="button" class="back" id="wikiBack" hidden>Back to reading</button>
     <h3 class="sec tabsec"><span lang="zh">探</span>Explore<span class="tabnote">Searches Chinese Wikipedia</span></h3>
+    <div class="excol exleft">
     <h3 class="sec sub">Pick a topic</h3>
     <div class="topics" id="wikiTopics"></div>
+    </div>
+    <div class="excol exright">
     <h3 class="sec sub">Or search for one</h3>
     <form class="addrow" id="wikiForm">
       <input type="text" id="wikiQ" lang="zh" placeholder="Search any topic in Chinese or English" autocomplete="off" enterkeyhint="search">
       <button type="submit" class="btn">Search</button>
     </form>
-    <h3 class="sec sub">Or surprise me</h3>
+    <h3 class="sec sub">Or open one at random</h3>
     <button type="button" class="randbtn" id="wikiRandom"><span lang="zh" id="wikiRandomZh">隨機條目</span> · Random article</button>
     <p class="note">Real Chinese Wikipedia, written by Chinese-speaking editors. Nothing is machine-translated.</p>
+    </div>
     <p class="note wstatus" id="wikiStatus" hidden></p>
     <div class="list" id="wikiList"></div>
   </div>
@@ -1088,9 +1125,11 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 
 <div class="tonerow" id="toneRow" hidden role="group" aria-label="Tone marks"><button type="button" data-t="1">1 ā</button><button type="button" data-t="2">2 á</button><button type="button" data-t="3">3 ǎ</button><button type="button" data-t="4">4 à</button></div>
 <nav class="tabbar" id="tabbar" aria-label="Main">
+  <button type="button" class="railx railbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg></button>
   <button type="button" data-tab="readScreen" aria-current="page"><span class="tz">讀</span>My text</button>
   <button type="button" data-tab="wikiScreen"><span class="tz">探</span>Explore</button>
   <button type="button" data-tab="wordsScreen"><span class="tz">詞<svg class="ring" viewBox="0 0 36 36" aria-hidden="true" hidden><circle class="rbg" cx="18" cy="18" r="16.5" pathLength="100"/><circle class="rfg" cx="18" cy="18" r="16.5" pathLength="100" stroke-dasharray="0 100"/></svg></span>My words<span class="badge" id="dueBadge"></span></button>
+  <button type="button" class="railx iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
 </nav>
 
 <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.4.2/dist/umd/full.js"></script>
@@ -1800,10 +1839,18 @@ function buildLine(lineText, onTap, withEN = true) {
     // A number stays one unit: 3,000 and 1,234.5 and 3.5. A comma counts only between digits with exactly three
     // digits after it; a dot only when a letter or digit follows (so a sentence's full stop is left off).
     const re = /[A-Za-z0-9](?:[\w'’%\-\/&+]|\.(?=[A-Za-z0-9])|(?<=\d),(?=\d{3}(?!\d)))*|\S/gu; let m;
-    while ((m = re.exec(run))) {
-      const piece = m[0], latin = /[A-Za-z0-9]/.test(piece), g = el("span", "glyph" + (latin ? " latin" : ""), esc(piece));
+    const found = []; while ((m = re.exec(run))) found.push({ text: m[0], at: m.index });
+    // English words next to each other are set as a phrase ("City and", "County of"), up to about 12 letters, so
+    // they read as English instead of one word per square; longer phrases break at a word.
+    for (let k = 0; k < found.length; k++) {
+      const f = found[k];
+      while (/^[A-Za-z]/.test(f.text) && k + 1 < found.length && /^[A-Za-z][A-Za-z'’\-]*$/.test(found[k + 1].text)
+        && /^ +$/.test(run.slice(f.at + f.text.length, found[k + 1].at)) && found[k + 1].at + found[k + 1].text.length - f.at <= 12) {
+        f.text = run.slice(f.at, found[k + 1].at + found[k + 1].text.length); found.splice(k + 1, 1);
+      }
+      const piece = f.text, latin = /[A-Za-z0-9]/.test(piece), g = el("span", "glyph" + (latin ? " latin" : ""), esc(piece));
       line.append(g);
-      if (latin) spans.push({ start: runAt + m.index, end: runAt + m.index + piece.length, group: g });  // numbers and English light up too
+      if (latin) spans.push({ start: runAt + f.at, end: runAt + f.at + piece.length, group: g });  // numbers and English light up too
     }
     run = "";
   };
@@ -2147,6 +2194,7 @@ pinned("readScreen", "readBar", () => fitLegend()); pinned("wordsScreen", "filte
 // Sub-page top bars get an edge once the page scrolls under them.
 document.querySelectorAll(".screen.sub").forEach(sc => { const tb = sc.querySelector(".topbar"); if (tb) sc.addEventListener("scroll", () => tb.classList.toggle("stuck", sc.scrollTop > 4), { passive: true }); });
 // The brand, wherever it shows, goes back to the top of the page you're on.
+document.querySelector(".railbrand").onclick = () => { const sc = [...document.querySelectorAll(".screen:not(.sub)")].find(x => !x.hidden); if (sc) sc.scrollTo({ top: 0, behavior: "smooth" }); };
 document.querySelectorAll(".topbrand").forEach(b => b.onclick = () => { const sc = b.closest(".screen"); if (sc) sc.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); });
 $("listenBtn").onclick = () => readAloud([...$("reader").querySelectorAll(".line")], true);  // read the whole page, word by word
 if (store.get("radical-py", false)) { $("pyBtn").setAttribute("aria-checked", "true"); $("reader").classList.remove("nopy"); }
