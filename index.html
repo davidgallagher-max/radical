@@ -1385,7 +1385,9 @@ function labColor(key, mode, i) {
   const base = PAL0[key][mode][i], a = (((lab[key] || {})[mode]) || {})[i];
   if (!a || !/^#[0-9a-f]{6}$/i.test(base)) return base;
   const [h, s, l] = hexHsl(base);
-  return hslHex(((h + (a.h || 0) / 360) % 1 + 1) % 1, clamp01(s * (a.s ?? 1)), clamp01(l * (a.l ?? 1)));
+  // Nudges stay small (older, wider settings are pulled into range): a red stays a red.
+  const lim = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  return hslHex(((h + lim(a.h || 0, -12, 12) / 360) % 1 + 1) % 1, clamp01(s * lim(a.s ?? 1, .6, 1.3)), clamp01(l * lim(a.l ?? 1, .8, 1.2)));
 }
 function applyLab() {
   for (const key of Object.keys(PAL0)) for (const mode of ["dark", "light"]) if (Array.isArray(PAL0[key][mode])) PALETTES[key][mode] = PAL0[key][mode].map((c, i) => labColor(key, mode, i));
@@ -3900,9 +3902,9 @@ function buildLab() {
   const pct = v => `${Math.round(v * 100)}%`;
   const one = el("div", "labgroup");
   one.append(el("p", "labhead", `${LAB_ROLES.find(x => x[0] === labPick)[1]} <code>${PAL0[key][mode][labPick]} → ${PALETTES[key][mode][labPick]}</code>`),
-    slider("Brightness", .4, 1.6, .02, cur.l ?? 1, pct, v => { edits()[labPick] = { ...(edits()[labPick] || {}), l: v }; }),
-    slider("Saturation", 0, 1.6, .02, cur.s ?? 1, pct, v => { edits()[labPick] = { ...(edits()[labPick] || {}), s: v }; }),
-    slider("Hue", -40, 40, 1, cur.h ?? 0, v => `${v > 0 ? "+" : ""}${v}°`, v => { edits()[labPick] = { ...(edits()[labPick] || {}), h: v }; }),
+    slider("Brightness", .8, 1.2, .01, cur.l ?? 1, pct, v => { edits()[labPick] = { ...(edits()[labPick] || {}), l: v }; }),
+    slider("Saturation", .6, 1.3, .01, cur.s ?? 1, pct, v => { edits()[labPick] = { ...(edits()[labPick] || {}), s: v }; }),
+    slider("Hue", -12, 12, 1, cur.h ?? 0, v => `${v > 0 ? "+" : ""}${v}°`, v => { edits()[labPick] = { ...(edits()[labPick] || {}), h: v }; }),
     btn("Reset this color", "btn ghost small", () => { delete edits()[labPick]; changed(); buildLab(); }));
   box.append(one);
   // Lighting and weight for the whole theme (both modes).
