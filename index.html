@@ -169,7 +169,13 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .nolight .lit3d{filter:none!important}
 @media (prefers-reduced-motion:reduce){.spark{animation:none;display:none}}
 .mini{display:grid;gap:6px}
-.minibar{display:flex;justify-content:flex-end}
+.minibar{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.minibar .minisay{flex:none}
+.minibar .minisize{padding:3px 10px 4px}
+.minipop{display:grid;gap:8px;padding:2px 2px 4px}
+.minipop .sizerow{display:flex;align-items:center;gap:8px}
+.minipop input{flex:1}
+.mini .minien{margin:0}
 .minipy{all:unset;cursor:pointer;font-size:.84rem;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
 .minipy[aria-pressed="true"]{color:var(--bg);background:var(--accent);border-color:var(--accent)}
 .minibody{display:grid;gap:8px}
@@ -1870,11 +1876,29 @@ function wordGloss(tok) {
 }
 // A sentence with everything the reader has (grid, colors, light, text size, pinyin, listen), for word cards
 // and flash cards. Tapping a word highlights it and shows its pinyin and meaning underneath; it never leaves the page.
-function miniReader(text, mark) {
+// Its controls sit in one row under the sentence: listen, 拼 Pinyin, Show English (`en`), 解 explain, and 字, which
+// opens the reader's own size and speed sliders (one setting for both). Listening here never highlights the text.
+function miniReader(text, mark, en) {
   const box = el("div", "mini" + (store.get("radical-py", false) ? "" : " nopy")); box.lang = "zh";
   const body = el("div", "minibody"), gloss = el("div", "minigloss"); gloss.hidden = true;
   const pyb = el("button", "minipy", "拼 Pinyin"); pyb.type = "button"; pyb.setAttribute("aria-pressed", !box.classList.contains("nopy"));
   pyb.onclick = e => { e.stopPropagation(); const on = box.classList.toggle("nopy") === false; pyb.setAttribute("aria-pressed", on); };
+  const say = el("button", "saybtn sm minisay", SPK); say.type = "button"; say.setAttribute("aria-label", "Read the sentence aloud");
+  say.onclick = e => { e.stopPropagation(); const k = altSpeed("mini:" + text); speak(text.replace(/\n+/g, "，"), k < 1 ? { k } : null); };
+  const enP = el("p", "exp minien", esc(en || "")); enP.hidden = true; enP.lang = "en";
+  const enb = el("button", "minipy", "Show English"); enb.type = "button"; enb.hidden = !en;
+  enb.onclick = e => { e.stopPropagation(); enP.hidden = !enP.hidden; enb.textContent = enP.hidden ? "Show English" : "Hide English"; enb.setAttribute("aria-pressed", !enP.hidden); };
+  const exb = el("button", "minipy", '<span lang="zh">解</span>'); exb.type = "button"; exb.title = "Explain this sentence's grammar"; exb.hidden = !/\p{Script=Han}/u.test(text);
+  exb.onclick = e => { e.stopPropagation(); const first = body.querySelector(".line"); if (first) explainLine(text.split(/\n+/)[0], body.lastElementChild, exb); };
+  // 字: size and speed, the same settings as the reader's 字字 and Listen speed.
+  const pop = el("div", "minipop"); pop.hidden = true;
+  pop.innerHTML = `<span class="sizerow"><i lang="zh" aria-hidden="true">字</i><input type="range" min="26" max="64" step="2" aria-label="Text size"><b lang="zh" aria-hidden="true">字</b></span>`
+    + `<span class="sizerow"><i lang="zh" aria-hidden="true">慢</i><input type="range" min="0.5" max="1.3" step="0.05" aria-label="Reading speed"><b lang="zh" aria-hidden="true">快</b></span>`;
+  const [sz, sp] = pop.querySelectorAll("input");
+  sz.oninput = () => { setCell(sz.value); store.set("radical-size", +sz.value); if ($("sizeIn")) $("sizeIn").value = sz.value; };
+  sp.oninput = () => setRate(sp.value);
+  const zib = el("button", "sizebtn minisize", '<i lang="zh">字</i><b lang="zh">字</b>'); zib.type = "button"; zib.setAttribute("aria-label", "Text size and speed"); zib.setAttribute("aria-expanded", "false");
+  zib.onclick = e => { e.stopPropagation(); pop.hidden = !pop.hidden; zib.setAttribute("aria-expanded", !pop.hidden); if (!pop.hidden) { sz.value = store.get("radical-size", 38); sp.value = rate; } };
   let picked = null;
   const clear = () => { body.querySelectorAll(".cell[aria-pressed=true]").forEach(x => x.setAttribute("aria-pressed", "false")); picked = null; gloss.hidden = true; };
   const tap = (group, tok) => {
@@ -1904,6 +1928,7 @@ function miniReader(text, mark) {
     body.innerHTML = "";
     text.split(/\n+/).filter(l => l.trim()).forEach(t => {
       const line = buildLine(t, tap, false);
+      line.querySelectorAll(".linectl").forEach(x => x.remove());  // the sentence's controls are in the row underneath
       // The word being studied gets a quiet underline wherever it appears.
       if (mark) for (let i = t.indexOf(mark); i >= 0; i = t.indexOf(mark, i + 1))
         line._spans.filter(x => x.start < i + mark.length && x.end > i).forEach(x => x.group.classList.add("target"));
@@ -1914,8 +1939,8 @@ function miniReader(text, mark) {
     light();
   };
   if ([...text].some(ch => isHan(ch) && !cache[ch])) ensure(text).then(paint); else paint();
-  const bar = el("div", "minibar"); bar.append(pyb);
-  box.append(bar, body, gloss);
+  const bar = el("div", "minibar"); bar.append(say, pyb, enb, exb, zib);
+  box.append(body, gloss, bar, pop, enP);
   return box;
 }
 // ================= picking a word in the reader: first tap highlights and peeks, second tap opens
@@ -2765,9 +2790,7 @@ function savedCard(w) {
     if (c.usage) box.append(el("p", "note", esc(c.usage)));
     if (c.example) {
       if (markOf(w, "example")) box.append(el("p", "note", `Example${markHTML(w, "example")}`));
-      box.append(miniReader(conv(c.example), conv(w.word)));
-      const en = el("p", "exp", esc(c.example_en)); en.hidden = true; box.append(en);
-      if (c.example_en) box.append(btn("Show English", "btn ghost small", e => { en.hidden = !en.hidden; e.target.textContent = en.hidden ? "Show English" : "Hide English"; }));
+      box.append(miniReader(conv(c.example), conv(w.word), c.example_en));
     }
     if ((c.related || []).length) box.append(el("p", "note", "Related: " + c.related.map(r => `<b lang="zh">${esc(r.word)}</b> ${esc(r.pinyin)} ${esc(r.meaning)}`).join(" · ")));
   }
@@ -3402,9 +3425,7 @@ function showLook() {
     if (c) {
       (c.chars || []).forEach(x => box.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
       if (c.example) {
-        const ex = el("div", "wcard"); ex.append(miniReader(conv(c.example), conv(w.word)));
-        const en = el("p", "exp", esc(c.example_en)); en.hidden = true; ex.append(en);
-        if (c.example_en) ex.append(btn("Show English", "btn ghost small", e => { en.hidden = !en.hidden; e.target.textContent = en.hidden ? "Show English" : "Hide English"; }));
+        const ex = el("div", "wcard"); ex.append(miniReader(conv(c.example), conv(w.word), c.example_en));
         box.append(ex);
       }
     } else {
@@ -3828,9 +3849,7 @@ function showBack(w, how, st) {
     (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
     if (c.example) {
       const ex = el("div", "wcard");
-      ex.append(miniReader(conv(c.example), conv(w.word)));
-      const en = el("p", "exp", esc(c.example_en)); en.hidden = true; ex.append(en);
-      if (c.example_en) ex.append(btn("Show English", "btn ghost small", e => { en.hidden = !en.hidden; e.target.textContent = en.hidden ? "Show English" : "Hide English"; }));
+      ex.append(miniReader(conv(c.example), conv(w.word), c.example_en));
       ans.append(ex);
     }
   } else ans.append(cardPending(w, () => { if (ans.isConnected) { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true }); } }));
