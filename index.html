@@ -1123,7 +1123,6 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
   <div class="menuback" data-close></div>
   <nav class="menupanel" aria-label="Menu">
     <div class="menuhead"><span class="brand"><b>Radical</b></span><button type="button" class="iconbtn" data-close aria-label="Close menu">✕</button></div>
-    <button type="button" data-go="history"><span class="mi">歷</span>History</button>
     <button type="button" data-go="settings"><span class="mi">設</span>Settings</button>
     <button type="button" data-go="tour"><span class="mi">導</span>How it works</button>
     <button type="button" id="backupBtn"><span class="mi">存</span>Save a backup</button>
@@ -1139,7 +1138,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
   <div class="inner">
     <div class="topbar"><button type="button" class="back" data-back>Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
     <h3 class="sec tabsec"><span lang="zh">歷</span>History</h3>
-    <p class="note">Your last 30 texts, newest first. Tap one to read it again; what you have now is saved here first.</p>
+    <p class="note">Everything you've read and every word list you've imported, newest first. Tap one to open it again.</p>
     <div class="list" id="histList"></div>
   </div>
 </section>
@@ -2196,7 +2195,7 @@ $("srcIn").addEventListener("paste", e => {
   const img = [...((e.clipboardData && e.clipboardData.items) || [])].find(it => it.kind === "file" && it.type.startsWith("image/"));
   if (img) {  // a pasted screenshot: read the Chinese out of it
     e.preventDefault(); const file = img.getAsFile();
-    (async () => { try { busy("Reading the screenshot…"); const text = await ocr(await imageToJpeg(file)); busy(text ? "" : "No Chinese text found in that picture."); if (text) setText(text); } catch (err) { busy(err.message); } })();
+    (async () => { try { busy("Reading the screenshot…"); const text = await ocr(await imageToJpeg(file)); busy(text ? "" : "No Chinese text found in that picture."); if (text) setText(text, false, "photo"); } catch (err) { busy(err.message); } })();
     return;
   }
   setTimeout(submitSrc, 0);
@@ -2285,28 +2284,76 @@ document.querySelectorAll(".topbrand").forEach(b => b.onclick = () => { const sc
 $("listenBtn").onclick = () => readAloud([...$("reader").querySelectorAll(".line")], true);  // read the whole page, word by word
 if (store.get("radical-py", false)) { $("pyBtn").setAttribute("aria-checked", "true"); $("reader").classList.remove("nopy"); }
 
-// ================= history
-let textHistory = store.get("radical-history", []);
+// ================= history: everything opened to read (typed or pasted text, photos, PDFs, files, Wikipedia
+// articles) and word lists imported into Practice. Newest first, the last 100. A document comes back whole, on the
+// page you were on; a word list opens its words in Review.
+let textHistory = (store.get("radical-history", []) || []).map((h, i) => h.kind ? h : { id: "h" + i + Date.now().toString(36), kind: "typed", at: h.at, text: h.text });
+const HKINDS = { typed: "Typed or pasted", wiki: "Wikipedia", photo: "Photo", pdf: "PDF", file: "File", list: "Word list" };
+const HFILTERS = [["all", "All"], ["typed", "Typed"], ["wiki", "Wikipedia"], ["photo", "Photos"], ["file", "Files"], ["list", "Lists"]];
+let histFilter = "all", histTimer = 0;
+function saveHistory() {
+  try {
+    let j = JSON.stringify(textHistory);
+    // Phone storage is limited: if History grows too big, the oldest long documents keep only their first page.
+    for (let i = textHistory.length - 1; i >= 0 && j.length > 2.5e6; i--) { const h = textHistory[i]; if (h.doc && h.doc.pages.length > 1) { h.doc.pages = h.doc.pages.slice(0, 1); h.doc.i = 0; h.cut = true; j = JSON.stringify(textHistory); } }
+    store.set("radical-history", textHistory);
+  } catch (e) {}
+}
+const histKey = h => h.kind + ":" + (h.doc ? (h.doc.url || h.title || "") : h.words ? (h.title || "") + h.words.join("") : (h.text || "").slice(0, 200));
+function record(entry) {
+  const h = { id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: localDay(), ...entry };
+  if (h.doc) h.doc = JSON.parse(JSON.stringify({ ...h.doc, simp: undefined }));
+  const key = histKey(h); textHistory = [h, ...textHistory.filter(x => histKey(x) !== key)].slice(0, 100);
+  saveHistory(); return h.id;
+}
+// The text on screen before this version kept no History record; keep it once, as typed text.
 function remember(text) {
   text = (text || "").trim(); if (!text) return;
-  textHistory = [{ text, at: localDay() }, ...textHistory.filter(h => h.text !== text)].slice(0, 30);
-  store.set("radical-history", textHistory);
+  if (textHistory.some(h => h.text === text || (h.doc && h.doc.pages.includes(text)))) return;
+  record({ kind: "typed", text });
 }
-function setText(text, keepDoc) {
+function setText(text, keepDoc, kind = "typed", title = "") {
   if (!keepDoc && doc) closeDoc();
-  remember($("src").value);
-  $("src").value = text; store.set("radical-text", text); remember(text);
+  $("src").value = text; store.set("radical-text", text); record({ kind, text, ...(title ? { title } : {}) });
   stack.length = 0; setTab("readScreen"); $("readScreen").scrollTop = 0;
   onNewText(); render();
 }
+// A document's place is kept as you turn pages.
+function histDocPage() {
+  if (!doc || !doc._hid) return;
+  const h = textHistory.find(x => x.id === doc._hid); if (!h) return;
+  h.doc.i = doc.i; doc.pages.forEach((p, k) => { if (p != null && h.doc.pages[k] == null) h.doc.pages[k] = p; });
+  clearTimeout(histTimer); histTimer = setTimeout(saveHistory, 800);
+}
+function recordDoc(kind) { if (doc) doc._hid = record({ kind, title: doc.title, doc }); }
+function openHistory(h) {
+  if (h.kind === "list") { const ws = (h.words || []).map(findWord).filter(Boolean); if (ws.length) openLook(ws); return; }
+  if (h.doc) {
+    if (doc) closeDoc();
+    doc = JSON.parse(JSON.stringify(h.doc)); doc._hid = h.id; pdfFile = null;
+    textHistory = [h, ...textHistory.filter(x => x !== h)]; saveHistory();
+    stack.length = 0; setTab("readScreen"); showDocPage(doc.i || 0); return;
+  }
+  setText(h.text, false, h.kind, h.title || "");
+}
 function renderHistory() {
-  const list = $("histList");
-  list.innerHTML = textHistory.length ? "" : `<p class="note">Nothing yet. Texts you replace show up here.</p>`;
-  textHistory.forEach(h => {
+  const list = $("histList"); list.innerHTML = "";
+  const chips = el("div", "filters histchips");
+  HFILTERS.forEach(([k, label]) => {
+    const n = k === "all" ? textHistory.length : textHistory.filter(h => k === "file" ? h.kind === "file" || h.kind === "pdf" : h.kind === k).length;
+    if (k !== "all" && !n) return;
+    const b = el("button", "", `${label} ${n}`); b.type = "button"; b.setAttribute("aria-pressed", histFilter === k); b.onclick = () => { histFilter = k; renderHistory(); }; chips.append(b);
+  });
+  list.append(chips);
+  const shown = textHistory.filter(h => histFilter === "all" || (histFilter === "file" ? h.kind === "file" || h.kind === "pdf" : h.kind === histFilter));
+  if (!shown.length) list.append(el("p", "note", "Nothing yet. What you read, and word lists you import, show up here."));
+  shown.forEach(h => {
     const row = el("div", "hitem");
-    const load = el("button", "load", `<span class="ht" lang="zh">${esc(h.text.split("\n")[0])}</span><span class="note">${esc(h.at)} · ${[...h.text].length} characters</span>`);
-    load.type = "button"; load.onclick = () => setText(h.text);
-    const del = btn("Delete", "btn ghost small", () => { textHistory = textHistory.filter(x => x !== h); store.set("radical-history", textHistory); renderHistory(); });
+    const first = h.doc ? h.title : h.kind === "list" ? (h.title || "Word list") : (h.title || (h.text || "").split("\n")[0]);
+    const size = h.doc ? `${h.doc.pages.length} page${h.doc.pages.length === 1 ? "" : "s"}${h.doc.pages.length > 1 && h.doc.i ? `, on ${h.doc.i + 1}` : ""}` : h.kind === "list" ? `${(h.words || []).length} words` : `${[...(h.text || "")].length} characters`;
+    const load = el("button", "load", `<span class="hk">${HKINDS[h.kind] || "Text"}</span><span class="ht" lang="zh">${esc(first)}</span><span class="note">${esc(h.at)} · ${size}</span>`);
+    load.type = "button"; load.onclick = () => openHistory(h);
+    const del = btn("Delete", "btn ghost small", () => { textHistory = textHistory.filter(x => x !== h); saveHistory(); renderHistory(); });
     row.append(load, del); list.append(row);
   });
 }
@@ -3583,7 +3630,9 @@ function dedupe(list) {
   list.forEach(e => { if (e && e.word && !seen.has(e.word)) { seen.add(e.word); out.push(e); } });
   return out;
 }
+let pendingSource = "";
 function showPreview(found, source) {
+  pendingSource = typeof source === "string" ? source : source && source.name ? source.name : "";
   const list = dedupe(found.list);
   const fresh = list.filter(e => !findWord(e.word)), have = list.length - fresh.length;
   const pv = $("preview"); pv.hidden = false; pv.innerHTML = "";
@@ -3648,6 +3697,7 @@ async function commitPending(isBackup) {
     if (!entry.meaning && [...entry.word].length === 1 && cache[entry.word]) entry.meaning = cache[entry.word].d;
     myWords.unshift(entry); n++; unlearn(entry.word); logDay("n"); queueCard(entry);
   }
+  if (!isBackup && n) record({ kind: "list", title: pendingSource || "Pasted list", words: take.map(e => e.word) });
   saveWords(); closePreview(); $("addWord").value = ""; growAdd();
   $("addStatus").textContent = `Added ${n} word${n === 1 ? "" : "s"}.`; play("right");
   renderWords();
@@ -4549,7 +4599,7 @@ async function showDocPage(i) {
     try { doc.pages[i] = await pdfPageText(i + 1); } catch (e) { busy(e.message); return; }
     busy("");
   }
-  doc.i = i;
+  doc.i = i; histDocPage();
   let text = doc.pages[i].trim() || "(No Chinese text on this page.)";
   // Simplify: each part is rewritten at the chosen level once, then kept with the document.
   if (doc.lv && /\p{Script=Han}/u.test(text)) {
@@ -4646,15 +4696,14 @@ $("fileIn").onchange = async e => {
       if (f.size > 60e6) throw new Error("That PDF is over 60 MB. Try a smaller one.");
       busy("Opening the PDF…");
       pdfFile = await loadPdf(f);
-      remember($("src").value);
       doc = { title: f.name.replace(/\.pdf$/i, ""), unit: "Page", pages: Array(pdfFile.numPages).fill(null), i: 0 };
-      busy(""); await showDocPage(0);
+      busy(""); await showDocPage(0); recordDoc("pdf");
     } else if (f.type.startsWith("image/") || /\.(heic|jpe?g|png|webp)$/i.test(f.name)) {
       busy("Reading the photo…");
       const text = await ocr(await imageToJpeg(f));
       busy("");
       if (!text) { busy("No Chinese text found in that photo."); return; }
-      setText(text);
+      setText(text, false, "photo", f.name);
     } else {
       busy("Opening…");
       const got = await readOtherFile(f);
@@ -4749,11 +4798,10 @@ async function readOtherFile(f) {
   throw new Error("That kind of file can't be opened. Try a photo, PDF, Word file, e-book, subtitles, text or spreadsheet.");
 }
 function openTextDoc(title, parts, unit = "Page") {
-  remember($("src").value);
-  if (parts.length === 1) { setText(parts[0]); return; }
+  if (parts.length === 1) { setText(parts[0], false, "file", title); return; }
   doc = { title, unit, pages: parts, i: 0 }; pdfFile = null;
   stack.length = 0; setTab("readScreen");
-  showDocPage(0);
+  showDocPage(0); recordDoc("file");
 }
 
 // ---- pasting: a screenshot goes to photo reading; pasted text loses the citation lines Kindle and Apple Books add.
@@ -4812,14 +4860,12 @@ async function openArticle(title) {
     if (!pg || !pg.extract) throw new Error("That article came back empty.");
     const pages = wikiSections(conv(pg.extract));
     if (!pages.length) throw new Error("No readable text in that article.");
-    remember($("src").value);
     const [en] = await englishTitles([pg.title]);
     doc = { title: conv(pg.title), wtitle: pg.title, en: en || "", url: "https://zh.wikipedia.org/wiki/" + encodeURIComponent(pg.title), credit: "Wikipedia, CC BY-SA 4.0", unit: "Page", pages, i: 0 };
     // Explore is a tab now, so there is usually nothing to pop; if it was opened on top of something, unwind that.
     const depth = stack.length; stack.length = 0; setTab("readScreen");
     if (depth) try { history.go(-depth); } catch (e) {}
-    await showDocPage(0);
-    remember(pages[0]);
+    await showDocPage(0); recordDoc("wiki");
   } catch (e) { wStat(esc(e.message)); }
 }
 // Topic chips and the random-article label follow the 繁/简 setting.
