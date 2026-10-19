@@ -1250,7 +1250,8 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v34";
+const APP_VERSION = "v35";
+if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
   return `Radical ${APP_VERSION} · ${dev ? dev[0] : "device"} · ${screen.width}×${screen.height} · screen: ${on ? on.id : "?"} · ${ua}`;

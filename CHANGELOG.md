@@ -2,6 +2,28 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v35
+
+- Four tabs: 讀 Read · 探 Explore · 練 Practice · 記 Track. "My words" is now Practice everywhere.
+- Track (記): your streak (3 rest days in any 14 don't break it; the 4th does), today against your daily target, a month calendar of days used, characters known and characters read, a chart of characters known over time, the last 30 days of cards and reading, words by stage (new, learning, learned) and a table of this year, last year and all time. No accuracy chart.
+- Milestones: a short moment at round numbers (characters known, characters read, streak, cards). Ones already passed were recorded quietly.
+- The opening screen and This week lead with streak, characters known and days this week; This week also shows "Today: 12 of 20 cards" and opens Track when tapped.
+- The ring around 詞 is gone. The Due badge is a standard red, and it counts every card waiting in any mode.
+- Practice has Mix: each card comes up in a mode where it's due (Read, Write or Listen); new words start in Read. The filter chips and dots follow the practice you pick.
+- "Clear due cards · N" sits on top of Practice whenever anything is due; it runs every due card in every mode, so the badge really reaches zero.
+- Flash cards: the header reads "Flash card 6/19"; the front is just Check · I know it · Show answer; the score is 對 · 半 · 錯 in green, yellow and red; the practice bar just says Practice writing.
+- Tone boxes (1 ˉ 2 ˊ 3 ˇ 4 ˋ) on the right of the Pinyin box once there's a vowel; a number typed after a syllable marks it at once (xun4 → xùn). Syllables are split properly (xunxi + 2 → xunxí).
+- One speed setting for every speaker: Normal, Slower and Step by step (a word a syllable at a time, a sentence a word at a time). Chosen on Listen cards, in a sentence's 字 panel or in Settings.
+- Touch and hold a character in the reader to see it big, with Select just this and Open.
+- Grid and Strokes on the writing pad are remembered until you change them (Write cards follow the grid, never the strokes).
+- History keeps everything you open (typed or pasted, photos, PDFs, files, Wikipedia) and word lists you import, with filters; a document reopens whole, on the page you were on. It left the menu; it's next to Explore.
+- Settings is a list of sections that open on tap, each with a one-line summary. Speech has two voice samples (Taiwan and Mainland). Daily target uses the right font.
+- Backup is everything (words and progress, learned list and tallies, what you're reading, History, settings), with a summary before Save file. Restore is in Settings, Your words: words and History merge, settings ask first.
+- Reading text keeps a still 3D finish; the moving-light switch is gone. Big characters keep their slow light, now at a gentler rate, only when on screen and never in the background (easier on the battery).
+- Color lab: sliding a color changes only that color; nothing else moves.
+- Pages opened from the menu have no ☰ (‹ Menu goes back to it). About shows the version and no longer repeats How it works.
+- Phone on its side: a slimmer right column (characters only), and the selection bar and word strip stop at it.
+
 ## v34
 
 - Flash cards, answering: after Check the screen scrolls so the characters, your result and the rating bar show together. While the keyboard is up the card fits above it: the characters shrink just enough to stay whole, the title and bottom bar step aside, and moving between Pinyin and Meaning doesn't scroll anything. The keyboard's return key goes Pinyin, Meaning, Check.
