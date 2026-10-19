@@ -902,12 +902,15 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
    steps aside, so the text gets the height. Reading puts the color key and controls in one row; Explore and the
    flash card panel go two columns. Pages that open on top (cards, word page) keep their own layout. */
 @media (orientation:landscape) and (max-height:540px){
-  :root{--rail:calc(78px + env(safe-area-inset-right,0px))}
-  .tabbar{left:auto;top:0;width:var(--rail);height:auto;grid-template-columns:1fr;grid-template-rows:auto repeat(3,64px) auto;align-content:space-evenly;
-    border-top:0;border-left:1px solid var(--line);padding:var(--top) env(safe-area-inset-right,0px) var(--bot) 0}
+  :root{--rail:max(58px,env(safe-area-inset-right,0px))}
+  .tabbar{left:auto;top:0;width:var(--rail);height:auto;grid-template-columns:1fr;grid-template-rows:auto repeat(4,52px) auto;align-content:space-evenly;
+    border-top:0;border-left:1px solid var(--line);padding:var(--top) 0 var(--bot) 0}
+  .tabbar .tl{display:none}
+  .tabbar .badge{top:2px;left:calc(50% + 6px)}
+  .selbar,.peek{right:calc(var(--rail) + 10px);bottom:calc(var(--bot) + 10px)}
   .tabbar .railx{display:grid;place-items:center;justify-self:center}
   .tabbar .railbrand{all:unset;cursor:pointer;display:grid;place-items:center;justify-self:center;width:44px;height:44px}
-  .tabbar .railbrand svg{width:34px;height:34px}
+  .tabbar .railbrand svg{width:30px;height:30px}
   .tabbar .iconbtn.railx{all:unset;cursor:pointer;justify-self:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center}
   .tabbar .iconbtn.railx svg{width:19px;height:19px}
   .screen:not(.sub){padding:calc(var(--top) + 8px) calc(var(--rail) + 14px) calc(var(--bot) + 16px) max(14px,env(safe-area-inset-left,0px))}
