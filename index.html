@@ -2008,7 +2008,7 @@ function readerTap(group, tok, lineText, cell) {
 function holdToPick(b) {
   let t = 0, x0 = 0, y0 = 0;
   const stop = () => { clearTimeout(t); t = 0; };
-  b.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; stop(); t = setTimeout(() => {
+  b.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; stop(); b._held = false; t = setTimeout(() => {
     // Hold: the character opens big (as on cards), with Select just this (the one-character pick) and Open.
     t = 0; b._held = true; const line = b.closest(".line"), cells = [...line.querySelectorAll(".cell")], i = cells.indexOf(b);
     enlarge(b._ch, [["Select just this", () => pickSpan(line, i, i)], ["Open", () => openWord(b._ch, { context: line._text })]]);
