@@ -2388,7 +2388,7 @@ $("histBtn").onclick = () => { remember($("src").value); renderHistory(); go("hi
 // still works until it's removed from Vercel.
 async function claude(payload) {
   const token = await accessToken(), pw = store.get("radical-pw", "");
-  if (!token && !pw) { openSettings(false); setTimeout(() => { const e = $("acctEmail"); if (e) e.focus(); }, 300); throw new Error("Sign in first (Settings, Account)."); }
+  if (!token && !pw) { openSettings(false); $("secAcct").open = true; setTimeout(() => { const e = $("acctEmail"); if (e) e.focus(); }, 300); throw new Error("Sign in first (Settings, Account)."); }
   const auth = { ...(token ? { Authorization: `Bearer ${token}` } : { "x-app-password": pw }), "x-radical-day": localDay() };
   const get = payload.action === "card";
   const url = get ? `/api/claude?v=1&action=card&word=${encodeURIComponent(payload.word)}` : "/api/claude";
@@ -4538,7 +4538,7 @@ async function openSettings(welcome) {
   $("setIntro").hidden = !welcome; $("secAcct").hidden = welcome; if (welcome) $("secTheme").open = true;  // first launch: just the colors $("startBtn").hidden = !welcome; $("setBack").style.visibility = welcome ? "hidden" : "";
   $("rate").value = rate; pickVoice();
   $("pw").value = store.get("radical-pw", ""); acctSent = false; renderAccount();
-  buildLab(); setSums(); wordsWhere();
+  buildLab(); setSums(); wordsWhere(); if (!session && !welcome) $("secAcct").open = true;  // not signed in: Account starts open
   if (!$("paceHost").childElementCount) $("paceHost").append(paceSeg(() => sayPaced("我們在登山口附近搭帳篷。")));
   go("settingsScreen");
 }
