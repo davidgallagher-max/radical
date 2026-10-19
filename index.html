@@ -216,6 +216,12 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .revprev:focus-visible{outline:2px solid var(--accent);border-radius:6px}
 .revscore{display:block;font-family:var(--font-ui);font-size:.84rem;font-weight:500;color:var(--muted);margin-top:2px}
 .revscore:empty{display:none}
+.revscore{cursor:pointer}.revscore .sc{font-family:var(--font-zh);font-weight:700;font-size:1.05em}
+.sc.ok{color:var(--on)}.sc.part{color:var(--part,#E2B33C)}.sc.no{color:var(--no,#E5533D)}
+.sckey{color:var(--muted);font-weight:400}
+#revProg{font-family:var(--font-ui);font-size:.95rem;font-weight:600;color:var(--muted)}
+.ptag{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:1px 7px;vertical-align:2px}
+.revtitle{white-space:nowrap}
 .donescore{text-align:center;color:var(--muted);margin:0}
 .finish{display:grid;justify-items:center;gap:10px;padding:10px 0 20px;text-align:center}
 .finmark{width:min(46vw,190px);aspect-ratio:1}.finmark svg{width:100%;height:100%;display:block}
@@ -604,7 +610,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revpanel{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
 .revhead{display:flex;align-items:center;gap:10px}
 .revhead b{font-family:var(--font-brand);font-size:1.2rem;font-weight:800}
-.revhead span{flex:1;color:var(--muted);font-size:.88rem}
+.revhead span{flex:1;min-width:0;color:var(--muted);font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .revtoggle{all:unset;cursor:pointer;flex:1;min-width:0;display:flex;align-items:center;gap:10px}
 .revtoggle span{line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .revtoggle i{flex:none;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-135deg) translate(-2px,-2px);margin-right:4px;transition:transform .15s}
@@ -616,6 +622,11 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .seg2{display:grid;grid-template-columns:repeat(4,minmax(max-content,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg2.two{grid-template-columns:repeat(2,1fr)}
 .seg2.three{grid-template-columns:repeat(3,1fr)}
+.seg2.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:370px){.seg2.four button{font-size:.8rem;padding-left:1px;padding-right:1px}}
+.cleardue{margin-bottom:12px;font-weight:700}
+.revcount.typerow{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:8px;row-gap:4px}
+.revcount.typerow .revmix{grid-column:2;margin:0;text-align:left;padding-left:8px}
 .seg2 button{all:unset;cursor:pointer;text-align:center;white-space:nowrap;padding:9px 5px;font-size:.88rem;font-weight:500;color:var(--fg)}
 .seg2 button+button{border-left:1px solid var(--line)}
 /* Flash card choices: the chosen one is an outlined pill inside the row, so Start is the only solid button. */
@@ -632,7 +643,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revcount .note{flex:none;width:72px}
 .revcount .seg2{flex:1;min-width:0}
 .revcount>.note{white-space:nowrap}
-.revmix{margin:-4px 0 0;font-size:.95rem;font-weight:600;color:var(--fg);text-align:right}
+.revmix{margin:0;font-size:.95rem;font-weight:600;color:var(--fg);text-align:right}
 .revstrip{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:14px;background:var(--accent);color:var(--surface)}
 .revstrip b{font-size:1.25rem}
 .revstrip span{font-size:.85rem;opacity:.9}
@@ -722,10 +733,13 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 /* Typing on a card: only the characters, the clue line and the boxes; the tone buttons sit on the keyboard. */
 #reviewScreen.typing .revhead,#reviewScreen.typing .revsub,#reviewScreen.typing #revBar{display:none}
 #reviewScreen.typing{padding-bottom:12px}
+form.guess{position:relative}
+.tonebox{position:absolute;right:-6px;top:0;display:grid;gap:4px;z-index:2}
+.tonebox button{all:unset;cursor:pointer;box-sizing:border-box;width:46px;height:30px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:8px;background:var(--surface);border:1px solid var(--line);-webkit-user-select:none;user-select:none}
+.tonebox b{font-size:.95rem;font-weight:700;color:var(--fg)}.tonebox i{font-style:normal;font-size:1.9rem;line-height:1;height:18px;overflow:visible;color:var(--accent);font-weight:700;transform:translateY(5px)}
+.tonebox button:active{background:color-mix(in srgb,var(--accent) 22%,var(--surface))}
+form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 #revCard.practicing>.revchars,#revCard.practicing>.legline{display:none}
-.tonerow{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 8px;background:color-mix(in srgb,var(--surface) 96%,transparent);border-top:1px solid var(--line)}
-.tonerow button{all:unset;cursor:pointer;text-align:center;height:44px;line-height:44px;border-radius:9px;background:var(--bg);border:1px solid var(--line);font-size:1.15rem;font-weight:600;color:var(--fg);-webkit-user-select:none;user-select:none}
-.tonerow button:active{background:color-mix(in srgb,var(--accent) 20%,var(--bg))}
 .revchars{--cs:min(140px,calc((min(100vw,760px) - 32px - (var(--n,1) - 1) * 6px) / var(--n,1)))}
 .revchars svg{width:var(--cs);height:var(--cs);border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .revchars .slotbox{width:var(--cs);height:var(--cs)}
@@ -1027,7 +1041,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 <section class="screen sub" id="reviewScreen" hidden>
   <div class="inner">
     <div class="topbar"><button type="button" class="back" data-back id="revQuit">Quit</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
-    <div class="revhead"><h2 class="revtitle">Flash cards <span class="note" id="revProg"></span></h2><div id="revScript"></div></div>
+    <div class="revhead"><h2 class="revtitle">Flash card <span id="revProg"></span></h2><div id="revScript"></div></div>
     <div class="revsub"><button type="button" class="revprev" id="revPrev" style="visibility:hidden">‹ Previous card</button><span class="revscore" id="revScore"></span></div>
     <div id="revCard" class="revcard"></div>
     <div class="revbar" id="revBar"></div>
@@ -1172,7 +1186,6 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
   </div>
 </section>
 
-<div class="tonerow" id="toneRow" hidden role="group" aria-label="Tone marks"><button type="button" data-t="1">1 ā</button><button type="button" data-t="2">2 á</button><button type="button" data-t="3">3 ǎ</button><button type="button" data-t="4">4 à</button></div>
 <nav class="tabbar" id="tabbar" aria-label="Main">
   <button type="button" class="railx railbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg></button>
   <button type="button" data-tab="readScreen" aria-current="page"><span class="tz">讀</span><span class="tl">Read</span></button>
@@ -1815,7 +1828,7 @@ function back() {
   if (!stack.length) return;
   const leaving = stack.pop();
   if (leaving === "wordScreen") onLeaveWord();
-  if (leaving === "reviewScreen") { updateCounts(); }
+  if (leaving === "reviewScreen") { curHow = null; updateCounts(); }
   if (leaving === "settingsScreen") saveSettings();
   showOnly(stack.length ? stack[stack.length - 1] : tab);
   if ($(leaving).dataset.via === "menu") { $(leaving).dataset.via = ""; openMenu(); }
@@ -2925,7 +2938,17 @@ function grade(w, g, k = "srs") {
   { const dd = store.get("radical-days", {}), k = localDay(); dd[k] = dd[k] || {}; dd[k].k = charsKnown(); store.set("radical-days", dd); }  // the day's characters-known snapshot
 }
 const ivlText = d => d === 0 ? "this round" : d < 1 ? "later today" : d === 1 ? "tomorrow" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
-const wStatus = w => w.skip ? "known" : !w.srs ? "new" : w.srs.due <= Date.now() ? "due" : "learning";
+// Each word keeps a schedule per practice mode (Read, Write, Listen). A word's status follows the mode picked on
+// the Practice tab; with Mix (and for the badge), a word is Due if it's due in any mode.
+const KEYS = { read: "srs", write: "wsrs", listen: "lsrs" }, MODES = ["read", "write", "listen"];
+const modeDue = (w, m) => { const k = KEYS[m], x = w[k]; return !!(x && x.due && x.due <= Date.now() && (k === "srs" || !w.skip)); };
+const dueAny = w => MODES.some(m => modeDue(w, m));
+const dueCount = () => myWords.reduce((n, w) => n + MODES.filter(m => modeDue(w, m)).length, 0);  // cards waiting, every mode
+function wStatus(w, how = (typeof revHow === "string" ? revHow : "read")) {
+  if (how === "mix") return dueAny(w) ? "due" : w.skip ? "known" : MODES.some(m => w[KEYS[m]]) ? "learning" : "new";
+  const k = KEYS[how] || "srs";
+  return modeDue(w, how) ? "due" : w.skip ? "known" : !w[k] ? "new" : "learning";
+}
 function dueText(w) {
   if (w.skip) return `Known: comes back now and then for a quick check (next around ${localDay(w.srs && w.srs.due)}).`;
   if (!w.srs) return "New: not reviewed yet.";
@@ -2933,7 +2956,7 @@ function dueText(w) {
   return `Next review ${localDay(w.srs.due)} (every ${w.srs.ivl <= 1 ? "day" : ivlText(w.srs.ivl)}).`;
 }
 function updateCounts() {
-  const n = myWords.filter(w => wStatus(w) === "due").length;  // the same number as the Due filter on My words
+  const n = dueCount();  // every card waiting, in any mode (Clear due cards shows the same number)
   $("dueBadge").textContent = n ? n : "";
   if (!$("wordsScreen").hidden) renderStrip();
 }
@@ -3271,24 +3294,46 @@ let filter = "all", pending = null;
 // Flash cards: choose which words (due, new, learning, all) and how many, then start.
 let revMode = store.get("radical-revmode", "due"), revCount = store.get("radical-revcount", 20);
 // Read: see the word, recall its sound and meaning. Write: hear it and see the meaning, write the characters.
-let revHow = store.get("radical-revhow", "read");  // read, write or listen; each keeps its own schedule
-const srsKey = () => revHow === "write" ? "wsrs" : revHow === "listen" ? "lsrs" : "srs";
-function pool(mode) {
-  const live = myWords.filter(w => !w.skip), k = srsKey();
-  if (mode === "due") return reviewQueue(k);
-  if (mode === "new") return live.filter(w => !w[k]);
-  if (mode === "learning") return live.filter(w => w[k] && w[k].due > Date.now());  // Active: in rotation, not due yet
+let revHow = store.get("radical-revhow", "read");  // read, write, listen or mix; each mode keeps its own schedule
+// During a session, curHow is how it runs (Clear due cards always runs as Mix); in Mix each card has its own mode.
+let curHow = null; const cardMode = new WeakMap();
+const howOf = w => { const h = curHow || revHow; return h === "mix" ? (cardMode.get(w) || "read") : h; };
+const srsKey = w => KEYS[w ? howOf(w) : (revHow === "mix" ? "read" : revHow)];
+const pick1 = a => a[Math.floor(Math.random() * a.length)];
+function pool(mode, how = revHow) {
+  const live = myWords.filter(w => !w.skip);
+  if (how !== "mix") {
+    const k = KEYS[how];
+    if (mode === "due") return reviewQueue(k);
+    if (mode === "new") return live.filter(w => !w[k]);
+    return live;
+  }
+  // Mix: a card comes up in a mode where it's due (one picked at random if several); new words start in Read.
+  const due = myWords.filter(dueAny).sort((a, b) => Math.min(...MODES.filter(m => modeDue(a, m)).map(m => a[KEYS[m]].due)) - Math.min(...MODES.filter(m => modeDue(b, m)).map(m => b[KEYS[m]].due)));
+  const fresh = live.filter(w => !w.srs);
+  if (mode === "clear") return due;
+  if (mode === "due") return [...due, ...fresh.slice(0, Math.max(0, newLeft("srs")))];
+  if (mode === "new") return fresh;
   return live;
 }
-function buildQueue(mode, count) {
-  let q = pool(mode).slice();
-  if (mode !== "due") for (let i = q.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [q[i], q[j]] = [q[j], q[i]]; }
-  return count === "all" ? q : q.slice(0, count);
+function assignModes(q, how) {
+  if (how !== "mix") return;
+  q.forEach(w => { const dm = MODES.filter(m => modeDue(w, m)); cardMode.set(w, dm.length ? pick1(dm) : !w.srs ? "read" : pick1(MODES.filter(m => m === "read" || w.srs))); });
+}
+function buildQueue(mode, count, how = revHow) {
+  let q = pool(mode, how).slice();
+  if (mode !== "due" && mode !== "clear") for (let i = q.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [q[i], q[j]] = [q[j], q[i]]; }
+  q = count === "all" ? q : q.slice(0, count);
+  assignModes(q, how);
+  return q;
 }
 function renderStrip() {
   const strip = $("revStrip"); strip.innerHTML = "";
   const box = el("div", "revpanel");
   const sizes = { due: pool("due").length, new: pool("new").length, all: pool("all").length };
+  // The badge's promise: when anything is due, one button clears exactly that.
+  const nClear = dueCount();
+  if (nClear) { const cb = btn(`Clear due cards · ${nClear}`, "btn wide cleardue", () => openReview("clear", "all")); strip.append(cb); }
   if (revMode === "learning") revMode = "due";  // Active was dropped from the choices
   if (!sizes[revMode]) revMode = ["due", "new", "all"].find(k => sizes[k]) || "due";
   const modes = el("div", "seg2 three");
@@ -3305,10 +3350,10 @@ function renderStrip() {
   const nCards = Math.min(sizes[revMode], revCount === "all" ? Infinity : revCount);
   // The panel folds to its top row (which keeps Start), and remembers whether you left it open.
   const open = store.get("radical-rev-open", true);
-  const what = { due: "suggested", new: "new", all: nCards === 1 ? "card" : "cards" }[revMode], how = { read: "Read", write: "Write", listen: "Listen" }[revHow];
+  const what = { due: "suggested", new: "new", all: nCards === 1 ? "card" : "cards" }[revMode], how = { read: "Read", write: "Write", listen: "Listen", mix: "Mix" }[revHow];
   // Today's set is due cards first, then new words: the Start row says how many of each.
   // Known words back for their occasional check are counted on their own, so "due" matches the Due filter and the badge.
-  const k_ = srsKey(), dueNow = myWords.filter(w => w[k_] && w[k_].due && w[k_].due <= Date.now() && (k_ === "srs" || !w.skip));
+  const dueNow = revHow === "mix" ? myWords.filter(dueAny) : myWords.filter(w => modeDue(w, revHow));
   const nDue = Math.min(nCards, dueNow.filter(w => !w.skip).length), nKnown = Math.min(nCards - nDue, dueNow.filter(w => w.skip).length), nNew = nCards - nDue - nKnown;
   const split = revMode === "due" ? [nDue ? `${nDue} due` : "", nKnown ? `${nKnown} known` : "", nNew ? `${nNew} new` : ""].filter(Boolean) : [];
   const cardsTxt = `${nCards} card${nCards === 1 ? "" : "s"}`;
@@ -3322,18 +3367,22 @@ function renderStrip() {
   head.append(go_);
   box.classList.toggle("folded", !open);
   if (!open) { box.append(head); strip.append(box); return; }
-  const hows = el("div", "seg2 three");
-  [["read", "Read"], ["write", "Write"], ["listen", "Listen"]].forEach(([k, label]) => {
+  const hows = el("div", "seg2 four");
+  [["read", "Read"], ["write", "Write"], ["listen", "Listen"], ["mix", "Mix"]].forEach(([k, label]) => {
     const b = el("button", "", label); b.type = "button"; b.setAttribute("aria-pressed", revHow === k);
-    b.onclick = () => { revHow = k; store.set("radical-revhow", k); renderStrip(); }; hows.append(b);
+    b.onclick = () => { revHow = k; store.set("radical-revhow", k); renderWords(); }; hows.append(b);
   });
   const howRow = el("div", "row revcount", '<span class="note">Practice?</span>');
-  const typeRow = el("div", "row revcount", '<span class="note">What type?</span>'), countRow = el("div", "row revcount", '<span class="note">How many?</span>');
+  const typeRow = el("div", "row revcount typerow", '<span class="note">What type?</span>'), countRow = el("div", "row revcount", '<span class="note">How many?</span>');
   howRow.append(hows); typeRow.append(modes); countRow.append(counts);
   box.append(head, howRow, typeRow, countRow);
-  if (revHow === "write") box.append(el("p", "note", "Write: you hear the word and see its meaning, then write the characters from memory. Writing keeps its own schedule."));
-  if (revHow === "listen") box.append(el("p", "note", "Listen: you hear the word without seeing it, then type its pinyin and meaning. Listening keeps its own schedule."));
-  if (revMode === "due" && split.length) typeRow.after(el("p", "revmix", split.join(" + ")));
+  // What each practice does: shown the first time you pick it, then How it works keeps it.
+  const NOTES = { write: "Write: you hear the word and see its meaning, then write the characters from memory. Writing keeps its own schedule.",
+    listen: "Listen: you hear the word without seeing it, then type its pinyin and meaning. Listening keeps its own schedule.",
+    mix: "Mix: each card comes up in a mode where it's due (Read, Write or Listen). New words start in Read." };
+  const seen = store.get("radical-hownote", {});
+  if (NOTES[revHow] && !seen[revHow]) { box.append(el("p", "note", NOTES[revHow])); seen[revHow] = true; store.set("radical-hownote", seen); }
+  if (revMode === "due" && split.length) typeRow.append(el("p", "revmix", split.join(" + ")));
   strip.append(box);
 }
 // Backup reminder: your words live only on this phone, so after a week or 100 reviews without a backup, say so.
@@ -3348,7 +3397,7 @@ function showBackupNote() {
 function renderWords() {
   weekCard(); renderStrip(); showBackupNote();
   const counts = { all: myWords.length, due: 0, new: 0, learning: 0, known: 0 };
-  myWords.forEach(w => counts[wStatus(w)]++);
+  myWords.forEach(w => counts[wStatus(w)]++);  // statuses follow the practice picked below (Read, Write, Listen or Mix)
   const f = $("filters"); f.innerHTML = "";
   [["all", "All"], ["new", "New"], ["due", "Due"], ["learning", "Learning"], ["known", "Known"]].forEach(([k, label]) => {
     const b = el("button", "", `${k === "all" ? "" : `<i class="dot ${k}"></i>`}${label} ${counts[k]}`); b.type = "button"; b.dataset.k = k;
@@ -3723,7 +3772,10 @@ const revOutcome = new WeakMap();  // how the card on screen was answered (right
 // a miss. Again also brings the card back as a repeat.
 let rScore = null;
 const newScore = () => ({ right: 0, shaky: 0, missed: 0, run: 0, best: 0, repeats: 0, mw: [], learned0: Object.keys(learned).length });
-const scoreText = sc => `${sc.right} right · ${sc.shaky} shaky · ${sc.missed} missed`;  // revHist: the cards already rated this session, newest last, so you can go back
+const scoreText = sc => `${sc.right} right · ${sc.shaky} half · ${sc.missed} wrong${sc.repeats ? ` · ${sc.repeats} repeat${sc.repeats === 1 ? "" : "s"}` : ""}`;
+// The running score in characters: 對 right, 半 half, 錯 wrong (green, yellow, red), following 繁/简.
+const scoreHTML = sc => { const z = c => typeof conv === "function" ? conv(c) : c;
+  return `<b class="sc ok" lang="zh">${z("對")}</b> ${sc.right} · <b class="sc part" lang="zh">${z("半")}</b> ${sc.shaky} · <b class="sc no" lang="zh">${z("錯")}</b> ${sc.missed}${sc.repeats ? ` · ${sc.repeats} repeat${sc.repeats === 1 ? "" : "s"}` : ""}`; };  // revHist: the cards already rated this session, newest last, so you can go back
 // Going back undoes the last rating: the card's schedule, the queue and the day's new-word count return to how
 // they were, and the card opens on its answer side so you can look again and rate it again.
 function prevCard() {
@@ -3751,13 +3803,15 @@ $("revQuit").onclick = () => {
 // Flash cards for a hand-picked set of words (from the selection bar), shuffled, schedule ignored for choosing.
 let lastSet = null;  // the settings of the session that's running, for "Another N" (null: a hand-picked set)
 async function openReviewWith(ws) {
-  lastSet = null; rq = ws.slice(); for (let i = rq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rq[i], rq[j]] = [rq[j], rq[i]]; }
+  lastSet = null; curHow = revHow; rq = ws.slice(); for (let i = rq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rq[i], rq[j]] = [rq[j], rq[i]]; }
+  assignModes(rq, curHow);
   rDone = 0; revHist = []; rScore = newScore(); go("reviewScreen");
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
 }
 async function openReview(mode = "due", count = "all", again) {
-  lastSet = { mode, count }; rq = buildQueue(mode, count); rDone = 0; revHist = []; rScore = newScore();
+  curHow = mode === "clear" ? "mix" : revHow;  // Clear due cards: everything due, in whichever mode it's due
+  lastSet = { mode, count }; rq = buildQueue(mode, count, curHow); rDone = 0; revHist = []; rScore = newScore();
   if (!again) go("reviewScreen"); else $("reviewScreen").scrollTop = 0;
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
@@ -3893,9 +3947,11 @@ function checkMeaning(given, target) {
 // a label and the flip button on top (Show answer on the front, Front on the back), the main actions below.
 function revBar(label, flipLabel, flipIcon, onFlip, actions, cls, sub) {
   const bar = $("revBar"); bar.replaceChildren(); bar.classList.remove("glow");
-  const top = el("div", "revbartop", `<span class="rl"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span>`);
-  if (flipLabel) { const f = btn("", "btn ghost small flipbtn", onFlip); f.innerHTML = `<i>${flipIcon}</i>${flipLabel}`; top.append(f); }  // no label: no flip button
-  bar.append(top);
+  if (label || flipLabel) {  // no label and no flip button: just the row of actions
+    const top = el("div", "revbartop", `<span class="rl"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span>`);
+    if (flipLabel) { const f = btn("", "btn ghost small flipbtn", onFlip); f.innerHTML = `<i>${flipIcon}</i>${flipLabel}`; top.append(f); }
+    bar.append(top);
+  }
   if (actions.length) { const row = el("div", cls); actions.forEach(a => row.append(a)); bar.append(row); }  // no actions: a slim bar
 }
 function showFront() {
@@ -3903,40 +3959,44 @@ function showFront() {
   const box = $("revCard"), prog = $("revProg"); box.innerHTML = ""; box.classList.remove("practicing");
   $("revPrev").style.visibility = revHist.length ? "visible" : "hidden";  // keeps its space, so the card never jumps
   const sc = rScore || (rScore = newScore()), rep = n => `${n} repeat${n === 1 ? "" : "s"}`;
-  $("revScore").textContent = rDone && rq.length ? scoreText(sc) : "";
-  $("revQuit").textContent = rq.length ? "Quit" : "My words";
+  $("revScore").innerHTML = rDone && rq.length ? scoreHTML(sc) : "";
+  $("revScore").title = "對 right · 半 half · 錯 wrong";
+  $("revScore").onclick = () => { const k = $("revScore").querySelector(".sckey"); if (k) k.remove(); else $("revScore").insertAdjacentHTML("beforeend", '<span class="sckey"> (right · half · wrong)</span>'); };
+  $("revQuit").textContent = rq.length ? "Quit" : "Practice";
   $("revQuit").style.visibility = !rq.length && rDone ? "hidden" : "";  // the finish screen has its own buttons
   if (!rq.length) {
     prog.textContent = ""; $("revBar").replaceChildren(); $("revBar").classList.remove("glow"); $("revPrev").style.visibility = "hidden";
     if (!rDone) { box.append(el("p", "wmean", "Nothing to review right now."), btn("Back to my words", "btn wide", () => history.back())); return; }
     // The finish: 完 (finished) draws itself in the lit ink, then the session in one glance, what it earned, what's next.
-    const k = srsKey(), fin = el("div", "finish"), mark = el("div", "finmark");
+    const fin = el("div", "finish"), mark = el("div", "finmark");
     fin.append(mark, el("h3", "", "Session complete"));
     ensure("完").then(() => { if (!fin.isConnected) return; const svg = svgFor("完", false, true); mark.append(svg); animate(svg, "完", 1.2); });
     const gained = Object.keys(learned).length - (sc.learned0 || 0), soon = midnight() + 2 * DAY;
-    const next = myWords.filter(x => x[k] && x[k].due < soon && (k === "srs" || !x.skip)).length;
-    fin.append(el("p", "donescore", `${rDone} card${rDone === 1 ? "" : "s"}${sc.repeats ? ` (${rep(sc.repeats)})` : ""} · ${scoreText(sc)}${sc.best > 1 ? ` · best run ${sc.best}` : ""}`));
+    const next = myWords.filter(x => MODES.some(m => { const s2 = x[KEYS[m]]; return s2 && s2.due && s2.due < soon && (m === "read" || !x.skip); })).length;
+    fin.append(el("p", "donescore", `${rDone} card${rDone === 1 ? "" : "s"} · ${scoreHTML(sc)}${sc.best > 1 ? ` · best run ${sc.best}` : ""}`));
+    fin.append(el("p", "note", `<span lang="zh">${conv("對")}</span> right · <span lang="zh">${conv("半")}</span> half · <span lang="zh">${conv("錯")}</span> wrong`));
     fin.append(el("p", "finnext", [gained > 0 ? `+${gained} learned` : "", next ? `${next} due by tomorrow` : "Nothing due tomorrow"].filter(Boolean).join(" · ")));
     const acts = el("div", "finacts");
     const missed = sc.mw.filter(x => myWords.includes(x));
     // Another N: the same kind of set again, if there's anything left in it (not after a hand-picked set).
-    const more = lastSet ? buildQueue(lastSet.mode, lastSet.count).length : 0;
+    const more = lastSet && lastSet.mode !== "clear" ? buildQueue(lastSet.mode, lastSet.count, curHow).length : 0;
     if (more) { const s0 = lastSet; acts.append(btn(`Another ${more}`, "btn wide", () => { openReview(s0.mode, s0.count, true); })); }
     if (missed.length) acts.append(btn(`Go over the ones you missed (${missed.length})`, "btn ghost wide", () => { history.back(); setTimeout(() => openLook(missed), 60); }));
     acts.append(btn("Done", more ? "btn ghost wide" : "btn wide", () => history.back()));
     fin.append(acts); box.append(fin);
-    play("reward");
+    play("reward"); setTimeout(() => checkMilestones(), 1800);
     return;
   }
   const w = rq[0];
-  prog.textContent = `· Card ${rDone + 1} of ${rDone + rq.length}${sc.repeats ? ` · ${rep(sc.repeats)}` : ""}${w[srsKey()] ? "" : " · new"}`;
+  const m0 = howOf(w);
+  prog.innerHTML = `${rDone + 1}/${rDone + rq.length}${w[srsKey(w)] ? "" : ' <span class="ptag">new</span>'}${(curHow || revHow) === "mix" ? ` <span class="ptag">${{ read: "Read", write: "Write", listen: "Listen" }[m0]}</span>` : ""}`;
   revSide = null;
   $("revScript").replaceChildren(scriptToggle(async () => {  // 繁/简 for the whole set; the card you're on is redrawn
     const back = revSide; await ensure(rq.map(x => conv(x.word) + conv(x.context || "") + conv((cardOf(x) || {}).example || "")).join(""));
     showFront(); if (back) showFront.reveal(back.how === "check" ? "show" : back.how, back.stats);
   }));
-  if (revHow === "write") { writeFront(w); return; }
-  const listen = revHow === "listen";
+  if (howOf(w) === "write") { writeFront(w); return; }
+  const listen = howOf(w) === "listen";
   if (listen) {
     // Listening card: only the sound. Three speeds: Slowest (about half), Slower (about 70%) and Normal (your speech
     // speed). Tapping a speed plays the word at it and keeps it (remembered); Play replays at the chosen speed.
@@ -3962,7 +4022,6 @@ function showFront() {
   // Listen cards take pinyin or characters in one box (the phone's handwriting keyboard covers writing).
   form.innerHTML = (listen ? `<label><span>Answer</span><input id="gPy" type="text" lang="zh" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="pinyin or ${script === "simp" ? "汉字" : "漢字"}"></label>`
     : `<label><span>Pinyin</span><input id="gPy" type="text" inputmode="latin" enterkeyhint="next" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="wo3 or wǒ"></label>`) + `
-    <button type="button" class="pyprev" id="gPrev" hidden title="Use tone marks"></button>
     <label><span>Meaning</span><input id="gMean" type="text" enterkeyhint="go" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="in English"></label>`;
   // Clues: tap a character for a clue about it, in a fixed order: its sound (played), then its meaning; after that a
   // tap plays the sound again. Pinyin is never a clue (it would give the answer away). One clue shows at a time, right under the big characters (where
@@ -4014,16 +4073,30 @@ function showFront() {
   showFront.reveal = reveal;
   if (!listen) big.after(hintBox);
   box.append(form);
-  revBar(listen ? "Listen, then type it" : "Guess, then check", "Show answer", "⟳", () => reveal("show"), [btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know"))], "guessacts", listen ? "Type the pinyin and meaning of what you hear." : "");
+  revBar("", null, "", null, [btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know")), btn("Show answer", "btn ghost", () => reveal("show"))], "guessacts three");
   const py = $("gPy"), mean = $("gMean");
-  // Typing tone numbers (ta1) shows the marked form below; tap it to swap it in.
-  py.addEventListener("input", () => { const pv = $("gPrev"), m = numToMarks(py.value); pv.hidden = !/\d/.test(py.value); pv.innerHTML = `${pyWordHTML(m)} <span>tap to use</span>`; });
-  $("gPrev").onclick = () => { py.value = numToMarks(py.value); $("gPrev").hidden = true; py.focus(); };
+  // Tones: a number typed after a syllable (xun4) marks it at once (xùn); 5 clears the mark. The tone boxes on the
+  // right edge (1 ˉ 2 ˊ 3 ˇ 4 ˋ) do the same for the syllable before the cursor; they appear once there's a vowel.
+  if (!listen) {
+    const tones = el("div", "tonebox"); tones.setAttribute("role", "group"); tones.setAttribute("aria-label", "Tone marks"); tones.hidden = true;
+    [["1", "ˉ"], ["2", "ˊ"], ["3", "ˇ"], ["4", "ˋ"]].forEach(([t, m]) => { const b = el("button", "", `<b>${t}</b><i>${m}</i>`); b.type = "button"; b.setAttribute("aria-label", `Tone ${t}`); b.onclick = () => { toneAt(py, +t); showTones(); }; tones.append(b); });
+    tones.addEventListener("pointerdown", e => e.preventDefault()); tones.addEventListener("mousedown", e => e.preventDefault());
+    form.append(tones);
+    const showTones = () => { const on = document.activeElement === py && /[aeiouvüāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/i.test(py.value); tones.hidden = !on; form.classList.toggle("toned", on); };
+    py.addEventListener("input", e => {
+      const at = py.selectionEnd ?? py.value.length, ch = py.value[at - 1];
+      if (e.inputType !== "deleteContentBackward" && /[1-5]/.test(ch || "") && /[a-zü:āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]$/i.test(py.value.slice(0, at - 1))) {
+        py.value = py.value.slice(0, at - 1) + py.value.slice(at); py.setSelectionRange(at - 1, at - 1); toneAt(py, +ch);
+      }
+      showTones();
+    });
+    py.addEventListener("focus", showTones); py.addEventListener("blur", () => setTimeout(showTones, 50));
+  }
   py.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); mean.focus(); } });
   form.onsubmit = e => { e.preventDefault(); reveal("check"); };
   mean.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); reveal("check"); } });
   showBack.guess = () => ({ py: py.value, mean: mean.value, listen });
-  kbState = { card: box, inputs: [py, mean], py, tones: !listen };
+  kbState = { card: box, inputs: [py, mean], py };
   setTimeout(() => py.focus(), 50);
 }
 // ---- typing on a card. With the keyboard up, the card fits the space above it: the title, score and bottom bar step
@@ -4031,18 +4104,16 @@ function showFront() {
 // phone has no reason to scroll it (switching between the two boxes moves nothing). Enter goes Pinyin → Meaning → Check.
 let kbState = null;
 function kbFit() {
-  const st = kbState, scr = $("reviewScreen"), vv = window.visualViewport, tones = $("toneRow");
+  const st = kbState, scr = $("reviewScreen"), vv = window.visualViewport;
   const live = st && st.card.isConnected && !scr.hidden;
   const focused = live && st.inputs.includes(document.activeElement);
   const kb = vv ? innerHeight - vv.height : 0, typing = focused && kb > 120;
-  tones.hidden = !(typing && st.tones && document.activeElement === st.py);  // only with the on-screen keyboard
-  if (!tones.hidden) tones.style.bottom = (vv ? Math.max(0, innerHeight - vv.height - vv.offsetTop) : 0) + "px";
   scr.classList.toggle("typing", typing);
   const big = live && st.card.querySelector(".revchars");
   if (!typing) { scr.style.height = ""; scr.style.bottom = ""; if (big) big.style.removeProperty("--cs"); return; }
   scr.style.height = vv.height + "px"; scr.style.bottom = "auto"; window.scrollTo(0, 0);
   const topH = scr.querySelector(".topbar").offsetHeight, form = st.card.querySelector("form.guess"), hint = st.card.querySelector(".cluespot");
-  const rest = (form ? form.offsetHeight : 0) + (hint ? hint.offsetHeight : 0) + (tones.hidden ? 0 : tones.offsetHeight) + 56;
+  const rest = (form ? form.offsetHeight : 0) + (hint ? hint.offsetHeight : 0) + 56;
   if (big) {
     big.style.removeProperty("--cs");
     const natural = (big.querySelector("svg,.fontglyph,.slotbox") || big).getBoundingClientRect().height || 140;
@@ -4054,21 +4125,17 @@ function kbFit() {
 if (window.visualViewport) { visualViewport.addEventListener("resize", kbFit); visualViewport.addEventListener("scroll", () => { if ($("reviewScreen").classList.contains("typing")) kbFit(); }); }
 document.addEventListener("focusin", () => setTimeout(kbFit, 30));
 document.addEventListener("focusout", () => setTimeout(kbFit, 60));
-// Tone buttons over the keyboard (Pinyin box): type a syllable plainly, tap a tone, and the mark lands on the right
-// vowel of the syllable just before the cursor; tapping another tone replaces it. The box keeps the keyboard up.
-$("toneRow").addEventListener("pointerdown", e => e.preventDefault());
-$("toneRow").addEventListener("mousedown", e => e.preventDefault());
-$("toneRow").querySelectorAll("button").forEach(b => b.onclick = () => {
-  const inp = kbState && kbState.py; if (!inp || !inp.isConnected) return;
+// Put tone t (1-4, or 5 for none) on the syllable just before the cursor. Syllables are split properly, so
+// "xunxi" + 2 gives "xunxí"; a syllable that already has a mark gets the new one instead.
+function toneAt(inp, t) {
   const at = inp.selectionEnd ?? inp.value.length, before = inp.value.slice(0, at), after = inp.value.slice(at);
-  const m = before.match(/([a-zA-ZāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüÜ:]+)([1-5]?)$/);
-  if (!m) return;
-  const plain = [...m[1]].map(c => PLAIN[c] || c).join("").replace(/u:/gi, "ü");
-  const marked = numToMarks(plain.replace(/ü/g, "v") + b.dataset.t);
-  const nb = before.slice(0, before.length - m[0].length) + marked;
+  const m = before.match(/[a-zA-ZāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüÜ:]+$/); if (!m) return;
+  const run = m[0].replace(/u:/gi, "ü"), parts = sylls(run).filter(Boolean), last = parts[parts.length - 1] || run;
+  const plain = [...last].map(c => PLAIN[c] || c).join("").replace(/ü/g, "v");
+  const marked = t === 5 ? plain.replace(/v/g, "ü") : numToMarks(plain + t);
+  const nb = before.slice(0, before.length - m[0].length) + run.slice(0, run.length - last.length) + marked;
   inp.value = nb + after; inp.setSelectionRange(nb.length, nb.length);
-  inp.dispatchEvent(new Event("input", { bubbles: true })); inp.focus();
-});
+}
 // Writing card: pinyin, sound and meaning on one line on top; write each character in turn on the pad. The card
 // fits one screen: the pad is sized to the room left above the bottom bar (measured at its tallest), so the bar never
 // covers it. Hints come after 3 misses on a stroke, or from the Hint button. The rating suggestion comes from how it went.
@@ -4162,7 +4229,7 @@ function writeFront(w) {
   nextChar();
 }
 function showBack(w, how, st) {
-  const box = $("revCard"), c = cardOf(w), ans = el("div", "revans"), k = srsKey();
+  const box = $("revCard"), c = cardOf(w), ans = el("div", "revans"), k = srsKey(w);
   const guess = how === "check" && showBack.guess ? showBack.guess() : null;
   let suggest = how === "know" ? "good" : how === "show" ? "again" : null;
   if (how === "know" && !(st && st.quiet)) play("right");
@@ -4226,7 +4293,9 @@ function showBack(w, how, st) {
       if (out === "missed") { sc.run = 0; if (!sc.mw.includes(w)) sc.mw.push(w); } else { sc.run++; sc.best = Math.max(sc.best, sc.run); }
       if (g === "again") { sc.repeats++; if (!sc.mw.includes(w)) sc.mw.push(w); }
       revOutcome.delete(w);
-      tick(g); grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w); showFront(); $("reviewScreen").scrollTop = 0; };
+      tick(g); grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w);
+      // Clearing due cards: a word due in another mode too comes back in that mode, so the badge really reaches zero.
+      else if (lastSet && lastSet.mode === "clear") { const more = MODES.filter(m => modeDue(w, m)); if (more.length && !rq.includes(w)) { cardMode.set(w, more[0]); rq.push(w); } } showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);
   });
   // Rating is the only way forward, so the bar says so; the flip button sits where "Show answer" was on the front.
@@ -4271,7 +4340,7 @@ function practiceOnCard(w, chars, back) {
     pick.querySelectorAll("button").forEach((b, k) => b.setAttribute("aria-pressed", k === i));
     host.innerHTML = ""; practice(host, chars[i], back, true);
   };
-  revBar("Practice writing", "Back to card", "‹", () => { box.classList.remove("practicing"); back(); }, [], "guessacts", "Not graded. Your rating is waiting.");
+  revBar("Practice writing", "Back to card", "‹", () => { box.classList.remove("practicing"); back(); }, [], "guessacts");
   $("reviewScreen").scrollTop = 0;
   draw();
 }
