@@ -97,7 +97,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v35 iPhone check: tone boxes with the keyboard up, touch and hold in the reader, Clear due cards, Track, the backup sheet, and whether the phone still runs hot.
 - Palette pick on the Radical Palettes page.
-- D-U-N-S (see the app plan below), then Apple Developer Program enrollment as Upslope Labs LLC.
+- D-U-N-S number (requested Oct 19), then Apple Developer Program enrollment as Upslope Labs LLC.
 
 ## Next batch list (decided Oct 19, 2026; build on "batch")
 
@@ -111,7 +111,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 ## Next batches (re-planned Oct 18, 2026: TestFlight first)
 
 - Palettes: David is picking from the comparison page (claude.ai artifact "Radical Palettes": Lacquer & Gold, Scholar's Ink, Dunhuang, Sancai, Celadon & Cinnabar). Every current palette fails the red-green check on Meaning vs Sound; the chosen one gets Meaning and Sound that differ in lightness, not just hue.
-- The app (the batch after the list above): wrap Radical for iPhone, built on GitHub's Mac runners (no Xcode for David), offline mode (Apple rejects a website in a frame; offline is the proof), cards and word page locked upright, TestFlight upload for Laoshi and testers. Sign in with Apple isn't needed while sign-in is email codes only. LLC (Upslope Labs LLC, Colorado, single member) filed Oct 19, 2026; EIN done; D-U-N-S not yet requested: Apple's lookup needs an @upslopelabs.com address, so mail forwarding is being set up (ImprovMX, catch-all *@upslopelabs.com to David's Gmail; the MX and TXT records still have to be added in GoDaddy DNS). Once ImprovMX shows green, submit the lookup at developer.apple.com/enroll/duns-lookup with david@upslopelabs.com (Safari private window if the page hangs). Still waits on: Apple Developer Program as Upslope Labs ($99/yr); Google Play as an organization too (no 12-tester rule).
+- The app (the batch after the list above): wrap Radical for iPhone, built on GitHub's Mac runners (no Xcode for David), offline mode (Apple rejects a website in a frame; offline is the proof), cards and word page locked upright, TestFlight upload for Laoshi and testers. Sign in with Apple isn't needed while sign-in is email codes only. LLC (Upslope Labs LLC, Colorado, single member) filed Oct 19, 2026; EIN done; D-U-N-S requested Oct 19 through Apple's lookup with david@upslopelabs.com (ImprovMX forwarding to David's Gmail; DNS records added in GoDaddy). Expect the number in about 5 business days, then wait 2 days before enrolling. Still waits on: Apple Developer Program as Upslope Labs ($99/yr); Google Play as an organization too (no 12-tester rule).
 - Data layer (after the app): card library (shared table `cards/` filled from users' cards, vocabulary and patterns only, never sentences or edits; rebuilt into bundled files on a schedule; about 5,000 common words pre-built; each card carries both scripts and both readings; Settings: "Share new words with the card library" opt-out, updates Ask first / Automatic / Never with the size shown, About line with size and date), then the Mainland/Taiwan setting, then offline mode (service worker, Home Screen recommended).
 - Looks: David's color lab values built in for everyone; Lacquer & Gold as default and brand if it still wins.
 - Own domain (e.g. radical.upslopelabs.com): David adds it in Vercel and a CNAME in GoDaddy; walk him through it.
