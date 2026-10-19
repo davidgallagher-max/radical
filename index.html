@@ -748,6 +748,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .bigview .bigviewglyph{width:min(86vw,62vh,560px);height:min(86vw,62vh,560px);border:1px solid var(--line);border-radius:18px;background:var(--surface)}
 .bigview .fontglyph.bigviewglyph{font-size:min(70vw,50vh,450px)}
 .bigview .legline{font-size:.95rem}
+.bvacts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .revchars .plain{font-family:var(--font-zh);font-size:5.5rem;line-height:1.2}
 .revctx{text-align:center;margin:0}
 .drawn{display:inline-flex;flex-wrap:wrap;align-items:center;gap:0;vertical-align:middle}
@@ -1985,8 +1986,9 @@ function holdToPick(b) {
   let t = 0, x0 = 0, y0 = 0;
   const stop = () => { clearTimeout(t); t = 0; };
   b.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; stop(); t = setTimeout(() => {
+    // Hold: the character opens big (as on cards), with Select just this (the one-character pick) and Open.
     t = 0; b._held = true; const line = b.closest(".line"), cells = [...line.querySelectorAll(".cell")], i = cells.indexOf(b);
-    pickSpan(line, i, i); if (navigator.vibrate) navigator.vibrate(8);
+    enlarge(b._ch, [["Select just this", () => pickSpan(line, i, i)], ["Open", () => openWord(b._ch, { context: line._text })]]);
   }, 450); });
   b.addEventListener("pointermove", e => { if (t && Math.hypot(e.clientX - x0, e.clientY - y0) > 8) stop(); });
   ["pointerup", "pointercancel", "pointerleave"].forEach(ev => b.addEventListener(ev, stop));
@@ -3266,8 +3268,11 @@ function practice(top, ch, onBack, onCard) {
     b.onclick = () => { const v = b.getAttribute("aria-checked") !== "true"; b.setAttribute("aria-checked", v); fn(v); };
     guides.append(b);
   };
-  toggle("Grid", true, v => box.classList.toggle("gridon", v));
-  toggle("Strokes", false, v => v ? writer.showOutline() : writer.hideOutline());
+  // Grid and Strokes remember your choice everywhere you practice writing, until you change them.
+  const gOn = store.get("radical-grid", true), sOn = store.get("radical-strokes", false);
+  box.classList.toggle("gridon", gOn); if (sOn) setTimeout(() => { try { writer.showOutline(); } catch (e) {} }, 0);
+  toggle("Grid", gOn, v => { box.classList.toggle("gridon", v); store.set("radical-grid", v); });
+  toggle("Strokes", sOn, v => { v ? writer.showOutline() : writer.hideOutline(); store.set("radical-strokes", v); });
   const coach = el("p", "coach"); const row = el("div", "btnrow");
   top.append(guides, coach, row);
   const total = d.s.length; let current = 0, firstTry = 0;
@@ -3861,11 +3866,12 @@ function holdToEnlarge(node, ch) {
   node.addEventListener("click", e => { if (node._held) { node._held = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   node.addEventListener("contextmenu", e => e.preventDefault());
 }
-function enlarge(ch) {
+function enlarge(ch, actions) {
   if (!cache[ch] || document.querySelector(".bigview")) return;
   try { navigator.vibrate && navigator.vibrate(8); } catch (e) {}
   const v = el("div", "bigview"), g = glyphFor(ch, true); g.classList.add("bigviewglyph");
   v.append(g); const l = legendLine(ch); if (l) v.append(l);
+  if (actions) { const row = el("div", "bvacts"); actions.forEach(([label, fn]) => row.append(btn(label, "btn ghost", e => { e.stopPropagation(); v.remove(); fn(); }))); v.append(row); }
   v.append(el("p", "note", "Tap to close"));
   v.onclick = () => v.remove();
   document.body.append(v);
@@ -4185,7 +4191,7 @@ function writeFront(w) {
     $("reviewScreen").scrollTop = 0;
     const top = padHost.getBoundingClientRect().top, room = innerHeight - barH - top - 58;  // 58: the color line, the coach line and a margin
     const size = Math.max(150, Math.min(400, box.clientWidth || innerWidth - 32, Math.floor(room)));
-    const { wrap, pad, hint } = padHolder(padHost, size); curWrap = wrap;
+    const { wrap, pad, hint } = padHolder(padHost, size); curWrap = wrap; pad.classList.toggle("gridon", store.get("radical-grid", true));
     hint.onclick = () => {
       if (!writer) return; writer.highlightStroke(current); if (!hinted.has(current)) { hinted.add(current); stats.hints++; }
       coach.innerHTML = lead + "That stroke is highlighted. Trace it.";
