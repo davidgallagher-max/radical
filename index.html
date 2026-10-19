@@ -1292,7 +1292,7 @@ function speak(text, slow) {
   if (typeof stopReading === "function") stopReading(); else speechSynthesis.cancel();
   const simp = typeof script !== "undefined" && script === "simp", v = simp ? cnVoice : twVoice;
   const utter = (t, k) => { const u = new SpeechSynthesisUtterance(t); u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = Math.max(.1, rate * k); return u; };
-  const parts = slow ? [...text].filter(c => /\S/.test(c) && !/[，、。]/.test(c)) : [];
+  const parts = slow ? (slow.units || [...text].filter(c => /\S/.test(c) && !/[，、。]/.test(c))) : [];
   if (!slow || !slow.gap || parts.length < 2) { const u = utter(text, slow ? slow.k : 1); speak.current = u; speechSynthesis.speak(u); return; }
   const token = typeof readToken === "number" ? readToken : 0;
   let i = 0;
@@ -1384,11 +1384,31 @@ function readAloud(lines, all, k = 1) {
   };
   next();
 }
+// ---- one speed setting for every speaker: Normal, Slower (about 70%, short pauses) and Step by step (a word is said a
+// syllable at a time, a sentence a word at a time, with clear gaps). Listen cards, card sentences and the reader's
+// line speakers all use it; it's chosen on Listen cards, in a sentence's 字 panel and in Settings.
+const PACES = [["normal", "Normal"], ["slower", "Slower"], ["step", "Step by step"]];
+let sayPace = store.get("radical-listen-speed", "normal");
+if (sayPace === "slowest") sayPace = "step"; if (!PACES.some(x => x[0] === sayPace)) sayPace = "normal";
+function setPace(v) { sayPace = v; store.set("radical-listen-speed", v); document.querySelectorAll("[data-pace]").forEach(b => b.setAttribute("aria-pressed", b.dataset.pace === v)); }
+function paceSeg(after) {
+  const seg = el("div", "seg2 three speeds"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Speed");
+  PACES.forEach(([k, label]) => { const b = el("button", "", label); b.type = "button"; b.dataset.pace = k; b.setAttribute("aria-pressed", k === sayPace); b.onclick = e => { e.stopPropagation(); setPace(k); if (after) after(); }; seg.append(b); });
+  return seg;
+}
+const slowerPace = p => p === "normal" ? "slower" : "step";
+function sayPaced(text, pace = sayPace) {
+  text = String(text || ""); if (!text) return;
+  if (pace === "normal") { speak(text); return; }
+  const hans = [...text].filter(c => isHan(c)).length, sentence = hans > 4 || /[，。！？、,.!?；：]/.test(text);
+  const units = sentence ? segment(text.replace(/\n+/g, "，")).map(t => t.chars.join("")).filter(u => /[\p{Script=Han}A-Za-z0-9]/u.test(u)) : null;
+  speak(text, pace === "slower" ? { k: .75, gap: sentence ? 160 : 140, units } : { k: .7, gap: sentence ? 450 : 500, units });
+}
 // Speakers alternate: the first tap is your normal speed, tapping the same one again plays it at about 70%, then
 // normal again, and so on. A pause of about 8 seconds (or another speaker) starts back at normal.
 const altSpeed = (() => { let key = null, t = 0, slow = false;
   return k => { const now = Date.now(); slow = k === key && now - t < 8000 ? !slow : false; key = k; t = now; return slow ? .7 : 1; }; })();
-document.addEventListener("click", e => { const b = e.target.closest("[data-say]"); if (b) { e.stopPropagation(); const k = altSpeed(b.dataset.say); speak(b.dataset.say, k < 1 ? { k } : null); } }, true);
+document.addEventListener("click", e => { const b = e.target.closest("[data-say]"); if (b) { e.stopPropagation(); const k = altSpeed(b.dataset.say); sayPaced(b.dataset.say, k < 1 ? slowerPace(sayPace) : sayPace); } }, true);
 
 // ================= sound kit: guzheng and woodblock, made in the browser.
 // Each moment has a few variations and plays one at random, never the same one twice in a row.
@@ -1939,7 +1959,8 @@ function buildLine(lineText, onTap, withEN = true) {
   line._text = lineText; line._spans = spans.filter(x => x.group.classList.contains("glyph") || x.group.querySelector(".cell")).sort((a, b) => a.start - b.start);
   const ctl = el("span", "linectl");
   const say = el("button", "saybtn sm", SPK); say.type = "button"; say.setAttribute("aria-label", "Read this line aloud");
-  say.onclick = e => { e.stopPropagation(); readAloud([line], false, altSpeed(line)); };
+  say.onclick = e => { e.stopPropagation(); const pace = altSpeed(line) < 1 ? slowerPace(sayPace) : sayPace;
+    if (pace === "step") sayPaced(lineText, "step"); else readAloud([line], false, pace === "slower" ? .75 : 1); };
   ctl.append(say);
   if (withEN) { const en = btn("EN", "enbtn"); en.title = "Translate this line"; en.onclick = () => translateLine(lineText, line, en); ctl.append(en); }
   // 解 Explain: the sentence's structure, its grammar points and any word used in a less obvious sense. The button says
@@ -2012,7 +2033,7 @@ function miniReader(text, mark, en) {
   const pyb = el("button", "minipy", "拼 Pinyin"); pyb.type = "button"; pyb.setAttribute("aria-pressed", !box.classList.contains("nopy"));
   pyb.onclick = e => { e.stopPropagation(); const on = box.classList.toggle("nopy") === false; pyb.setAttribute("aria-pressed", on); };
   const say = el("button", "saybtn sm minisay", SPK); say.type = "button"; say.setAttribute("aria-label", "Read the sentence aloud");
-  say.onclick = e => { e.stopPropagation(); const k = altSpeed("mini:" + text); speak(text.replace(/\n+/g, "，"), k < 1 ? { k } : null); };
+  say.onclick = e => { e.stopPropagation(); const k = altSpeed("mini:" + text); sayPaced(text.replace(/\n+/g, "，"), k < 1 ? slowerPace(sayPace) : sayPace); };
   const enP = el("p", "exp minien", esc(en || "")); enP.hidden = true; enP.lang = "en";
   const enb = el("button", "minipy", "Show English"); enb.type = "button"; enb.hidden = !en;
   enb.onclick = e => { e.stopPropagation(); enP.hidden = !enP.hidden; enb.textContent = enP.hidden ? "Show English" : "Hide English"; enb.setAttribute("aria-pressed", !enP.hidden); };
@@ -2022,7 +2043,7 @@ function miniReader(text, mark, en) {
   const pop = el("div", "minipop"); pop.hidden = true;
   pop.innerHTML = `<span class="sizerow"><i lang="zh" aria-hidden="true">字</i><input type="range" min="26" max="64" step="2" aria-label="Text size"><b lang="zh" aria-hidden="true">字</b></span>`
     + `<span class="sizerow"><i lang="zh" aria-hidden="true">慢</i><input type="range" min="0.5" max="1.3" step="0.05" aria-label="Reading speed"><b lang="zh" aria-hidden="true">快</b></span>`;
-  const [sz, sp] = pop.querySelectorAll("input");
+  const [sz, sp] = pop.querySelectorAll("input"); pop.append(paceSeg());
   sz.oninput = () => { setCell(sz.value); store.set("radical-size", +sz.value); if ($("sizeIn")) $("sizeIn").value = sz.value; };
   sp.oninput = () => setRate(sp.value);
   const zib = el("button", "sizebtn minisize", '<i lang="zh">字</i><b lang="zh">字</b>'); zib.type = "button"; zib.setAttribute("aria-label", "Text size and speed"); zib.setAttribute("aria-expanded", "false");
@@ -4002,18 +4023,14 @@ function showFront() {
     // speed). Tapping a speed plays the word at it and keeps it (remembered); Play replays at the chosen speed.
     // Slowest: one syllable at a time with a clear pause; Slower: a little slower with a short pause; Normal: the word.
     // Named for what they do (the voice won't stretch a syllable): Spaced has short gaps, One by one long ones.
-    const SPEEDS = [["normal", "Normal", null], ["slower", "Spaced", { k: .85, gap: 160 }], ["slowest", "One by one", { k: .7, gap: 500 }]];
-    let sp = store.get("radical-listen-speed", "normal"); if (!SPEEDS.some(x => x[0] === sp)) sp = "normal";
-    const say = () => speak(conv(w.word), SPEEDS.find(x => x[0] === sp)[2]);
+    const say = () => sayPaced(conv(w.word));
     const lp = el("div", "listenprompt");
     const big = el("button", "listenbig", `${SPK}<span>Play</span>`); big.type = "button"; big.onclick = say;
-    const seg = el("div", "seg2 three speeds"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Speed");
-    SPEEDS.forEach(([k, label]) => { const b = btn(label, "", () => { sp = k; store.set("radical-listen-speed", k); seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); say(); }); b.setAttribute("aria-pressed", k === sp); seg.append(b); });
-    lp.append(big, seg);
+    lp.append(big, paceSeg(say));
     // In a sentence: plays the card's example sentence (never shown) so the word is heard in use; tapping again
     // plays it slower, then normal again. It's context, not a clue, so it doesn't cap the rating.
     const ex = (cardOf(w) || {}).example || w.context || "";
-    if (ex && ex !== w.word) { const b = btn("In a sentence", "btn ghost insent", () => { const k = altSpeed("sent:" + ex); speak(conv(ex), k < 1 ? { k } : null); }); lp.append(b); }
+    if (ex && ex !== w.word) { const b = btn("In a sentence", "btn ghost insent", () => { const k = altSpeed("sent:" + ex); sayPaced(conv(ex), k < 1 ? slowerPace(sayPace) : sayPace); }); lp.append(b); }
     box.append(lp);
     setTimeout(() => { if (lp.isConnected) say(); }, 250);
   } else box.append(bigWord(conv(w.word)));
