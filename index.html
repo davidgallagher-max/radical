@@ -290,6 +290,8 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .seg button{font-family:var(--font-zh);font-size:1.05rem;line-height:1;background:var(--surface);color:var(--muted);border:0;padding:5px 12px;cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
+.seg.uiseg{display:flex;width:100%}
+.seg.uiseg button{font-family:var(--font-ui);font-size:.95rem;font-weight:500;padding:8px 4px;flex:1}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
 .ctl{display:grid;gap:3px}
 .themeseg{justify-self:start}
@@ -858,6 +860,19 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 
 /* ---- history, settings */
 .list{display:grid;gap:8px}
+.setsec{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+.setsec>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:10px;padding:14px 16px;position:relative}
+.setsec>summary::-webkit-details-marker{display:none}
+.setsec>summary b{font-weight:600;flex:none}
+.setsec>summary .sum{flex:1;min-width:0;text-align:right;color:var(--muted);font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:18px}
+.setsec>summary::after{content:"";position:absolute;right:16px;top:50%;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .2s}
+.setsec[open]>summary::after{transform:translateY(-30%) rotate(225deg)}
+.setsec>.panel,.setsec>.setbody,.setsec>.seg{margin:0 12px 14px}
+.setsec>.panel{border:0;background:var(--bg)}
+.setbody{display:grid;gap:10px}
+.voices{gap:8px}
+.histchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.hitem .hk{display:block;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 .hitem{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px 12px}
 .hitem button.load{all:unset;cursor:pointer;display:grid;gap:3px;min-width:0}
 .hitem .ht{font-family:var(--font-zh);font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1108,8 +1123,8 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="topbar"><button type="button" class="back" data-back>Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
     <h3 class="sec tabsec"><span lang="zh">部</span>About</h3>
     <div class="brand" style="justify-content:center;padding:6px 0 2px"><svg id="aboutMark" viewBox="0 0 1024 1024" aria-hidden="true" style="width:56px;height:56px"></svg><b style="font-size:1.8rem">Radical</b></div>
+    <p class="note" id="aboutVer" style="text-align:center;margin-top:-6px"></p>
     
-    <p class="aboutlink"><button type="button" class="linkish" id="aboutTour">See how it works ›</button></p>
     <div class="panel about">
       <p>Radical draws every character from stroke data and colors its components by job: the component that carries the meaning, the component that hints at the sound, two ideas combined, a picture, or a component whose origin isn't recorded. Sound components are hints, rated by how close they still sound, since many pronunciations have drifted.</p>
       <p>Text is read word by word with the CC-CEDICT dictionary, so pinyin follows the word. A dotted underline marks a lone character with more than one reading. Word lists are mainland-based, so a few Taiwan readings (訊息 xùnxí) may show the mainland form.</p>
@@ -1125,7 +1140,6 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="menuhead"><span class="brand"><b>Radical</b></span><button type="button" class="iconbtn" data-close aria-label="Close menu">✕</button></div>
     <button type="button" data-go="settings"><span class="mi">設</span>Settings</button>
     <button type="button" data-go="tour"><span class="mi">導</span>How it works</button>
-    <button type="button" id="backupBtn"><span class="mi">存</span>Save a backup</button>
     <hr>
     <button type="button" data-go="about"><span class="mi">部</span>About</button>
     <button type="button" id="feedbackBtn"><span class="mi">信</span>Send feedback</button>
@@ -1149,40 +1163,44 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="topbar"><button type="button" class="back" data-back id="setBack">Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
     <h3 class="sec tabsec"><span lang="zh">設</span><span id="setTitle">Settings</span></h3>
     <p class="note" id="setIntro" hidden>Every character is drawn with its components in color. Pick the look you like; you can change it later from the menu.</p>
-    <h3 class="sec" id="acctHead">Account</h3>
-    <div class="panel acct" id="acctPanel"></div>
-    <h3 class="sec">Theme</h3>
+    <details class="setsec" id="secAcct"><summary id="acctHead"><b>Account</b><span class="sum" data-sum="acct"></span></summary>
+    <div class="panel acct" id="acctPanel"></div></details>
+    <details class="setsec" id="secTheme"><summary><b>Theme</b><span class="sum" data-sum="theme"></span></summary>
+    <div class="setbody">
     <div class="pgrid" id="paletteGrid"></div>
     <button type="button" class="switch" id="moveLight" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Moving light in text</button>
     <p class="note">The big characters always have their slow light. In reading text, off keeps the finish still; on adds a spark that drifts over each character.</p>
     <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
+    </div></details>
     <button type="button" class="btn wide" id="startBtn" hidden>Start reading</button>
-    <h3 class="sec">Appearance</h3>
+    <details class="setsec"><summary><b>Appearance</b><span class="sum" data-sum="appear"></span></summary>
     <div class="seg themeseg" id="themeSeg" role="group" aria-label="Appearance">
       <button type="button" data-theme-set="dark">Dark</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="system">Match phone</button>
-    </div>
-    <h3 class="sec">Sound and motion</h3>
+    </div></details>
+    <details class="setsec"><summary><b>Sound and light</b><span class="sum" data-sum="sound"></span></summary>
     <div class="panel">
       <div class="row" style="justify-content:space-between"><span>Sounds (guzheng and woodblock)</span><button type="button" class="switch small" id="soundSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
       <div class="row" style="justify-content:space-between"><span>Light on the characters</span><button type="button" class="switch small" id="lightSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
-      <p class="note">Sounds play at the moments that count: checking an answer, adding a word, finishing a character in writing practice, finishing a review, and when an easier page arrives. Each moment has a few variations. The light gives characters a lacquer finish with soft sparks drifting over them.</p>
-    </div>
-    <h3 class="sec">Speech speed</h3>
+      <p class="note">Sounds play when you check an answer, add a word, finish a character or a session. The light gives the characters a lacquer finish.</p>
+    </div></details>
+    <details class="setsec"><summary><b>Speech</b><span class="sum" data-sum="speech"></span></summary>
     <div class="panel">
       <div class="rate"><span>Slower</span><input type="range" id="rate" min="0.5" max="1.3" step="0.05"><span>Faster</span></div>
-      <div class="row" style="justify-content:space-between"><span class="note" id="voiceName"></span><button type="button" class="btn ghost small" id="rateTest">Play a sample</button></div>
-    </div>
+      <div id="paceHost"></div>
+      <div class="row voices"><button type="button" class="btn ghost small" id="voiceTW">▶ Taiwan voice</button><button type="button" class="btn ghost small" id="voiceCN">▶ Mainland voice</button></div>
+      <p class="note" id="voiceName"></p>
+    </div></details>
     <input id="pw" type="hidden">
-    <h3 class="sec">Daily target</h3>
+    <details class="setsec"><summary><b>Daily target</b><span class="sum" data-sum="target"></span></summary>
     <div class="panel">
-      <div class="seg" id="targetSeg" role="group" aria-label="Daily target"><button type="button" data-t="0">Off</button><button type="button" data-t="10">10</button><button type="button" data-t="20">20</button><button type="button" data-t="30">30</button><button type="button" data-t="50">50</button></div>
-      <p class="note">Cards a day. The ring around 詞 on the tab bar fills as you go and turns gold when you reach it. Missing a day costs nothing.</p>
-    </div>
-    <h3 class="sec">Your words</h3>
+      <div class="seg uiseg" id="targetSeg" role="group" aria-label="Daily target"><button type="button" data-t="0">Off</button><button type="button" data-t="10">10</button><button type="button" data-t="20">20</button><button type="button" data-t="30">30</button><button type="button" data-t="50">50</button></div>
+      <p class="note">Cards a day. Shown on This week and Track.</p>
+    </div></details>
+    <details class="setsec"><summary><b>Your words</b><span class="sum" data-sum="words"></span></summary>
     <div class="panel">
-      <p class="note">Signed in, your words and review progress are kept in your account and on every phone you sign in on. Without an account they're only on this phone. A backup file is an extra copy either way: Save a backup is in the menu, and to restore one, use the file icon in the add box on My words.</p>
-    </div>
-
+      <p class="note" id="wordsWhere"></p>
+      <div class="row"><button type="button" class="btn ghost" id="backupBtn">Save a backup</button><label class="btn ghost" id="restoreLbl">Restore from a backup<input type="file" id="restoreFile" accept=".json,application/json" hidden></label></div>
+    </div></details>
   </div>
 </section>
 
@@ -1209,7 +1227,7 @@ const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const btn = (label, cls, fn) => { const b = el("button", cls); b.type = "button"; b.textContent = label; if (fn) b.onclick = fn; return b; };
 const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>';
-// ---- the menu (on every page): History, Settings, How it works, Save a backup, About. The tabs aren't in it (the tab
+// ---- the menu (on every page): Settings, How it works, About, Send feedback. The tabs aren't in it (the tab
 // bar has them). Pages opened from the menu say "‹ Menu" and go back to it.
 const MENU = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6.5h16v2H4zm0 4.5h16v2H4zm0 4.5h16v2H4z"/></svg>';
 function openMenu() {
@@ -1277,9 +1295,11 @@ function pickVoice() {
   const any = find(/^zh/i) || find(/^cmn/i) || null;
   twVoice = twVoice || any; cnVoice = cnVoice || any;
   const name = v => v ? `${v.name} (${v.lang})` : "none";
+  const short = v => v ? v.name.replace(/\s*\(.*$/, "") : "";
+  if ($("voiceTW")) { $("voiceTW").textContent = twVoice ? `▶ ${short(twVoice)} · Taiwan` : "▶ Taiwan voice"; $("voiceCN").textContent = cnVoice ? `▶ ${short(cnVoice)} · Mainland` : "▶ Mainland voice"; }
   if ($("voiceName")) $("voiceName").textContent = any
-    ? `Traditional: ${name(twVoice)} · Simplified: ${name(cnVoice)}`
-    : "No Chinese voice found. iPhone: Settings → Accessibility → Spoken Content → Voices → Chinese.";
+    ? `Traditional text uses ${short(twVoice)}; Simplified uses ${short(cnVoice)}.` + (!find(/zh[-_]TW/i) && !find(/zh[-_]Hant/i) ? " This phone has no Taiwan voice; the Mainland one reads both." : "")
+    : "No Chinese voice on this device. On iPhone: Settings → Accessibility → Spoken Content → Voices → Chinese.";
 }
 if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 else document.documentElement.classList.add("nosay");
@@ -1841,7 +1861,8 @@ function setTab(id) { if (reading) stopReading(); if ($("wikiBack")) $("wikiBack
 // Pages that can be opened from the menu: their Back says "‹ Menu" then (and reopens it), "‹ Back" otherwise.
 const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen"];
 function go(id) {
-  if (MENU_PAGES.includes(id)) { $(id).dataset.via = viaMenu ? "menu" : ""; const bk = $(id).querySelector(".topbar .back"); if (bk) bk.textContent = viaMenu ? "Menu" : "Back"; }
+  if (MENU_PAGES.includes(id)) { $(id).dataset.via = viaMenu ? "menu" : ""; const bk = $(id).querySelector(".topbar .back"); if (bk) bk.textContent = viaMenu ? "Menu" : "Back";
+    const mb = $(id).querySelector(".topbar .menubtn"); if (mb) mb.style.visibility = viaMenu ? "hidden" : ""; }  // ‹ Menu already goes back to it
   viaMenu = false;
   if (reading) stopReading(); stack.push(id); showOnly(id); $(id).scrollTop = 0; try { history.pushState({ r: stack.length }, ""); } catch (e) {} }
 function back() {
@@ -4509,15 +4530,15 @@ async function openSettings(welcome) {
   await ensure(SAMPLE.join("") + sample().join(""));
   buildPalettes();
   $("setTitle").textContent = welcome ? "Pick your colors" : "Settings";
-  $("setIntro").hidden = !welcome; $("acctHead").hidden = $("acctPanel").hidden = welcome;  // first launch: just the colors $("startBtn").hidden = !welcome; $("setBack").style.visibility = welcome ? "hidden" : "";
+  $("setIntro").hidden = !welcome; $("secAcct").hidden = welcome; if (welcome) $("secTheme").open = true;  // first launch: just the colors $("startBtn").hidden = !welcome; $("setBack").style.visibility = welcome ? "hidden" : "";
   $("rate").value = rate; pickVoice();
   $("pw").value = store.get("radical-pw", ""); acctSent = false; renderAccount();
-  buildLab();
+  buildLab(); setSums(); wordsWhere();
+  if (!$("paceHost").childElementCount) $("paceHost").append(paceSeg(() => sayPaced("我們在登山口附近搭帳篷。")));
   go("settingsScreen");
 }
 function saveSettings() { store.set("radical-pw", $("pw").value.trim()); store.set("radical-palette", palette); myWords.filter(w => !w.card).forEach(queueCard); }
 $("pw").addEventListener("change", saveSettings);
-$("aboutTour").onclick = () => showTour("about");
 $("startBtn").onclick = () => { saveSettings(); history.back(); setTimeout(showTour, 400); };
 // ---- the walkthrough: three short cards (the colors, reading, saving and studying). Shown once, after the color
 // choice on a first launch (or once to existing users), and any time from the menu (導 How it works).
@@ -4557,19 +4578,85 @@ setLight(store.get("radical-light", true));
 $("lightSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-light", on); setLight(on); };
 try { localStorage.removeItem("radical-tilt"); } catch (e) {}  // tilt is gone; forget the old setting
 $("rate").addEventListener("input", e => setRate(e.target.value));
-$("rateTest").onclick = () => speak("你好，歡迎使用 Radical。我們在登山口附近搭帳篷。");
-$("backupBtn").onclick = async () => {
-  closeMenu();
-  store.set("radical-backup-at", Date.now()); store.set("radical-rev-since-backup", 0); setTimeout(showBackupNote, 0);
-  const name = `radical-words-${localDay()}.json`;
-  const blob = new Blob([JSON.stringify({ app: "Radical", saved: new Date().toISOString(), words: myWords, learned, days: store.get("radical-days", {}) }, null, 1)], { type: "application/json" });
-  const file = new File([blob], name, { type: "application/json" });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e.name === "AbortError") return; }
-  }
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
-  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+// Each voice plays the same sentence, so they can be compared side by side.
+function sayVoice(which) {
+  const v = which === "tw" ? twVoice : cnVoice; if (!("speechSynthesis" in window)) return;
+  if (typeof stopReading === "function") stopReading(); else speechSynthesis.cancel();
+  const t = which === "tw" ? "你好，歡迎使用 Radical。我們在登山口附近搭帳篷。" : "你好，欢迎使用 Radical。我们在登山口附近搭帐篷。";
+  const u = new SpeechSynthesisUtterance(t); u.lang = v ? v.lang : which === "tw" ? "zh-TW" : "zh-CN"; if (v) u.voice = v; u.rate = rate; speak.current = u; speechSynthesis.speak(u);
+}
+$("voiceTW").onclick = () => sayVoice("tw"); $("voiceCN").onclick = () => sayVoice("cn");
+// ---- Settings is a list of sections that open on tap; each shows a one-line summary while closed.
+function setSums() {
+  const S = { acct: session ? `Signed in as ${session.email}` : "Not signed in",
+    theme: (PALETTES[palette] || {}).name || "", appear: { dark: "Dark", light: "Light", system: "Match phone" }[store.get("radical-theme", "dark")] || "",
+    sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
+    speech: `${PACES.find(x => x[0] === sayPace)[1]} · speed ${Math.round(rate * 100)}%`,
+    target: store.get("radical-target", 20) ? `${store.get("radical-target", 20)} cards a day` : "Off",
+    words: session ? "In your account" : "Only on this phone" };
+  document.querySelectorAll("[data-sum]").forEach(x => x.textContent = S[x.dataset.sum] || "");
+}
+function wordsWhere() { const p = $("wordsWhere"); if (p) p.textContent = session ? "Saved to your account and synced to every phone you sign in on. A backup is an extra copy of everything." : "Only on this phone. Sign in (Account), or save a backup."; }
+document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "change"].forEach(ev => x.addEventListener(ev, () => setTimeout(setSums, 50))));
+// ---- backup: one file with everything. Words (with progress, edits and schedules), the learned list and daily
+// tallies, what you're reading now and all of History, and your settings. A summary shows first; nothing leaves the
+// app until Save file.
+const SETTING_KEYS = ["radical-palette", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-target",
+  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revmode", "radical-revcount"];
+function backupData() {
+  const settings = {}; SETTING_KEYS.forEach(k => { try { const v = localStorage.getItem(k); if (v !== null) settings[k] = v; } catch (e) {} });
+  return { app: "Radical", version: APP_VERSION, saved: new Date().toISOString(), words: myWords, learned, days: store.get("radical-days", {}),
+    text: $("src").value, doc: doc ? { ...doc, simp: undefined } : null, history: textHistory, settings };
+}
+$("backupBtn").onclick = () => {
+  const d = backupData(), days = Object.keys(d.days).filter(k => dayUsed(d.days[k])).length;
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard");
+  card.append(el("h3", "", "Save a backup"),
+    el("p", "", `${num(myWords.length)} words with progress · ${num(Object.keys(learned).length)} learned · ${num(days)} days of activity · ${num(textHistory.length)} item${textHistory.length === 1 ? "" : "s"} in History · what you're reading now · settings`),
+    el("p", "note", "One file with everything. Restore it from Settings, Your words."));
+  const row = el("div", "row");
+  row.append(btn("Cancel", "btn ghost", () => sheet.remove()), btn("Save file", "btn", async () => {
+    sheet.remove();
+    store.set("radical-backup-at", Date.now()); store.set("radical-rev-since-backup", 0); setTimeout(showBackupNote, 0);
+    const name = `radical-backup-${localDay()}.json`;
+    const blob = new Blob([JSON.stringify(backupData())], { type: "application/json" });
+    const file = new File([blob], name, { type: "application/json" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e.name === "AbortError") return; }
+    }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }));
+  card.append(row); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.append(sheet);
 };
+// Restore: words and History merge with what's here (nothing added since is lost; a word's newer copy wins); the
+// learned list and tallies merge; the text you were reading goes into History. Settings ask first.
+$("restoreFile").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  let j; try { j = JSON.parse(await f.text()); } catch (err) { alertSheet("That file isn't a Radical backup."); return; }
+  const list = Array.isArray(j) ? j : j.words; if (!Array.isArray(list)) { alertSheet("That file isn't a Radical backup."); return; }
+  await ensure(list.map(w => w.word).join(""));
+  let added = 0, updated = 0;
+  list.forEach(e2 => { if (!e2 || !e2.word) return; const have = findWord(e2.word);
+    if (!have) { myWords.push(e2); added++; return; }
+    if ((e2.t || 0) > (have.t || 0)) { Object.assign(have, e2); updated++; } else for (const k of ["card", "srs", "wsrs", "lsrs", "context", "skip", "mine"]) if (!have[k] && e2[k]) have[k] = e2[k]; });
+  saveWords(); restoreRecord(j);
+  let hist = 0;
+  if (Array.isArray(j.history)) { const keys = new Set(textHistory.map(histKey)); j.history.forEach(h => { if (h && h.kind && !keys.has(histKey(h))) { textHistory.push(h); hist++; } }); textHistory.sort((a, b) => String(b.at).localeCompare(String(a.at))); textHistory = textHistory.slice(0, 100); saveHistory(); }
+  if (j.doc && j.doc.pages) { if (!textHistory.some(h => h.doc && histKey(h) === histKey({ kind: "file", doc: j.doc, title: j.doc.title }))) { textHistory.unshift({ id: "h" + Date.now().toString(36), kind: j.doc.url ? "wiki" : "file", at: localDay(), title: j.doc.title, doc: j.doc }); saveHistory(); } }
+  else if (j.text) remember(j.text);
+  renderWords(); updateCounts();
+  const done = `Restored: ${added} new word${added === 1 ? "" : "s"}, ${updated} updated, ${hist} History item${hist === 1 ? "" : "s"}.`;
+  if (j.settings && Object.keys(j.settings).length) {
+    const sheet = el("div", "sheet"), card = el("div", "sheetcard");
+    card.append(el("h3", "", "Use the settings from this backup?"), el("p", "", done), el("p", "note", "Theme, light, speech, daily target, writing pad and color lab."));
+    const row = el("div", "row");
+    row.append(btn("No, keep mine", "btn ghost", () => sheet.remove()), btn("Yes, use them", "btn", () => { Object.entries(j.settings).forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch (e) {} }); location.reload(); }));
+    card.append(row); sheet.append(card); document.body.append(sheet);
+  } else alertSheet(done);
+};
+function alertSheet(msg) { const sheet = el("div", "sheet"), card = el("div", "sheetcard"); card.append(el("p", "", esc(msg)), btn("OK", "btn wide", () => sheet.remove())); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); }; document.body.append(sheet); }
 
 // ================= documents: PDFs and Wikipedia articles, read a page (or section) at a time
 let doc = store.get("radical-doc", null), pdfFile = null;
