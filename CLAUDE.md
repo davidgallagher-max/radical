@@ -134,7 +134,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 - Save an article for later (a bookmark in Explore and the reader).
 - Articles finished per week, as a stat for the This week card.
 - Launch: app stores only (no home-screen web launch); Apple $99/yr, Google $25; move hosting off Vercel Hobby before selling; no trademark for now. Company: Upslope Labs (upslopelabs.com).
-- Branding: Scholar's Ink now; David is tempted by Lacquer & Gold. Not decided.
+- Branding: see BRAND.md. Scholar's Ink now; David is tempted by Lacquer & Gold. Not decided.
 
 ## Related
 
