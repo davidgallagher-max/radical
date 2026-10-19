@@ -2,6 +2,21 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v36
+
+- One due number everywhere: the badge, Clear due cards and the Due chip in Mix count words due, not cards. A word due in Read and Write is one word, and clearing it covers both. Under Suggested: "10 of 38 due + 2 new".
+- I practice (Settings): Read, Write, Listen. Only Read is on to start. A mode that's off makes no cards, isn't in the badge and never shows up in Mix or Clear due cards; its progress is kept for when you turn it back on. (Mix used to pick modes at random, which put words into Write you never chose.)
+- Practice tab: This week at the top, then a pinned Read · Write · Listen · Mix row with the status chips, then Clear due cards, Flash cards, Add words and your list. Everything under the row follows the mode picked. A mode that's off shows dimmed and offers to turn itself on; Mix waits for a second mode.
+- Step away from flash cards (another tab, the menu, closing the app) and Practice shows "Resume · 7 of 19" until the day ends. Quit still ends the session, and still asks first.
+- Gold leaf: each screen's main button has a metal finish in the theme's accent (real gold in Lacquer & Gold); other selected controls get a thin outline and colored lettering instead of a fill.
+- Three new themes: Bauhaus, Aurora and Risograph.
+- Color vision (Settings, Appearance): Red-green safe keeps your theme and makes Meaning darker and Sound lighter so they never look alike.
+- When you answer a card, 對, 半 or 錯 blooms in the middle of the screen and fades (off with Reduce Motion).
+- Write cards: "Show this one" on the last character waits for See answer, and a character with no stroke data no longer jumps to the answer. The rating buttons ignore a tap for half a second after they appear, so a tap meant for the button before can't rate the card.
+- Listen cards have the tone boxes and typed tone numbers, the same as Read.
+- "Characters learned" replaces "characters known" (opening screen, This week, Track and milestones) and counts only characters in learned words (marked Known, or three weeks between reviews). The Track chart is rebuilt from the day each word was learned.
+- Settings opens folded every time (Account still opens on its own when you're signed out).
+
 ## v35
 
 - Four tabs: 讀 Read · 探 Explore · 練 Practice · 記 Track. "My words" is now Practice everywhere.
