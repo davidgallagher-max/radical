@@ -35,7 +35,7 @@ Classy, intellectual, addictive and beautiful. It should feel like a fine printe
 **Not decided.** Scholar's Ink is the current default. David leans toward Lacquer & Gold. The candidates are on the "Radical Palettes" comparison page: Lacquer & Gold, Scholar's Ink, Dunhuang, Sancai, Celadon & Cinnabar.
 
 - **Scholar's Ink:** night-blue ink, jade and celadon.
-- **Lacquer & Gold:** black lacquer, cinnabar, gold leaf and jade. The gold needs to read as gold (a gradient finish on one main button per screen, outlines elsewhere, an antique ochre rather than lemon yellow), and it must not collide with the Sound color.
+- **Lacquer & Gold:** black lacquer, cinnabar, gold leaf and jade. Gold is decided: "gold leaf", a gradient finish (pale highlight to antique ochre, with a bright top edge) on one main button per screen, and thin gold outlines with gold lettering on every other selected control. Never flat yellow fills, and never close to the Sound color.
 - Every look has dark and light versions.
 - Other looks: Observatory, Plain ink (drawn strokes, one color) and Original (the normal font, no color or light).
 
