@@ -82,12 +82,12 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.menuback,.menupanel{animation:none}}
 
 /* ---- tab bar */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:4;display:grid;grid-template-columns:1fr 1fr 1fr;background:color-mix(in srgb,var(--surface) 92%,transparent);
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:4;display:grid;grid-template-columns:repeat(4,1fr);background:color-mix(in srgb,var(--surface) 92%,transparent);
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding-bottom:var(--bot);height:calc(var(--tabh) + var(--bot))}
 .tabbar button{all:unset;cursor:pointer;display:grid;justify-items:center;align-content:center;gap:2px;font-size:.76rem;font-weight:500;color:var(--muted);position:relative}
 .tabbar button[aria-current="page"]{color:var(--accent)}
 .tabbar .tz{font-family:var(--font-zh);font-size:1.35rem;line-height:1.1;font-weight:600}
-.badge{position:absolute;top:6px;left:calc(50% + 10px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--st-due);color:var(--bg);font-size:.7rem;font-weight:700;display:grid;place-items:center}
+.badge{position:absolute;top:6px;left:calc(50% + 10px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#E5372F;color:#fff;font-size:.7rem;font-weight:700;display:grid;place-items:center}
 .badge:empty{display:none}
 .tabbar .railx{display:none}
 .excol{display:contents}
@@ -522,13 +522,49 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .wkdots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
 .wkdots i.on{background:var(--accent)}
 .wklearn{color:var(--fg)}
+.wktoday{color:var(--fg);font-weight:600}.wktoday.done{color:var(--accent)}
+/* ---- Track */
+.track{display:grid;gap:12px}
+.trk{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:6px;min-width:0}
+.trl{font-size:.84rem;color:var(--muted)}
+.trbig{display:block;font-family:var(--font-brand);font-size:1.7rem;font-weight:800;line-height:1.15;color:var(--fg);font-variant-numeric:tabular-nums}
+.trs{margin:0;font-size:.84rem;color:var(--muted)}
+.trq{opacity:.8}
+.trktop{grid-template-columns:minmax(0,1fr) auto;align-items:end}
+.trktop>div{display:grid;gap:2px}
+.tright{text-align:right}.tright b{font-size:1.05rem}.tright b.done{color:var(--accent)}
+.trtiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.calhead{display:flex;align-items:center;justify-content:space-between}
+.calhead b{font-family:var(--font-brand);font-size:1.05rem}
+.calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;font-variant-numeric:tabular-nums}
+.calwd{font-size:.72rem;color:var(--muted)}
+.calday{aspect-ratio:1;display:grid;place-items:center;border-radius:8px;font-size:.84rem;color:var(--muted);border:1px solid transparent}
+.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--fg)}
+.calday.hit{background:var(--accent);color:var(--bg);font-weight:700}
+.calday.off{border:1px dashed color-mix(in srgb,var(--muted) 45%,transparent)}
+.calday.future{opacity:.35}.calday.blank{visibility:hidden}
+.calday.today{box-shadow:inset 0 0 0 2px var(--fg)}
+.kd{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 8px}.trs .kd:first-child{margin-left:0}.kd.hit{background:var(--accent)}.kd.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}.kd.off{border:1px dashed var(--muted)}
+.tchart{width:100%;height:auto;display:block;overflow:visible}
+.tgrid{stroke:var(--line);stroke-width:1}
+.tline{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.tarea{fill:color-mix(in srgb,var(--accent) 16%,transparent);stroke:none}
+.tdot{fill:var(--accent)}
+.tval{fill:var(--fg);font-size:12px;font-weight:700;font-family:var(--font-ui)}
+.tax{fill:var(--muted);font-size:10px;font-family:var(--font-ui)}
+.tbar{fill:color-mix(in srgb,var(--accent) 55%,transparent)}.tbar.now{fill:var(--accent)}
+.ttarget{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+.stagebar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--line)}
+.stagebar i{display:block;height:100%}
+.sb-new{background:color-mix(in srgb,var(--muted) 45%,transparent)}.sb-learning{background:var(--st-active)}.sb-learned{background:var(--accent)}
+.trkyears table{width:100%;border-collapse:collapse;font-size:.88rem;font-variant-numeric:tabular-nums}
+.trkyears th,.trkyears td{padding:5px 0;text-align:right;border-bottom:1px solid var(--line)}
+.trkyears tr:last-child th,.trkyears tr:last-child td{border-bottom:0}
+.trkyears th:first-child{text-align:left;font-weight:500;color:var(--muted)}
+.trkyears thead th{font-size:.8rem;color:var(--muted);font-weight:600}
+.mcard{justify-items:center;text-align:center}
 #tabbar button{position:relative}
 #tabbar .tz{position:relative}
-#tabbar .ring{position:absolute;width:36px;height:36px;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-90deg);pointer-events:none}
-#tabbar .ring circle{fill:none;stroke-width:1.6;stroke-linecap:round}
-#tabbar .ring .rbg{stroke:color-mix(in srgb,var(--muted) 25%,transparent)}
-#tabbar .ring .rfg{stroke:var(--accent);transition:stroke-dasharray .6s ease}
-#tabbar .ring.full .rfg{stroke:#E0B04A}
 #splash .splerr{color:var(--muted);font-size:.85rem;max-width:280px;text-align:center;margin:8px 0 0}
 #splash .spstat{opacity:0;animation:fadein .9s ease .5s forwards;color:var(--accent);font-size:.85rem;letter-spacing:.04em;margin:4px 0 0}
 .pvctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 8px}
@@ -885,7 +921,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
       <div class="brand"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
-    <h3 class="sec tabsec"><span lang="zh">讀</span>My text</h3>
+    <h3 class="sec tabsec"><span lang="zh">讀</span>Read</h3>
     <div class="tpanel" id="addPanel">
       <h3 class="sec sub">Add text</h3>
       <div class="toolbar">
@@ -957,7 +993,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
       <div class="brand"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
-    <h3 class="sec tabsec"><span lang="zh">詞</span>My words</h3>
+    <h3 class="sec tabsec"><span lang="zh">練</span>Practice</h3>
     <div class="filterbar" id="filterBar"><div class="filters" id="filters"></div></div>
     <p class="backupnote" id="backupNote" hidden></p>
     <div class="weekcard" id="weekCard" hidden></div>
@@ -1001,7 +1037,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 <!-- REVIEW LIST: look through words card by card, no grading -->
 <section class="screen sub" id="lookScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back>My words</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="topbar"><button type="button" class="back" data-back>Practice</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
     <div class="lookhead"><h2 class="revtitle">Review <span class="note" id="lookProg"></span></h2>
       <button type="button" class="switch small" id="shuffleSw" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Shuffle</button></div>
     <div id="lookCard" class="revcard lookcard"></div>
@@ -1035,6 +1071,19 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
     </div>
     <p class="note wstatus" id="wikiStatus" hidden></p>
     <div class="list" id="wikiList"></div>
+  </div>
+</section>
+
+<!-- TRACK -->
+<section class="screen" id="trackScreen" hidden>
+  <div class="inner">
+    <div class="minihead" aria-hidden="true"><button type="button" class="topbrand" tabindex="-1" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><button type="button" class="iconbtn menubtn" tabindex="-1" aria-label="Menu" aria-haspopup="true"></button></div>
+    <header class="readhead">
+      <div class="brand"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
+      <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
+    </header>
+    <h3 class="sec tabsec"><span lang="zh">記</span>Track</h3>
+    <div id="trackBody" class="track"></div>
   </div>
 </section>
 
@@ -1126,9 +1175,10 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 <div class="tonerow" id="toneRow" hidden role="group" aria-label="Tone marks"><button type="button" data-t="1">1 ā</button><button type="button" data-t="2">2 á</button><button type="button" data-t="3">3 ǎ</button><button type="button" data-t="4">4 à</button></div>
 <nav class="tabbar" id="tabbar" aria-label="Main">
   <button type="button" class="railx railbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg></button>
-  <button type="button" data-tab="readScreen" aria-current="page"><span class="tz">讀</span>My text</button>
-  <button type="button" data-tab="wikiScreen"><span class="tz">探</span>Explore</button>
-  <button type="button" data-tab="wordsScreen"><span class="tz">詞<svg class="ring" viewBox="0 0 36 36" aria-hidden="true" hidden><circle class="rbg" cx="18" cy="18" r="16.5" pathLength="100"/><circle class="rfg" cx="18" cy="18" r="16.5" pathLength="100" stroke-dasharray="0 100"/></svg></span>My words<span class="badge" id="dueBadge"></span></button>
+  <button type="button" data-tab="readScreen" aria-current="page"><span class="tz">讀</span><span class="tl">Read</span></button>
+  <button type="button" data-tab="wikiScreen"><span class="tz">探</span><span class="tl">Explore</span></button>
+  <button type="button" data-tab="wordsScreen"><span class="tz">練</span><span class="tl">Practice</span><span class="badge" id="dueBadge"></span></button>
+  <button type="button" data-tab="trackScreen"><span class="tz">記</span><span class="tl">Track</span></button>
   <button type="button" class="railx iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
 </nav>
 
@@ -1744,17 +1794,17 @@ function drawn(text, size = 34, mark) {
   if ([...text].some(ch => isHan(ch) && !cache[ch])) ensure(text).then(paint);
   return box;
 }
-// ================= navigation: three tabs, plus pages that open on top with Back
+// ================= navigation: four tabs, plus pages that open on top with Back
 const stack = [];
 function showOnly(id) {
   document.querySelectorAll(".screen").forEach(s => s.hidden = s.id !== id);
-  const tabbed = id === "readScreen" || id === "wordsScreen" || id === "wikiScreen";
+  const tabbed = id === "readScreen" || id === "wordsScreen" || id === "wikiScreen" || id === "trackScreen";
   $("tabbar").hidden = !tabbed;
   if (tabbed) document.querySelectorAll("[data-tab]").forEach(b => b.dataset.tab === id ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
   if (id === "readScreen" && typeof fitLegend === "function") requestAnimationFrame(() => fitLegend());
 }
 let tab = "readScreen", revSide = null;
-function setTab(id) { if (reading) stopReading(); if ($("wikiBack")) $("wikiBack").hidden = true; tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); }
+function setTab(id) { if (reading) stopReading(); if ($("wikiBack")) $("wikiBack").hidden = true; tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); if (id === "trackScreen") renderTrack(); }
 // Pages that can be opened from the menu: their Back says "‹ Menu" then (and reopens it), "‹ Back" otherwise.
 const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen"];
 function go(id) {
@@ -2672,39 +2722,187 @@ function logDay(field, n = 1) {
   store.set("radical-days", d);
   if (field === "c" && typeof updateRing === "function") updateRing();
 }
-// ---- this week, from the progress record: the last 7 days of the app's own calendar (today included). No streaks:
-// nothing is lost by missing a day. Gains come first; words that slipped are "back for review".
+// ---- this week, from the progress record: the last 7 days of the app's own calendar (today included).
+// A day counts as used when anything happened: cards, reading or words added.
+const dayUsed = v => !!(v && (v.c || v.r || v.n));
 function weekStats() {
   const d = store.get("radical-days", {}), days = [];
   for (let i = 6; i >= 0; i--) days.push(localDay(Date.now() - i * DAY));
   const sum = f => days.reduce((a, k) => a + ((d[k] || {})[f] || 0), 0);
-  const studied = days.map(k => { const v = d[k] || {}; return !!(v.c || v.r || v.n); });
+  const studied = days.map(k => dayUsed(d[k]));
   const total = Object.keys(learned).length, week = Object.values(learned).filter(v => days.includes(String(v))).length;
   return { studied, n: studied.filter(Boolean).length, cards: sum("c"), read: sum("r"), added: sum("n"), back: sum("u"), learned: total, learnedWeek: week, today: (d[localDay()] || {}).c || 0 };
 }
 const num = n => n.toLocaleString("en-US");
+// Characters known: every distinct character in words you're learning or know (anything past New, in any mode).
+const started = w => !!w.skip || ["srs", "wsrs", "lsrs"].some(k => w[k] && (w[k].reps || w[k].ivl || w[k].lapses));
+function charsKnown(list = myWords) { const set = new Set(); list.filter(started).forEach(w => [...w.word].forEach(c => { if (isHan(c)) set.add(c); })); return set.size; }
+// ---- streak: days used in a row, with rest days. Any 14 days in a row may have up to 3 days off; a 4th day off in
+// the same 14 ends the streak. Rest days don't add to the count. Today never breaks it (the day isn't over yet).
+const REST_DAYS = 3, REST_WINDOW = 14;
+function streakEnding(d, endDay, first) {
+  let count = 0; const misses = [];
+  for (let i = 0; ; i++) {
+    const day = localDay(endDay - i * DAY); if (day < first) break;
+    if (dayUsed(d[day])) { count++; continue; }
+    if (i === 0 && day === localDay()) continue;  // today, not used yet
+    misses.push(i);
+    if (misses.filter(m => m < i + REST_WINDOW && m >= i).length > REST_DAYS || misses.filter(m => m <= i && m > i - REST_WINDOW).length > REST_DAYS) break;
+  }
+  return count;
+}
+function streakStats() {
+  const d = store.get("radical-days", {}), keys = Object.keys(d).filter(k => dayUsed(d[k])).sort();
+  if (!keys.length) return { now: 0, best: 0, rest: REST_DAYS };
+  const first = keys[0], now = streakEnding(d, Date.now(), first);
+  let best = now;
+  for (const k of keys) { const t = new Date(k + "T12:00:00").getTime(); best = Math.max(best, streakEnding(d, t, first)); }
+  let used = 0; for (let i = 1; i < REST_WINDOW; i++) { const day = localDay(Date.now() - i * DAY); if (day >= first && !dayUsed(d[day])) used++; }
+  return { now, best, rest: Math.max(0, REST_DAYS - used) };
+}
+// The headline numbers, for the opening screen and This week: streak, characters known, days this week.
+function headline() {
+  const s = streakStats(), w = weekStats(), k = charsKnown();
+  return [s.now > 1 ? `${s.now}-day streak` : "", k ? `${num(k)} characters known` : "", w.n ? `${w.n} day${w.n === 1 ? "" : "s"} this week` : ""].filter(Boolean);
+}
 function weekCard() {
   const box = $("weekCard"); if (!box) return;
-  const w = weekStats();
-  box.hidden = !w.n && !w.learned;
+  const w = weekStats(), s = streakStats(), target = store.get("radical-target", 20);
+  box.hidden = !w.n && !w.learned && !w.today;
   if (box.hidden) return;
   const dots = w.studied.map(x => `<i class="${x ? "on" : ""}"></i>`).join("");
+  const today = target ? `<p class="wktoday${w.today >= target ? " done" : ""}">Today: ${num(w.today)} of ${target} cards${w.today >= target ? " ✓" : ""}</p>` : "";
   const line1 = [w.cards ? `${num(w.cards)} card${w.cards === 1 ? "" : "s"}` : "", w.read ? `${num(w.read)} characters read` : "", w.added ? `+${num(w.added)} word${w.added === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
-  const line2 = [`${num(w.learned)} learned`, w.learnedWeek ? `+${num(w.learnedWeek)} this week` : "", w.back ? `${num(w.back)} back for review` : ""].filter(Boolean).join(" · ");
+  const line2 = [s.now > 1 ? `${s.now}-day streak` : "", `${num(charsKnown())} characters known`].filter(Boolean).join(" · ");
   box.innerHTML = `<div class="wkhead"><b>This week</b><span class="wkdays">${w.n} of 7 days <span class="wkdots" aria-hidden="true">${dots}</span></span></div>`
-    + (line1 ? `<p>${line1}</p>` : "") + `<p class="wklearn">${line2}</p>`;
+    + today + (line1 ? `<p>${line1}</p>` : "") + `<p class="wklearn">${line2}</p>`;
+  box.onclick = () => setTab("trackScreen"); box.style.cursor = "pointer";
 }
-// The daily target: a thin ring around 詞 that fills with today's cards and turns gold when it's reached.
+// Called whenever the day's tally changes: the This week card and Track follow along.
 function updateRing() {
-  const r = document.querySelector("#tabbar .ring"); if (!r) return;
-  const target = store.get("radical-target", 20), done = weekStats().today;
-  r.toggleAttribute("hidden", !target);  // an <svg> has no .hidden property, so the attribute is set directly
-  if (!target) return;
-  const pct = Math.min(100, Math.round(done / target * 100));
-  r.querySelector(".rfg").setAttribute("stroke-dasharray", `${pct} 100`);
-  r.classList.toggle("full", done >= target);
-  r.closest("button").setAttribute("aria-label", `My words. Today ${done} of ${target} cards.`);
+  if (!$("wordsScreen").hidden) weekCard();
+  if (!$("trackScreen").hidden) renderTrack();
 }
+// ---- Track: the record of your work. Streak, today, a month calendar, two charts, totals, words by stage, years.
+let trackMonth = null;
+function renderTrack() {
+  const box = $("trackBody"); if (!box) return;
+  const d = store.get("radical-days", {}), target = store.get("radical-target", 20), s = streakStats(), w = weekStats();
+  const all = Object.keys(d).sort(), firstUse = all.find(k => dayUsed(d[k]));
+  const tot = (keys, f) => keys.reduce((a, k) => a + ((d[k] || {})[f] || 0), 0);
+  box.innerHTML = "";
+  // streak and today
+  const top = el("div", "trk trktop");
+  top.innerHTML = `<div><span class="trl">Streak</span><b class="trbig">${num(s.now)} day${s.now === 1 ? "" : "s"}</b><span class="trs">Best ${num(s.best)} · ${s.rest} rest day${s.rest === 1 ? "" : "s"} left</span></div>`
+    + (target ? `<div class="tright"><span class="trl">Today</span><b class="${w.today >= target ? "done" : ""}">${num(w.today)} of ${target} cards</b></div>` : "");
+  box.append(top);
+  // calendar
+  const now = new Date(Date.now() - DAY_START_H * 36e5);
+  if (!trackMonth) trackMonth = { y: now.getFullYear(), m: now.getMonth() };
+  const cal = el("div", "trk trkcal"), mName = new Date(trackMonth.y, trackMonth.m, 1).toLocaleString("en-US", { month: "long", year: "numeric" });
+  const head = el("div", "calhead"), prev = btn("‹", "btn ghost small", () => { trackMonth.m--; if (trackMonth.m < 0) { trackMonth.m = 11; trackMonth.y--; } renderTrack(); }), next = btn("›", "btn ghost small", () => { trackMonth.m++; if (trackMonth.m > 11) { trackMonth.m = 0; trackMonth.y++; } renderTrack(); });
+  prev.setAttribute("aria-label", "Previous month"); next.setAttribute("aria-label", "Next month");
+  next.disabled = trackMonth.y === now.getFullYear() && trackMonth.m === now.getMonth();
+  head.append(prev, el("b", "", mName), next);
+  const grid = el("div", "calgrid"); ["M", "T", "W", "T", "F", "S", "S"].forEach(x => grid.append(el("span", "calwd", x)));
+  const firstDow = (new Date(trackMonth.y, trackMonth.m, 1).getDay() + 6) % 7, nDays = new Date(trackMonth.y, trackMonth.m + 1, 0).getDate(), today = localDay();
+  for (let i = 0; i < firstDow; i++) grid.append(el("span", "calday blank"));
+  let usedMonth = 0;
+  for (let k = 1; k <= nDays; k++) {
+    const key = `${trackMonth.y}-${String(trackMonth.m + 1).padStart(2, "0")}-${String(k).padStart(2, "0")}`, v = d[key];
+    const cls = key > today ? "future" : dayUsed(v) ? (target && (v.c || 0) >= target ? "hit" : "on") : firstUse && key >= firstUse && key < today ? "off" : "";
+    if (dayUsed(v)) usedMonth++;
+    const c = el("span", `calday ${cls}${key === today ? " today" : ""}`, String(k)); c.title = key + (v ? ` · ${v.c || 0} cards · ${v.r || 0} characters read` : ""); grid.append(c);
+  }
+  cal.append(head, grid, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<i class="kd hit"></i> target reached <i class="kd on"></i> studied <i class="kd off"></i> rest day`));
+  box.append(cal);
+  // totals
+  const known = charsKnown(), tiles = el("div", "trtiles");
+  tiles.innerHTML = `<div class="trk"><span class="trl">Characters known</span><b class="trbig">${num(known)}</b></div><div class="trk"><span class="trl">Characters read</span><b class="trbig">${num(tot(all, "r"))}</b></div>`;
+  box.append(tiles);
+  // chart 1: characters known over time (daily snapshots where recorded; before that, rebuilt from when words were added)
+  const series = knownSeries(d);
+  if (series.length > 1) box.append(chartBox("Characters known", lineChart(series)));
+  // chart 2: the last 30 days
+  const last30 = []; for (let i = 29; i >= 0; i--) { const k = localDay(Date.now() - i * DAY); last30.push({ k, c: (d[k] || {}).c || 0, r: (d[k] || {}).r || 0 }); }
+  box.append(chartBox("Last 30 days", barChart(last30.map(x => x.c), "Cards", target) + barChart(last30.map(x => x.r), "Characters read")));
+  // words by stage
+  const nNew = myWords.filter(x => !started(x)).length, nLearned = myWords.filter(x => learned[x.word]).length, nLearning = myWords.length - nNew - nLearned;
+  const st = el("div", "trk");
+  const pc = n => myWords.length ? (n / myWords.length * 100).toFixed(1) : 0;
+  st.innerHTML = `<span class="trl">Words</span><div class="stagebar"><i style="width:${pc(nNew)}%" class="sb-new"></i><i style="width:${pc(nLearning)}%" class="sb-learning"></i><i style="width:${pc(nLearned)}%" class="sb-learned"></i></div>`
+    + `<p class="trs">${num(nNew)} new · ${num(nLearning)} learning · ${num(nLearned)} learned <span class="trq">(learned: three weeks between reviews, or marked Known)</span></p>`;
+  box.append(st);
+  // years
+  const y = new Date().getFullYear(), inYear = yr => all.filter(k => k.startsWith(yr + "-"));
+  const col = keys => [keys.filter(k => dayUsed(d[k])).length, tot(keys, "c"), tot(keys, "r"), tot(keys, "n")];
+  const lYear = yr => Object.values(learned).filter(v => String(v).startsWith(yr + "-")).length;
+  const A = col(inYear(y)), B = col(inYear(y - 1)), C = col(all), hasLast = B.some(Boolean) || lYear(y - 1);
+  const cell = v => hasLast ? num(v) : "–";
+  const rows = [["Days used", 0], ["Cards reviewed", 1], ["Characters read", 2], ["Words added", 3]];
+  const yt = el("div", "trk trkyears");
+  yt.innerHTML = `<table><thead><tr><th></th><th>${y}</th><th>${y - 1}</th><th>All time</th></tr></thead><tbody>`
+    + rows.map(([l, i]) => `<tr><th>${l}</th><td>${num(A[i])}</td><td>${cell(B[i])}</td><td>${num(C[i])}</td></tr>`).join("")
+    + `<tr><th>Words learned</th><td>${num(lYear(y))}</td><td>${cell(lYear(y - 1))}</td><td>${num(Object.keys(learned).length)}</td></tr></tbody></table>`;
+  box.append(yt);
+  checkMilestones();
+}
+// Characters known over time: a daily snapshot (k) is recorded from v35 on; earlier days are rebuilt from when the
+// words now in progress were added, which is close but not exact.
+function knownSeries(d) {
+  const firstSnap = Object.keys(d).sort().find(k => d[k].k);
+  const byDay = {}; myWords.filter(started).forEach(w => { const day = w.added || localDay(); (byDay[day] = byDay[day] || []).push(w); });
+  const days = Object.keys(d).filter(k => dayUsed(d[k]) || d[k].k).concat(Object.keys(byDay)).sort();
+  if (!days.length) return [];
+  const out = [], seen = new Set(); let i = 0;
+  const start = new Date(days[0] + "T12:00:00").getTime(), endT = Date.now();
+  const allDays = []; for (let t = start; localDay(t) <= localDay(endT) && allDays.length < 800; t += DAY) allDays.push(localDay(t));
+  for (const day of allDays) {
+    (byDay[day] || []).forEach(w => [...w.word].forEach(c => { if (isHan(c)) seen.add(c); }));
+    const v = firstSnap && day >= firstSnap && d[day] && d[day].k ? d[day].k : null;
+    out.push({ day, v: v != null ? Math.max(v, 0) : (firstSnap && day >= firstSnap ? (out.length ? out[out.length - 1].v : seen.size) : seen.size) });
+    i++;
+  }
+  return out;
+}
+function chartBox(title, inner) { const b = el("div", "trk trchart"); b.innerHTML = `<span class="trl">${title}</span>${inner}`; return b; }
+function lineChart(pts) {
+  const W = 320, H = 110, max = Math.max(1, ...pts.map(p => p.v)), n = pts.length;
+  const X = i => 8 + i * (W - 16) / Math.max(1, n - 1), Y = v => H - 18 - v / max * (H - 30);
+  const path = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.v).toFixed(1)}`).join("");
+  const area = `${path}L${X(n - 1).toFixed(1)},${H - 18}L${X(0).toFixed(1)},${H - 18}Z`;
+  const fmt = k => new Date(k + "T12:00:00").toLocaleString("en-US", { month: "short", day: "numeric" });
+  return `<svg class="tchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Characters known over time, now ${max}"><line x1="8" x2="${W - 8}" y1="${H - 18}" y2="${H - 18}" class="tgrid"/><path d="${area}" class="tarea"/><path d="${path}" class="tline"/><circle cx="${X(n - 1)}" cy="${Y(pts[n - 1].v)}" r="3.5" class="tdot"/>`
+    + `<text x="${X(n - 1)}" y="${Y(pts[n - 1].v) - 8}" text-anchor="end" class="tval">${num(pts[n - 1].v)}</text><text x="8" y="${H - 4}" class="tax">${fmt(pts[0].day)}</text><text x="${W - 8}" y="${H - 4}" text-anchor="end" class="tax">Today</text></svg>`;
+}
+function barChart(vals, label, target) {
+  const W = 320, H = 70, max = Math.max(1, target || 0, ...vals), bw = (W - 16) / vals.length;
+  const bars = vals.map((v, i) => v ? `<rect x="${(8 + i * bw + 1).toFixed(1)}" y="${(H - 16 - v / max * (H - 26)).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${(v / max * (H - 26)).toFixed(1)}" rx="1.5" class="tbar${i === vals.length - 1 ? " now" : ""}"/>` : "").join("");
+  const tl = target ? `<line x1="8" x2="${W - 8}" y1="${(H - 16 - target / max * (H - 26)).toFixed(1)}" y2="${(H - 16 - target / max * (H - 26)).toFixed(1)}" class="ttarget"/>` : "";
+  return `<svg class="tchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}, last 30 days"><line x1="8" x2="${W - 8}" y1="${H - 16}" y2="${H - 16}" class="tgrid"/>${tl}${bars}<text x="8" y="${H - 3}" class="tax">${label}</text><text x="${W - 8}" y="${H - 3}" text-anchor="end" class="tax">most ${num(Math.max(...vals))}</text></svg>`;
+}
+// ---- milestones: a short moment at round numbers (characters known, characters read, streak, cards). Each fires once;
+// anything already passed when this arrived is recorded quietly so nobody gets a pile of them at once.
+const MILESTONES = [["k", [50, 100, 250, 500, 1000, 1500, 2000, 3000], n => `${num(n)} characters known`], ["r", [1000, 5000, 10000, 25000, 50000, 100000, 250000], n => `${num(n)} characters read`],
+  ["s", [7, 14, 30, 60, 100, 200, 365], n => `A ${num(n)}-day streak`], ["c", [100, 500, 1000, 2500, 5000, 10000], n => `${num(n)} cards reviewed`]];
+function milestoneValues() { const d = store.get("radical-days", {}), keys = Object.keys(d); return { k: charsKnown(), r: keys.reduce((a, k) => a + (d[k].r || 0), 0), c: keys.reduce((a, k) => a + (d[k].c || 0), 0), s: streakStats().now }; }
+function checkMilestones(show = true) {
+  const got = store.get("radical-milestones", null), v = milestoneValues(), fresh = [];
+  const have = got || {};
+  MILESTONES.forEach(([key, steps, text]) => steps.forEach(n => { const id = key + n; if (v[key] >= n && !have[id]) { have[id] = localDay(); fresh.push(text(n)); } }));
+  store.set("radical-milestones", have);
+  if (got && show && fresh.length) milestone(fresh[fresh.length - 1]);
+}
+function milestone(text) {
+  if (document.querySelector(".msheet")) return;
+  const sheet = el("div", "sheet msheet"), card = el("div", "sheetcard mcard"), mark = el("div", "finmark");
+  card.append(mark, el("h3", "", text), el("p", "note", "Logged in Track."));
+  card.append(btn("Keep going", "btn wide", () => sheet.remove()));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.append(sheet); play("reward");
+  ensure("賀").then(() => { if (!mark.isConnected) return; const svg = svgFor("賀", false, true); mark.append(svg); animate(svg, "賀", 1.2); });
+}
+if (store.get("radical-milestones", null) === null) setTimeout(() => checkMilestones(false), 0);  // first run: record what's already passed, quietly
 let learned = store.get("radical-learned", null);
 if (!learned) { learned = {}; myWords.forEach(w => { if (isLearned(w)) learned[w.word] = w.added || localDay(); }); store.set("radical-learned", learned); }
 function learn(w) { if (!learned[w.word] && isLearned(w)) { learned[w.word] = localDay(); store.set("radical-learned", learned); } }
@@ -2724,6 +2922,7 @@ function grade(w, g, k = "srs") {
   else { s.ivl = k === "srs" && w.skip ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
   if (g !== "again") learn(w);
   saveWords();
+  { const dd = store.get("radical-days", {}), k = localDay(); dd[k] = dd[k] || {}; dd[k].k = charsKnown(); store.set("radical-days", dd); }  // the day's characters-known snapshot
 }
 const ivlText = d => d === 0 ? "this round" : d < 1 ? "later today" : d === 1 ? "tomorrow" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
 const wStatus = w => w.skip ? "known" : !w.srs ? "new" : w.srs.due <= Date.now() ? "due" : "learning";
@@ -2748,7 +2947,7 @@ async function openWord(word, opts = {}) {
   wordState = { word, chars, ...opts };
   // Say where Back goes: to the reading, the word list, or the flash cards.
   const from = stack.length ? stack[stack.length - 1] : tab;
-  $("wordBack").textContent = { readScreen: "Reading", wordsScreen: "My words", reviewScreen: "Flash cards", wikiScreen: "Explore", lookScreen: "Review" }[from] || "Back";
+  $("wordBack").textContent = { readScreen: "Reading", wordsScreen: "Practice", reviewScreen: "Flash cards", wikiScreen: "Explore", lookScreen: "Review" }[from] || "Back";
   renderWordPages();
   go("wordScreen");
   $("pager").scrollLeft = 0;
@@ -4192,7 +4391,7 @@ async function showTour(fromMenu) {
       f.append(el("h3", "", "Reading"), el("p", "", `Paste or open any Chinese text. ${B("Tap a word once")} to see its pinyin and meaning; ${B("tap again")} to open it: its characters, their parts and how to write them.`),
         el("p", "", `Under each line: ${SPK.replace("<svg", '<svg class="tourico"')} listen, ${B("EN")} translate, <span lang="zh" class="tourzh">解</span> explain the grammar. ${B("Listen")} at the top reads the whole page, with a speed slider.`)); return f; },
     () => { const f = el("div", "tourpage");
-      f.append(el("h3", "", "Saving and studying"), el("p", "", `${B("+ Add")} puts a word in My words, with the sentence you met it in. Flash cards come three ways: ${B("Read")} (say it), ${B("Write")} (write it from memory) and ${B("Listen")} (hear it). Your ratings decide when each word comes back. ${B("Touch and hold")} any big character to enlarge it.`),
+      f.append(el("h3", "", "Saving and studying"), el("p", "", `${B("+ Add")} puts a word in Practice, with the sentence you met it in. Flash cards come three ways: ${B("Read")} (say it), ${B("Write")} (write it from memory) and ${B("Listen")} (hear it). Your ratings decide when each word comes back. ${B("Touch and hold")} any big character to enlarge it.`),
         el("p", "", `${B("Review")} goes through your words face up, no grading. ${B("Explore")} finds real Chinese Wikipedia articles at your level.`)); return f; }
   ];
   let i = 0;
@@ -4440,7 +4639,7 @@ async function readOtherFile(f) {
       const d = new DOMParser().parseFromString(await zip.file(name).async("string"), "application/xml");
       [...d.getElementsByTagName("is")].forEach(x => cells.push(x.textContent));
     }
-    return { title, parts: toParts(cells.filter(c => /\p{Script=Han}/u.test(c)).join("\n")), note: "Reading a spreadsheet. If it's a word list, My words → Import adds it to your list." };
+    return { title, parts: toParts(cells.filter(c => /\p{Script=Han}/u.test(c)).join("\n")), note: "Reading a spreadsheet. If it's a word list, import it on the Practice tab." };
   }
   if (["html", "htm"].includes(ext)) return { title, parts: toParts(domText(parseHTML(await readTextFile(f)).body)) };
   if (["srt", "vtt", "ass"].includes(ext)) {
@@ -4452,7 +4651,7 @@ async function readOtherFile(f) {
   if (["csv", "tsv"].includes(ext)) {
     const raw = await readTextFile(f);
     const cells = raw.split(/\r?\n/).flatMap(l => l.split(ext === "tsv" ? "\t" : ",")).map(c => c.replace(/^"|"$/g, "").trim()).filter(c => /\p{Script=Han}/u.test(c));
-    return { title, parts: toParts(cells.join("\n")), note: "Reading a spreadsheet. If it's a word list, My words → Import adds it to your list." };
+    return { title, parts: toParts(cells.join("\n")), note: "Reading a spreadsheet. If it's a word list, import it on the Practice tab." };
   }
   if (["txt", "text", "md"].includes(ext) || f.type.startsWith("text/")) return { title, parts: toParts(await readTextFile(f)) };
   throw new Error("That kind of file can't be opened. Try a photo, PDF, Word file, e-book, subtitles, text or spreadsheet.");
@@ -4701,7 +4900,7 @@ document.querySelectorAll("#targetSeg [data-t]").forEach(b => {
   setTimeout(() => sp0.classList.add("ready"), 6000);  // "Tap to begin" shows even if the drawing is slow
   // A quiet line under 部 from the progress record (nothing on a first launch).
   try {
-    const w = weekStats(), bits = [w.n ? `${w.n} day${w.n === 1 ? "" : "s"} this week` : "", w.learned ? `${num(w.learned)} learned` : ""].filter(Boolean);
+    const bits = headline();
     if (bits.length) sp0.querySelector("p").after(el("p", "spstat", bits.join(" · ")));
   } catch (e) {}
   $("reader").innerHTML = '<p class="loading">Drawing…</p>';
