@@ -1168,8 +1168,6 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <details class="setsec" id="secTheme"><summary><b>Theme</b><span class="sum" data-sum="theme"></span></summary>
     <div class="setbody">
     <div class="pgrid" id="paletteGrid"></div>
-    <button type="button" class="switch" id="moveLight" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Moving light in text</button>
-    <p class="note">The big characters always have their slow light. In reading text, off keeps the finish still; on adds a spark that drifts over each character.</p>
     <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
     </div></details>
     <button type="button" class="btn wide" id="startBtn" hidden>Start reading</button>
@@ -1771,17 +1769,18 @@ let lightRunning = false;
 let lastTick = 0;
 // The drifting spark in reading text is off unless chosen in Settings: across a page of text it pulled the eye
 // away from the characters (and flickered on cards). The big single characters keep their slow moving light.
-let movingLight = store.get("radical-moving-light", false);
-document.documentElement.classList.toggle("movelight", movingLight);
-$("moveLight").setAttribute("aria-checked", movingLight);
-$("moveLight").onclick = () => { movingLight = !movingLight; store.set("radical-moving-light", movingLight); document.documentElement.classList.toggle("movelight", movingLight); $("moveLight").setAttribute("aria-checked", movingLight); if (typeof render === "function") render(); };
+const movingLight = false;  // reading text is always still (v35): the drifting spark was a dead end; big characters keep their light
 function lightTick(now) {
   lightRunning = true;
-  if (now - lastTick > 33) {  // about 30 frames a second is plenty for a slow drift
+  // Battery: the lighting filter is costly to redraw, so the light moves about 15 times a second (plenty for a slow
+  // drift), only on big characters actually on screen, and not at all while the app is in the background.
+  if (now - lastTick > 66 && !document.hidden) {
     lastTick = now;
     for (const svg of lit) {
       if (!svg.isConnected) { lit.delete(svg); continue; }
-      if (!svg.getClientRects().length || !svg._pt) continue;
+      if (!svg._pt) continue;
+      const r = svg.getBoundingClientRect();
+      if (!r.width || r.width < 60 || r.bottom < 0 || r.top > innerHeight) continue;
       // The point light wanders on a slow loop. Picture space: 0..1024, y down.
       const t = now / 1000 + svg._ph;
       let x = 512 + Math.cos(t * .45) * 420, y = 470 + Math.sin(t * .31) * 380;
@@ -4470,15 +4469,17 @@ function buildLab() {
     big.innerHTML = ""; const g = svgFor("營", false, true); big.append(g);
     line.innerHTML = ""; line.append(buildLine("我們在登山口附近搭帳篷", () => {}, false));
     line.querySelectorAll(".linectl").forEach(x => x.remove());
-    requestAnimationFrame(() => lightReader(line));
+    requestAnimationFrame(() => lightReader(line, true));
   };
   ensure("營我們在登山口附近搭帳篷").then(paintSample);
-  const changed = () => {
-    saveLab(); applyLab(); applyPalette(); paintSample();
+  // A color nudge only changes that color: the strokes take their colors from the theme's variables, so nothing is
+  // redrawn and no highlight moves. Stroke weight and light changes do need a redraw.
+  const changed = redraw => {
+    saveLab(); applyLab(); applyPalette(); if (redraw) paintSample();
     const code = box.querySelector(".labhead code"), dot = box.querySelector(".labdot.on i");
     if (code) code.textContent = `${PAL0[key][mode][labPick]} → ${PALETTES[key][mode][labPick]}`;
     if (dot) dot.style.background = PALETTES[key][mode][labPick];
-    clearTimeout(labTimer); labTimer = setTimeout(() => { buildPalettes(); render(); }, 600);
+    clearTimeout(labTimer); labTimer = setTimeout(() => { buildPalettes(); if (redraw) render(); }, 600);
   };
   // Part colors: tap a swatch, then nudge it.
   const sw = el("div", "labsw");
@@ -4491,9 +4492,9 @@ function buildLab() {
   box.append(sw);
   const edits = () => { lab[key] = lab[key] || {}; lab[key][mode] = lab[key][mode] || {}; return lab[key][mode]; };
   const cur = ((lab[key] || {})[mode] || {})[labPick] || {};
-  const slider = (label, min, max, step, val, fmt, set) => {
+  const slider = (label, min, max, step, val, fmt, set, redraw) => {
     const row = el("label", "labrow"), out = el("b", "", fmt(val)), r = el("input"); r.type = "range"; r.min = min; r.max = max; r.step = step; r.value = val;
-    r.oninput = () => { out.textContent = fmt(+r.value); set(+r.value); changed(); };
+    r.oninput = () => { out.textContent = fmt(+r.value); set(+r.value); changed(redraw); };
     row.append(el("span", "", label), r, out); return row;
   };
   const pct = v => `${Math.round(v * 100)}%`;
@@ -4509,9 +4510,9 @@ function buildLab() {
   const two = el("div", "labgroup");
   two.append(el("p", "labhead", "Strokes and light (this theme)"),
     slider("Stroke weight", 0, 40, 1, fx.weight, v => v ? `+${v}` : "normal", v => setFx("weight", v)),
-    slider("Highlight", 0, 2, .05, fx.highlight, pct, v => setFx("highlight", v)),
-    slider("Relief", 0, 2.5, .05, fx.relief, pct, v => setFx("relief", v)),
-    slider("Spark", 0, 2, .05, fx.spark, pct, v => setFx("spark", v)));
+    slider("Highlight", 0, 2, .05, fx.highlight, pct, v => setFx("highlight", v), true),
+    slider("Relief", 0, 2.5, .05, fx.relief, pct, v => setFx("relief", v), true),
+    slider("Spark", 0, 2, .05, fx.spark, pct, v => setFx("spark", v), true));
   box.append(two);
   const msg = el("p", "note labmsg");
   const acts = el("div", "row");
