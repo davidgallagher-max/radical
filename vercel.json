@@ -3,37 +3,33 @@
   "installCommand": "echo 'no packages to install'",
   "buildCommand": "bash scripts/build_site.sh",
   "outputDirectory": "public",
-  "headers": [
+  "routes": [
     {
-      "source": "/data/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=604800"
-        }
-      ]
-    }
-  ],
-  "rewrites": [
+      "src": "/data/(.*)",
+      "headers": {
+        "Cache-Control": "public, max-age=604800"
+      },
+      "continue": true
+    },
     {
-      "source": "/(.*)",
+      "src": "/(.*)",
       "has": [
         {
           "type": "host",
           "value": "upslopelabs.com"
         }
       ],
-      "destination": "/upslope/index.html"
+      "dest": "/upslope/index.html"
     },
     {
-      "source": "/(.*)",
+      "src": "/(.*)",
       "has": [
         {
           "type": "host",
           "value": "www.upslopelabs.com"
         }
       ],
-      "destination": "/upslope/index.html"
+      "dest": "/upslope/index.html"
     }
   ]
 }
