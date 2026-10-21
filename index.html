@@ -177,6 +177,7 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 @media (prefers-reduced-motion:reduce){.spark{animation:none;display:none}}
 .mini{display:grid;gap:6px}
 .minibar{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.minext{font-size:1rem;padding:2px 10px}.minext.busy{opacity:.5}
 .minibar .minisay{flex:none}
 .minibar .minisize{padding:3px 10px 4px}
 .minipop{display:grid;gap:8px;padding:2px 2px 4px}
@@ -221,11 +222,19 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .revscore{display:block;font-family:var(--font-ui);font-size:.84rem;font-weight:500;color:var(--muted);margin-top:2px}
 .revscore:empty{display:none}
 .revscore{cursor:pointer}.revscore .sc{font-family:var(--font-zh);font-weight:700;font-size:1.05em}
+/* A count that just went up: its character glows for a couple of seconds and the number rolls up like a dial. */
+.revscore .sc.glow{animation:scglow 2.5s ease-out}
+@keyframes scglow{0%,35%{text-shadow:0 0 10px currentColor,0 0 3px currentColor}100%{text-shadow:none}}
+.odo{display:inline-block;height:1.25em;line-height:1.25em;overflow:hidden;vertical-align:bottom}
+.odo>span{display:flex;flex-direction:column;animation:odo .7s .2s cubic-bezier(.3,.7,.25,1) both}
+.odo i{font-style:normal;height:1.25em}
+@keyframes odo{from{transform:translateY(0)}to{transform:translateY(-1.25em)}}
+@media (prefers-reduced-motion:reduce){.revscore .sc.glow{animation:none}.odo>span{animation:none;transform:translateY(-1.25em)}}
 .sc.ok{color:var(--on)}.sc.part{color:var(--part,#E2B33C)}.sc.no{color:var(--no,#E5533D)}
 /* The answer flourish: 對, 半 or 錯 blooms in the middle of the screen like ink spreading, then fades (never blocks a tap). */
-.bloom{position:fixed;left:50%;top:42%;z-index:60;pointer-events:none;font-family:var(--font-zh);font-weight:700;font-size:min(46vw,240px);line-height:1;transform:translate(-50%,-50%);opacity:0;animation:bloom .7s cubic-bezier(.2,.7,.3,1) forwards}
+.bloom{position:fixed;left:50%;top:42%;z-index:60;pointer-events:none;font-family:var(--font-zh);font-weight:700;font-size:min(46vw,240px);line-height:1;transform:translate(-50%,-50%);opacity:0;animation:bloom 2s cubic-bezier(.2,.7,.3,1) forwards}
 .bloom.ok{color:var(--on)}.bloom.part{color:var(--part,#E2B33C)}.bloom.no{color:var(--no,#E5533D)}
-@keyframes bloom{0%{opacity:0;transform:translate(-50%,-50%) scale(.55);filter:blur(8px)}28%{opacity:.92;transform:translate(-50%,-50%) scale(1);filter:blur(0);text-shadow:0 0 28px currentColor}100%{opacity:0;transform:translate(-50%,-50%) scale(1.32);filter:blur(4px);text-shadow:0 0 60px currentColor}}
+@keyframes bloom{0%{opacity:0;transform:translate(-50%,-50%) scale(.55);filter:blur(8px)}12%{opacity:.92;transform:translate(-50%,-50%) scale(1);filter:blur(0);text-shadow:0 0 28px currentColor}62%{opacity:.88;transform:translate(-50%,-50%) scale(1.06);filter:blur(0);text-shadow:0 0 36px currentColor}100%{opacity:0;transform:translate(-50%,-50%) scale(1.32);filter:blur(4px);text-shadow:0 0 60px currentColor}}
 @media (prefers-reduced-motion:reduce){.bloom{display:none}}
 .sckey{color:var(--muted);font-weight:400}
 #revProg{font-family:var(--font-ui);font-size:.95rem;font-weight:600;color:var(--muted)}
@@ -248,6 +257,10 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 .scriptpick{display:inline-flex;flex-direction:column;align-items:center;gap:3px}
 .scriptpick .sclabel{font-size:.68rem;letter-spacing:.04em;color:var(--muted);white-space:nowrap}
 .revhead{display:flex;align-items:center;justify-content:center;gap:12px}
+/* The title and running score stay pinned just under the top bar while the card scrolls. */
+.revpin{position:sticky;top:44px;z-index:4;background:var(--bg);margin:0 -16px;padding:0 16px 6px}
+.revend{all:unset;cursor:pointer;font-size:.88rem;color:var(--muted);padding:0 10px;line-height:44px}
+.revend:focus-visible{outline:2px solid var(--accent);border-radius:6px}
 .seg.minseg button{font-size:.95rem;padding:4px 10px}
 .revbar{position:fixed;left:0;right:0;bottom:0;padding:10px max(16px,calc((100vw - 760px) / 2)) calc(var(--bot) + 12px);background:color-mix(in srgb,var(--bg) 92%,transparent);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);display:grid;gap:8px;z-index:2}
@@ -296,7 +309,12 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 #pyBtn{color:var(--accent)}
 .switch[aria-checked="true"] .knob{left:19px}
 .switch.small{font-size:.85rem;padding:5px 11px 5px 5px}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;padding:2px;background:var(--surface)}
+/* Segmented controls: the picked one is its own rounded outline just inside the box (never clipped by the box's
+   corners), and the dividers beside it step aside. */
+.seg button[aria-pressed="true"]{border-radius:6px}.seg2 button[aria-pressed="true"]{border-radius:8px}
+.seg button[aria-pressed="true"],.seg button[aria-pressed="true"]+button,.seg2 button[aria-pressed="true"],.seg2 button[aria-pressed="true"]+button{border-left-color:transparent}
+.tpanel .seg{background:var(--bg)}.outline-panels .tpanel .seg{background:var(--surface)}
 .seg button{font-family:var(--font-zh);font-size:1.05rem;line-height:1;background:var(--surface);color:var(--muted);border:0;padding:5px 12px;cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
 .seg.uiseg{display:flex;width:100%}
@@ -378,7 +396,7 @@ h3.sec.sub{margin-top:0;font-size:.84rem;text-transform:none;letter-spacing:.02e
 .topbrand b{font-family:var(--font-brand);font-weight:800;font-size:.9rem;letter-spacing:.16em;text-transform:uppercase}
 .topbrand:focus-visible{outline:2px solid var(--accent)}
 @media (max-width:359px){.topbar .topbrand b{display:none}}
-#readBar,.filterbar{top:28px}
+#readBar{top:28px}
 .reader{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 10px;display:grid;gap:10px;min-width:0}
 /* Reading text sits on an even grid, like a printed Chinese page: every character gets the same square, leftover
    width is shared out evenly, words may break across lines, and punctuation takes a full square. */
@@ -406,7 +424,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .glue{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-items:end}
 .glue>*{min-width:0}
 .glue .glyph:not(.latin){text-align:left}
-.glue .latin{text-align:center}
+.glue .latin{text-align:left}
 .linectl{display:inline-flex;gap:5px;align-items:center;align-self:center;grid-column:span 5;justify-self:start;padding-left:4px}
 .enbtn{font-size:.78rem;font-weight:600;letter-spacing:.04em;color:var(--accent);background:var(--surface);border:1px solid var(--line);border-radius:14px;height:28px;padding:0 9px;cursor:pointer}
 .trans{margin:-2px 0 4px;padding:8px 12px;border-left:3px solid var(--accent);font-size:.96rem;background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:0 8px 8px 0}
@@ -516,7 +534,12 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .preview{display:grid;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{all:unset;cursor:pointer;font-family:var(--font-zh);font-size:1.05rem;padding:3px 10px;border-radius:999px;border:1px solid var(--accent);color:var(--fg)}
-.chip.off{border-color:var(--line);color:var(--muted);text-decoration:line-through}
+.chip.off{border-color:var(--line);color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:4px 12px 4px 6px}
+/* The check circle on words to add (the same look as the Practice list's). */
+.ncheck{flex:none;width:20px;height:20px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
+.ncheck::after{content:"";width:5px;height:10px;border:solid var(--bg);border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+.off>.ncheck{background:none;box-shadow:inset 0 0 0 1.5px var(--muted)}.off>.ncheck::after{display:none}
 .ymark{font-size:.68rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:999px;padding:0 6px;vertical-align:2px;margin-left:4px;white-space:nowrap}
 .classnote{margin-top:-4px}
 .mynote{font-size:.9rem;border-left:3px solid var(--accent);padding:2px 0 2px 10px;margin:4px 0;white-space:pre-wrap}
@@ -587,6 +610,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .pvctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 8px}
 .kindchip{all:unset;cursor:pointer;font-size:.84rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .kindchip[aria-pressed="true"]{border-color:var(--accent);color:var(--fg);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.tabsub{margin:-6px 0 10px}
 .tabnote{font-size:.84rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted);margin-left:10px;font-family:var(--font-ui, inherit)}
 .fbcard textarea{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);resize:vertical}
 .fbshot{justify-self:start;cursor:pointer}
@@ -607,19 +631,20 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .labrow input{width:100%}
 .labgroup .btn{justify-self:start}
 .nlist{display:grid;gap:6px}
-.nrow{all:unset;cursor:pointer;display:grid;grid-template-columns:auto 1fr;column-gap:10px;row-gap:2px;align-items:baseline;padding:8px 10px;border-radius:10px;border:1px solid var(--accent)}
+.nrow{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid var(--accent)}
+.nrow .nbody{flex:1;min-width:0;display:grid;grid-template-columns:auto 1fr;column-gap:10px;row-gap:2px;align-items:baseline}
 .nrow b{font-family:var(--font-zh);font-size:1.1rem;font-weight:600;grid-row:span 2}
 .nrow .np{color:var(--accent);font-size:.85rem}
 .nrow .nm{font-size:.88rem;grid-column:2}
 .nrow .nm i{color:var(--muted);font-size:.84rem}
 .nrow small{grid-column:1/-1;color:var(--muted);font-size:.84rem}
-.nrow.off{border-color:var(--line);opacity:.5}
+.nrow.off{border-color:var(--line);opacity:.75}
 .nrow.long b{grid-row:auto;grid-column:1/-1}
 .nrow.long .np,.nrow.long .nm{grid-column:1/-1}
-.nrow.off b{text-decoration:line-through}
 .chip.have{border-style:dashed;border-color:var(--line);color:var(--muted)}
 .revpanel{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
 .revhead{display:flex;align-items:center;gap:10px}
+.revpanel .revhead{justify-content:flex-start}
 .revhead b{font-family:var(--font-brand);font-size:1.2rem;font-weight:800}
 .revhead span{flex:1;min-width:0;color:var(--muted);font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .revtoggle{all:unset;cursor:pointer;flex:1;min-width:0;display:flex;align-items:center;gap:10px}
@@ -630,12 +655,11 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revtoggle:focus-visible{outline:2px solid var(--accent);border-radius:8px}
 .revpanel.folded{padding:10px 14px}
 .revhead .btn{padding:10px 22px;font-weight:700}
-.seg2{display:grid;grid-template-columns:repeat(4,minmax(max-content,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg2{display:grid;grid-template-columns:repeat(4,minmax(max-content,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden;padding:2px}
 .seg2.two{grid-template-columns:repeat(2,1fr)}
 .seg2.three{grid-template-columns:repeat(3,1fr)}
 .seg2.four{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media (max-width:370px){.seg2.four button{font-size:.8rem;padding-left:1px;padding-right:1px}}
-.cleardue{margin-bottom:12px;font-weight:700}
 .revcount.typerow{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:8px;row-gap:4px}
 .revcount.typerow .revmix{grid-column:2;margin:0;text-align:left;padding-left:8px}
 .seg2 button{all:unset;cursor:pointer;text-align:center;white-space:nowrap;padding:9px 5px;font-size:.88rem;font-weight:500;color:var(--fg)}
@@ -661,24 +685,27 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revstrip .btn{background:var(--surface);color:var(--accent);font-weight:600}
 .revstrip.idle{background:var(--surface);color:var(--fg);border:1px solid var(--line)}
 .revstrip.idle .btn{background:var(--accent);color:var(--surface)}
-.filterbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;position:sticky;top:28px;z-index:4;background:var(--bg);margin:0 -16px;padding:6px 16px}
-.hows{flex:1 1 100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.hows button{all:unset;cursor:pointer;text-align:center;padding:9px 2px;border-radius:10px;font-size:.95rem;font-weight:600;color:var(--muted);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.hows button[aria-pressed="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:700}
-.hows button.off{opacity:.38}
-.filters{flex:1;min-width:0;display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
-.filters::-webkit-scrollbar{display:none}
+/* Practice's one box: three rows of pills (mode, which words, how many), then Start. The picked pill is outlined in the
+   accent with accent text, the same in every row. */
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pills button{all:unset;cursor:pointer;box-sizing:border-box;flex:1 1 auto;text-align:center;white-space:nowrap;padding:8px 12px;border-radius:999px;font-size:.92rem;font-weight:600;color:var(--fg);background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
+.pills button span{color:var(--muted);font-weight:500;font-size:.84rem;margin-left:2px}
+.pills button[aria-pressed="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--bg));box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:700}
+.pills button[aria-pressed="true"] span{color:var(--accent);opacity:.85}
+.pills button:disabled{opacity:.4;cursor:default}
+.pills button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pills.hows{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.pills.hows button{padding:9px 2px;font-size:.95rem}
+.pills.counts button{flex:1 1 0;padding:8px 4px}
+.pills.counts.solo{justify-content:center}.pills.counts.solo button{flex:0 1 60%}
+.revgo{font-weight:700;min-height:50px}
+.revdone{margin:0;text-align:center;color:var(--muted);font-size:.92rem}
+.listhead{margin:4px 0 0}
+.listhead:empty{display:none}
+.wdot .newtag{font-size:.75rem;font-weight:600;color:var(--muted);margin-right:6px;letter-spacing:.02em}
+.goalpills{margin:10px 0 4px}.goalpills button{padding:10px 12px;font-size:1rem}
+.goalcard .btn.wide{margin-top:12px}
 .backupnote{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.84rem;color:var(--muted);padding:8px 12px;border:1px dashed color-mix(in srgb,var(--sound) 55%,var(--line));border-radius:12px}
-.filterbar.stuck{border-bottom:1px solid var(--line);box-shadow:0 6px 12px -8px rgba(0,0,0,.45)}
-.filterbar.stuck::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:calc(var(--top) + 14px);background:var(--bg)}
-.filters button{all:unset;cursor:pointer;font-size:.84rem;padding:5px 8px;white-space:nowrap;flex:none;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
-.filters button{display:inline-flex;align-items:center;gap:5px;--c:var(--fg)}
-.filters button[data-k=new]{--c:var(--st-new)} .filters button[data-k=due]{--c:var(--st-due)}
-.filters button[data-k=learning]{--c:var(--st-active)} .filters button[data-k=known]{--c:var(--st-known)}
-.filters button{border-color:color-mix(in srgb,var(--c) 55%,var(--line));color:var(--fg)}
-.filters button[aria-pressed="true"]{background:var(--c);color:var(--bg);border-color:var(--c)}
-.filters button[aria-pressed="true"] .dot{box-shadow:inset 0 0 0 2px var(--bg);background:transparent}
-.filters button:disabled{opacity:.45;cursor:default}
 .wordlist{display:grid;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
 .wrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-top:1px solid var(--line)}
 .wrow:first-child{border-top:0}
@@ -689,7 +716,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .wrow .wsel[aria-checked="true"] i{background:var(--accent);box-shadow:none}
 .wrow .wsel[aria-checked="true"] i::after{content:"";width:5px;height:10px;border:solid var(--bg);border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
 .wrow .wmain{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;padding:11px 8px;min-width:0}
-.wrow .wdot{padding:14px 16px 14px 10px;display:grid;place-items:center}
+.wrow .wdot{padding:14px 16px 14px 10px;display:flex;align-items:center}
 .wrow .wz{font-family:var(--font-zh);font-size:1.45rem;font-weight:600;min-width:2.2em}
 .wrow .wm{color:var(--muted);font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wrow .wdot .dot{width:11px;height:11px}
@@ -812,6 +839,8 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .coach.one{min-height:0;max-width:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.85rem}
 .padwrap.shown .padtick{display:none!important}
 .padwrap.shown .pad{border-color:var(--line);box-shadow:none}
+.padwatch{all:unset;position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:3;cursor:pointer;font-size:.84rem;font-weight:600;color:var(--accent);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:5px 12px;white-space:nowrap}
+.padwatch:focus-visible{outline:2px solid var(--accent)}
 .listenprompt{display:grid;justify-items:center;gap:10px;padding:18px 0 8px}
 .listenbig{all:unset;cursor:pointer;display:grid;justify-items:center;gap:6px;width:132px;height:132px;place-content:center;border-radius:50%;border:2px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:600}
 .listenbig svg{width:44px;height:44px}
@@ -827,17 +856,14 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .grades .again{box-shadow:inset 0 0 0 1px var(--sound);color:var(--sound)}
 .grades .suggest{background:var(--accent);color:var(--surface);box-shadow:none}
 .grades .again.suggest{background:var(--sound);color:var(--surface)}
-/* On the answer side a light sweeps across the whole rating bar two or three times, then a faint glowing edge stays;
-   the suggested rating pulses. With reduced motion, just the steady glow. */
-.revbar.glow{animation:barglow 3.4s ease-out forwards}
-.revbar.glow::after{content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--accent) 30%,transparent) 50%,transparent 70%);background-size:300% 100%;background-repeat:no-repeat;
-  animation:sweep 1.2s ease-in-out 3 forwards;mix-blend-mode:screen}
-.revbar.glow .suggest{animation:pulse 1.4s ease-in-out 4}
-@keyframes sweep{from{background-position:150% 0}to{background-position:-50% 0}}
-@keyframes barglow{0%{box-shadow:inset 0 0 0 0 transparent}40%{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--accent) 80%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--accent) 55%,transparent),inset 0 0 26px color-mix(in srgb,var(--accent) 30%,transparent),0 -6px 24px color-mix(in srgb,var(--accent) 28%,transparent)}100%{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--accent) 55%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent),inset 0 0 16px color-mix(in srgb,var(--accent) 14%,transparent),0 -4px 16px color-mix(in srgb,var(--accent) 14%,transparent)}}
+/* On the answer side the rating bar grows about 10% taller from its bottom edge while a glow builds, then slowly
+   settles back, leaving a faint glowing edge; the suggested rating keeps a slow pulse while the answer is up. With
+   reduced motion, just the steady glow. */
+.revbar.glow{animation:barglow 2.6s ease-out forwards}
+.revbar.glow .suggest{animation:pulse 2.8s ease-in-out infinite}
+@keyframes barglow{0%{padding-top:10px;box-shadow:inset 0 0 0 0 transparent}35%{padding-top:26px;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--accent) 80%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--accent) 55%,transparent),inset 0 0 26px color-mix(in srgb,var(--accent) 30%,transparent),0 -6px 24px color-mix(in srgb,var(--accent) 28%,transparent)}100%{padding-top:10px;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--accent) 55%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent),inset 0 0 16px color-mix(in srgb,var(--accent) 14%,transparent),0 -4px 16px color-mix(in srgb,var(--accent) 14%,transparent)}}
 @keyframes pulse{0%,100%{transform:none}50%{transform:scale(1.05)}}
-@media (prefers-reduced-motion:reduce){.revbar.glow{animation:none;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--accent) 55%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent),inset 0 0 16px color-mix(in srgb,var(--accent) 14%,transparent)}.revbar.glow::after{display:none}.revbar.glow .suggest{animation:none}}
+@media (prefers-reduced-motion:reduce){.revbar.glow{animation:none;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--accent) 55%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent),inset 0 0 16px color-mix(in srgb,var(--accent) 14%,transparent)}.revbar.glow .suggest{animation:none}}
 .guess{display:grid;gap:8px}
 .guess label{display:grid;grid-template-columns:5.6em 1fr;align-items:center;gap:8px;font-size:1.1rem;color:var(--muted)}
 .guess input::placeholder{color:var(--muted);opacity:.45}
@@ -929,7 +955,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
   .tabbar .iconbtn.railx svg{width:19px;height:19px}
   .screen:not(.sub){padding:calc(var(--top) + 8px) calc(var(--rail) + 14px) calc(var(--bot) + 16px) max(14px,env(safe-area-inset-left,0px))}
   .screen:not(.sub) .readhead,.screen:not(.sub) .minihead{display:none}
-  #readBar,.filterbar{top:0}
+  #readBar{top:0}
   #readBar{grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:16px}
   #readBar .legrow{min-width:0}
   #readBar .sizepop{grid-column:1/-1}
@@ -938,10 +964,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
   #wikiScreen .inner{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);column-gap:22px;max-width:none}
   #wikiScreen .inner>*{grid-column:1/-1}
   #wikiScreen .excol{display:grid;gap:12px;align-content:start;grid-column:auto}
-  .revpanel{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:18px}
   .revpanel>*{grid-column:1/-1}
-  .revpanel>.revcount:nth-of-type(3),.revpanel>.revcount:nth-of-type(4){grid-column:auto}
-  .revpanel .revmix{grid-column:1/-1;order:1}
   .revpanel>p.note{order:2}
 }
 </style>
@@ -1042,7 +1065,6 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     </header>
     <h3 class="sec tabsec"><span lang="zh">練</span>Practice</h3>
     <div class="weekcard" id="weekCard" hidden></div>
-    <div class="filterbar" id="filterBar"><div class="hows" id="howRow" role="group" aria-label="Practice"></div><div class="filters" id="filters"></div></div>
     <p class="backupnote" id="backupNote" hidden></p>
     <div id="revStrip"></div>
     <div class="addbox">
@@ -1056,7 +1078,8 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <p class="note" id="addStatus"></p>
       <div class="preview" id="preview" hidden></div>
     </div>
-    <div class="lookrow"><button type="button" class="btn ghost wide lookbtn" id="lookBtn" hidden></button><button type="button" class="btn wide lookbtn" id="lookFlash" hidden></button></div>
+    <h3 class="sec sub listhead" id="listHead"></h3>
+    <div class="lookrow"><button type="button" class="btn ghost wide lookbtn" id="lookBtn" hidden></button></div>
     <div class="wordlist" id="wordList"></div>
   </div>
 </section>
@@ -1073,9 +1096,11 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 <!-- REVIEW -->
 <section class="screen sub" id="reviewScreen" hidden>
   <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back id="revQuit">Quit</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="topbar"><button type="button" class="back" data-back id="revQuit">Exit</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="revend" id="revEnd">Quit</button><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <div class="revpin" id="revPin">
     <div class="revhead"><h2 class="revtitle">Flash card <span id="revProg"></span></h2><div id="revScript"></div></div>
     <div class="revsub"><button type="button" class="revprev" id="revPrev" style="visibility:hidden">‹ Previous card</button><span class="revscore" id="revScore"></span></div>
+    </div>
     <div id="revCard" class="revcard"></div>
     <div class="revbar" id="revBar"></div>
   </div>
@@ -1101,20 +1126,20 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
     <button type="button" class="back" id="wikiBack" hidden>Back to reading</button>
-    <h3 class="sec tabsec"><span lang="zh">探</span>Explore<span class="tabnote">Searches Chinese Wikipedia</span></h3>
+    <h3 class="sec tabsec"><span lang="zh">探</span>Explore</h3>
+    <p class="note tabsub">Real Chinese Wikipedia, written by native speakers.</p>
     <div class="excol exleft">
     <h3 class="sec sub">Pick a topic</h3>
     <div class="topics" id="wikiTopics"></div>
     </div>
     <div class="excol exright">
-    <h3 class="sec sub">Or search for one</h3>
+    <h3 class="sec sub">Search</h3>
     <form class="addrow" id="wikiForm">
-      <input type="text" id="wikiQ" lang="zh" placeholder="Search any topic in Chinese or English" autocomplete="off" enterkeyhint="search">
+      <input type="text" id="wikiQ" lang="zh" placeholder="Anything, in Chinese or English" autocomplete="off" enterkeyhint="search">
       <button type="submit" class="btn">Search</button>
     </form>
-    <h3 class="sec sub">Or open one at random</h3>
+    <h3 class="sec sub">Surprise me</h3>
     <button type="button" class="randbtn" id="wikiRandom"><span lang="zh" id="wikiRandomZh">隨機條目</span> · Random article</button>
-    <p class="note">Real Chinese Wikipedia, written by Chinese-speaking editors. Nothing is machine-translated.</p>
     </div>
     <p class="note wstatus" id="wikiStatus" hidden></p>
     <div class="list" id="wikiList"></div>
@@ -1214,10 +1239,10 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <div class="seg uiseg" id="targetSeg" role="group" aria-label="Daily target"><button type="button" data-t="0">Off</button><button type="button" data-t="10">10</button><button type="button" data-t="20">20</button><button type="button" data-t="30">30</button><button type="button" data-t="50">50</button></div>
       <p class="note">Cards a day. Shown on This week and Track.</p>
     </div></details>
-    <details class="setsec"><summary><b>I practice</b><span class="sum" data-sum="modes"></span></summary>
+    <details class="setsec"><summary><b>My goal</b><span class="sum" data-sum="modes"></span></summary>
     <div class="panel">
-      <div class="seg uiseg" id="modesSeg" role="group" aria-label="I practice"><button type="button" data-m="read" aria-pressed="true" disabled>Read</button><button type="button" data-m="write">Write</button><button type="button" data-m="listen">Listen</button></div>
-      <p class="note">Read is always on. A mode that's off makes no cards, isn't in the badge and stays out of Mix and Clear due cards. Its progress is kept for when you turn it back on.</p>
+      <div class="seg uiseg" id="modesSeg" role="group" aria-label="My goal"><button type="button" data-m="read">Read</button><button type="button" data-m="write">Write</button><button type="button" data-m="listen">Listen</button></div>
+      <p class="note">What you want to keep up. The 練 badge and Today count these. Every mode is always there to practice.</p>
     </div></details>
     <details class="setsec"><summary><b>Your words</b><span class="sum" data-sum="words"></span></summary>
     <div class="panel">
@@ -1272,7 +1297,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v36";
+const APP_VERSION = "v37";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1354,17 +1379,37 @@ function speak(text, slow) {
 // utterances keep the voice from skipping words (long ones made some voices drop about one word in five), and the
 // highlight no longer has to guess where the voice is inside a sentence.
 let readToken = 0, reading = false;
-// Reading tally: each line of text counts once, after it has been on screen about 4 seconds in all (so scrolling
-// past quickly doesn't count), or when it's read aloud. Only Chinese characters are counted.
+// Reading tally: a line of text counts once a day (redrawing the page, changing the size or coming back to an article
+// doesn't count it again), and credit comes at a reading pace: while the reader is in front, about 2.5 characters a
+// second build up, never more than the unread lines on screen hold, and a line is paid for once it has been on screen
+// about 4 seconds and the credit covers it. A quick look at an article gives about nothing. A line read aloud counts
+// when it's spoken. Only Chinese characters are counted.
 const hanIn = t => (String(t || "").match(/\p{Script=Han}/gu) || []).length;
-function countLine(line) { if (!line || line._counted || !line.isConnected) return; line._counted = true; logDay("r", hanIn(line._text)); }
-let lineSeen = null;
+const READ_PACE = 2.5;
+const lineKey = t => { let h = 0; for (const c of String(t)) h = (h * 31 + c.codePointAt(0)) | 0; return h.toString(36) + "." + String(t).length; };
+function readToday() { const r = store.get("radical-read-lines", null); return r && r.day === localDay() && Array.isArray(r.h) ? r : { day: localDay(), h: [] }; }
+const readBefore = line => readToday().h.includes(lineKey(line._text || ""));
+function countLine(line) {
+  if (!line || line._counted || !line.isConnected) return; line._counted = true;
+  const r = readToday(), k = lineKey(line._text || ""); if (r.h.includes(k)) return;
+  r.h.push(k); if (r.h.length > 5000) r.h.shift(); store.set("radical-read-lines", r);
+  logDay("r", hanIn(line._text));
+}
+let lineSeen = null, readBank = 0;
+setInterval(() => {
+  if (document.hidden || $("readScreen").hidden) { readBank = 0; return; }
+  const lines = [...document.querySelectorAll("#reader .line")].filter(l => !l._counted);
+  lines.filter(l => l._ready && readBefore(l)).forEach(l => { l._counted = true; });  // read already today: no credit used
+  const open = lines.filter(l => !l._counted), cap = open.filter(l => l._vis).reduce((a, l) => a + hanIn(l._text), 0);
+  readBank = Math.min(readBank + READ_PACE, cap);
+  for (const l of open) { if (!l._ready) continue; const n = hanIn(l._text); if (n > readBank) break; readBank -= n; countLine(l); }
+}, 1000);
 function watchLines(reader) {
   if (!("IntersectionObserver" in window)) return;
   if (lineSeen) lineSeen.disconnect();
   lineSeen = new IntersectionObserver(entries => entries.forEach(en => {
-    const line = en.target;
-    if (en.isIntersecting && en.intersectionRatio > .6) { if (!line._t) line._t = setTimeout(() => countLine(line), 4000); }
+    const line = en.target; line._vis = en.isIntersecting && en.intersectionRatio > .6;
+    if (line._vis) { if (!line._t && !line._ready) line._t = setTimeout(() => { line._ready = true; }, 4000); }
     else if (line._t) { clearTimeout(line._t); line._t = null; }
   }), { root: $("readScreen"), threshold: [0, .6, 1] });
   reader.querySelectorAll(".line").forEach(l => lineSeen.observe(l));
@@ -1920,7 +1965,7 @@ function showOnly(id) {
   if (id === "readScreen" && typeof fitLegend === "function") requestAnimationFrame(() => fitLegend());
 }
 let tab = "readScreen", revSide = null;
-function setTab(id) { if (reading) stopReading(); if ($("wikiBack")) $("wikiBack").hidden = true; tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); if (id === "trackScreen") renderTrack(); }
+function setTab(id) { if (id === "wordsScreen") contOk = true; if (reading) stopReading(); if ($("wikiBack")) $("wikiBack").hidden = true; tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); if (id === "trackScreen") renderTrack(); }
 // Pages that can be opened from the menu: their Back says "‹ Menu" then (and reopens it), "‹ Back" otherwise.
 const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen"];
 function go(id) {
@@ -1932,7 +1977,7 @@ function back() {
   if (!stack.length) return;
   const leaving = stack.pop();
   if (leaving === "wordScreen") onLeaveWord();
-  if (leaving === "reviewScreen") { curHow = null; updateCounts(); }
+  if (leaving === "reviewScreen") { curHow = null; contOk = true; updateCounts(); }
   if (leaving === "settingsScreen") { saveSettings(); $("settingsScreen").querySelectorAll("details.setsec").forEach(d => d.open = false); }  // Settings opens folded next time
   showOnly(stack.length ? stack[stack.length - 1] : tab);
   if ($(leaving).dataset.via === "menu") { $(leaving).dataset.via = ""; openMenu(); }
@@ -2003,21 +2048,29 @@ function buildLine(lineText, onTap, withEN = true) {
   // Non-Chinese text (English, numbers, punctuation) is gathered into runs, so "AI" or "(Coffee)" never splits mid-word.
   let run = "", runAt = 0, pos = 0; const spans = [];  // spans: which word sits at which position, for read-along
   const flush = () => {
-    // A number stays one unit: 3,000 and 1,234.5 and 3.5. A comma counts only between digits with exactly three
-    // digits after it; a dot only when a letter or digit follows (so a sentence's full stop is left off).
-    const re = /[A-Za-z0-9](?:[\w'’%\-\/&+]|\.(?=[A-Za-z0-9])|(?<=\d),(?=\d{3}(?!\d)))*|\S/gu; let m;
-    const found = []; while ((m = re.exec(run))) found.push({ text: m[0], at: m.index });
-    // English words next to each other are set as a phrase ("City and", "County of"), up to about 12 letters, so
-    // they read as English instead of one word per square; longer phrases break at a word.
-    for (let k = 0; k < found.length; k++) {
-      const f = found[k];
-      while (/^[A-Za-z]/.test(f.text) && k + 1 < found.length && /^[A-Za-z][A-Za-z'’\-]*$/.test(found[k + 1].text)
-        && /^ +$/.test(run.slice(f.at + f.text.length, found[k + 1].at)) && found[k + 1].at + found[k + 1].text.length - f.at <= 12) {
-        f.text = run.slice(f.at, found[k + 1].at + found[k + 1].text.length); found.splice(k + 1, 1);
+    // A stretch of Latin text (English, numbers with their units, superscripts, %, half-width brackets) is set as
+    // phrases with normal word spacing: "401.3 km² (154.9 mi²)" reads as English, not one piece per square. Wikipedia's
+    // non-breaking spaces count as spaces. A phrase breaks only at a space, when it would fill most of a line. Anything else
+    // (Chinese punctuation, rare characters) is one glyph each.
+    // Full-width brackets around Latin text become half-width ones, so they hug it: （1.6 mi²） → (1.6 mi²).
+    run = run.replace(/（([\u0020-\u007E\u00A0-\u024F\u2070-\u209F]+)）/gu, "($1)");
+    const re = /[\u0021-\u007E\u00A0-\u024F\u2070-\u209F ]+|\S/gu; let m;
+    while ((m = re.exec(run))) {
+      const seg = m[0];
+      if (!/[\u0021-\u007E\u00A1-\u024F\u2070-\u209F]/u.test(seg) || seg.length === 1 && !/[A-Za-z0-9]/.test(seg)) {
+        if (seg.trim()) { const g = el("span", "glyph", esc(seg)); line.append(g); }
+        continue;
       }
-      const piece = f.text, latin = /[A-Za-z0-9]/.test(piece), g = el("span", "glyph" + (latin ? " latin" : ""), esc(piece));
-      line.append(g);
-      if (latin) spans.push({ start: runAt + f.at, end: runAt + f.at + piece.length, group: g });  // numbers and English light up too
+      const words = []; let w; const wr = /\(?[^ \u00A0(]+|\(/gu;  // a bracket starts a new word
+      while ((w = wr.exec(seg))) words.push({ text: w[0], at: m.index + w.index });
+      for (let k = 0; k < words.length;) {
+        let j = k, text = words[k].text;
+        while (j + 1 < words.length && latinWidth(text + " " + words[j + 1].text) <= latinRoom()) text += " " + words[++j].text;
+        const latin = /[A-Za-z0-9]/.test(text), g = el("span", "glyph" + (latin ? " latin" : ""), esc(text));
+        line.append(g);
+        if (latin) spans.push({ start: runAt + words[k].at, end: runAt + words[j].at + words[j].text.length, group: g });  // numbers and English light up too
+        k = j + 1;
+      }
     }
     run = "";
   };
@@ -2080,6 +2133,15 @@ function holdToPick(b) {
 let renderLimit = 1500;
 // Line-breaking rules for Chinese: closing punctuation (，。）」) never starts a line, opening (（「) never ends one.
 const CLOSE = /^[，。、；：？！）」』》〉”’,.;:!?)\]…%]/, OPEN = /[（「『《〈“‘(\[$]$/;
+// English and numbers in the reader: their width in the font they're drawn in (bold, a little over half a square
+// high), and the most a phrase may take (most of a line, so it never spills over).
+const cellPx = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cell")) || 38;
+function latinWidth(t) {
+  const ctx = latinWidth.ctx || (latinWidth.ctx = document.createElement("canvas").getContext("2d"));
+  ctx.font = `700 ${cellPx() * .56}px ${getComputedStyle(document.documentElement).getPropertyValue("--font-brand") || "serif"}`;
+  return ctx.measureText(t).width;
+}
+const latinRoom = () => Math.max(cellPx() * 3, (Math.min(innerWidth, 760) - 80) * .75);
 function gluePunct(line) {
   const units = []; let openNext = false;
   for (const item of line.querySelectorAll(".cell, .glyph")) {
@@ -2090,14 +2152,16 @@ function gluePunct(line) {
     openNext = g && OPEN.test(t);
   }
   // On the grid, an English word or number takes as many squares as it needs; a glued group takes the sum.
-  const cols = x => x.classList.contains("latin") ? Math.max(1, Math.ceil(x.textContent.length * .27 + .25)) : 1;
+  // Measured in the font it's drawn in, so a phrase gets just the squares it needs.
+  const cell = cellPx();
+  const cols = x => x.classList.contains("latin") ? Math.max(1, Math.ceil((latinWidth(x.textContent) + cell * .16) / cell)) : 1;
   line.querySelectorAll(".glyph.latin").forEach(x => x.style.gridColumn = `span ${cols(x)}`);
   units.filter(u => u.length > 1).forEach(u => {
     const anchor = u.find(x => x.classList.contains("cell")) || u[0], glue = el("span", "glue");
     anchor.parentNode.insertBefore(glue, anchor);
     u.forEach(x => { x.style.gridColumn = ""; glue.append(x); });
     glue.style.gridColumn = `span ${u.reduce((n, x) => n + cols(x), 0)}`;
-    glue.style.gridTemplateColumns = u.map(x => cols(x) + "fr").join(" ");
+    glue.style.gridTemplateColumns = u.map((x, i) => x.classList.contains("latin") && i < u.length - 1 ? "max-content" : cols(x) + "fr").join(" ");  // punctuation sits right after the English
   });
 }
 // Word, pinyin and a short meaning for a tapped word (your saved version first, then the dictionary).
@@ -2112,7 +2176,8 @@ function wordGloss(tok) {
 // and flash cards. Tapping a word highlights it and shows its pinyin and meaning underneath; it never leaves the page.
 // Its controls sit in one row under the sentence: listen, 拼 Pinyin, Show English (`en`), 解 explain, and 字, which
 // opens the reader's own size and speed sliders (one setting for both). Listening here never highlights the text.
-function miniReader(text, mark, en) {
+// opts.next: a ↻ button in the row that swaps in the next sentence (it returns {example, example_en}).
+function miniReader(text, mark, en, opts = {}) {
   const box = el("div", "mini" + (store.get("radical-py", false) ? "" : " nopy")); box.lang = "zh";
   const body = el("div", "minibody"), gloss = el("div", "minigloss"); gloss.hidden = true;
   const pyb = el("button", "minipy", "拼 Pinyin"); pyb.type = "button"; pyb.setAttribute("aria-pressed", !box.classList.contains("nopy"));
@@ -2174,6 +2239,16 @@ function miniReader(text, mark, en) {
   };
   if ([...text].some(ch => isHan(ch) && !cache[ch])) ensure(text).then(paint); else paint();
   const bar = el("div", "minibar"); bar.append(say, pyb, enb, exb, zib);
+  if (opts.next) {
+    const nx = el("button", "minipy minext", "↻"); nx.type = "button"; nx.title = "Another sentence"; nx.setAttribute("aria-label", "Another sentence");
+    nx.onclick = async e => {
+      e.stopPropagation(); nx.disabled = true; nx.classList.add("busy");
+      try { const x = await opts.next(); if (x && box.isConnected) box.replaceWith(miniReader(conv(x.example), mark, x.example_en, opts)); }
+      catch (err) { nx.title = err.message; }
+      nx.disabled = false; nx.classList.remove("busy");
+    };
+    bar.insertBefore(nx, zib);
+  }
   box.append(body, gloss, bar, pop, enP);
   return box;
 }
@@ -2341,7 +2416,7 @@ function fitLegend(box = $("readLegend")) {
   while (box.scrollWidth > box.clientWidth + 1 && px > 9.5) { px -= .5; box.style.setProperty("--lf", px + "px"); }
   if (box._fade) box._fade();
 }
-edgeFade($("readLegend")); edgeFade($("filters"));
+edgeFade($("readLegend"));
 addEventListener("resize", () => fitLegend());
 // Frozen controls: once the bar reaches the top it gets a solid edge, the Traditional / Simplified label hides, and a
 // small ☰ appears at its right end (the page's own menu button has scrolled away).
@@ -2354,7 +2429,7 @@ function pinned(screenId, barId, onChange) {
   };
   sc.addEventListener("scroll", check, { passive: true });
 }
-pinned("readScreen", "readBar", () => fitLegend()); pinned("wordsScreen", "filterBar", () => $("filters")._fade());
+pinned("readScreen", "readBar", () => fitLegend());
 // Collapsing header on the tabs: past the 部 RADICAL header, the slim strip shows.
 ["readScreen", "wordsScreen", "wikiScreen"].forEach(id => {
   const sc = $(id), head = sc.querySelector(".readhead");
@@ -2451,7 +2526,7 @@ async function claude(payload) {
   if (!token && !pw) { openSettings(false); $("secAcct").open = true; setTimeout(() => { const e = $("acctEmail"); if (e) e.focus(); }, 300); throw new Error("Sign in first (Settings, Account)."); }
   const auth = { ...(token ? { Authorization: `Bearer ${token}` } : { "x-app-password": pw }), "x-radical-day": localDay() };
   const get = payload.action === "card";
-  const url = get ? `/api/claude?v=1&action=card&word=${encodeURIComponent(payload.word)}` : "/api/claude";
+  const url = get ? `/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}` : "/api/claude";
   let r;
   try {
     r = await fetch(url, get ? { headers: auth }
@@ -2700,6 +2775,37 @@ function cardExtras(w) {
   if (w.mine && w.mine.notes) out.push(el("p", "mynote", esc(w.mine.notes)));
   return out;
 }
+// Example sentences: a card has three (older cards one), and your own sentence (Edit card) takes a place and stays.
+// Cards show one, picked at random each time the card comes up (the same one front and back); ↻ steps to the next,
+// and after the last one asks for a fresh sentence, which joins the set (up to six: the oldest AI one drops, never yours).
+const EX_MAX = 6;
+const aiExamples = c => !c ? [] : Array.isArray(c.examples) && c.examples.length ? c.examples : c.example ? [{ example: c.example, example_pinyin: c.example_pinyin || "", example_en: c.example_en || "" }] : [];
+function exList(w) {
+  const own = w && w.mine && w.mine.example ? [{ example: w.mine.example, example_pinyin: w.mine.example_pinyin || "", example_en: w.mine.example_en || "", own: true }] : [];
+  return [...own, ...aiExamples(w && w.card).filter(x => !own.length || x.example !== own[0].example)];
+}
+const exPick = new WeakMap();
+function exNow(w) {
+  const l = exList(w); if (!l.length) return null;
+  let p = exPick.get(w); const at = typeof rDone === "number" ? rDone : 0;
+  if (!p || p.at !== at || p.i >= l.length) { p = { at, i: Math.floor(Math.random() * l.length) }; exPick.set(w, p); }
+  return l[p.i];
+}
+async function nextExample(w) {
+  const l = exList(w), p = exPick.get(w) || { at: rDone, i: 0 };
+  if (p.i + 1 < l.length) { p.i++; exPick.set(w, p); return l[p.i]; }
+  if (!online() || !w.card) { p.i = 0; exPick.set(w, p); return l[0]; }  // offline: round again
+  // A one-sentence card gets two more in one go; otherwise one fresh sentence.
+  const r = await claude({ action: "example", word: w.word, meaning: wMeaning(w), avoid: l.map(x => x.example).join(" / "), n: aiExamples(w.card).length < 3 ? 2 : 1 });
+  const got = (r.examples || [r]).filter(x => x && x.example && !l.some(y => y.example === x.example));
+  if (!got.length) { p.i = 0; exPick.set(w, p); return l[0]; }
+  const c = w.card, own = l.filter(x => x.own).length;
+  c.examples = [...aiExamples(c), ...got.map(x => ({ example: x.example, example_pinyin: x.example_pinyin || "", example_en: x.example_en || "" }))];
+  while (c.examples.length + own > EX_MAX) c.examples.shift();
+  Object.assign(c, c.examples[0]); saveWords();
+  const l2 = exList(w); p.i = Math.max(0, l2.findIndex(x => x.example === got[0].example)); exPick.set(w, p);
+  return l2[p.i];
+}
 // A sentence's pinyin from the dictionary, word by word (for a sentence you write yourself).
 const sentencePinyin = t => segment(t).map(tok => tok.syl && tok.syl.length === tok.chars.length && tok.syl.every(Boolean) ? tok.syl.join("") : tok.chars.join("")).join(" ").replace(/\s+([，。！？、；：,.!?])/g, "$1").trim();
 // Edit a card: meaning, pinyin, example sentence (a new one from the AI, or your own) and notes. Only what differs
@@ -2725,7 +2831,7 @@ function editCard(w, done) {
   showEx();
   const fresh = btn("New sentence", "btn ghost small", async () => {
     fresh.disabled = true; q("edMsg").textContent = "Writing a new sentence…";
-    try { const r = await claude({ action: "example", word: w.word, meaning: q("edMean").value.trim() || std.meaning, avoid: ex.example }); ex = r; showEx(); q("edOwn").hidden = true; q("edOwn").value = ""; q("edMsg").textContent = ""; }
+    try { const r = await claude({ action: "example", word: w.word, meaning: q("edMean").value.trim() || std.meaning, avoid: exList(w).map(x => x.example).join(" / ") }); ex = { example: r.example, example_pinyin: r.example_pinyin || "", example_en: r.example_en || "" }; showEx(); q("edOwn").hidden = true; q("edOwn").value = ""; q("edMsg").textContent = ""; }
     catch (e) { q("edMsg").textContent = e.message; }
     fresh.disabled = false;
   });
@@ -3081,39 +3187,57 @@ function grade(w, g, k = "srs") {
   saveWords();
 }
 const ivlText = d => d === 0 ? "this round" : d < 1 ? "later today" : d === 1 ? "tomorrow" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
-// Each word keeps a schedule per practice mode (Read, Write, Listen). A word's status follows the mode picked on
-// the Practice tab; with Mix (and for the badge), a word is Due if it's due in any mode.
+// Each word keeps a schedule per practice mode (Read, Write, Listen). Every mode is always open to practice; Mix
+// covers all three.
 const KEYS = { read: "srs", write: "wsrs", listen: "lsrs" }, MODES = ["read", "write", "listen"];
-// The modes you practice (Settings, I practice): Read always, Write and Listen only when turned on. A mode that's off
-// never makes a schedule, never counts toward the badge and never comes up in Mix or Clear due cards; schedules it
-// already has are kept as they are (paused) and pick up again if it's turned back on.
-let modesOn = store.get("radical-modes", ["read"]);
-const isOn = m => m === "read" || modesOn.includes(m);
-const onModes = () => MODES.filter(isOn);
-function setModeOn(m, on) {
-  modesOn = onModes().filter(x => x !== m).concat(on ? [m] : []); store.set("radical-modes", modesOn);
-  if (!isOn(revHow) && revHow !== "mix" || revHow === "mix" && onModes().length < 2) { revHow = "read"; store.set("radical-revhow", revHow); }
-  updateCounts();
+// Your goal (asked once; Settings, My goal): the modes you mean to keep up. The 練 badge counts Today's cards in these
+// modes only. Practicing outside the goal is always allowed; it just isn't on the badge. The goal is never empty.
+let goal = store.get("radical-goal", null);
+if (!Array.isArray(goal) || !goal.length) goal = ["read", ...store.get("radical-modes", []).filter(m => m !== "read" && MODES.includes(m))];
+goal = MODES.filter(m => goal.includes(m));
+const inGoal = m => goal.includes(m);
+function setGoal(m, on) {
+  const next = MODES.filter(x => x === m ? on : goal.includes(x));
+  if (!next.length) return false;  // the last one stays
+  goal = next; store.set("radical-goal", goal); updateCounts(); return true;
 }
 const modeDue = (w, m) => { const k = KEYS[m], x = w[k]; return !!(x && x.due && x.due <= Date.now() && (k === "srs" || !w.skip)); };
-const dueAny = w => onModes().some(m => modeDue(w, m));
-const dueCount = () => myWords.filter(dueAny).length;  // words due (one word due in two modes counts once), modes you practice
+const dueIn = (w, ms) => ms.some(m => modeDue(w, m));
+const dueAny = w => dueIn(w, MODES);
+const modesOf = how => how === "mix" ? MODES : [how];
+// Today: every word whose review time has come in these modes (longest waiting first), then a few new words (the day's
+// new-word allowance). New words start in the first of the modes (Read when it's there).
+function todayList(ms) {
+  const first = w => Math.min(...ms.filter(m => modeDue(w, m)).map(m => w[KEYS[m]].due));
+  const due = myWords.filter(w => dueIn(w, ms)).sort((a, b) => first(a) - first(b));
+  const k = KEYS[ms[0]], fresh = myWords.filter(w => !w.skip && !w[k] && !due.includes(w));
+  return [...due, ...fresh.slice(0, Math.max(0, newLeft(k)))];
+}
+const isNewIn = (w, how) => !w.skip && !modesOf(how).some(m => w[KEYS[m]]);
+// The badge: words left in Today for your goal (a word due in two modes counts once).
+const dueCount = () => todayList(goal).length;
+// A word's place in the list: Known (marked known), New (never studied in this mode) or Learning; "due" means it's in
+// Today right now (only the status menu shows that).
 function wStatus(w, how = (typeof revHow === "string" ? revHow : "read")) {
-  if (how === "mix") return dueAny(w) ? "due" : w.skip ? "known" : onModes().some(m => w[KEYS[m]]) ? "learning" : "new";
-  const k = KEYS[how] || "srs";
-  return modeDue(w, how) ? "due" : w.skip ? "known" : !w[k] ? "new" : "learning";
+  return w.skip ? "known" : dueIn(w, modesOf(how)) ? "due" : isNewIn(w, how) ? "new" : "learning";
 }
 function dueText(w) {
   if (w.skip) return `Known: comes back now and then for a quick check (next around ${localDay(w.srs && w.srs.due)}).`;
-  if (!w.srs) return "New: not reviewed yet.";
-  if (w.srs.due <= Date.now()) return "Due for review now.";
+  if (!w.srs) return "New: not studied yet.";
+  if (w.srs.due <= Date.now()) return "In today's cards.";
   return `Next review ${localDay(w.srs.due)} (every ${w.srs.ivl <= 1 ? "day" : ivlText(w.srs.ivl)}).`;
 }
 function updateCounts() {
-  const n = dueCount();  // words due in the modes you practice (Clear due cards and Mix's Due chip show the same number)
+  const n = dueCount();
   $("dueBadge").textContent = n ? n : "";
-  if (!$("wordsScreen").hidden) renderStrip();
+  if (!$("wordsScreen").hidden) renderWords();
 }
+// The badge keeps up on its own: when the app comes back to the front, once a minute while it's open, and when the
+// day turns at 4am (cards that came due while the phone was in a pocket show without a tap).
+{ let day0 = localDay();
+  const fresh = () => { if (document.hidden) return; day0 = localDay(); const n = dueCount(); if ($("dueBadge").textContent !== String(n || "")) updateCounts(); };
+  document.addEventListener("visibilitychange", fresh); addEventListener("focus", fresh); addEventListener("pageshow", fresh);
+  setInterval(() => { if (localDay() !== day0) { day0 = localDay(); updateCounts(); } else fresh(); }, 60e3); }
 
 // ================= word page: page 0 is the whole word, then one page per character
 let wordState = null;
@@ -3232,10 +3356,10 @@ function savedCard(w) {
   if (c) {
     if (c.simplified && c.simplified !== w.word) box.append(el("p", "note", `Simplified: <span lang="zh-Hans" style="font-family:var(--font-zh);font-size:1.15rem">${esc(c.simplified)}</span>`));
     if (c.usage) box.append(el("p", "note", esc(c.usage)));
-    if (c.example) {
-      if (markOf(w, "example")) box.append(el("p", "note", `Example${markHTML(w, "example")}`));
-      box.append(miniReader(conv(c.example), conv(w.word), c.example_en));
-    }
+    exList(w).forEach(x => {
+      if (x.own) box.append(el("p", "note", `Example${markHTML(w, "example")}`));
+      box.append(miniReader(conv(x.example), conv(w.word), x.example_en));
+    });
     if ((c.related || []).length) box.append(el("p", "note", "Related: " + c.related.map(r => `<b lang="zh">${esc(r.word)}</b> ${esc(r.pinyin)} ${esc(r.meaning)}`).join(" · ")));
   }
   box.append(el("p", "note", dueText(w)));
@@ -3447,128 +3571,87 @@ function legendLine(text) {
 function showLegend(after, text) { const l = legendLine(text); if (l && after && !(after.nextElementSibling && after.nextElementSibling.classList.contains("legline"))) after.after(l); }
 
 // ================= words screen
-let filter = "all", pending = null;
-// Flash cards: choose which words (due, new, learning, all) and how many, then start.
-let revMode = store.get("radical-revmode", "due"), revCount = store.get("radical-revcount", 20);
+let pending = null;
+// Practice: one box picks the session. The mode (Read, Write, Listen, Mix), which words (Today, New, Learning, Known,
+// All; the same choice filters the list below) and how many; then Start. Today is where Practice opens.
+const CATS = [["today", "Today"], ["new", "New"], ["learning", "Learning"], ["known", "Known"], ["all", "All"]];
+let revCat = "today", revCount = store.get("radical-revcount", 20);
 // Read: see the word, recall its sound and meaning. Write: hear it and see the meaning, write the characters.
-let revHow = store.get("radical-revhow", "read");  // read, write, listen or mix; each mode keeps its own schedule
-if (revHow === "mix" ? onModes().length < 2 : !isOn(revHow)) revHow = "read";  // a mode that's been turned off
-// During a session, curHow is how it runs (Clear due cards always runs as Mix); in Mix each card has its own mode.
+let revHow = store.get("radical-revhow", goal.length > 1 ? "mix" : goal[0]);  // read, write, listen or mix
+if (!["read", "write", "listen", "mix"].includes(revHow)) revHow = "read";
+// During a session, curHow is how it runs; in Mix each card has its own mode.
 let curHow = null; const cardMode = new WeakMap();
 const howOf = w => { const h = curHow || revHow; return h === "mix" ? (cardMode.get(w) || "read") : h; };
 const srsKey = w => KEYS[w ? howOf(w) : (revHow === "mix" ? "read" : revHow)];
 const pick1 = a => a[Math.floor(Math.random() * a.length)];
-function pool(mode, how = revHow) {
-  const live = myWords.filter(w => !w.skip);
-  if (how !== "mix") {
-    const k = KEYS[how];
-    if (mode === "due") return reviewQueue(k);
-    if (mode === "new") return live.filter(w => !w[k]);
-    return live;
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// The words in a choice, in the order a session takes them. Learning is every word that isn't Known (new ones too):
+// the ones whose review time has come first (longest waiting first), then the ones coming up soonest, new ones last.
+function pool(cat, how = revHow) {
+  const ms = modesOf(how);
+  if (cat === "today") return todayList(ms);
+  if (cat === "new") return myWords.filter(w => isNewIn(w, how));
+  if (cat === "known") return myWords.filter(w => w.skip);
+  if (cat === "learning") {
+    const next = w => { const ds = ms.map(m => w[KEYS[m]]).filter(x => x && x.due).map(x => x.due); return ds.length ? Math.min(...ds) : Infinity; };
+    return myWords.filter(w => !w.skip).map(w => [w, next(w)]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   }
-  // Mix: a card comes up in a mode where it's due (one picked at random if several); new words start in Read.
-  const firstDue = w => Math.min(...onModes().filter(m => modeDue(w, m)).map(m => w[KEYS[m]].due));
-  const due = myWords.filter(dueAny).sort((a, b) => firstDue(a) - firstDue(b));
-  const fresh = live.filter(w => !w.srs);
-  if (mode === "clear") return due;
-  if (mode === "due") return [...due, ...fresh.slice(0, Math.max(0, newLeft("srs")))];
-  if (mode === "new") return fresh;
-  return live;
+  return myWords.slice();
 }
+// Mix: a card comes up in a mode where it's due (one picked at random if several); new words start in Read; any other
+// word gets one of the three at random.
 function assignModes(q, how) {
   if (how !== "mix") return;
-  q.forEach(w => { const dm = onModes().filter(m => modeDue(w, m)); cardMode.set(w, dm.length ? pick1(dm) : !w.srs ? "read" : pick1(onModes())); });
+  q.forEach(w => { const dm = MODES.filter(m => modeDue(w, m)); cardMode.set(w, dm.length ? pick1(dm) : !w.srs ? "read" : pick1(MODES)); });
 }
-function buildQueue(mode, count, how = revHow) {
-  let q = pool(mode, how).slice();
-  if (mode !== "due" && mode !== "clear") for (let i = q.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [q[i], q[j]] = [q[j], q[i]]; }
+function buildQueue(cat, count, how = revHow) {
+  let q = pool(cat, how).slice();
+  if (cat === "new" || cat === "known" || cat === "all") shuffle(q);
   q = count === "all" ? q : q.slice(0, count);
   assignModes(q, how);
   return q;
 }
-function renderStrip() {
-  const strip = $("revStrip"); strip.innerHTML = "";
-  const box = el("div", "revpanel");
-  // A session you stepped away from (not quit) comes back where you left it, until the day ends.
-  const res = savedSession();
-  if (res) { const rb = btn(`Resume · ${res.rDone + 1} of ${res.rDone + res.words.length}`, "btn wide cleardue", resumeSession); strip.append(rb); }
-  const sizes = { due: pool("due").length, new: pool("new").length, all: pool("all").length };
-  // The badge's promise: when anything is due, one button clears exactly that.
-  const nClear = dueCount();
-  if (nClear) { const cb = btn(`Clear due cards · ${nClear}`, res ? "btn outl wide cleardue" : "btn wide cleardue", () => openReview("clear", "all")); strip.append(cb); }
-  if (revMode === "learning") revMode = "due";  // Active was dropped from the choices
-  if (!sizes[revMode]) revMode = ["due", "new", "all"].find(k => sizes[k]) || "due";
-  const modes = el("div", "seg2 three");
-  // "Suggested" is the app's pick: due cards first, plus today's new words; its mix shows right under the choices.
-  [["due", "Suggested"], ["new", "New"], ["all", "All"]].forEach(([k, label]) => {
-    const b = el("button", "", label); b.type = "button"; b.setAttribute("aria-pressed", revMode === k); b.disabled = !sizes[k];
-    b.onclick = () => { revMode = k; store.set("radical-revmode", k); renderStrip(); }; modes.append(b);
-  });
-  const counts = el("div", "seg2 small");
-  [10, 20, 50, "all"].forEach(n => {
-    const b = el("button", "", n === "all" ? "All" : String(n)); b.type = "button"; b.setAttribute("aria-pressed", revCount === n);
-    b.onclick = () => { revCount = n; store.set("radical-revcount", n); renderStrip(); }; counts.append(b);
-  });
-  const nCards = Math.min(sizes[revMode], revCount === "all" ? Infinity : revCount);
-  // The panel folds to its top row (which keeps Start), and remembers whether you left it open.
-  const open = store.get("radical-rev-open", true);
-  const what = { due: "suggested", new: "new", all: nCards === 1 ? "card" : "cards" }[revMode], how = { read: "Read", write: "Write", listen: "Listen", mix: "Mix" }[revHow];
-  // Today's set is due cards first, then new words: the Start row says how many of each.
-  // Known words back for their occasional check are counted on their own, so "due" matches the Due filter and the badge.
-  // "10 of 38 due" when the set takes only part of what's due (known words back for a check count as due too).
-  const dueNow = revHow === "mix" ? myWords.filter(dueAny) : myWords.filter(w => modeDue(w, revHow));
-  const nDue = Math.min(nCards, dueNow.length), nNew = nCards - nDue;
-  const split = revMode === "due" ? [nDue ? (nDue < dueNow.length ? `${nDue} of ${dueNow.length} due` : `${nDue} due`) : "", nNew ? `${nNew} new` : ""].filter(Boolean) : [];
-  const cardsTxt = `${nCards} card${nCards === 1 ? "" : "s"}`;
-  // Open, the top line just counts the cards and the mix sits under the choices; folded, the top line has it all.
-  const sub = !nCards ? (myWords.length ? "Nothing in this set" : "Add words to start")
-    : open ? `${cardsTxt}${revHow === "read" ? "" : ` · ${how}`}`
-    : split.length ? `${split.length > 1 ? `${cardsTxt} · ${split.join(" + ")}` : split[0]} · ${how}` : `${nCards} ${what} · ${how}`;
-  const head = el("div", "revhead", `<button type="button" class="revtoggle" aria-expanded="${open}"><b>Flash cards</b><span>${sub}</span><i aria-hidden="true"></i></button>`);
-  head.querySelector(".revtoggle").onclick = () => { store.set("radical-rev-open", !open); renderStrip(); };
-  const go_ = btn("Start", nClear || res ? "btn outl" : "btn", () => openReview(revMode, revCount)); go_.disabled = !nCards;
-  head.append(go_);
-  box.classList.toggle("folded", !open);
-  if (!open) { box.append(head); strip.append(box); return; }
-  const typeRow = el("div", "row revcount typerow", '<span class="note">What type?</span>'), countRow = el("div", "row revcount", '<span class="note">How many?</span>');
-  typeRow.append(modes); countRow.append(counts);
-  box.append(head, typeRow, countRow);
-  // What each practice does: shown the first time you pick it, then How it works keeps it.
-  const NOTES = { write: "Write: you hear the word and see its meaning, then write the characters from memory. Writing keeps its own schedule.",
-    listen: "Listen: you hear the word without seeing it, then type its pinyin and meaning. Listening keeps its own schedule.",
-    mix: "Mix: each card comes up in a mode where it's due (Read, Write or Listen). New words start in Read." };
-  const seen = store.get("radical-hownote", {});
-  if (NOTES[revHow] && !seen[revHow]) { box.append(el("p", "note", NOTES[revHow])); seen[revHow] = true; store.set("radical-hownote", seen); }
-  if (revMode === "due" && split.length) typeRow.append(el("p", "revmix", split.join(" + ")));
-  strip.append(box);
-}
-// The practice row, pinned at the top of Practice with the status chips: everything under it follows the mode picked.
-// Modes that are off show dimmed; tapping one offers to turn it on. Mix needs two modes on.
-const HOW_NAME = { read: "Read", write: "Write", listen: "Listen", mix: "Mix" };
-function renderHows() {
-  const row = $("howRow"); row.innerHTML = "";
-  ["read", "write", "listen", "mix"].forEach(k => {
-    const off = k === "mix" ? onModes().length < 2 : !isOn(k);
-    const b = el("button", off ? "off" : "", HOW_NAME[k]); b.type = "button"; b.setAttribute("aria-pressed", revHow === k);
-    b.onclick = () => { if (off) { offerMode(k); return; } revHow = k; store.set("radical-revhow", k); renderWords(); };
+// How many: only the sizes smaller than the choice, then All (N); ten or fewer words is just All (N).
+const countChoices = n => [10, 20, 50].filter(c => c < n);
+const countFor = n => countChoices(n).includes(revCount) ? revCount : "all";
+let contOk = true;  // a session you stepped away from shows as Continue until you change a choice here
+const pills = (cls, items, on, pick) => {
+  const row = el("div", "pills " + cls); row.setAttribute("role", "group");
+  items.forEach(([k, label, extra, off]) => {
+    const b = el("button", "", label + (extra != null ? ` <span>${extra}</span>` : "")); b.type = "button";
+    b.setAttribute("aria-pressed", k === on); if (off) b.disabled = true;
+    b.onclick = () => { contOk = false; pick(k); renderWords(); };
     row.append(b);
   });
+  return row;
+};
+function renderStrip(sizes) {
+  const strip = $("revStrip"); strip.innerHTML = "";
+  const box = el("div", "revpanel");
+  box.append(el("div", "revhead", "<b>Flash cards</b>"));
+  box.append(pills("hows", [["read", "Read"], ["write", "Write"], ["listen", "Listen"], ["mix", "Mix"]], revHow, k => { revHow = k; store.set("radical-revhow", k); }));
+  box.append(pills("cats", CATS.map(([k, label]) => [k, label, sizes[k], k !== "today" && k !== "all" && !sizes[k]]), revCat, k => { revCat = k; }));
+  const n = sizes[revCat], count = countFor(n);
+  if (n) box.append(pills("counts" + (countChoices(n).length ? "" : " solo"), [...countChoices(n).map(c => [c, String(c)]), ["all", `All (${n})`]], count, k => { revCount = k; store.set("radical-revcount", k); }));
+  // A session you stepped away from (not quit) comes back where you left it, until the day ends.
+  const res = contOk && savedSession();
+  const nCards = count === "all" ? n : Math.min(n, count);
+  if (res) box.append(btn(`Continue · ${res.words.length} left`, "btn wide revgo", resumeSession));
+  else if (nCards) box.append(btn(`Start ${nCards}`, "btn wide revgo", () => { store.set(RES_KEY, null); openReview(revCat, count); }));
+  else if (revCat === "today" && myWords.some(w => !w.skip)) {
+    box.append(el("p", "revdone", "Nothing left for today."));
+    const more = Math.min(10, sizes.learning || 0);
+    if (more) box.append(btn(`${more} more`, "btn outl wide revgo", () => openReview("learning", 10)));
+  } else box.append(el("p", "revdone", myWords.length ? "No words here." : "Add words to start."));
+  // What each mode does: shown the first time you pick it, then How it works keeps it.
+  const NOTES = { write: "Write: you hear the word and see its meaning, then write the characters from memory. Writing keeps its own schedule.",
+    listen: "Listen: you hear the word without seeing it, then type its pinyin and meaning. Listening keeps its own schedule.",
+    mix: "Mix: each card comes up in Read, Write or Listen, in a mode where it's up for review. New words start in Read." };
+  const seen = store.get("radical-hownote", {});
+  if (NOTES[revHow] && !seen[revHow]) { box.append(el("p", "note", NOTES[revHow])); seen[revHow] = true; store.set("radical-hownote", seen); }
+  strip.append(box);
 }
-function offerMode(k) {
-  const sheet = el("div", "sheet"), card = el("div", "sheetcard"), row = el("div", "row"), close = () => sheet.remove();
-  const turnOn = m => btn(`Turn on ${HOW_NAME[m]} practice`, "btn", () => { close(); setModeOn(m, true); revHow = k === "mix" ? "mix" : m; store.set("radical-revhow", revHow); renderWords(); });
-  if (k === "mix") {
-    card.append(el("h3", "", "Mix needs a second mode"), el("p", "", "Mix shuffles the modes you practice. Turn on Write or Listen to use it."));
-    ["write", "listen"].filter(m => !isOn(m)).forEach(m => row.append(turnOn(m)));
-  } else {
-    card.append(el("h3", "", `${HOW_NAME[k]} practice is off`), el("p", "", k === "write" ? "Write: you hear the word and see its meaning, then write the characters from memory. It keeps its own schedule." : "Listen: you hear the word without seeing it, then type its pinyin and meaning. It keeps its own schedule."));
-    row.append(turnOn(k));
-  }
-  row.append(btn("Not now", "btn ghost", close));
-  card.append(row, el("p", "note", "You can change this any time in Settings, I practice.")); sheet.append(card);
-  sheet.onclick = ev => { if (ev.target === sheet) close(); };
-  document.body.append(sheet);
-}
+const HOW_NAME = { read: "Read", write: "Write", listen: "Listen", mix: "Mix" };
 // Backup reminder: your words live only on this phone, so after a week or 100 reviews without a backup, say so.
 function showBackupNote() {
   const box = $("backupNote"), at = store.get("radical-backup-at", 0), revs = store.get("radical-rev-since-backup", 0);
@@ -3579,26 +3662,22 @@ function showBackupNote() {
   box.append(btn("Save now", "btn ghost small", () => $("backupBtn").click()));
 }
 function renderWords() {
-  weekCard(); renderHows(); renderStrip(); showBackupNote();
-  const counts = { all: myWords.length, due: 0, new: 0, learning: 0, known: 0 };
-  myWords.forEach(w => counts[wStatus(w)]++);  // statuses follow the practice picked below (Read, Write, Listen or Mix)
-  const f = $("filters"); f.innerHTML = "";
-  [["all", "All"], ["new", "New"], ["due", "Due"], ["learning", "Learning"], ["known", "Known"]].forEach(([k, label]) => {
-    const b = el("button", "", `${k === "all" ? "" : `<i class="dot ${k}"></i>`}${label} ${counts[k]}`); b.type = "button"; b.dataset.k = k;
-    b.setAttribute("aria-pressed", filter === k); b.disabled = !counts[k] && k !== "all";
-    b.onclick = () => { filter = filter === k ? "all" : k; renderWords(); }; f.append(b);
-  });
-  if (filter !== "all" && !counts[filter]) filter = "all";
+  weekCard(); showBackupNote();
+  const sets = {}, sizes = {}; CATS.forEach(([k]) => { sets[k] = pool(k); sizes[k] = sets[k].length; });
+  renderStrip(sizes);
   const list = $("wordList"); list.innerHTML = "";
-  const shown = myWords.map((w, i) => [w, i]).filter(([w]) => filter === "all" || wStatus(w) === filter)
+  // The list shows the words in the choice above, newest first.
+  const inSet = new Set(sets[revCat]);
+  const shown = myWords.map((w, i) => [w, i]).filter(([w]) => inSet.has(w))
     .sort((a, b) => (b[0].added || "").localeCompare(a[0].added || "") || a[1] - b[1]).map(x => x[0]);
   list.hidden = !shown.length;
+  $("listHead").textContent = myWords.length ? `${CATS.find(c => c[0] === revCat)[1]} · ${shown.length} word${shown.length === 1 ? "" : "s"}` : "";
   shown.forEach(w => {
-    const st = wStatus(w), on = picks.has(w);
+    const st = wStatus(w), on = picks.has(w), dot = st === "known" ? "known" : "learning";
     const r = el("div", "wrow" + (on ? " sel" : ""));
     r.innerHTML = `<button type="button" class="wsel" role="checkbox" aria-checked="${on}" aria-label="Select ${esc(w.word)}"><i></i></button>`
       + `<button type="button" class="wmain"><span class="wz" lang="zh">${slotHTML(w.word)}</span><span class="wm">${esc(wMeaning(w))}</span></button>`
-      + `<button type="button" class="wdot" aria-label="Status: ${STATUS_NAME[st]}. Change"><i class="dot ${st}"></i></button>`;
+      + `<button type="button" class="wdot" aria-label="Status: ${STATUS_NAME[st]}. Change">${st === "new" ? '<span class="newtag">new</span>' : ""}<i class="dot ${dot}"></i></button>`;
     r.querySelector(".wsel").onclick = () => { on ? picks.delete(w) : picks.add(w); renderWords(); };
     r.querySelector(".wmain").onclick = () => openWord(w.word, { context: w.context });
     r.querySelector(".wdot").onclick = e => statusMenu(e.currentTarget, [w]);
@@ -3609,17 +3688,14 @@ function renderWords() {
   const lb = $("lookBtn"), sel = shown.filter(w => picks.has(w)), set = picks.size ? (sel.length ? sel : [...picks]) : shown;
   lb.hidden = !set.length; lb.textContent = picks.size ? `Review selection (${set.length})` : `Review ${set.length === 1 ? "this word" : `these ${set.length}`}`;
   lb.onclick = () => openLook(set);
-  // A filter on (and nothing picked): flash those exact words, graded, in the mode last used.
-  const fb = $("lookFlash"); fb.hidden = !(filter !== "all" && !picks.size && shown.length);
-  fb.textContent = `Flash cards (${shown.length})`; fb.onclick = () => openReviewWith(shown);
   renderSelBar(shown);
   if (!myWords.length) $("addStatus").textContent = "Add a word you're learning, paste a list, or import a file (the page icon in the box).";
 }
 
 // ---- selecting words: circles on the left; a bar at the bottom acts on the selection.
 const picks = new Set();
-const STATUS_NAME = { new: "New", due: "Due", learning: "Learning", known: "Known" };
-const STATUS_ACTS = [["due", "Review now", "Due today"], ["learning", "Learning", "Back into rotation"], ["known", "Known", "Comes back rarely"], ["new", "Start over", "Progress wiped"]];
+const STATUS_NAME = { new: "New", due: "Today", learning: "Learning", known: "Known" };
+const STATUS_ACTS = [["due", "Today", "Comes up in today's cards"], ["learning", "Learning", "Back into rotation"], ["known", "Known", "Comes back rarely"], ["new", "Start over", "Progress wiped"]];
 // Status menu: tapping a row only picks it; nothing changes until Save. The current status is marked "Now",
 // so you can always see what it was, and Cancel (or tapping outside) leaves everything as it was.
 function statusMenu(anchor, ws) {
@@ -3754,18 +3830,19 @@ function showPreview(found, source) {
   pending = fresh.map(e => ({ ...e, on: true }));
   const what = found.notes ? `item${list.length === 1 ? "" : "s"} in your notes` : `word${list.length === 1 ? "" : "s"}`;
   pv.append(el("p", "note", `Found ${list.length} ${what}${found.viaAuto ? " (sorted out automatically)" : ""}${found.backup ? " in a backup file" : ""}` +
-    (have ? `, ${have} already in your list` : "") + (fresh.length ? `. Tap ${found.notes ? "one" : "a word"} to leave it out.` : ".")));
+    (have ? `, ${have} already in your list` : "") + (fresh.length ? ". Check the ones to add." : ".")));
   // Notes come as a list with their meanings (and the teacher's original where it was corrected); plain lists as chips.
   const rows = !!(found.notes || found.rows), chips = el("div", rows ? "nlist" : "chips");
   pending.forEach(e => {
-    const c = el("button", rows ? "nrow" + ([...e.word].length > 5 ? " long" : "") : "chip", rows
-      ? `<b lang="zh">${esc(e.word)}</b><span class="np">${esc(e.pinyin || "")}</span><span class="nm">${esc(e.meaning || "")}${e.kind === "sentence" || e.kind === "pattern" ? ` <i>${esc(e.kind)}</i>` : ""}</span>${e.note ? `<small>Class note: ${esc(e.note)}</small>` : ""}`
-      : esc(e.word)); c.type = "button";
-    c.onclick = () => { e.on = !e.on; c.classList.toggle("off", !e.on); go_.textContent = label(); go_.disabled = !count(); };
+    // Each one has a check circle, the same as the Practice list: checked ones are added.
+    const c = el("button", rows ? "nrow" + ([...e.word].length > 5 ? " long" : "") : "chip", '<i class="ncheck" aria-hidden="true"></i>' + (rows
+      ? `<span class="nbody"><b lang="zh">${esc(e.word)}</b><span class="np">${esc(e.pinyin || "")}</span><span class="nm">${esc(e.meaning || "")}${e.kind === "sentence" || e.kind === "pattern" ? ` <i>${esc(e.kind)}</i>` : ""}</span>${e.note ? `<small>Class note: ${esc(e.note)}</small>` : ""}</span>`
+      : `<span>${esc(e.word)}</span>`)); c.type = "button"; c.setAttribute("role", "checkbox"); c.setAttribute("aria-checked", "true");
+    c.onclick = () => { e.on = !e.on; c.classList.toggle("off", !e.on); c.setAttribute("aria-checked", e.on); go_.textContent = label(); go_.disabled = !count(); };
     e._el = c; chips.append(c);
   });
   // Select all / none, and (for class notes) a switch per kind, so all the sentences can go in one tap.
-  const sync = () => { pending.forEach(e => e._el.classList.toggle("off", !e.on)); go_.textContent = label(); go_.disabled = !count(); kinds.querySelectorAll("[data-kind]").forEach(b => b.setAttribute("aria-pressed", pending.some(e => kindOf(e) === b.dataset.kind && e.on))); };
+  const sync = () => { pending.forEach(e => { e._el.classList.toggle("off", !e.on); e._el.setAttribute("aria-checked", e.on); }); go_.textContent = label(); go_.disabled = !count(); kinds.querySelectorAll("[data-kind]").forEach(b => b.setAttribute("aria-pressed", pending.some(e => kindOf(e) === b.dataset.kind && e.on))); };
   const kindOf = e => e.kind === "sentence" ? "sentence" : e.kind === "pattern" ? "pattern" : e.kind === "phrase" ? "phrase" : "word";
   const kinds = el("div", "pvctl");
   if (pending.length > 3) {
@@ -3961,8 +4038,12 @@ let rScore = null;
 const newScore = () => ({ right: 0, shaky: 0, missed: 0, run: 0, best: 0, repeats: 0, mw: [], learned0: Object.keys(learned).length });
 const scoreText = sc => `${sc.right} right · ${sc.shaky} half · ${sc.missed} wrong${sc.repeats ? ` · ${sc.repeats} repeat${sc.repeats === 1 ? "" : "s"}` : ""}`;
 // The running score in characters: 對 right, 半 half, 錯 wrong (green, yellow, red), following 繁/简.
-const scoreHTML = sc => { const z = c => typeof conv === "function" ? conv(c) : c;
-  return `<b class="sc ok" lang="zh">${z("對")}</b> ${sc.right} · <b class="sc part" lang="zh">${z("半")}</b> ${sc.shaky} · <b class="sc no" lang="zh">${z("錯")}</b> ${sc.missed}${sc.repeats ? ` · ${sc.repeats} repeat${sc.repeats === 1 ? "" : "s"}` : ""}`; };  // revHist: the cards already rated this session, newest last, so you can go back
+// With the score shown before (prev), the count that went up glows for a moment and its number rolls over like a dial.
+const scoreHTML = (sc, prev) => { const z = c => typeof conv === "function" ? conv(c) : c;
+  const one = (k, cls, ch) => { const up = prev && sc[k] > prev[k];
+    return `<b class="sc ${cls}${up ? " glow" : ""}" lang="zh">${z(ch)}</b> ${up ? `<span class="odo"><span><i>${prev[k]}</i><i>${sc[k]}</i></span></span>` : sc[k]}`; };
+  return `${one("right", "ok", "對")} · ${one("shaky", "part", "半")} · ${one("missed", "no", "錯")}${sc.repeats ? ` · ${sc.repeats} repeat${sc.repeats === 1 ? "" : "s"}` : ""}`; };
+let scoreShown = null;  // the tally as last drawn in the strip, so a change can glow and roll  // revHist: the cards already rated this session, newest last, so you can go back
 // Going back undoes the last rating: the card's schedule, the queue and the day's new-word count return to how
 // they were, and the card opens on its answer side so you can look again and rate it again.
 function prevCard() {
@@ -3975,9 +4056,11 @@ function prevCard() {
   $("reviewScreen").scrollTop = 0;
 }
 $("revPrev").onclick = prevCard;
-// Quit always asks first (a stray tap would throw away the set you picked), showing how far you got and the score.
-// Ratings are saved as you go, so quitting loses nothing. On the Done screen the button is Back to my words.
-$("revQuit").onclick = () => {
+// Exit (top left) leaves without asking: your place is kept and Practice offers Continue until the day ends.
+// Quit (top right) ends the set for good, so it asks first, showing how far you got and the score. Ratings are saved
+// as you go, so neither loses anything.
+$("revQuit").onclick = () => history.back();
+$("revEnd").onclick = () => {
   if (!rq.length) { history.back(); return; }
   const sheet = el("div", "sheet"), card = el("div", "sheetcard");
   card.innerHTML = rDone ? `<h3>End this session?</h3><p>${rDone} of ${rDone + rq.length} done · ${scoreText(rScore)}</p><p class="note">Your ratings so far are saved.</p>`
@@ -3997,15 +4080,15 @@ function saveSession() {
 }
 function savedSession() {
   const r = store.get(RES_KEY, null);
-  if (!r || r.day !== localDay() || !Array.isArray(r.words) || (r.how !== "mix" && !isOn(r.how))) return null;
+  if (!r || r.day !== localDay() || !Array.isArray(r.words) || !["read", "write", "listen", "mix"].includes(r.how)) return null;
   r.list = r.words.map(x => findWord(x)).filter(Boolean);
   return r.list.length ? r : null;
 }
 async function resumeSession() {
   const r = savedSession(); if (!r) { renderWords(); return; }
-  curHow = r.how; lastSet = r.lastSet || null; rq = r.list; rDone = r.rDone || 0; revHist = [];
+  curHow = r.how; lastSet = r.lastSet || null; if (lastSet && !CATS.some(c => c[0] === lastSet.mode)) lastSet.mode = "today";  // older names (due, clear) rq = r.list; rDone = r.rDone || 0; revHist = []; scoreShown = null;
   rScore = { ...newScore(), ...r.score, mw: (r.score.mw || []).map(findWord).filter(Boolean) };
-  rq.forEach(w => { const m = (r.modes || {})[w.word]; if (m) cardMode.set(w, isOn(m) ? m : "read"); });
+  rq.forEach(w => { const m = (r.modes || {})[w.word]; if (m) cardMode.set(w, MODES.includes(m) ? m : "read"); });
   go("reviewScreen");
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
@@ -4015,13 +4098,13 @@ let lastSet = null;  // the settings of the session that's running, for "Another
 async function openReviewWith(ws) {
   lastSet = null; curHow = revHow; rq = ws.slice(); for (let i = rq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rq[i], rq[j]] = [rq[j], rq[i]]; }
   assignModes(rq, curHow);
-  rDone = 0; revHist = []; rScore = newScore(); go("reviewScreen");
+  rDone = 0; revHist = []; rScore = newScore(); scoreShown = null; go("reviewScreen");
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
 }
-async function openReview(mode = "due", count = "all", again) {
-  curHow = mode === "clear" ? "mix" : revHow;  // Clear due cards: everything due, in whichever mode it's due
-  lastSet = { mode, count }; rq = buildQueue(mode, count, curHow); rDone = 0; revHist = []; rScore = newScore();
+async function openReview(mode = "today", count = "all", again) {
+  curHow = revHow;
+  lastSet = { mode, count }; rq = buildQueue(mode, count, curHow); rDone = 0; revHist = []; rScore = newScore(); scoreShown = null;
   if (!again) go("reviewScreen"); else $("reviewScreen").scrollTop = 0;
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
@@ -4171,11 +4254,13 @@ function showFront() {
   $("revPrev").style.visibility = revHist.length ? "visible" : "hidden";  // keeps its space, so the card never jumps
   const sc = rScore || (rScore = newScore()), rep = n => `${n} repeat${n === 1 ? "" : "s"}`;
   saveSession();
-  $("revScore").innerHTML = rDone && rq.length ? scoreHTML(sc) : "";
+  const was = scoreShown; scoreShown = rDone && rq.length ? { right: sc.right, shaky: sc.shaky, missed: sc.missed } : null;
+  $("revScore").innerHTML = scoreShown ? scoreHTML(sc, was) : "";
   $("revScore").title = "對 right · 半 half · 錯 wrong";
   $("revScore").onclick = () => { const k = $("revScore").querySelector(".sckey"); if (k) k.remove(); else $("revScore").insertAdjacentHTML("beforeend", '<span class="sckey"> (right · half · wrong)</span>'); };
-  $("revQuit").textContent = rq.length ? "Quit" : "Practice";
+  $("revQuit").textContent = rq.length ? "Exit" : "Practice";
   $("revQuit").style.visibility = !rq.length && rDone ? "hidden" : "";  // the finish screen has its own buttons
+  $("revEnd").hidden = !rq.length;
   if (!rq.length) {
     prog.textContent = ""; $("revBar").replaceChildren(); $("revBar").classList.remove("glow"); $("revPrev").style.visibility = "hidden";
     if (!rDone) { box.append(el("p", "wmean", "Nothing to review right now."), btn("Back to my words", "btn wide", () => history.back())); return; }
@@ -4184,15 +4269,18 @@ function showFront() {
     fin.append(mark, el("h3", "", "Session complete"));
     ensure("完").then(() => { if (!fin.isConnected) return; const svg = svgFor("完", false, true); mark.append(svg); animate(svg, "完", 1.2); });
     const gained = Object.keys(learned).length - (sc.learned0 || 0), soon = midnight() + 2 * DAY;
-    const next = myWords.filter(x => onModes().some(m => { const s2 = x[KEYS[m]]; return s2 && s2.due && s2.due < soon && (m === "read" || !x.skip); })).length;
+    const next = myWords.filter(x => goal.some(m => { const s2 = x[KEYS[m]]; return s2 && s2.due && s2.due < soon && (m === "read" || !x.skip); })).length;
     fin.append(el("p", "donescore", `${rDone} card${rDone === 1 ? "" : "s"} · ${scoreHTML(sc)}${sc.best > 1 ? ` · best run ${sc.best}` : ""}`));
     fin.append(el("p", "note", `<span lang="zh">${conv("對")}</span> right · <span lang="zh">${conv("半")}</span> half · <span lang="zh">${conv("錯")}</span> wrong`));
     fin.append(el("p", "finnext", [gained > 0 ? `+${gained} learned` : "", next ? `${next} due by tomorrow` : "Nothing due tomorrow"].filter(Boolean).join(" · ")));
     const acts = el("div", "finacts");
     const missed = sc.mw.filter(x => myWords.includes(x));
     // Another N: the same kind of set again, if there's anything left in it (not after a hand-picked set).
-    const more = lastSet && lastSet.mode !== "clear" ? buildQueue(lastSet.mode, lastSet.count, curHow).length : 0;
-    if (more) { const s0 = lastSet; acts.append(btn(`Another ${more}`, "btn wide", () => { openReview(s0.mode, s0.count, true); })); }
+    // Today all done: say so, and offer ten more (the Learning words coming up soonest).
+    const todayDone = lastSet && lastSet.mode === "today" && !todayList(modesOf(curHow)).length;
+    const more = todayDone ? Math.min(10, pool("learning", curHow).length) : lastSet ? buildQueue(lastSet.mode, lastSet.count, curHow).length : 0;
+    if (todayDone) fin.querySelector("h3").textContent = "Done for today";
+    if (more) { const s0 = todayDone ? { mode: "learning", count: 10 } : lastSet; acts.append(btn(todayDone ? `${more} more` : `Another ${more}`, "btn wide", () => { revHow = curHow; openReview(s0.mode, s0.count, true); })); }
     if (missed.length) acts.append(btn(`Go over the ones you missed (${missed.length})`, "btn ghost wide", () => { history.back(); setTimeout(() => openLook(missed), 60); }));
     acts.append(btn("Done", more ? "btn ghost wide" : "btn wide", () => history.back()));
     fin.append(acts); box.append(fin);
@@ -4204,7 +4292,7 @@ function showFront() {
   prog.innerHTML = `${rDone + 1}/${rDone + rq.length}${w[srsKey(w)] ? "" : ' <span class="ptag">new</span>'}${(curHow || revHow) === "mix" ? ` <span class="ptag">${{ read: "Read", write: "Write", listen: "Listen" }[m0]}</span>` : ""}`;
   revSide = null;
   $("revScript").replaceChildren(scriptToggle(async () => {  // 繁/简 for the whole set; the card you're on is redrawn
-    const back = revSide; await ensure(rq.map(x => conv(x.word) + conv(x.context || "") + conv((cardOf(x) || {}).example || "")).join(""));
+    const back = revSide; await ensure(rq.map(x => conv(x.word) + conv(x.context || "") + exList(x).map(e => conv(e.example)).join("")).join(""));
     showFront(); if (back) showFront.reveal(back.how === "check" ? "show" : back.how, back.stats);
   }));
   if (howOf(w) === "write") { writeFront(w); return; }
@@ -4220,7 +4308,7 @@ function showFront() {
     lp.append(big, paceSeg(say));
     // In a sentence: plays the card's example sentence (never shown) so the word is heard in use; tapping again
     // plays it slower, then normal again. It's context, not a clue, so it doesn't cap the rating.
-    const ex = (cardOf(w) || {}).example || w.context || "";
+    const ex = (exNow(w) || {}).example || w.context || "";
     if (ex && ex !== w.word) { const b = btn("In a sentence", "btn ghost insent", () => { const k = altSpeed("sent:" + ex); sayPaced(conv(ex), k < 1 ? slowerPace(sayPace) : sayPace); }); lp.append(b); }
     box.append(lp);
     setTimeout(() => { if (lp.isConnected) say(); }, 250);
@@ -4291,7 +4379,14 @@ function showFront() {
     [["1", "ˉ"], ["2", "ˊ"], ["3", "ˇ"], ["4", "ˋ"]].forEach(([t, m]) => { const b = el("button", "", `<b>${t}</b><i>${m}</i>`); b.type = "button"; b.setAttribute("aria-label", `Tone ${t}`); b.onclick = () => { toneAt(py, +t); showTones(); }; tones.append(b); });
     tones.addEventListener("pointerdown", e => e.preventDefault()); tones.addEventListener("mousedown", e => e.preventDefault());
     form.append(tones);
-    const showTones = () => { const on = document.activeElement === py && /[aeiouvüāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/i.test(py.value); tones.hidden = !on; form.classList.toggle("toned", on); };
+    // Only when a tone can go on the syllable just before the cursor: it has a vowel and no mark yet. Typing the first
+    // consonant of the next syllable, or setting a tone, puts them away.
+    const showTones = () => {
+      const at = py.selectionEnd ?? py.value.length, m = py.value.slice(0, at).match(/[a-zA-ZāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüÜ:]+$/);
+      const parts = m ? sylls(m[0].replace(/u:/gi, "ü")).filter(Boolean) : [], last = parts[parts.length - 1] || "";
+      const on = document.activeElement === py && /[aeiouvü]/i.test(last) && !/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/i.test(last);
+      tones.hidden = !on; form.classList.toggle("toned", on);
+    };
     py.addEventListener("input", e => {
       const at = py.selectionEnd ?? py.value.length, ch = py.value[at - 1];
       if (e.inputType !== "deleteContentBackward" && /[1-5]/.test(ch || "") && /[a-zü:āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]$/i.test(py.value.slice(0, at - 1))) {
@@ -4300,6 +4395,7 @@ function showFront() {
       showTones();
     });
     py.addEventListener("focus", showTones); py.addEventListener("blur", () => setTimeout(showTones, 50));
+    py.addEventListener("keyup", e => { if (/^Arrow|Home|End/.test(e.key)) showTones(); }); py.addEventListener("click", showTones);
   }
   py.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); mean.focus(); } });
   form.onsubmit = e => { e.preventDefault(); reveal("check"); };
@@ -4373,7 +4469,7 @@ function writeFront(w) {
     if (!d || typeof HanziWriter === "undefined") { fill(idx++); nextChar(); return; }  // nothing to write (no stroke data)
     padHost.innerHTML = ""; hinted = new Set(); current = 0; firstHere = 0; showing = false;
     // Measure the bar at its tallest (with the Next character button), then show the slim writing bar.
-    setBar(false, true); const barH = $("revBar").getBoundingClientRect().height; setBar(true);
+    setBar(false, true); const bar1 = $("revBar").getBoundingClientRect().height; setBar(true); const barH = Math.max(bar1, $("revBar").getBoundingClientRect().height);
     $("reviewScreen").scrollTop = 0;
     const top = padHost.getBoundingClientRect().top, room = innerHeight - barH - top - 58;  // 58: the color line, the coach line and a margin
     const size = Math.max(150, Math.min(400, box.clientWidth || innerWidth - 32, Math.floor(room)));
@@ -4410,29 +4506,29 @@ function writeFront(w) {
       }
     });
   };
-  // Show answer for the character on the pad: it draws itself, then locks (no ✓, since you didn't write it).
+  // Show this one: the finished character goes on the pad at once, in its colors, and locks (no ✓, since you didn't
+  // write it); all its strokes count as hinted. ▶ Watch it drawn plays the stroke order, as often as you like.
   const showChar = () => {
     if (!writer || showing) return;
     showing = true; try { writer.cancelQuiz(); } catch (e) {} writer = null;
-    const ch = chars[idx], d = cache[ch], total = d.s.length;
+    const ch = chars[idx], d = cache[ch], total = d.s.length, svg = inkSvg, wrap = curWrap;
     stats.first -= firstHere; stats.hints += total - hinted.size;  // every stroke of this character counts as hinted
-    curWrap.classList.add("shown");
+    wrap.classList.add("shown");
+    svg.querySelectorAll("g.strokes path").forEach(x => { x.style.transition = "none"; x.style.opacity = 1; });
+    const watch = btn("▶ Watch it drawn", "padwatch", () => animate(svg, ch, 1)); wrap.append(watch);
     const more = idx + 1 < chars.length;
-    coach.innerHTML = lead + "Here's how it's written.";
-    revBar("Watch it drawn", "Show answer", "⟳", () => reveal("show"), [], "guessacts");
-    animate(inkSvg, ch, 1, () => {
-      if (!box.isConnected || revSide) return;
-      fill(idx++); padDone(curWrap); showLegend(curWrap, ch);
-      coach.innerHTML = lead ? lead.replace(/ · $/, "") : "";
-      setBar(false, more);  // the last one waits for See answer, the same as writing it yourself
-    });
+    fill(idx++); padDone(wrap); showLegend(wrap, ch);
+    coach.innerHTML = lead ? lead.replace(/ · $/, "") : "";
+    setBar(false, more);  // the last one waits for See answer, the same as writing it yourself
   };
-  // The bottom bar: slim while you write (Show answer shows just this character); after a character, the way forward.
+  // The bottom bar: slim while you write (Show this one for the character on the pad, Show answer for the whole
+  // word); after a character, just the way forward (the pad shows what happened).
   function setBar(writing, more) {
-    if (writing) revBar("Write it from memory", "Show this one", "⟳", showChar, [], "guessacts");
-    // Once a character is done there's one way forward, so the bar has one button (no Show answer beside See answer).
-    else revBar(more ? "Character done" : "Word done", null, "", null,
-      [btn(more ? "Next character ›" : "See answer", "btn", () => more ? nextChar() : reveal("write"))], "guessacts one", more ? "Look it over, then go on." : "Look it over, then see how you did.");
+    if (writing) {
+      revBar("", "Show this one", "⟳", showChar, [], "guessacts");  // the coach line already says what to do
+      const all = btn("", "btn ghost small flipbtn", () => reveal("show")); all.innerHTML = "<i>⤓</i>Show answer";
+      $("revBar").querySelector(".revbartop").append(all);
+    } else revBar("", null, "", null, [btn(more ? "Next character ›" : "See answer", "btn", () => more ? nextChar() : reveal("write"))], "guessacts one");
   }
   nextChar();
 }
@@ -4476,7 +4572,7 @@ function showBack(w, how, st) {
   if (hinted && suggest === "good") suggest = "hard";  // needed a hint: it comes back sooner
   if (!quiet && ["check", "write", "know"].includes(how) && revOutcome.get(w)) bloom(revOutcome.get(w));
   // The colors used on this side (the big word and the example sentence), right under the big characters.
-  const leg = legendLine(conv(w.word) + (c && c.example ? conv(c.example) : "")), bw = box.querySelector(".revchars");
+  const ex1 = exNow(w), leg = legendLine(conv(w.word) + (ex1 ? conv(ex1.example) : "")), bw = box.querySelector(".revchars");
   if (leg && bw) { box.querySelectorAll(".legline").forEach(x => x.remove()); bw.after(leg); }
   ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${markHTML(w, "pinyin")}${sayHTML(w.word)}`));
   // ✎ fixes the card right here; the answer side is redrawn with your version.
@@ -4486,9 +4582,9 @@ function showBack(w, how, st) {
   ans.append(wm, ...cardExtras(w));
   if (c) {
     (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
-    if (c.example) {
+    if (ex1) {
       const ex = el("div", "wcard");
-      ex.append(miniReader(conv(c.example), conv(w.word), c.example_en));
+      ex.append(miniReader(conv(ex1.example), conv(w.word), ex1.example_en, { next: () => nextExample(w) }));
       ans.append(ex);
     }
   } else ans.append(cardPending(w, () => { if (ans.isConnected) { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true }); } }));
@@ -4507,14 +4603,14 @@ function showBack(w, how, st) {
       if (g === "again") { sc.repeats++; if (!sc.mw.includes(w)) sc.mw.push(w); }
       revOutcome.delete(w);
       tick(g); grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w);
-      // Clearing due cards: a word due in another mode too comes back in that mode, so the badge really reaches zero.
-      else if (lastSet && lastSet.mode === "clear") { const more = onModes().filter(m => modeDue(w, m)); if (more.length && !rq.includes(w)) { cardMode.set(w, more[0]); rq.push(w); } } showFront(); $("reviewScreen").scrollTop = 0; };
+      // Today in Mix: a word due in another mode too comes back in that mode, so Today really empties.
+      else if (lastSet && lastSet.mode === "today" && curHow === "mix") { const more = MODES.filter(m => modeDue(w, m)); if (more.length && !rq.includes(w)) { cardMode.set(w, more[0]); rq.push(w); } } showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);
   });
   // Rating is the only way forward, so the bar says so; the flip button sits where "Show answer" was on the front.
   box.append(ans);
-  revBar("Rate it to go on", "Front", "⟲", () => { ans.remove(); showFront(); }, [...grades.children], "grades",
-    suggest ? "The suggested one is lit." : "It decides when this comes back.");
+  revBar("Rate it for next card", "Front", "⟲", () => { ans.remove(); showFront(); }, [...grades.children], "grades",
+    suggest ? "Suggested or your choice" : "It decides when this comes back.");
   // ✍ Practice writing: an optional detour to write the word on the pad (not graded, no schedule touched).
   const chars = [...conv(w.word)].filter(ch => cache[ch]);
   if (chars.length && typeof HanziWriter !== "undefined") {
@@ -4531,14 +4627,16 @@ function bloom(out) {
   const [ch, cls] = { right: ["對", "ok"], shaky: ["半", "part"], missed: ["錯", "no"] }[out] || [];
   if (!ch) return;
   const b = el("div", "bloom " + cls, conv(ch)); b.lang = "zh"; b.setAttribute("aria-hidden", "true");
-  document.body.append(b); setTimeout(() => b.remove(), 800);
+  document.body.append(b); setTimeout(() => b.remove(), 2100);
 }
 function placeAnswer() {
   const go = () => {
     const scr = $("reviewScreen"), box = $("revCard"), big = box.querySelector(".revchars"), ans = box.querySelector(".revans");
     if (!big || !ans || scr.hidden) return;
     const res = ans.querySelector(".results") || ans.querySelector(".wmean") || ans;
-    const sr = scr.getBoundingClientRect(), topH = scr.querySelector(".topbar").getBoundingClientRect().bottom - sr.top, barH = $("revBar").getBoundingClientRect().height;
+    // The title and score stay pinned under the top bar, so the answer goes just below them.
+    const sr = scr.getBoundingClientRect(), pin = $("revPin"), barH = $("revBar").getBoundingClientRect().height;
+    const topH = (pin.offsetHeight ? pin.getBoundingClientRect().bottom : scr.querySelector(".topbar").getBoundingClientRect().bottom) - sr.top;
     const y = n => n.getBoundingClientRect().top - sr.top + scr.scrollTop;
     const bigTop = y(big), resBot = res.getBoundingClientRect().bottom - sr.top + scr.scrollTop, view = scr.clientHeight - barH - topH;
     let t = bigTop - topH - 10;
@@ -4686,7 +4784,7 @@ async function showTour(fromMenu) {
         el("p", "", `${B("Review")} goes through your words face up, no grading. ${B("Explore")} finds real Chinese Wikipedia articles at your level.`)); return f; }
   ];
   let i = 0;
-  const close = () => { sheet.remove(); store.set("radical-tour-seen", true); if (fromMenu === true) openMenu(); };
+  const close = () => { sheet.remove(); store.set("radical-tour-seen", true); if (fromMenu === true) openMenu(); else if (!store.get("radical-goal-asked", false)) setTimeout(askGoal, 300); };
   const last = fromMenu === true ? "Back to menu" : fromMenu ? "Done" : "Start reading";
   const paint = () => {
     card.innerHTML = ""; card.append(pages[i]());
@@ -4718,7 +4816,7 @@ $("voiceTW").onclick = () => sayVoice("tw"); $("voiceCN").onclick = () => sayVoi
 function setSums() {
   const S = { acct: session ? `Signed in as ${session.email}` : "Not signed in",
     theme: (PALETTES[palette] || {}).name || "", appear: ({ dark: "Dark", light: "Light", system: "Match phone" }[store.get("radical-theme", "dark")] || "") + (cvd ? " · red-green safe" : ""),
-    modes: onModes().map(m => HOW_NAME[m]).join(", "),
+    modes: goal.map(m => HOW_NAME[m]).join(", "),
     sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
     speech: `${PACES.find(x => x[0] === sayPace)[1]} · speed ${Math.round(rate * 100)}%`,
     target: store.get("radical-target", 20) ? `${store.get("radical-target", 20)} cards a day` : "Off",
@@ -4731,7 +4829,7 @@ document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "ch
 // tallies, what you're reading now and all of History, and your settings. A summary shows first; nothing leaves the
 // app until Save file.
 const SETTING_KEYS = ["radical-palette", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-target",
-  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revmode", "radical-revcount", "radical-modes", "radical-cvd"];
+  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd"];
 function backupData() {
   const settings = {}; SETTING_KEYS.forEach(k => { try { const v = localStorage.getItem(k); if (v !== null) settings[k] = v; } catch (e) {} });
   return { app: "Radical", version: APP_VERSION, saved: new Date().toISOString(), words: myWords, learned, days: store.get("radical-days", {}),
@@ -5102,9 +5200,12 @@ function fetchDaily() {
   if (dailyJob || (daily && daily.day === localDay()) || !online()) return dailyJob;
   const searches = [...myTopics].sort((a, b) => (b.n - a.n) || (b.at - a.at)).slice(0, 12).map(t => t.zh + (t.en ? ` (${t.en})` : ""));
   const reading = textHistory.slice(0, 6).map(h => toTrad(h.text.split("\n")[0]).slice(0, 40));
-  const recent = (daily && daily.list || []).map(t => t.zh);  // yesterday's, so today's are fresh
+  // Everything shown in the past week is avoided, so the chips change from day to day.
+  const weekAgo = localDay(Date.now() - 7 * DAY), seen = store.get("radical-wiki-seen", []).filter(x => x.day > weekAgo);
+  const recent = [...new Set([...seen.map(x => x.zh), ...(daily && daily.list || []).map(t => t.zh)])].slice(-70);
   dailyJob = claude({ action: "topics", searches, reading, avoid: recent })
-    .then(r => { const list = (r.topics || []).filter(t => t && t.zh && /\p{Script=Han}/u.test(t.zh)).slice(0, 9); if (list.length >= 6) { daily = { day: localDay(), list }; store.set("radical-wiki-daily", daily); } })
+    .then(r => { const list = (r.topics || []).filter(t => t && t.zh && /\p{Script=Han}/u.test(t.zh)).slice(0, 9);
+      if (list.length >= 6) { daily = { day: localDay(), list }; store.set("radical-wiki-daily", daily); store.set("radical-wiki-seen", [...seen, ...list.map(t => ({ zh: t.zh, day: localDay() }))].slice(-80)); } })
     .catch(() => {}).finally(() => { dailyJob = null; });
   return dailyJob;
 }
@@ -5115,7 +5216,7 @@ function wikiLabels() {
   chipList().forEach(([zh, en, py]) => {
     const b = el("button", "", `<b>${esc(conv(zh))}</b>${py ? `<i>${esc(py)}</i>` : ""}${en ? `<span>${esc(en)}</span>` : ""}`); b.type = "button"; b.dataset.zh = zh;
     b.classList.toggle("on", activeChip === zh);
-    b.onclick = () => { speak(conv(zh)); markChip(zh); wikiSearch(conv(zh), en); };  // say it, then search
+    b.onclick = () => { markChip(zh); wikiSearch(conv(zh), en); };
     box.append(b);
   });
 }
@@ -5237,10 +5338,23 @@ $("wikiRandom").onclick = async () => {
 };
 
 // ================= start
-document.querySelectorAll("#modesSeg [data-m]").forEach(b => {
-  b.setAttribute("aria-pressed", isOn(b.dataset.m));
-  if (b.dataset.m !== "read") b.onclick = () => { const on = !isOn(b.dataset.m); setModeOn(b.dataset.m, on); b.setAttribute("aria-pressed", on); };
-});
+// My goal (Settings): tap to add or drop a mode; the last one can't be dropped.
+const paintGoal = row => row.querySelectorAll("[data-m]").forEach(b => b.setAttribute("aria-pressed", inGoal(b.dataset.m)));
+document.querySelectorAll("#modesSeg [data-m]").forEach(b => b.onclick = () => { setGoal(b.dataset.m, !inGoal(b.dataset.m)); paintGoal($("modesSeg")); setSums(); });
+paintGoal($("modesSeg"));
+// Asked once: on a first launch after the walkthrough, and once to everyone who had the app before goals.
+function askGoal() {
+  if (document.querySelector(".sheet")) { setTimeout(askGoal, 1500); return; }
+  store.set("radical-goal-asked", true);
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard");
+  card.append(el("h3", "", "My goal"), el("p", "", "What do you want to keep up? Pick one or more. The 練 badge counts today's cards for these."));
+  const row = el("div", "pills goalpills"); row.setAttribute("role", "group");
+  MODES.forEach(m => { const b = el("button", "", HOW_NAME[m]); b.type = "button"; b.dataset.m = m; b.onclick = () => { setGoal(m, !inGoal(m)); paintGoal(row); }; row.append(b); });
+  paintGoal(row);
+  const close = () => { sheet.remove(); if (!$("wordsScreen").hidden) renderWords(); };
+  card.append(row, el("p", "note", "You can practice any mode any time, and change this in Settings."), btn("Done", "btn wide", close));
+  sheet.append(card); document.body.append(sheet);
+}
 document.querySelectorAll("#cvdSeg [data-cvd]").forEach(b => {
   b.setAttribute("aria-pressed", String(+cvd) === b.dataset.cvd);
   b.onclick = () => { cvd = b.dataset.cvd === "1"; store.set("radical-cvd", cvd); document.querySelectorAll("#cvdSeg [data-cvd]").forEach(x => x.setAttribute("aria-pressed", x === b)); applyPalette(); buildPalettes(); };
@@ -5257,7 +5371,7 @@ document.querySelectorAll("#targetSeg [data-t]").forEach(b => {
   let harped = false, done = false;
   const harp = () => { if (harped || !soundOn) return; harped = true; for (let k = 0; k < 6; k++) zheng(k * .08, pen(4 + k), .38, 1, 2.4); };
   const hide = () => { sp0.classList.add("out"); setTimeout(() => sp0.remove(), 500); };
-  const finish = () => { if (done) return; done = true; hide(); if (firstRun) openSettings(true); else if (!store.get("radical-tour-seen", false)) setTimeout(showTour, 3200); };  // after the harp has rung out
+  const finish = () => { if (done) return; done = true; hide(); if (firstRun) openSettings(true); else if (!store.get("radical-tour-seen", false)) setTimeout(showTour, 3200); else if (!store.get("radical-goal-asked", false)) setTimeout(askGoal, 1200); };  // after the harp has rung out
   sp0.onclick = () => { try { harp(); } catch (e) {} finish(); };
   setTimeout(() => sp0.classList.add("ready"), 6000);  // "Tap to begin" shows even if the drawing is slow
   // A quiet line under 部 from the progress record (nothing on a first launch).

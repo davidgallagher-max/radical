@@ -25,12 +25,10 @@ Return ONLY a JSON object, no other text, with exactly these keys:
   "meaning": "short English meaning, under 12 words",
   "usage": "one short note on how it is used or a common collocation, or empty string",
   "chars": [ { "char": "one character", "pinyin": "its reading here", "parts": "its parts, e.g. 敬 jìng (sound) + 馬 horse (meaning)", "mnemonic": "one vivid memory hook, under 20 words" } ],
-  "example": "one natural Taiwan Mandarin sentence using the word, Traditional characters, at low intermediate level",
-  "example_pinyin": "pinyin of the example sentence",
-  "example_en": "English translation of the example",
+  "examples": [ { "example": "a natural Taiwan Mandarin sentence using the word, Traditional characters, at low intermediate level", "example_pinyin": "pinyin of the sentence", "example_en": "English translation" } ],
   "related": [ { "word": "related word", "pinyin": "pinyin", "meaning": "short meaning" } ]
 }
-Give 0 to 3 related words that share a character with the word. Use Taiwan word choices (資料 not 数据, 網路 not 网络).`;
+Give exactly 3 examples, each in a clearly different everyday context. Give 0 to 3 related words that share a character with the word. Use Taiwan word choices (資料 not 数据, 網路 not 网络).`;
 
 const WORDS_PROMPT = (text) => `A learner of Taiwan Mandarin pasted the text below to add words to a vocabulary list. It may be a tidy list, a messy list with pinyin and English mixed in, or sentences.
 Pick out the Chinese vocabulary items they most likely want to study: words and set phrases, not whole sentences, and skip particles and very basic words (的, 了, 我, 是) unless the text is clearly just a list.
@@ -53,9 +51,18 @@ For each item:
 - "note": her original English, only when you changed what it means; otherwise "".
 Return ONLY JSON: {"items":[{"word":"","kind":"","pinyin":"","meaning":"","from_text":true,"note":""}]}, at most 60 items.`;
 
-// A fresh example sentence for a word, different from the one the learner has.
-const EXAMPLE_PROMPT = (word, meaning, avoid) => `Write one new natural Taiwan Mandarin example sentence (Traditional characters, low intermediate level) using ${word}${meaning ? ` (${meaning})` : ""}.${avoid ? ` Make it clearly different from: ${avoid}` : ""}
-Return ONLY JSON: {"example":"...","example_pinyin":"pinyin with tone marks","example_en":"English translation"}`;
+// Fresh example sentences for a word (one or two), different from the ones the learner has.
+const EXAMPLE_PROMPT = (word, meaning, avoid, n = 1) => `Write ${n === 1 ? "one new natural Taiwan Mandarin example sentence" : `${n} new natural Taiwan Mandarin example sentences, each in a different everyday context,`} (Traditional characters, low intermediate level) using ${word}${meaning ? ` (${meaning})` : ""}.${avoid ? ` Make ${n === 1 ? "it" : "them"} clearly different from these: ${avoid}` : ""}
+Return ONLY JSON: {"examples":[{"example":"...","example_pinyin":"pinyin with tone marks","example_en":"English translation"}]}`;
+// A card's three examples, kept as example/example_pinyin/example_en too (the first one) for older pages.
+function cardExamples(card) {
+  const ok = x => x && typeof x.example === "string" && x.example.trim();
+  const list = (Array.isArray(card.examples) ? card.examples : []).filter(ok).map(x => ({ example: String(x.example), example_pinyin: String(x.example_pinyin || ""), example_en: String(x.example_en || "") })).slice(0, 3);
+  if (!list.length && ok(card)) list.push({ example: card.example, example_pinyin: card.example_pinyin || "", example_en: card.example_en || "" });
+  card.examples = list;
+  if (list.length) Object.assign(card, list[0]);
+  return card;
+}
 
 const TRANSLATE_PROMPT = (sentence) => `Translate this Chinese into natural English. Return only the translation, nothing else.
 
@@ -88,11 +95,11 @@ Return ONLY JSON with these keys:
  "words":[{"word":"a word","note":"its meaning here, only when it differs from the first dictionary sense or is easy to misread"}]}
 0 to 4 points, 0 to 3 words; leave out anything obvious. Plain English, no jargon a learner wouldn't know; if you use a grammar term, say what it means. Use ${trad ? "Traditional" : "Simplified"} characters in patterns and words.`;
 
-// Explore's daily topic chips: nine topics shaped by what the learner searches and reads, plus a few wild cards.
+// Explore's daily topic chips: seven varied picks across subjects and two tied to what the learner searches and reads.
 const TOPICS_PROMPT = (searches, reading, avoid) => `Suggest 9 topics for an adult learner of Taiwan Mandarin to read about on Chinese Wikipedia today.
 Things they searched for recently (most used first): ${searches.length ? searches.join("; ") : "none yet"}
 Openings of texts they read recently: ${reading.length ? reading.join(" / ") : "none yet"}
-Make 6 topics close to these interests (related, not the same searches repeated) and 3 wild cards that might surprise and delight them. With no history, pick 9 varied, appealing topics (Taiwan, food, nature, science, culture).
+Make 2 topics close to these interests (related, not the same searches repeated) and 7 varied picks, each from a different subject (for example nature, science, history, food, sports, places, people, arts, technology, everyday life), chosen to surprise and delight. With no history, pick 9 varied, appealing topics.
 Each topic must be a real Chinese Wikipedia article title or a good search word, 2 to 4 characters, Traditional characters, Taiwan usage.${avoid.length ? ` Don't repeat: ${avoid.join("、")}.` : ""}
 Return ONLY JSON: {"topics":[{"zh":"台灣夜市","en":"Night markets","py":"Táiwān yèshì"}, ...]} with exactly 9 items; "en" is 1 to 2 English words, "py" is pinyin with tone marks.`;
 
@@ -193,9 +200,10 @@ module.exports = async (req, res) => {
     if (body.action === "card") {
       const word = String(body.word || "").trim().slice(0, 40);
       if (!word) return res.status(400).json({ error: "No word given." });
-      const text = await askClaude(CARD_MODEL, CARD_PROMPT(word), 1200);
+      const text = await askClaude(CARD_MODEL, CARD_PROMPT(word), 1600);
       const card = parseJSON(text);
       if (!card) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      cardExamples(card);
       // Cards are the same for everyone, so let Vercel's CDN keep them for a year.
       // The next request for this word (from any device) is answered from the cache
       // without calling Claude. Best effort: the cache is per region and rarely used
@@ -226,9 +234,11 @@ module.exports = async (req, res) => {
     if (body.action === "example") {
       const word = String(body.word || "").trim().slice(0, 40);
       if (!word) return res.status(400).json({ error: "No word given." });
-      const out = parseJSON(await askClaude(CARD_MODEL, EXAMPLE_PROMPT(word, String(body.meaning || "").slice(0, 120), String(body.avoid || "").slice(0, 200)), 500));
-      if (!out || !out.example) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
-      return res.status(200).json({ example: String(out.example), example_pinyin: String(out.example_pinyin || ""), example_en: String(out.example_en || "") });
+      const n = body.n === 2 ? 2 : 1;
+      const out = parseJSON(await askClaude(CARD_MODEL, EXAMPLE_PROMPT(word, String(body.meaning || "").slice(0, 120), String(body.avoid || "").slice(0, 600), n), 400 * n + 100));
+      const ex = out && cardExamples({ examples: out.examples, example: out.example, example_pinyin: out.example_pinyin, example_en: out.example_en }).examples.slice(0, n);
+      if (!ex || !ex.length) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      return res.status(200).json({ examples: ex, ...ex[0] });
     }
     if (body.action === "ocr") {
       const data = String(body.image || ""), type = String(body.media_type || "image/jpeg");
@@ -286,7 +296,7 @@ module.exports = async (req, res) => {
     }
     if (body.action === "topics") {
       const list = (x, n, len) => (Array.isArray(x) ? x : []).slice(0, n).map(v => String(v || "").slice(0, len)).filter(Boolean);
-      const out = parseJSON(await askClaude(FAST_MODEL, TOPICS_PROMPT(list(body.searches, 12, 40), list(body.reading, 6, 40), list(body.avoid, 9, 8)), 700));
+      const out = parseJSON(await askClaude(FAST_MODEL, TOPICS_PROMPT(list(body.searches, 12, 40), list(body.reading, 6, 40), list(body.avoid, 70, 8)), 700));
       const topics = (out && Array.isArray(out.topics) ? out.topics : [])
         .filter(t => t && typeof t.zh === "string" && /\p{Script=Han}/u.test(t.zh))
         .map(t => ({ zh: t.zh.trim().slice(0, 8), en: String(t.en || "").slice(0, 24), py: String(t.py || "").slice(0, 40) })).slice(0, 9);
