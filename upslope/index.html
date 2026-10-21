@@ -56,6 +56,7 @@
   }
   .llc { color: var(--soft); font-size: .95rem; margin: 0 0 32px; letter-spacing: .04em; }
   .lead { font-size: 1.2rem; margin: 0 0 40px; }
+  .app + .app { margin-top: -24px; }
   .app {
     background: var(--card);
     border: 1px solid var(--line);
@@ -78,7 +79,7 @@
     text-align: center;
     padding: 18px 20px 28px;
   }
-  .ridge { display: block; width: 100%; height: 150px; }
+  .ridge { display: block; width: 100%; height: 220px; }
 </style>
 </head>
 <body>
@@ -101,6 +102,10 @@
     <p>A Chinese reading and study app. Every character is drawn stroke by stroke and colored by its parts, so you can read real text and remember what you read.</p>
   </section>
 
+  <section class="app">
+    <h2>Chalyshmak <span>Coming soon</span></h2>
+  </section>
+
   <dl>
     <dt>Location</dt><dd>Denver, Colorado</dd>
     <dt>Contact</dt><dd><a href="mailto:david@upslopelabs.com">david@upslopelabs.com</a></dd>
@@ -109,31 +114,57 @@
 <svg class="ridge" id="ridge" aria-hidden="true"></svg>
 <footer>© 2026 Upslope Labs LLC</footer>
 <script>
-/* Pixel landscape: ridges built from square blocks, dissolving at the top. Seeded so it looks the same every visit. */
+/* Pixel mountains: peaked ranges built from small square blocks, with snow on the high peaks
+   and stray pixels dissolving above the ridgelines. Seeded so it looks the same every visit. */
 (function () {
   var svg = document.getElementById('ridge');
-  var H = 30, W = Math.ceil(svg.clientWidth / 5) || 96, seed = 7;
+  var P = 3, H = Math.round(svg.clientHeight / P) || 73, W = Math.ceil((svg.clientWidth || 390) / P), seed = 11;
   function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
   var dark = matchMedia('(prefers-color-scheme: dark)').matches;
-  var layers = [
-    { base: 9,  amp: 9, f: [0.07, 0.19], c: dark ? '#5d6e4f' : '#9db08a', o: 0.55 },
-    { base: 15, amp: 7, f: [0.11, 0.27], c: dark ? '#6f8a5c' : '#7d9a6a', o: 0.8 },
-    { base: 21, amp: 5, f: [0.09, 0.33], c: dark ? '#4f6b45' : '#4f6b45', o: 1 },
-    { base: 26, amp: 2, f: [0.21, 0.5],  c: dark ? '#6b5038' : '#8a6644', o: 1 }
+  var snow = dark ? '#d9d2c4' : '#ffffff';
+  /* each range: peak height range (fraction of H from the bottom), slope, spacing, color, opacity */
+  var ranges = [
+    { hi: [0.72, 0.98], slope: [0.55, 0.9], gap: 70, c: dark ? '#53624c' : '#a9b89a', o: 0.7, snow: 0.82 },
+    { hi: [0.5, 0.7],  slope: [0.5, 0.8],  gap: 50, c: dark ? '#6f8a5c' : '#7d9a6a', o: 0.9, snow: 0 },
+    { hi: [0.3, 0.42], slope: [0.35, 0.6], gap: 34, c: dark ? '#4f6b45' : '#4f6b45', o: 1, snow: 0 },
+    { hi: [0.1, 0.14], slope: [0.15, 0.3], gap: 24, c: dark ? '#6b5038' : '#8a6644', o: 1, snow: 0 }
   ];
-  var out = [];
-  layers.forEach(function (L, i) {
-    var p1 = rnd() * 6, p2 = rnd() * 6;
+  function shade(hex, k) {
+    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    function f(v) { return Math.max(0, Math.min(255, Math.round(v * k))); }
+    return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
+  }
+  var out = [], solid, stray;
+  function px(x, y, c, faint) {
+    (faint ? stray : solid).push('<rect x="' + x + '" y="' + y + '" width="1.05" height="1.05" fill="' + c + '"/>');
+  }
+  ranges.forEach(function (R) {
+    solid = []; stray = [];
+    var peaks = [];
+    for (var x0 = -R.gap * rnd(); x0 < W + R.gap; x0 += R.gap * (0.6 + rnd() * 0.8))
+      peaks.push({ x: x0, h: H * (R.hi[0] + rnd() * (R.hi[1] - R.hi[0])), s: R.slope[0] + rnd() * (R.slope[1] - R.slope[0]) });
     for (var x = 0; x < W; x++) {
-      var top = Math.round(L.base - L.amp * (0.6 * Math.sin(x * L.f[0] + p1) + 0.4 * Math.sin(x * L.f[1] + p2)) * 0.5 - L.amp * 0.5);
-      for (var y = Math.max(0, top - 3); y < H; y++) {
-        var d = y - top;
-        if (d < 0) { if (rnd() > 0.12 * (4 + d)) continue; }        /* stray pixels above the ridge */
-        else if (d < 2 && rnd() < 0.25) continue;                    /* ragged edge */
-        var op = L.o * (d < 0 ? 0.45 : 1) * (0.85 + rnd() * 0.15);
-        out.push('<rect x="' + x + '" y="' + y + '" width="1" height="1" fill="' + L.c + '" opacity="' + op.toFixed(2) + '"/>');
+      var h = 0, top = null;
+      peaks.forEach(function (k) {
+        var v = k.h - k.s * Math.abs(x - k.x) * (x < k.x ? 1 : 1.25);   /* steeper on the east face */
+        if (v > h) { h = v; top = k; }
+      });
+      h += (rnd() - 0.5) * 1.5;
+      var ty = Math.round(H - h);
+      for (var y = Math.max(0, ty - 3); y < H; y++) {
+        var d = y - ty;
+        if (d < 0) { if (rnd() > 0.1 * (4 + d)) continue; }          /* stray pixels above the ridge */
+        else if (d < 1 && rnd() < 0.3) continue;                       /* ragged edge */
+        var c = R.c;
+        if (R.snow && top && top.h > H * R.snow && d >= 0 && d < (top.h - H * R.snow) * 0.9 + rnd() * 2) c = snow;
+        var t = rnd();
+        if (t < 0.12) c = shade(c, 0.93); else if (t < 0.2) c = shade(c, 1.06);   /* a little texture */
+        px(x, y, c, d < 0);
       }
     }
+    /* opacity on the group, so overlapping blocks don't show seams */
+    out.push('<g opacity="' + R.o + '">' + solid.join('') + '</g>');
+    out.push('<g opacity="' + (R.o * 0.45).toFixed(2) + '">' + stray.join('') + '</g>');
   });
   svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
   svg.setAttribute('preserveAspectRatio', 'none');
