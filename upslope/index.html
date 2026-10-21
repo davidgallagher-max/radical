@@ -42,7 +42,7 @@
   main {
     flex: 1;
     width: 100%;
-    max-width: 640px;
+    max-width: 980px;
     margin: 0 auto;
     padding: 40px 20px 24px;
   }
@@ -57,14 +57,14 @@
   .tag { font-size: 1.15rem; font-style: italic; color: var(--green); margin: 0 0 32px; }
   .llc { color: var(--soft); font-size: .95rem; margin: 0 0 32px; letter-spacing: .04em; }
   .lead { font-size: 1.2rem; margin: 0 0 40px; }
-  .app + .app { margin-top: -24px; }
+  .apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 0 0 36px; }
   .app {
     background: var(--card);
     border: 1px solid var(--line);
     border-left: 4px solid var(--green);
     border-radius: 10px;
     padding: 20px 22px;
-    margin: 0 0 40px;
+    margin: 0;
   }
   .app h2 { font-size: 1.25rem; font-weight: normal; margin: 0 0 4px; }
   .app h2 span { color: var(--clay); font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; margin-left: 8px; }
@@ -73,7 +73,8 @@
   dt { color: var(--soft); }
   dd { margin: 0; }
   a { color: var(--green); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  .land { position: relative; }
+  .land { position: fixed; left: 0; right: 0; bottom: 0; z-index: -1; }
+  main { padding-bottom: 200px !important; }
   footer {
     position: absolute; left: 0; right: 0; bottom: 0;
     color: #f4efe6;
@@ -89,11 +90,12 @@
     .mark { width: 40px; height: 40px; margin-bottom: 14px; }
     h1 { font-size: 2rem; }
     .tag { margin-bottom: 22px; }
-    .app { padding: 12px 16px; margin-bottom: 26px; }
+    .apps { grid-template-columns: 1fr; gap: 10px; margin-bottom: 24px; }
+    .app { padding: 12px 16px; }
     .app p { font-size: .94rem; line-height: 1.5; }
     .app h2 { font-size: 1.15rem; }
-    .app + .app { margin-top: -16px; }
     .ridge { height: 150px; }
+    main { padding-bottom: 166px !important; }
   }
 </style>
 </head>
@@ -110,6 +112,7 @@
   </svg>
   <h1>Upslope Labs</h1>
   <p class="tag">Smart apps for smart people.</p>
+  <div class="apps">
   <section class="app">
     <h2>Radical <span>Coming soon</span></h2>
     <p>A Chinese reading and study app. Every character is drawn stroke by stroke and coloured by its parts, so you can read real text and remember what you read.</p>
@@ -124,6 +127,7 @@
     <h2>Nativify <span>Coming soon</span></h2>
     <p>A self-coaching app for non-native speakers of English to go from advanced to spectacular.</p>
   </section>
+  </div>
 
   <dl>
     <dt>Location</dt><dd>Denver, Colorado</dd>
@@ -145,8 +149,8 @@
   var snow = dark ? '#d9d2c4' : '#ffffff';
   /* each range: peak height range (fraction of H from the bottom), slope, spacing, color, opacity */
   var ranges = [
-    { hi: [0.72, 0.98], slope: [0.55, 0.9], gap: 70, c: dark ? '#53624c' : '#a9b89a', o: 0.7, snow: 0.82 },
-    { hi: [0.5, 0.7],  slope: [0.5, 0.8],  gap: 50, c: dark ? '#6f8a5c' : '#7d9a6a', o: 0.9, snow: 0 },
+    { hi: [0.72, 0.98], slope: [0.55, 0.9], gap: 70, c: dark ? '#544a58' : '#ab9fae', o: 0.85, snow: 0.82 },
+    { hi: [0.5, 0.7],  slope: [0.5, 0.8],  gap: 50, c: dark ? '#4a5664' : '#7f8c9b', o: 0.9, snow: 0 },
     { hi: [0.3, 0.42], slope: [0.35, 0.6], gap: 34, c: dark ? '#4f6b45' : '#4f6b45', o: 1, snow: 0 },
     { hi: [0.1, 0.14], slope: [0.15, 0.3], gap: 24, c: dark ? '#6b5038' : '#8a6644', o: 1, snow: 0 }
   ];
