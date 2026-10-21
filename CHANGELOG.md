@@ -2,6 +2,23 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v37
+
+- Flash cards, redone. One box at the top of Practice holds everything as pills: Read · Write · Listen · Mix, then Today · New · Learning · Known · All (with counts, and the list below follows the one you pick), then how many, then Start. The count row only offers sizes smaller than the group, plus All; a small group just shows All (8). Learning is every word you don't know yet. New, Known and All come up shuffled.
+- "Due" is gone. Today means the words up for review in your goal plus a few new ones. The 練 badge counts what's left in Today and now updates when you come back to the app, once a minute while it's open, and when the day turns at 4am.
+- My goal replaces I practice: pick Read, Write, Listen, any one or more (asked once, changeable in Settings). Every mode is always there to practice; the goal only decides what Today and the badge count. Clear due cards, Suggested, What type?, How many? and the separate Resume row are gone.
+- Leaving cards: top left is now Exit, which keeps your place (Practice shows "Continue · 12 left"). Quit, top right, ends the session and still asks first. Finishing Today says "Done for today" with a button for 10 more.
+- The "Flash card 6/19" line and the 對 半 錯 score stay pinned at the top of the card, and the answer scrolls in under them. When a score goes up, it glows and its number rolls over like a dial.
+- The 對 半 錯 flourish holds longer (about 2 seconds). The rating bar no longer flashes a light across; it grows a little, settles back and keeps a soft glow, and the suggested rating pulses slowly until you pick. Its lines now read "Rate it for next card" and "Suggested or your choice".
+- Tone boxes show only when the syllable before the cursor can take a tone (it has a vowel and no mark yet).
+- Write cards: Show this one puts the finished character on the pad at once, with "▶ Watch it drawn" if you want the strokes. Show answer reveals the whole word. No more "Character done" text, just the button.
+- Three example sentences per new card, one picked each time. ↻ next to the sentence steps to the next one, and after the last it writes a fresh one (older cards get two more on the first tap). Your own sentence always stays. The word page shows them all.
+- Characters read is honest now: a line counts once a day, and credit builds at reading pace (about 2.5 characters a second while it's on screen). Redrawing the page or flicking past an article no longer adds anything. Past numbers stay as they were.
+- Reader: English and numbers inside Chinese text read as normal words ("401.3 km² (154.9 mi²)"), wrapping only between words.
+- Explore: no voice when you tap a topic, topics change more from day to day (a week of recent ones are avoided; 7 varied picks plus 2 near what you read). Headings are Pick a topic, Search and Surprise me, with "Real Chinese Wikipedia, written by native speakers." under the title.
+- Two-way and three-way switches (繁/简, Original/Easier/Easiest and the rest) have clean rounded corners on the picked side.
+- Adding words from a text: each word has a check circle. "Check the ones to add." No more strikethrough.
+
 ## v36
 
 - One due number everywhere: the badge, Clear due cards and the Due chip in Mix count words due, not cards. A word due in Read and Write is one word, and clearing it covers both. Under Suggested: "10 of 38 due + 2 new".
