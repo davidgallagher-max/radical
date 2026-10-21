@@ -6,7 +6,34 @@
   "headers": [
     {
       "source": "/data/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "upslopelabs.com"
+        }
+      ],
+      "destination": "/upslope/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.upslopelabs.com"
+        }
+      ],
+      "destination": "/upslope/index.html"
     }
   ]
 }

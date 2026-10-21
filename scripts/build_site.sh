@@ -8,4 +8,6 @@ cp index.html manifest.webmanifest public/
 cp -r icons data public/
 cp CREDITS.md public/
 cp -r licenses public/
+# Upslope Labs company page, served on upslopelabs.com (see rewrites in vercel.json)
+cp -r upslope public/
 echo "Site ready in public/"

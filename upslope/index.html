@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upslope Labs</title>
+<meta name="description" content="Upslope Labs LLC is an independent studio in Denver, Colorado, making mobile apps.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect width='64' height='64' rx='14' fill='%233b2f25'/%3E%3Cpath d='M8 48 L26 22 L36 34 L44 26 L56 48 Z' fill='%237d9a6a'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f4efe6;
+    --card: #fbf8f2;
+    --ink: #3b2f25;
+    --soft: #6e5e4e;
+    --green: #4f6b45;
+    --sage: #7d9a6a;
+    --clay: #a0703f;
+    --line: #ddd2c1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #221b15;
+      --card: #2b231c;
+      --ink: #efe6d8;
+      --soft: #bfae99;
+      --green: #9cb98a;
+      --sage: #7d9a6a;
+      --clay: #c99a66;
+      --line: #43372c;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.6 Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  main {
+    flex: 1;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 72px 20px 40px;
+  }
+  .mark { width: 48px; height: 48px; border-radius: 6px; display: block; margin-bottom: 28px; }
+  h1 {
+    font-size: 2.4rem;
+    line-height: 1.15;
+    font-weight: normal;
+    letter-spacing: .01em;
+    margin: 0 0 6px;
+  }
+  .llc { color: var(--soft); font-size: .95rem; margin: 0 0 32px; letter-spacing: .04em; }
+  .lead { font-size: 1.2rem; margin: 0 0 40px; }
+  .app {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--green);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin: 0 0 40px;
+  }
+  .app h2 { font-size: 1.25rem; font-weight: normal; margin: 0 0 4px; }
+  .app h2 span { color: var(--clay); font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; margin-left: 8px; }
+  .app p { margin: 0; color: var(--soft); }
+  dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; }
+  dt { color: var(--soft); }
+  dd { margin: 0; }
+  a { color: var(--green); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  footer {
+    border-top: 1px solid var(--line);
+    color: var(--soft);
+    font-size: .85rem;
+    text-align: center;
+    padding: 18px 20px 28px;
+  }
+  .ridge { display: block; width: 100%; height: 150px; }
+</style>
+</head>
+<body>
+<main>
+  <svg class="mark" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true">
+    <rect width="8" height="8" fill="#3b2f25"/>
+    <rect x="3" y="2" width="1" height="1" fill="#c99a66"/>
+    <rect x="2" y="3" width="3" height="1" fill="#7d9a6a"/>
+    <rect x="5" y="3" width="1" height="1" fill="#9cb98a" opacity=".6"/>
+    <rect x="1" y="4" width="6" height="1" fill="#7d9a6a"/>
+    <rect x="1" y="5" width="6" height="1" fill="#4f6b45"/>
+    <rect x="0" y="6" width="8" height="1" fill="#4f6b45"/>
+  </svg>
+  <h1>Upslope Labs</h1>
+  <p class="llc">Upslope Labs LLC · Denver, Colorado</p>
+  <p class="lead">An independent studio making mobile apps that help people learn things that take a long time to learn.</p>
+
+  <section class="app">
+    <h2>Radical <span>Coming soon</span></h2>
+    <p>A Chinese reading and study app. Every character is drawn stroke by stroke and colored by its parts, so you can read real text and remember what you read.</p>
+  </section>
+
+  <dl>
+    <dt>Location</dt><dd>Denver, Colorado</dd>
+    <dt>Contact</dt><dd><a href="mailto:david@upslopelabs.com">david@upslopelabs.com</a></dd>
+  </dl>
+</main>
+<svg class="ridge" id="ridge" aria-hidden="true"></svg>
+<footer>© 2026 Upslope Labs LLC</footer>
+<script>
+/* Pixel landscape: ridges built from square blocks, dissolving at the top. Seeded so it looks the same every visit. */
+(function () {
+  var svg = document.getElementById('ridge');
+  var H = 30, W = Math.ceil(svg.clientWidth / 5) || 96, seed = 7;
+  function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  var dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  var layers = [
+    { base: 9,  amp: 9, f: [0.07, 0.19], c: dark ? '#5d6e4f' : '#9db08a', o: 0.55 },
+    { base: 15, amp: 7, f: [0.11, 0.27], c: dark ? '#6f8a5c' : '#7d9a6a', o: 0.8 },
+    { base: 21, amp: 5, f: [0.09, 0.33], c: dark ? '#4f6b45' : '#4f6b45', o: 1 },
+    { base: 26, amp: 2, f: [0.21, 0.5],  c: dark ? '#6b5038' : '#8a6644', o: 1 }
+  ];
+  var out = [];
+  layers.forEach(function (L, i) {
+    var p1 = rnd() * 6, p2 = rnd() * 6;
+    for (var x = 0; x < W; x++) {
+      var top = Math.round(L.base - L.amp * (0.6 * Math.sin(x * L.f[0] + p1) + 0.4 * Math.sin(x * L.f[1] + p2)) * 0.5 - L.amp * 0.5);
+      for (var y = Math.max(0, top - 3); y < H; y++) {
+        var d = y - top;
+        if (d < 0) { if (rnd() > 0.12 * (4 + d)) continue; }        /* stray pixels above the ridge */
+        else if (d < 2 && rnd() < 0.25) continue;                    /* ragged edge */
+        var op = L.o * (d < 0 ? 0.45 : 1) * (0.85 + rnd() * 0.15);
+        out.push('<rect x="' + x + '" y="' + y + '" width="1" height="1" fill="' + L.c + '" opacity="' + op.toFixed(2) + '"/>');
+      }
+    }
+  });
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('shape-rendering', 'crispEdges');
+  svg.innerHTML = out.join('');
+})();
+</script>
+</body>
+</html>
