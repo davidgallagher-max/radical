@@ -44,9 +44,9 @@
     width: 100%;
     max-width: 640px;
     margin: 0 auto;
-    padding: 72px 20px 40px;
+    padding: 40px 20px 24px;
   }
-  .mark { width: 48px; height: 48px; border-radius: 6px; display: block; margin-bottom: 28px; }
+  .mark { width: 48px; height: 48px; border-radius: 6px; display: block; margin-bottom: 20px; }
   h1 {
     font-size: 2.4rem;
     line-height: 1.15;
@@ -73,14 +73,26 @@
   dt { color: var(--soft); }
   dd { margin: 0; }
   a { color: var(--green); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .land { position: relative; }
   footer {
-    border-top: 1px solid var(--line);
-    color: var(--soft);
-    font-size: .85rem;
+    position: absolute; left: 0; right: 0; bottom: 0;
+    color: #f4efe6;
+    font-size: .8rem;
     text-align: center;
-    padding: 18px 20px 28px;
+    padding: 0 20px 4px;
+    text-shadow: 0 1px 2px rgba(0,0,0,.35);
   }
-  .ridge { display: block; width: 100%; height: 220px; }
+  .ridge { display: block; width: 100%; height: 180px; }
+  @media (max-width: 600px) {
+    body { font-size: 16px; }
+    main { padding-top: 28px; }
+    .mark { width: 40px; height: 40px; margin-bottom: 14px; }
+    h1 { font-size: 2rem; }
+    .tag { margin-bottom: 22px; }
+    .app { padding: 14px 16px; margin-bottom: 30px; }
+    .app + .app { margin-top: -18px; }
+    .ridge { height: 150px; }
+  }
 </style>
 </head>
 <body>
@@ -96,8 +108,6 @@
   </svg>
   <h1>Upslope Labs</h1>
   <p class="tag">Smart apps for smart people.</p>
-  <p class="lead">An independent studio making mobile apps that help people learn things that take a long time to learn.</p>
-
   <section class="app">
     <h2>Radical <span>Coming soon</span></h2>
     <p>A Chinese reading and study app. Every character is drawn stroke by stroke and coloured by its parts, so you can read real text and remember what you read.</p>
@@ -113,8 +123,10 @@
     <dt>Contact</dt><dd><a href="mailto:david@upslopelabs.com">david@upslopelabs.com</a></dd>
   </dl>
 </main>
+<div class="land">
 <svg class="ridge" id="ridge" aria-hidden="true"></svg>
 <footer>© 2026 Upslope Labs LLC</footer>
+</div>
 <script>
 /* Pixel mountains: peaked ranges built from small square blocks, with snow on the high peaks
    and stray pixels dissolving above the ridgelines. Seeded so it looks the same every visit. */
