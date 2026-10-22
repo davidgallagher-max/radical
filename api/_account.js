@@ -104,12 +104,15 @@ function merge(a, b) {
   const learned = { ...(a.learned || {}) };
   for (const [w, d] of Object.entries(b.learned || {})) if (!learned[w] || String(d) < String(learned[w])) learned[w] = d;
   for (const w of Object.keys(learned)) if (deleted[w] && !byWord.has(w)) delete learned[w];
+  const familiar = { ...(a.familiar || {}) };  // familiar words (right on two different days), merged the same way
+  for (const [w, d] of Object.entries(b.familiar || {})) if (!familiar[w] || String(d) < String(familiar[w])) familiar[w] = d;
+  for (const w of Object.keys(familiar)) if (deleted[w] && !byWord.has(w)) delete familiar[w];
   const days = {};
   for (const src of [a.days || {}, b.days || {}]) for (const [d, v] of Object.entries(src)) {
     days[d] = days[d] || {};
     for (const [f, n] of Object.entries(v || {})) days[d][f] = Math.max(days[d][f] || 0, +n || 0);
   }
-  return { words, deleted, learned, days };
+  return { words, deleted, learned, familiar, days };
 }
 async function sync(user, incoming) {
   const path = `users/${user.id}/data.json`;

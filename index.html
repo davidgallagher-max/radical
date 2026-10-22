@@ -582,7 +582,17 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .trktop{grid-template-columns:minmax(0,1fr) auto;align-items:end}
 .trktop>div{display:grid;gap:2px}
 .tright{text-align:right}.tright b{font-size:1.05rem}.tright b.done{color:var(--accent)}
-.trtiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.trtiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.trtile{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;padding:10px 10px;align-content:start}.trtile .trbig{font-size:1.45rem}.trtile.tapme{cursor:pointer}
+.trtip{margin:-4px 2px 0}
+.tilepick{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tilepick .btn[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.tilelist .sheetcard{max-height:82vh;max-height:82dvh;overflow:auto;align-content:start}
+.tlhead{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:-20px;background:var(--surface);padding:4px 0;z-index:1}.tlhead h3{margin:0}
+.tlchars{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px}.tlchars .tlcell{aspect-ratio:1}
+.tlwords{display:flex;flex-wrap:wrap;gap:8px 14px}.tlwords .tlcell{display:flex;height:48px;min-width:48px}
+.tlcell svg,.tlcell .glyph{width:100%;height:100%;display:block}.tlwords .tlcell svg,.tlwords .tlcell .glyph{width:48px;height:48px}
+.tlcell span{font-size:2.2rem;line-height:1}
+.tilesel{display:grid;gap:8px}.tilesel select{font:inherit;font-size:1rem;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
 .calhead{display:flex;align-items:center;justify-content:space-between}
 .calhead b{font-family:var(--font-brand);font-size:1.05rem}
 .calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;font-variant-numeric:tabular-nums}
@@ -596,7 +606,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .kd{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 8px}.trs .kd:first-child{margin-left:0}.kd.hit{background:var(--accent)}.kd.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}.kd.off{border:1px dashed var(--muted)}
 .tchart{width:100%;height:auto;display:block;overflow:visible}
 .tgrid{stroke:var(--line);stroke-width:1}
-.tline{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.tline{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}.tline2{stroke:var(--st-active);stroke-width:1.8;stroke-dasharray:4 3}
 .tarea{fill:color-mix(in srgb,var(--accent) 16%,transparent);stroke:none}
 .tdot{fill:var(--accent)}
 .tval{fill:var(--fg);font-size:12px;font-weight:700;font-family:var(--font-ui)}
@@ -605,7 +615,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .ttarget{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
 .stagebar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--line)}
 .stagebar i{display:block;height:100%}
-.sb-new{background:color-mix(in srgb,var(--muted) 45%,transparent)}.sb-learning{background:var(--st-active)}.sb-learned{background:var(--accent)}
+.sb-new{background:color-mix(in srgb,var(--muted) 45%,transparent)}.sb-learning{background:var(--st-active)}.sb-seen{background:color-mix(in srgb,var(--st-active) 40%,transparent)}.sb-learned{background:var(--accent)}
 .trkyears table{width:100%;border-collapse:collapse;font-size:.88rem;font-variant-numeric:tabular-nums}
 .trkyears th,.trkyears td{padding:5px 0;text-align:right;border-bottom:1px solid var(--line)}
 .trkyears tr:last-child th,.trkyears tr:last-child td{border-bottom:0}
@@ -1249,6 +1259,11 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="panel">
       <div class="seg uiseg" id="targetSeg" role="group" aria-label="Daily target"><button type="button" data-t="0">Off</button><button type="button" data-t="10">10</button><button type="button" data-t="20">20</button><button type="button" data-t="30">30</button><button type="button" data-t="50">50</button></div>
       <p class="note">Cards a day. Shown on This week and Track.</p>
+    </div></details>
+    <details class="setsec"><summary><b>Track boxes</b><span class="sum" data-sum="tiles"></span></summary>
+    <div class="panel">
+      <div class="tilesel" id="tileSel"><select aria-label="First box"></select><select aria-label="Second box"></select><select aria-label="Third box"></select></div>
+      <p class="note">The three numbers under the calendar on Track, and on This week. You can also touch and hold a box on Track to change it.</p>
     </div></details>
     <details class="setsec"><summary><b>Learning focus</b><span class="sum" data-sum="modes"></span></summary>
     <div class="panel">
@@ -2717,7 +2732,7 @@ async function syncNow(quietErrors) {
   syncing = (async () => {
     const token = await accessToken(); if (!token) return null;
     const r = await fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, days: store.get("radical-days", {}) } }) });
+      body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, familiar, days: store.get("radical-days", {}) } }) });
     const m = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(m.error || `Sync failed (${r.status}).`);
     applyMerged(m); store.set("radical-synced", Date.now());
@@ -2732,6 +2747,7 @@ function applyMerged(m) {
   myWords.length = 0; myWords.push(...list);
   deleted = m.deleted || {}; store.set("radical-deleted", deleted);
   learned = m.learned || learned; store.set("radical-learned", learned);
+  if (m.familiar) { familiar = m.familiar; store.set("radical-familiar", familiar); }
   if (m.days) store.set("radical-days", m.days);
   store.set("radical-words", myWords); resetSigs(); updateCounts();
   if (!$("wordsScreen").hidden) renderWords();
@@ -3121,8 +3137,8 @@ function streakStats() {
 }
 // The headline numbers, for the opening screen and This week: streak, characters learned, days this week.
 function headline() {
-  const s = streakStats(), w = weekStats(), k = charsLearned();
-  return [s.now > 1 ? `${s.now}-day streak` : "", k ? `${num(k)} characters learned` : "", w.n ? `${w.n} day${w.n === 1 ? "" : "s"} this week` : ""].filter(Boolean);
+  const s = streakStats(), w = weekStats(), k = charStages().familiar.size;
+  return [s.now > 1 ? `${s.now}-day streak` : "", k ? `${num(k)} familiar characters` : "", w.n ? `${w.n} day${w.n === 1 ? "" : "s"} this week` : ""].filter(Boolean);
 }
 function weekCard() {
   const box = $("weekCard"); if (!box) return;
@@ -3132,7 +3148,7 @@ function weekCard() {
   const dots = w.studied.map(x => `<i class="${x ? "on" : ""}"></i>`).join("");
   const today = target ? `<p class="wktoday${w.today >= target ? " done" : ""}">Today: ${num(w.today)} of ${target} cards${w.today >= target ? " ✓" : ""}</p>` : "";
   const line1 = [w.cards ? `${num(w.cards)} card${w.cards === 1 ? "" : "s"}` : "", w.read ? `${num(w.read)} characters read` : "", w.added ? `+${num(w.added)} word${w.added === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
-  const line2 = [s.now > 1 ? `${s.now}-day streak` : "", `${num(charsLearned())} characters learned`].filter(Boolean).join(" · ");
+  const st = charStages(), line2 = [s.now > 1 ? `${s.now}-day streak` : "", ...trackTiles().map(k => TILES[k][1](tileValue(k, st)))].filter(Boolean).join(" · ");
   box.innerHTML = `<div class="wkhead"><b>This week</b><span class="wkdays">${w.n} of 7 days <span class="wkdots" aria-hidden="true">${dots}</span></span></div>`
     + today + (line1 ? `<p>${line1}</p>` : "") + `<p class="wklearn">${line2}</p>`;
   box.onclick = () => setTab("trackScreen"); box.style.cursor = "pointer";
@@ -3141,6 +3157,66 @@ function weekCard() {
 function updateRing() {
   if (!$("wordsScreen").hidden) weekCard();
   if (!$("trackScreen").hidden) renderTrack();
+}
+// ---- Track boxes: three numbers you choose (Settings, Track boxes, or touch and hold a box on Track). Each entry:
+// the box's name, its words on This week, and whether tapping it lists what's in it.
+const TILES = {
+  seen: ["Characters seen", n => `${num(n)} seen`, true], familiar: ["Characters familiar", n => `${num(n)} familiar`, true],
+  learned: ["Characters learned", n => `${num(n)} learned`, true], read: ["Characters read", n => `${num(n)} characters read`],
+  words: ["Words learned", n => `${num(n)} word${n === 1 ? "" : "s"} learned`, true], cards: ["Cards reviewed", n => `${num(n)} card${n === 1 ? "" : "s"}`],
+  days: ["Days practiced", n => `${num(n)} day${n === 1 ? "" : "s"} practiced`] };
+const TILES0 = ["familiar", "learned", "read"];
+function trackTiles() { const t = store.get("radical-tiles", TILES0); return Array.isArray(t) && t.length === 3 && t.every(k => TILES[k]) ? t : TILES0; }
+function setTile(i, k) { const t = [...trackTiles()]; t[i] = k; store.set("radical-tiles", t); paintTileSel(); updateRing(); }
+function tileValue(k, st = charStages()) {
+  const d = store.get("radical-days", {}), sum = f => Object.values(d).reduce((a, v) => a + ((v || {})[f] || 0), 0);
+  return { seen: st.seen.size, familiar: st.familiar.size, learned: st.learned.size, read: sum("r"), words: Object.keys(learned).length, cards: sum("c"), days: Object.values(d).filter(dayUsed).length }[k];
+}
+// A tap and a touch and hold do different things on the same box.
+function holdOrTap(node, onHold, onTap) {
+  let t = 0, held = false, x0 = 0, y0 = 0;
+  node.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; held = false; clearTimeout(t); t = setTimeout(() => { held = true; try { navigator.vibrate && navigator.vibrate(8); } catch (e) {} onHold(); }, 500); });
+  node.addEventListener("pointermove", e => { if (Math.hypot(e.clientX - x0, e.clientY - y0) > 10) clearTimeout(t); });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(ev => node.addEventListener(ev, () => clearTimeout(t)));
+  node.addEventListener("click", () => { if (held) { held = false; return; } onTap(); });
+  node.addEventListener("contextmenu", e => e.preventDefault());
+}
+function pickTile(i) {
+  if (document.querySelector(".tilesheet")) return;
+  const now = trackTiles(), sheet = el("div", "sheet tilesheet"), card = el("div", "sheetcard");
+  card.append(el("h3", "", "Show in this box"));
+  const list = el("div", "tilepick");
+  Object.entries(TILES).forEach(([k, [name]]) => {
+    const b = btn(name, "btn ghost" + (now[i] === k ? " on" : ""), () => { sheet.remove(); setTile(i, k); });
+    if (now[i] === k) b.setAttribute("aria-pressed", "true");
+    list.append(b);
+  });
+  card.append(list, el("p", "note", "Also in Settings, Track boxes."));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.append(sheet);
+}
+// What's in a box, to look at: characters (newest first) or learned words, drawn as they are everywhere else. Drawn as
+// they scroll into view, so a box of 2,000 opens at once.
+async function showTileList(k, st) {
+  const items = k === "words" ? Object.entries(learned).sort((a, b) => String(b[1]).localeCompare(String(a[1]))).map(x => x[0]) : newestFirst(st[k]);
+  const sheet = el("div", "sheet tilelist"), card = el("div", "sheetcard");
+  const head = el("div", "tlhead"); head.append(el("h3", "", `${TILES[k][0]} · ${num(items.length)}`), btn("Done", "btn ghost small", () => sheet.remove()));
+  const grid = el("div", k === "words" ? "tlwords" : "tlchars");
+  card.append(head, grid);
+  if (!items.length) grid.append(el("p", "note", "None yet."));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.append(sheet);
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return; io.unobserve(e.target);
+    const cell = e.target, text = conv(cell.dataset.w);
+    ensure(text).then(() => { cell.innerHTML = ""; [...text].forEach(c => { if (cache[c]) cell.append(glyphFor(c)); else cell.append(el("span", "", c)); }); });
+  }), { root: card, rootMargin: "200px" });
+  items.forEach(x => { const cell = el("div", "tlcell"); cell.dataset.w = x; cell.setAttribute("aria-label", x); grid.append(cell); io.observe(cell); });
+}
+// Settings, Track boxes: the same three choices.
+function paintTileSel() {
+  const t = trackTiles();
+  document.querySelectorAll("#tileSel select").forEach((s, i) => { if (!s.options.length) Object.entries(TILES).forEach(([k, [name]]) => s.append(new Option(name, k))); s.value = t[i]; s.onchange = () => setTile(i, s.value); });
 }
 // ---- Track: the record of your work. Streak, today, a month calendar, two charts, totals, words by stage, years.
 let trackMonth = null;
@@ -3175,36 +3251,59 @@ function renderTrack() {
   }
   cal.append(head, grid, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<i class="kd hit"></i> target reached <i class="kd on"></i> studied <i class="kd off"></i> rest day`));
   box.append(cal);
-  // totals
-  const known = charsLearned(), tiles = el("div", "trtiles");
-  tiles.innerHTML = `<div class="trk"><span class="trl">Characters learned</span><b class="trbig">${num(known)}</b></div><div class="trk"><span class="trl">Characters read</span><b class="trbig">${num(tot(all, "r"))}</b></div>`;
+  // your three boxes (tap: what's in it; touch and hold: change it), then the characters by stage
+  const st = charStages(), tiles = el("div", "trtiles");
+  trackTiles().forEach((k, i) => {
+    const t = el("div", "trk trtile"); t.innerHTML = `<span class="trl">${TILES[k][0]}</span><b class="trbig">${num(tileValue(k, st))}</b>`;
+    if (TILES[k][2]) t.classList.add("tapme");
+    holdOrTap(t, () => pickTile(i), () => { if (TILES[k][2]) showTileList(k, st); });
+    tiles.append(t);
+  });
   box.append(tiles);
-  // chart 1: characters learned over time, from the day each word was learned
-  const series = learnedSeries();
-  if (series.length > 1) box.append(chartBox("Characters learned", lineChart(series)));
+  if (!store.get("radical-tile-tip", false)) { store.set("radical-tile-tip", true); box.append(el("p", "trs trtip", "Touch and hold a box to change it.")); }
+  const nS = st.seen.size, nF = st.familiar.size, nL = st.learned.size;
+  if (nS) {
+    const cs = el("div", "trk"), cp = n => (n / nS * 100).toFixed(1);
+    cs.innerHTML = `<span class="trl">Characters</span><div class="stagebar"><i style="width:${cp(nL)}%" class="sb-learned"></i><i style="width:${cp(nF - nL)}%" class="sb-learning"></i><i style="width:${cp(nS - nF)}%" class="sb-seen"></i></div>`
+      + `<p class="trs">${num(nS)} seen · ${num(nF)} familiar · ${num(nL)} learned <span class="trq">(familiar: right on two different days · learned: remembered after 3 weeks)</span></p>`;
+    box.append(cs);
+  }
+  // familiar and learned over time, once there's a month of it to show
+  const since = store.get("radical-first-use", Date.now());
+  if (Date.now() - since >= 30 * DAY && nF >= 50) { const series = stageSeries(); if (series.length > 1) box.append(chartBox("Familiar and learned characters", lineChart(series) + `<p class="trs">Line: familiar · dashes: learned</p>`)); }
   // chart 2: the last 30 days
   const last30 = []; for (let i = 29; i >= 0; i--) { const k = localDay(Date.now() - i * DAY); last30.push({ k, c: (d[k] || {}).c || 0, r: (d[k] || {}).r || 0 }); }
   box.append(chartBox("Last 30 days", barChart(last30.map(x => x.c), "Cards", target) + barChart(last30.map(x => x.r), "Characters read")));
   // words by stage
-  const nNew = myWords.filter(x => !started(x)).length, nLearned = myWords.filter(x => learned[x.word]).length, nLearning = myWords.length - nNew - nLearned;
-  const st = el("div", "trk");
+  const nLearned = myWords.filter(x => learned[x.word]).length, nFam = myWords.filter(x => familiar[x.word] && !learned[x.word]).length;
+  const nNew = myWords.filter(x => !practiced(x) && !familiar[x.word] && !learned[x.word]).length, nSeen = myWords.length - nNew - nFam - nLearned;
+  const ws = el("div", "trk");
   const pc = n => myWords.length ? (n / myWords.length * 100).toFixed(1) : 0;
-  st.innerHTML = `<span class="trl">Words</span><div class="stagebar"><i style="width:${pc(nNew)}%" class="sb-new"></i><i style="width:${pc(nLearning)}%" class="sb-learning"></i><i style="width:${pc(nLearned)}%" class="sb-learned"></i></div>`
-    + `<p class="trs">${num(nNew)} new · ${num(nLearning)} learning · ${num(nLearned)} learned <span class="trq">(learned: three weeks between reviews, or marked Known)</span></p>`;
-  box.append(st);
+  ws.innerHTML = `<span class="trl">Words</span><div class="stagebar"><i style="width:${pc(nNew)}%" class="sb-new"></i><i style="width:${pc(nSeen)}%" class="sb-seen"></i><i style="width:${pc(nFam)}%" class="sb-learning"></i><i style="width:${pc(nLearned)}%" class="sb-learned"></i></div>`
+    + `<p class="trs">${num(nNew)} new · ${num(nSeen)} seen · ${num(nFam)} familiar · ${num(nLearned)} learned</p>`;
+  box.append(ws);
   // years
   const y = new Date().getFullYear(), inYear = yr => all.filter(k => k.startsWith(yr + "-"));
   const col = keys => [keys.filter(k => dayUsed(d[k])).length, tot(keys, "c"), tot(keys, "r"), tot(keys, "n")];
-  const lYear = yr => Object.values(learned).filter(v => String(v).startsWith(yr + "-")).length;
+  const lYear = yr => Object.values(learned).filter(v => String(v).startsWith(yr + "-")).length, fYear = yr => Object.values(familiar).filter(v => String(v).startsWith(yr + "-")).length;
   const A = col(inYear(y)), B = col(inYear(y - 1)), C = col(all), hasLast = B.some(Boolean) || lYear(y - 1);
   const cell = v => hasLast ? num(v) : "–";
   const rows = [["Days used", 0], ["Cards reviewed", 1], ["Characters read", 2], ["Words added", 3]];
   const yt = el("div", "trk trkyears");
   yt.innerHTML = `<table><thead><tr><th></th><th>${y}</th><th>${y - 1}</th><th>All time</th></tr></thead><tbody>`
     + rows.map(([l, i]) => `<tr><th>${l}</th><td>${num(A[i])}</td><td>${cell(B[i])}</td><td>${num(C[i])}</td></tr>`).join("")
+    + `<tr><th>Words familiar</th><td>${num(fYear(y))}</td><td>${cell(fYear(y - 1))}</td><td>${num(Object.keys(familiar).length)}</td></tr>`
     + `<tr><th>Words learned</th><td>${num(lYear(y))}</td><td>${cell(lYear(y - 1))}</td><td>${num(Object.keys(learned).length)}</td></tr></tbody></table>`;
   box.append(yt);
   checkMilestones();
+}
+// Familiar (v) and learned (v2) characters over time, rebuilt from the two dated lists.
+function stageSeries() {
+  const upTo = (map, day) => { const set = new Set(); Object.entries(map).forEach(([word, d]) => { if (String(d) <= day) [...word].forEach(c => { if (isHan(c)) set.add(c); }); }); return set.size; };
+  const days = [...Object.values(familiar), ...Object.values(learned)].map(String).sort(); if (!days.length) return [];
+  const out = [], endDay = localDay();
+  for (let t = new Date(days[0] + "T12:00:00").getTime(); localDay(t) <= endDay && out.length < 800; t += DAY) { const day = localDay(t); out.push({ day, v: Math.max(upTo(familiar, day), upTo(learned, day)), v2: upTo(learned, day) }); }
+  return out;
 }
 // Characters learned over time, rebuilt each time from the learned list (each word keeps the day it was learned).
 function learnedSeries() {
@@ -3219,8 +3318,9 @@ function lineChart(pts) {
   const X = i => 8 + i * (W - 16) / Math.max(1, n - 1), Y = v => H - 18 - v / max * (H - 30);
   const path = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.v).toFixed(1)}`).join("");
   const area = `${path}L${X(n - 1).toFixed(1)},${H - 18}L${X(0).toFixed(1)},${H - 18}Z`;
+  const two = pts[0].v2 != null, path2 = two ? pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.v2).toFixed(1)}`).join("") : "";
   const fmt = k => new Date(k + "T12:00:00").toLocaleString("en-US", { month: "short", day: "numeric" });
-  return `<svg class="tchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Characters learned over time, now ${max}"><line x1="8" x2="${W - 8}" y1="${H - 18}" y2="${H - 18}" class="tgrid"/><path d="${area}" class="tarea"/><path d="${path}" class="tline"/><circle cx="${X(n - 1)}" cy="${Y(pts[n - 1].v)}" r="3.5" class="tdot"/>`
+  return `<svg class="tchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${two ? "Familiar and learned characters" : "Characters learned"} over time, now ${max}"><line x1="8" x2="${W - 8}" y1="${H - 18}" y2="${H - 18}" class="tgrid"/><path d="${area}" class="tarea"/><path d="${path}" class="tline"/>${two ? `<path d="${path2}" class="tline tline2"/>` : ""}<circle cx="${X(n - 1)}" cy="${Y(pts[n - 1].v)}" r="3.5" class="tdot"/>`
     + `<text x="${X(n - 1)}" y="${Y(pts[n - 1].v) - 8}" text-anchor="end" class="tval">${num(pts[n - 1].v)}</text><text x="8" y="${H - 4}" class="tax">${fmt(pts[0].day)}</text><text x="${W - 8}" y="${H - 4}" text-anchor="end" class="tax">Today</text></svg>`;
 }
 function barChart(vals, label, target) {
@@ -3231,13 +3331,14 @@ function barChart(vals, label, target) {
 }
 // ---- milestones: a short moment at round numbers (characters learned, characters read, streak, cards). Each fires once;
 // anything already passed when this arrived is recorded quietly so nobody gets a pile of them at once.
-const MILESTONES = [["l", [50, 100, 250, 500, 1000, 1500, 2000, 3000], n => `${num(n)} characters learned`], ["r", [1000, 5000, 10000, 25000, 50000, 100000, 250000], n => `${num(n)} characters read`],
+const MILESTONES = [["f", [50, 100, 250, 500, 1000, 2000], n => `${num(n)} familiar characters`], ["l", [50, 100, 250, 500, 1000, 1500, 2000, 3000], n => `${num(n)} characters learned`], ["r", [1000, 5000, 10000, 25000, 50000, 100000, 250000], n => `${num(n)} characters read`],
   ["s", [7, 14, 30, 60, 100, 200, 365], n => `A ${num(n)}-day streak`], ["c", [100, 500, 1000, 2500, 5000, 10000], n => `${num(n)} cards reviewed`]];
-function milestoneValues() { const d = store.get("radical-days", {}), keys = Object.keys(d); return { l: charsLearned(), r: keys.reduce((a, k) => a + (d[k].r || 0), 0), c: keys.reduce((a, k) => a + (d[k].c || 0), 0), s: streakStats().now }; }
+function milestoneValues() { const d = store.get("radical-days", {}), keys = Object.keys(d); return { f: charStages().familiar.size, l: charsLearned(), r: keys.reduce((a, k) => a + (d[k].r || 0), 0), c: keys.reduce((a, k) => a + (d[k].c || 0), 0), s: streakStats().now }; }
 function checkMilestones(show = true) {
   const got = store.get("radical-milestones", null), v = milestoneValues(), fresh = [];
-  const have = got || {};
-  MILESTONES.forEach(([key, steps, text]) => steps.forEach(n => { const id = key + n; if (v[key] >= n && !have[id]) { have[id] = localDay(); fresh.push(text(n)); } }));
+  const have = got || {}, quietF = !have.f0;  // familiar arrived in v38: what's already passed is recorded quietly
+  MILESTONES.forEach(([key, steps, text]) => steps.forEach(n => { const id = key + n; if (v[key] >= n && !have[id]) { have[id] = localDay(); if (!(key === "f" && quietF)) fresh.push(text(n)); } }));
+  have.f0 = 1;
   store.set("radical-milestones", have);
   if (got && show && fresh.length) milestone(fresh[fresh.length - 1]);
 }
@@ -3253,12 +3354,40 @@ function milestone(text) {
 if (store.get("radical-milestones", null) === null) setTimeout(() => checkMilestones(false), 0);  // first run: record what's already passed, quietly
 let learned = store.get("radical-learned", null);
 if (!learned) { learned = {}; myWords.forEach(w => { if (isLearned(w)) learned[w.word] = w.added || localDay(); }); store.set("radical-learned", learned); }
-function learn(w) { if (!learned[w.word] && isLearned(w)) { learned[w.word] = localDay(); store.set("radical-learned", learned); } }
+function learn(w) { if (!learned[w.word] && isLearned(w)) { learned[w.word] = localDay(); store.set("radical-learned", learned); if (typeof familiar === "object" && !familiar[w.word]) { familiar[w.word] = localDay(); store.set("radical-familiar", familiar); } } }
 function unlearn(word) {
   let changed = false;
   [word, typeof toTrad === "function" ? toTrad(word) : word, typeof toSimp === "function" ? toSimp(word) : word].forEach(x => { if (learned[x]) { delete learned[x]; changed = true; } });
   if (changed) { store.set("radical-learned", learned); logDay("u"); }  // u: learned words back for review
 }
+// ---- character stages, the faster numbers next to learned. Seen: in a word you've practiced at least once.
+// Familiar: in a word you got right on two different days (the word keeps its first right day in w.ok1; familiar keeps
+// the day it got there, like learned). Learned: see learn(). A character takes the best stage of any word it's in.
+// Stages only move forward, except that Again takes a word from Learned back to Familiar.
+let familiar = store.get("radical-familiar", null);
+if (!familiar) {  // first run: words with two good reviews behind them, and every learned word, start out familiar
+  familiar = {};
+  myWords.forEach(w => { if (learned[w.word] || ["srs", "wsrs", "lsrs"].some(k => w[k] && w[k].reps >= 2 && w[k].ivl >= 1)) familiar[w.word] = learned[w.word] || w.added || localDay(); });
+  Object.entries(learned).forEach(([word, day]) => { if (!familiar[word]) familiar[word] = day; });
+  store.set("radical-familiar", familiar);
+}
+function gotRight(w) {
+  if (familiar[w.word]) return;
+  const day = localDay();
+  if (!w.ok1) w.ok1 = day;
+  else if (w.ok1 !== day) { familiar[w.word] = day; store.set("radical-familiar", familiar); }
+}
+const practiced = w => !!w.skip || ["srs", "wsrs", "lsrs"].some(k => w[k]);
+// Each stage's characters, with the day each one got there (the earliest word that brought it).
+function charStages() {
+  const seen = new Map(), fam = new Map(), lrn = new Map();
+  const put = (m, word, day) => { day = String(day || ""); [...word].forEach(c => { if (isHan(c) && (!m.has(c) || day < m.get(c))) m.set(c, day); }); };
+  Object.entries(learned).forEach(([word, day]) => { put(lrn, word, day); put(fam, word, day); put(seen, word, day); });
+  Object.entries(familiar).forEach(([word, day]) => { put(fam, word, day); put(seen, word, day); });
+  myWords.forEach(w => { if (practiced(w)) put(seen, w.word, w.ok1 || w.added); });
+  return { seen, familiar: fam, learned: lrn };
+}
+const newestFirst = m => [...m.entries()].sort((a, b) => b[1].localeCompare(a[1])).map(x => x[0]);
 if (!store.get("radical-first-use", null)) store.set("radical-first-use", Date.now());
 function grade(w, g, k = "srs") {
   if (!w[k]) { w[k] = freshSrs(); countNew(k); }
@@ -3268,7 +3397,7 @@ function grade(w, g, k = "srs") {
   if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); unlearn(w.word); }
   else if (ivl < 1) { s.ivl = 0; s.reps++; s.due = Date.now() + ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); }  // later today
   else { s.ivl = k === "srs" && w.skip ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
-  if (g !== "again") learn(w);
+  if (g !== "again") { gotRight(w); learn(w); }
   saveWords();
 }
 const ivlText = d => d === 0 ? "this round" : d < 1 ? "later today" : d === 1 ? "tomorrow" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
@@ -4048,6 +4177,7 @@ $("importFile").onchange = async e => {
 function restoreRecord(j) {
   if (!j) return;
   if (j.learned && typeof j.learned === "object") { Object.assign(learned, j.learned); store.set("radical-learned", learned); }
+  if (j.familiar && typeof j.familiar === "object") { for (const [w, d] of Object.entries(j.familiar)) if (!familiar[w] || String(d) < String(familiar[w])) familiar[w] = d; store.set("radical-familiar", familiar); }
   if (j.days && typeof j.days === "object") {
     const d = store.get("radical-days", {});
     for (const [day, v] of Object.entries(j.days)) { d[day] = d[day] || {}; for (const [f, n] of Object.entries(v || {})) d[day][f] = Math.max(d[day][f] || 0, +n || 0); }
@@ -4935,6 +5065,7 @@ function setSums() {
     sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
     speech: `${PACES.find(x => x[0] === sayPace)[1]} · speed ${Math.round(rate * 100)}%`,
     target: store.get("radical-target", 20) ? `${store.get("radical-target", 20)} cards a day` : "Off",
+    tiles: trackTiles().map(k => TILES[k][0].replace(/^Characters (\w)/, (m, c) => c.toUpperCase())).join(", "),
     words: session ? "In your account" : "Only on this phone" };
   document.querySelectorAll("[data-sum]").forEach(x => x.textContent = S[x.dataset.sum] || "");
 }
@@ -4944,10 +5075,10 @@ document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "ch
 // tallies, what you're reading now and all of History, and your settings. A summary shows first; nothing leaves the
 // app until Save file.
 const SETTING_KEYS = ["radical-palette", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-target",
-  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge"];
+  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-tiles"];
 function backupData() {
   const settings = {}; SETTING_KEYS.forEach(k => { try { const v = localStorage.getItem(k); if (v !== null) settings[k] = v; } catch (e) {} });
-  return { app: "Radical", version: APP_VERSION, saved: new Date().toISOString(), words: myWords, learned, days: store.get("radical-days", {}),
+  return { app: "Radical", version: APP_VERSION, saved: new Date().toISOString(), words: myWords, learned, familiar, days: store.get("radical-days", {}),
     text: $("src").value, doc: doc ? { ...doc, simp: undefined } : null, history: textHistory, settings };
 }
 $("backupBtn").onclick = () => {
@@ -5459,6 +5590,7 @@ $("wikiRandom").onclick = async () => {
 const paintGoal = row => row.querySelectorAll("[data-m]").forEach(b => b.setAttribute("aria-pressed", inGoal(b.dataset.m)));
 document.querySelectorAll("#modesSeg [data-m]").forEach(b => b.onclick = () => { setGoal(b.dataset.m, !inGoal(b.dataset.m)); paintGoal($("modesSeg")); setSums(); });
 paintGoal($("modesSeg"));
+paintTileSel();
 // The red number on 練 can be turned off (Settings, Learning focus). Today still counts the same.
 $("badgeSw").setAttribute("aria-checked", store.get("radical-badge", true));
 $("badgeSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-badge", on); e.currentTarget.setAttribute("aria-checked", on); updateCounts(); setSums(); };
