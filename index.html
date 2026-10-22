@@ -3249,7 +3249,7 @@ function grade(w, g, k = "srs") {
   if (!w[k]) { w[k] = freshSrs(); countNew(k); }
   const s = w[k], ivl = nextIvl(s, g);
   if (k === "srs" && w.skip && (g === "again" || g === "hard")) w.skip = false;  // a known word you missed becomes Active again
-  logDay("c"); store.set("radical-rev-since-backup", store.get("radical-rev-since-backup", 0) + 1);
+  logDay("c"); markDone(w, k); store.set("radical-rev-since-backup", store.get("radical-rev-since-backup", 0) + 1);
   if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); unlearn(w.word); }
   else if (ivl < 1) { s.ivl = 0; s.reps++; s.due = Date.now() + ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); }  // later today
   else { s.ivl = k === "srs" && w.skip ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
@@ -3276,12 +3276,25 @@ const dueIn = (w, ms) => ms.some(m => modeDue(w, m));
 const dueAny = w => dueIn(w, MODES);
 const modesOf = how => how === "mix" ? MODES : [how];
 // Today: every word whose review time has come in these modes (longest waiting first), then a few new words (the day's
-// new-word allowance). New words start in the first of the modes (Read when it's there).
-function todayList(ms) {
-  const first = w => Math.min(...ms.filter(m => modeDue(w, m)).map(m => w[KEYS[m]].due));
-  const due = myWords.filter(w => dueIn(w, ms)).sort((a, b) => first(a) - first(b));
+// new-word allowance), at most TODAY_MAX a day. New words start in the first of the modes (Read when it's there).
+// Words you've practiced today keep their place (a missed one comes back) without taking a new one; past 30, the rest
+// wait for tomorrow (N more at the end of Today takes those first, as the Learning words due soonest). With `at` (a
+// time), the list as it will stand then: Tomorrow on the finish screen.
+const TODAY_MAX = 30;
+function doneToday() { const r = store.get("radical-today-done", null); return new Set(r && r.day === localDay() ? r.w : []); }
+function markDone(w, k) {
+  const m = MODES.find(x => KEYS[x] === k); if (!inGoal(m)) return;
+  const d = doneToday(); if (d.has(w.word)) return;
+  d.add(w.word); store.set("radical-today-done", { day: localDay(), w: [...d] });
+}
+function todayList(ms, at) {
+  const now = at || Date.now(), dueAt = (w, m) => { const k = KEYS[m], x = w[k]; return !!(x && x.due && x.due <= now && (k === "srs" || !w.skip)); };
+  const first = w => Math.min(...ms.filter(m => dueAt(w, m)).map(m => w[KEYS[m]].due));
+  const due = myWords.filter(w => ms.some(m => dueAt(w, m))).sort((a, b) => first(a) - first(b));
   const k = KEYS[ms[0]], fresh = myWords.filter(w => !w.skip && !w[k] && !due.includes(w));
-  return [...due, ...fresh.slice(0, Math.max(0, newLeft(k)))];
+  const list = [...due, ...fresh.slice(0, Math.max(0, at ? NEW_PER_DAY : newLeft(k)))];
+  const done = at ? new Set() : doneToday(); let room = TODAY_MAX - done.size;
+  return list.filter(w => done.has(w.word) || room-- > 0);
 }
 const isNewIn = (w, how) => !w.skip && !modesOf(how).some(m => w[KEYS[m]]);
 // The badge: words left in Today for your goal (a word due in two modes counts once).
@@ -4338,11 +4351,12 @@ function showFront() {
     const fin = el("div", "finish"), mark = el("div", "finmark");
     fin.append(mark, el("h3", "", "Session complete"));
     ensure("完").then(() => { if (!fin.isConnected) return; const svg = svgFor("完", false, true); mark.append(svg); animate(svg, "完", 1.2); });
-    const gained = Object.keys(learned).length - (sc.learned0 || 0), soon = midnight() + 2 * DAY;
-    const next = myWords.filter(x => goal.some(m => { const s2 = x[KEYS[m]]; return s2 && s2.due && s2.due < soon && (m === "read" || !x.skip); })).length;
+    // What's next, counted the way the red number on 練 counts: what's left of Today, then Today as it will stand when
+    // tomorrow starts (4am), capped at 30 the same way.
+    const gained = Object.keys(learned).length - (sc.learned0 || 0), left = todayList(goal).length, next = todayList(goal, midnight() + DAY + 6e4).length;
     fin.append(el("p", "donescore", `${rDone} card${rDone === 1 ? "" : "s"} · ${scoreHTML(sc)}${sc.best > 1 ? ` · best run ${sc.best}` : ""}`));
     fin.append(el("p", "note", `<span lang="zh">${conv("對")}</span> right · <span lang="zh">${conv("半")}</span> half · <span lang="zh">${conv("錯")}</span> wrong`));
-    fin.append(el("p", "finnext", [gained > 0 ? `+${gained} learned` : "", next ? `${next} due by tomorrow` : "Nothing due tomorrow"].filter(Boolean).join(" · ")));
+    fin.append(el("p", "finnext", [gained > 0 ? `+${gained} learned` : "", left ? `${left} left today` : "", next ? `Tomorrow: about ${next} card${next === 1 ? "" : "s"}` : "Nothing due tomorrow"].filter(Boolean).join(" · ")));
     const acts = el("div", "finacts");
     const missed = sc.mw.filter(x => myWords.includes(x));
     // Another N: the same kind of set again, if there's anything left in it (not after a hand-picked set).
