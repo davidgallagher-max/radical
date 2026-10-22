@@ -103,6 +103,13 @@ Make 2 topics close to these interests (related, not the same searches repeated)
 Each topic must be a real Chinese Wikipedia article title or a good search word, 2 to 4 characters, Traditional characters, Taiwan usage.${avoid.length ? ` Don't repeat: ${avoid.join("、")}.` : ""}
 Return ONLY JSON: {"topics":[{"zh":"台灣夜市","en":"Night markets","py":"Táiwān yèshì"}, ...]} with exactly 9 items; "en" is 1 to 2 English words, "py" is pinyin with tone marks.`;
 
+// Word Sets: a short list of useful words on a theme ("Food", or anything a learner types). The same theme always
+// makes the same request, so Vercel's CDN can share a set between learners (see the GET below).
+const WORDSET_PROMPT = (theme) => `An adult learner of Mandarin (beginner to low intermediate) wants a set of words to study on this theme: "${theme}"
+List the 24 most useful words and short set phrases for it: common, everyday, the ones they'd meet or need first, most useful first. Real dictionary words only, no sentences.
+Use Taiwan usage and Traditional characters. If the theme isn't something words can be listed for, return an empty list.
+Return ONLY JSON: {"words":[{"word":"Traditional characters","pinyin":"pinyin with tone marks, Taiwan reading","meaning":"short English meaning, under 8 words"}]}`;
+
 // Judge a flash card answer that the app's simple word match rejected: abbreviations, synonyms, paraphrases
 // and small typos still count.
 const JUDGE_PROMPT = (word, meaning, guess, pattern) => `A learner of Mandarin was shown the Chinese ${pattern ? `grammar pattern ${word} (the ~ or … stands for whatever fills the slot)` : `word ${word}`}. Its dictionary meaning is: ${meaning}
@@ -193,6 +200,13 @@ module.exports = async (req, res) => {
       });
       await account.saveFeedback(user, today, { at: Date.now(), email: user.email, text, meta, kind: lab ? "lab" : "feedback", image: !!image, sent: r.ok });
       if (!r.ok) return res.status(502).json({ error: "The message couldn't be sent. It was saved; try again later." });
+      // A copy for the sender, only ever to the address they signed in with (so the form can't mail anyone else).
+      // Its own email, so the owners' addresses stay private. Best effort: a failed copy doesn't fail the send.
+      if (!lab && user.email) await fetch("https://api.resend.com/emails", {
+        method: "POST", headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
+        body: JSON.stringify({ from: "Radical feedback <feedback@upslopelabs.com>", to: [user.email], subject: "Your note to Radical",
+          text: `Thanks for writing. Here's a copy of what you sent.\n\n${text}` })
+      }).catch(() => {});
       return res.status(200).json({ ok: true });
     }
   } catch (e) { return res.status(500).json({ error: e.message }); }
@@ -221,6 +235,19 @@ module.exports = async (req, res) => {
         res.setHeader("Cache-Control", "public, max-age=0");
       }
       return res.status(200).json({ card });
+    }
+    if (body.action === "wordset") {
+      const theme = String(body.theme || "").trim().replace(/\s+/g, " ").slice(0, 60);
+      if (!theme) return res.status(400).json({ error: "No theme given." });
+      const out = parseJSON(await askClaude(FAST_MODEL, WORDSET_PROMPT(theme), 1500));
+      if (!out || !Array.isArray(out.words)) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      const words = out.words.filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word))
+        .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").slice(0, 80) })).slice(0, 30);
+      if (req.method === "GET" && words.length) {  // the same for everyone: Vercel's CDN keeps a set for a year
+        res.setHeader("Vercel-CDN-Cache-Control", "max-age=31536000");
+        res.setHeader("Cache-Control", "public, max-age=0");
+      }
+      return res.status(200).json({ words });
     }
     if (body.action === "words") {
       const text = String(body.text || "").trim().slice(0, 4000);
