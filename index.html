@@ -1408,7 +1408,10 @@ function watchLines(reader) {
   }), { root: $("readScreen"), threshold: [0, .6, 1] });
   reader.querySelectorAll(".line").forEach(l => lineSeen.observe(l));
 }  // reading: a read-along is running
-function stopReading() { readToken++; reading = false; if ("speechSynthesis" in window) speechSynthesis.cancel(); document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking")); const b = $("listenBtn"); if (b) b.setAttribute("aria-pressed", "false"); if ($("speedPop")) $("speedPop").hidden = true; readAloud.restart = null; }
+// listenAll: Listen is reading the whole text (it turns pages and shows more by itself). Leaving the screen, tapping
+// Listen again or starting another voice ends it; turning a page by hand carries on from the top of that page.
+let listenAll = false;
+function stopReading(keepListen) { readToken++; reading = false; if (!keepListen) listenAll = false; if ("speechSynthesis" in window) speechSynthesis.cancel(); document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking")); const b = $("listenBtn"); if (b) b.setAttribute("aria-pressed", "false"); if ($("speedPop")) $("speedPop").hidden = true; readAloud.restart = null; }
 // A line's chunks: sentences (ending in 。！？); a sentence over about 25 characters splits at ，、；：; a stretch
 // with no punctuation at all splits every 15 or so characters, always at a word boundary.
 function chunksOf(line) {
@@ -1437,7 +1440,7 @@ function readAloud(lines, all, k = 1) {
   const wasReading = document.querySelector(".speaking") || ($("listenBtn") && $("listenBtn").getAttribute("aria-pressed") === "true");
   stopReading();
   if (all && wasReading) return;  // the Listen button toggles
-  const token = readToken; reading = true;
+  const token = readToken; reading = true; if (all) listenAll = true;
   // Listen opens the speed slider under the controls while it plays (Size closes, so only one is open).
   if (all) { $("listenBtn").setAttribute("aria-pressed", "true"); sizeOpen(false); $("speedIn").value = rate; $("speedPop").hidden = false; }
   const simp = script === "simp", v = simp ? cnVoice : twVoice;
@@ -1449,10 +1452,14 @@ function readAloud(lines, all, k = 1) {
   const next = () => {
     if (token !== readToken) return;
     unlight();
-    if (n >= queue.length) { reading = false; readAloud.restart = null; if (all) { $("listenBtn").setAttribute("aria-pressed", "false"); $("speedPop").hidden = true; } return; }
+    if (n >= queue.length) {
+      if (all && listenAll && listenNext()) return;  // more to read: the next part or page carries on by itself
+      reading = false; listenAll = false; readAloud.restart = null; if (all) { $("listenBtn").setAttribute("aria-pressed", "false"); $("speedPop").hidden = true; } return;
+    }
     const my = gen, c = queue[n++];
-    if (c.first) { countLine(c.line); if (all) c.line.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+    if (c.first) countLine(c.line);
     c.groups.forEach(g => g.classList.add("speaking"));
+    if (all) followAlong(c.groups);
     const u = new SpeechSynthesisUtterance(c.text);
     u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = Math.max(.1, rate * (all ? 1 : k));
     readAloud.current = u;  // keep a reference: some browsers drop the events of an utterance nothing points to
@@ -1466,6 +1473,34 @@ function readAloud(lines, all, k = 1) {
     speechSynthesis.speak(u);
   };
   next();
+}
+// Listen goes on to the rest of the text: "Show more" when a long text is shown in parts (carrying on from the first
+// new line), then the next page of a document. Returns false at the very end.
+function listenNext() {
+  const reader = $("reader"), more = reader.querySelector(".more");
+  if (more) {
+    const from = reader.querySelectorAll(".line").length;
+    stopReading(true); renderLimit += 1500;
+    render().then(() => { if (listenAll && !$("readScreen").hidden) readAloud([...reader.querySelectorAll(".line")].slice(from), true); });
+    return true;
+  }
+  if (typeof doc !== "undefined" && doc && doc.pages && doc.i < doc.pages.length - 1) { showDocPage(doc.i + 1); return true; }
+  return false;
+}
+// While Listen plays, the sentence being read stays about a quarter to a third of the way down the reading area (below
+// the pinned bars, above the tab bar). The page only moves when the sentence drifts out of that band, and it leaves you
+// alone for 5 seconds after you scroll it yourself.
+let handScroll = 0;
+["touchmove", "wheel"].forEach(ev => $("readScreen").addEventListener(ev, () => { handScroll = Date.now(); }, { passive: true }));
+function followAlong(groups) {
+  const scr = $("readScreen"); if (scr.hidden || Date.now() - handScroll < 5000) return;
+  const rs = groups.map(g => g.getBoundingClientRect()).filter(r => r.height); if (!rs.length) return;
+  const top = Math.min(...rs.map(r => r.top)), bottom = Math.max(...rs.map(r => r.bottom));
+  const bar = $("readBar"), sr = scr.getBoundingClientRect(), tb = $("tabbar").getBoundingClientRect();
+  const areaTop = sr.top + (parseFloat(getComputedStyle(bar).top) || 0) + bar.offsetHeight;
+  const areaBot = tb.top > innerHeight / 2 && tb.width > innerWidth / 2 ? tb.top : innerHeight, h = areaBot - areaTop;
+  if (h < 80 || top >= areaTop + h * .12 && bottom <= areaTop + h * .62) return;
+  scr.scrollBy({ top: top - (areaTop + h * .28), behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 // ---- one speed setting for every speaker: Normal, Slower (about 70%, short pauses) and Step by step (a word is said a
 // syllable at a time, a sentence a word at a time, with clear gaps). Listen cards, card sentences and the reader's
@@ -4920,6 +4955,7 @@ function showDocBar() {
 }
 async function showDocPage(i) {
   if (!doc) return;
+  const listening = listenAll;  // Listen carries on from the top of the new page
   if (reading) stopReading();  // turning the page stops the voice right away, before any rewrite or loading
   i = Math.max(0, Math.min(doc.pages.length - 1, i));
   if (doc.pages[i] == null) {
@@ -4946,7 +4982,8 @@ async function showDocPage(i) {
   }
   saveDoc();
   $("src").value = text; store.set("radical-text", text);
-  showDocBar(); onNewText(); render(); $("readScreen").scrollTop = 0;
+  showDocBar(); onNewText(); const shown = render(); $("readScreen").scrollTop = 0;
+  if (listening) shown.then(() => { if (!$("readScreen").hidden && !reading) readAloud([...$("reader").querySelectorAll(".line")], true); });
   rateDocPage(text);
 }
 let simpBusy = false;
