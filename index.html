@@ -70,7 +70,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .menupanel>button:active,.menupanel>button:focus-visible{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .menupanel .mi{font-family:var(--font-zh);font-size:1.25rem;font-weight:600;width:1.6em;text-align:center;color:var(--accent)}
 .menupanel hr{border:0;border-top:1px solid var(--line);margin:8px 4px}
-.menupanel>button.aitally{margin-top:auto;display:block;font-size:.84rem;font-weight:500;color:var(--muted);padding:10px;line-height:1.4;border-top:1px solid var(--line);border-radius:0}
+.menupanel>button.aitally{margin-top:auto;display:block;font-size:.92rem;font-weight:500;color:var(--muted);padding:10px;line-height:1.4;border-top:1px solid var(--line);border-radius:0}
 .aibreak{font-size:.85rem}
 .aibreak table{width:100%;border-collapse:collapse;margin:4px 0 12px}
 .aibreak td{padding:3px 0;border-bottom:1px solid var(--line)}
@@ -84,7 +84,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* ---- tab bar */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:4;display:grid;grid-template-columns:repeat(4,1fr);background:color-mix(in srgb,var(--surface) 92%,transparent);
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding-bottom:var(--bot);height:calc(var(--tabh) + var(--bot))}
-.tabbar button{all:unset;cursor:pointer;display:grid;justify-items:center;align-content:center;gap:2px;font-size:.76rem;font-weight:500;color:var(--muted);position:relative}
+.tabbar button{all:unset;cursor:pointer;display:grid;justify-items:center;align-content:center;gap:2px;font-size:.84rem;font-weight:500;color:var(--muted);position:relative}
 .tabbar button[aria-current="page"]{color:var(--accent)}
 .tabbar .tz{font-family:var(--font-zh);font-size:1.35rem;line-height:1.1;font-weight:600}
 .badge{position:absolute;top:6px;left:calc(50% + 10px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#E5372F;color:#fff;font-size:.7rem;font-weight:700;display:grid;place-items:center}
@@ -153,7 +153,7 @@ p.busy{margin:-4px 4px 0}
 .whead{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:3px 10px;padding:11px 12px;align-items:center}
 .wt{font-size:1.05rem;line-height:1.35}
 .wt b[lang=zh]{font-family:var(--font-zh);font-size:1.15rem}
-.wmeta{grid-column:1;font-size:.84rem;color:var(--muted)}
+.wmeta{grid-column:1;font-size:.92rem;color:var(--muted)}
 .wmeta .lv{color:var(--accent);font-weight:600}
 .chev{grid-row:1/3;grid-column:2;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translate(-2px,-2px);transition:transform .15s}
 .whit.open .chev{transform:rotate(-135deg) translate(-2px,-2px)}
@@ -178,7 +178,7 @@ p.busy{margin:-4px 4px 0}
 .seg.simpseg button.working::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,transparent,color-mix(in srgb,#fff 18%,transparent),transparent);animation:shimmer 1.4s linear infinite}
 @keyframes fillup{from{transform:scaleX(.04)}to{transform:scaleX(.94)}}
 @keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
-.simpnote{font-size:.84rem;color:var(--muted);margin:0 0 2px;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.simpnote{font-size:.92rem;color:var(--muted);margin:0 0 2px;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--accent) 10%,transparent)}
 /* Sparks: three slow looping paths so neighbouring characters don't move alike. */
 .spark{animation:drift1 12s ease-in-out infinite}
 .spark.p2{animation-name:drift2}.spark.p3{animation-name:drift3}
@@ -197,7 +197,7 @@ p.busy{margin:-4px 4px 0}
 .minipop .sizerow{display:flex;align-items:center;gap:8px}
 .minipop input{flex:1}
 .mini .minien{margin:0}
-.minipy{all:unset;cursor:pointer;font-size:.84rem;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+.minipy{all:unset;cursor:pointer;font-size:.92rem;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
 .minipy[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);border-color:var(--accent);font-weight:700}
 .minibody{display:grid;gap:8px}
 .word.target .cell{box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--accent) 70%,transparent)}
@@ -206,8 +206,8 @@ p.busy{margin:-4px 4px 0}
 .minigloss .pp{color:var(--accent);font-weight:500}
 .miniclose{all:unset;cursor:pointer;position:absolute;top:50%;right:6px;transform:translateY(-50%);width:30px;height:30px;display:grid;place-items:center;border-radius:50%;font-size:1.3rem;line-height:1;color:var(--muted)}
 .miniclose:hover,.miniclose:focus-visible{color:var(--fg);background:color-mix(in srgb,var(--fg) 10%,transparent)}
-.minigloss .pm{color:var(--muted);font-size:.9rem;flex:1;min-width:120px}
-.cardwait{display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--muted);padding:6px 2px}
+.minigloss .pm{color:var(--muted);font-size:.92rem;flex:1;min-width:120px}
+.cardwait{display:flex;align-items:center;gap:10px;font-size:.92rem;color:var(--muted);padding:6px 2px}
 .cardwait .shimmer{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .miniadd{margin-left:auto}
@@ -232,7 +232,7 @@ p.busy{margin:-4px 4px 0}
 .revsub .revscore{margin-top:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 @media (max-width:359px){#reviewScreen .scriptpick .sclabel{display:none}#reviewScreen .revtitle{font-size:1rem}}
 .revprev:focus-visible{outline:2px solid var(--accent);border-radius:6px}
-.revscore{display:block;font-family:var(--font-ui);font-size:.84rem;font-weight:500;color:var(--muted);margin-top:2px}
+.revscore{display:block;font-family:var(--font-ui);font-size:.92rem;font-weight:500;color:var(--muted);margin-top:2px}
 .revscore:empty{display:none}
 .revscore{cursor:pointer}.revscore .sc{font-family:var(--font-zh);font-weight:700;font-size:1.05em}
 /* A count that just went up: its character glows for a couple of seconds and the number rolls up like a dial. */
@@ -261,7 +261,7 @@ p.busy{margin:-4px 4px 0}
 .finacts{display:grid;gap:8px;width:100%;margin-top:8px}
 .revtitle{margin:0;text-align:center;font-family:var(--font-brand);font-size:1.15rem;font-weight:800}
 .ratehead{margin:6px 0 0;text-align:center;display:grid;gap:2px}
-.ratehead b{font-size:.95rem}.ratehead span{font-size:.84rem;color:var(--muted)}
+.ratehead b{font-size:.95rem}.ratehead span{font-size:.92rem;color:var(--muted)}
 .flipbtn{justify-self:center}
 /* Flash cards: pinyin in plain ink (no tone colors), so the characters' colors stay the only color on the card. */
 #reviewScreen .bigpy span,#reviewScreen .cell .py span,#reviewScreen .res b span,#reviewScreen .sy span,#reviewScreen .minigloss .pp,#lookScreen .bigpy span,#lookScreen .cell .py span,#lookScreen .minigloss .pp{color:var(--fg)!important}
@@ -272,7 +272,7 @@ p.busy{margin:-4px 4px 0}
 .revhead{display:flex;align-items:center;justify-content:center;gap:12px}
 /* The title and running score stay pinned just under the top bar while the card scrolls. */
 .revpin{position:sticky;top:44px;z-index:4;background:var(--bg);margin:0 -16px;padding:0 16px 6px}
-.revend{all:unset;cursor:pointer;font-size:.88rem;color:var(--muted);padding:0 10px;line-height:44px}
+.revend{all:unset;cursor:pointer;font-size:.92rem;color:var(--muted);padding:0 10px;line-height:44px}
 .revend:focus-visible{outline:2px solid var(--accent);border-radius:6px}
 .seg.minseg button{font-size:.95rem;padding:4px 10px}
 .revbar{position:fixed;left:0;right:0;bottom:0;padding:10px max(16px,calc((100vw - 760px) / 2)) calc(var(--bot) + 12px);background:color-mix(in srgb,var(--bg) 92%,transparent);
@@ -280,7 +280,7 @@ p.busy{margin:-4px 4px 0}
 .revbar:empty{display:none}
 .revbartop{display:flex;align-items:center;gap:10px;min-height:46px}
 .revbar .guessacts .btn,.revbar .grades button{min-height:56px;box-sizing:border-box}
-.revbartop .rl{flex:1;display:grid;line-height:1.25}.revbartop .rl b{font-size:.92rem}.revbartop .rl small{font-size:.84rem;color:var(--muted)}
+.revbartop .rl{flex:1;display:grid;line-height:1.25}.revbartop .rl b{font-size:.92rem}.revbartop .rl small{font-size:.92rem;color:var(--muted)}
 .revbartop .flipbtn{flex:none;display:inline-flex;align-items:center;gap:6px}
 .revbartop .flipbtn i{font-style:normal;font-size:1.05rem}
 #reviewScreen.screen.sub{padding-bottom:calc(var(--bot) + 170px)}
@@ -288,7 +288,7 @@ p.busy{margin:-4px 4px 0}
 .sylrow{display:flex;gap:6px;flex-wrap:wrap}
 .sy{font-style:normal;font-weight:600;padding:1px 7px;border-radius:7px;border:1px solid var(--line)}
 .sy.ok{border-color:var(--on)}.sy.part{border-color:var(--whole)}.sy.no{border-color:var(--sound)}
-.tips{font-size:.84rem;color:var(--muted);line-height:1.45}.tips b{color:var(--fg);font-weight:600}
+.tips{font-size:.92rem;color:var(--muted);line-height:1.45}.tips b{color:var(--fg);font-weight:600}
 .docfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid var(--line);margin-top:4px}
 /* Peek strip: first tap on a word shows it here; a second tap (or tapping the strip) opens the word page. */
 .peek{position:fixed;left:12px;right:12px;bottom:calc(var(--tabh) + var(--bot) + 10px);max-width:736px;margin:0 auto;z-index:3;
@@ -305,7 +305,7 @@ p.busy{margin:-4px 4px 0}
 .peek .prow .saybtn{margin-left:auto}
 .peek .pt{min-width:0;flex:1;display:flex;align-items:baseline;gap:8px;line-height:1.25;padding-left:6px}
 .peek .pp{font-size:.95rem;font-weight:500;color:var(--accent);flex:none}
-.peek .pm{font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.peek .pm{font-size:.92rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .peek .padd{flex:none}
 .peek .popen{flex:none;font-size:.84rem;font-weight:600;color:var(--accent);padding:6px 4px}
 .reader .cell{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
@@ -337,12 +337,12 @@ p.busy{margin:-4px 4px 0}
 .themeseg{justify-self:start}
 .themeseg button{font-family:var(--font-ui);font-size:.9rem;padding:9px 14px}
 .ctl-label{font-size:.7rem;color:var(--muted)}
-.note{font-size:.84rem;color:var(--muted);margin:0;line-height:1.45}
+.note{font-size:.92rem;color:var(--muted);margin:0;line-height:1.45}
 .err{color:var(--sound)}
 .def{color:var(--muted);margin:0}
-.kind{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.kind{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
 .bigpy{font-size:1.3rem;font-weight:500}
-h3.sec{margin:8px 0 0;font-size:.84rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+h3.sec{margin:8px 0 0;font-size:.92rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
 /* Each tab's name, under the brand header: a small heading with its character. Explore's own labels sit under it, quieter. */
 h3.sec.tabsec{display:flex;align-items:baseline;gap:7px;margin:2px 0 0;color:var(--fg);font-size:.84rem}
 h3.sec.tabsec [lang=zh]{font-family:var(--font-zh);font-size:1.05rem;color:var(--accent);letter-spacing:0}
@@ -435,7 +435,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .linectl{display:inline-flex;gap:5px;align-items:center;align-self:center;grid-column:span 5;justify-self:start;padding-left:4px}
 .enbtn{font-size:.78rem;font-weight:600;letter-spacing:.04em;color:var(--accent);background:var(--surface);border:1px solid var(--line);border-radius:14px;height:28px;padding:0 9px;cursor:pointer}
 .trans{margin:-2px 0 4px;padding:8px 12px;border-left:3px solid var(--accent);font-size:.96rem;background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:0 8px 8px 0}
-.loading{color:var(--muted);font-size:.9rem}
+.loading{color:var(--muted);font-size:.92rem}
 .exbtn{white-space:nowrap}.exbtn [lang=zh]{font-family:var(--font-zh);font-size:.9rem;font-weight:600}
 .exbtn.on{border-color:var(--idea);color:var(--idea)}
 .linectl{flex-wrap:nowrap}
@@ -451,7 +451,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .docbar{display:grid;gap:8px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
 .doctitle{font-size:1rem;line-height:1.35;min-width:0}
 .doctitle b[lang=zh]{font-family:var(--font-zh);font-size:1.15rem}
-.doctitle .src{display:block;font-size:.84rem;color:var(--muted);margin-top:2px}
+.doctitle .src{display:block;font-size:.92rem;color:var(--muted);margin-top:2px}
 .doctitle .lv{color:var(--accent);font-weight:600}
 .doctitle a{color:var(--accent)}
 .docbar .docnav{justify-content:space-between}
@@ -466,7 +466,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .topics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .topics button{all:unset;box-sizing:border-box;cursor:pointer;display:grid;justify-items:center;gap:0;padding:5px 6px;border-radius:10px;border:1px solid var(--line);background:var(--surface);min-width:0}
 .topics button b{font-family:var(--font-zh);font-size:1rem;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.topics button span{font-size:.8rem;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topics button span{font-size:.88rem;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topics button i{font-style:normal;font-size:.78rem;color:var(--accent);line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topics button.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
 .whit.skel{display:grid;gap:8px;padding:13px 12px}
@@ -476,7 +476,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 @media (prefers-reduced-motion:reduce){.whit.skel span{animation:none}}
 .hitem .en{font-size:.88rem;color:var(--accent)}
 .metin{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
-.hitem .snip{font-size:.85rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hitem .snip{font-size:.92rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* ---- word screen: page 0 is the word, then one page per character; swipe sideways */
 .wtabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
@@ -495,7 +495,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .pnav{display:flex;justify-content:space-between;align-items:center;min-height:34px}
 .pnav button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-family:var(--font-zh);font-size:1.15rem;padding:4px 6px}
 .pnav i{width:9px;height:9px;border-top:2px solid currentColor;border-right:2px solid currentColor}
-.pnav .swipehint{font-family:var(--font-ui);font-size:.85rem;color:var(--muted);font-weight:500;gap:8px}
+.pnav .swipehint{font-family:var(--font-ui);font-size:.92rem;color:var(--muted);font-weight:500;gap:8px}
 .pnav .nx i{transform:rotate(45deg);animation:nudge 1.6s ease-in-out 2}
 .pnav .pv i{transform:rotate(-135deg)}
 @keyframes nudge{0%,100%{transform:translateX(0) rotate(45deg)}50%{transform:translateX(4px) rotate(45deg)}}
@@ -514,12 +514,12 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .comp .r{font-size:.84rem;font-weight:600}
 .comp .r b{text-transform:uppercase;letter-spacing:.06em}
 .comp .g{font-size:.9rem;min-width:0;overflow-wrap:anywhere}
-.comp .m{font-size:.84rem;color:var(--muted)}
+.comp .m{font-size:.92rem;color:var(--muted)}
 .pad{position:relative;border:1px solid var(--line);border-radius:12px;background:var(--surface);touch-action:none;max-width:100%}
 .pad>svg.gridlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}
 .pad.gridon>svg.gridlay{display:block}
 .pad>svg:not(.gridlay){position:relative}
-.coach{margin:0;font-size:.88rem;color:var(--muted);text-align:center;min-height:2.5em;max-width:300px}
+.coach{margin:0;font-size:.92rem;color:var(--muted);text-align:center;min-height:2.5em;max-width:300px}
 .coach b{color:var(--fg)}
 .grid line{stroke:color-mix(in srgb,var(--muted) 60%,transparent);stroke-width:9;stroke-linecap:round;stroke-dasharray:0.1 26}
 .grid rect{fill:none;stroke:var(--grid);stroke-width:8}
@@ -554,13 +554,13 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .edpen:active{background:color-mix(in srgb,var(--accent) 14%,transparent)}
 .editcard{max-height:88vh;overflow:auto}
 .editcard label,.editcard .edex{display:grid;gap:4px}
-.editcard label>span,.editcard .edex>span{font-size:.84rem;font-weight:600;color:var(--muted)}
+.editcard label>span,.editcard .edex>span{font-size:.92rem;font-weight:600;color:var(--muted)}
 .editcard input,.editcard textarea{font:inherit;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);resize:vertical}
 .editcard .edzh{font-family:var(--font-zh)}
 .editcard .edshow p{margin:2px 0}
 .editcard .edshow p[lang=zh]{font-family:var(--font-zh);font-size:1.15rem}
 .edacts .edreset{margin-left:auto}
-.weekcard{display:grid;gap:4px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);margin-bottom:12px;font-size:.88rem;color:var(--muted)}
+.weekcard{display:grid;gap:4px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);margin-bottom:12px;font-size:.92rem;color:var(--muted)}
 .weekcard p{margin:0}
 .wkhead{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .wkhead b{font-family:var(--font-brand);font-size:1.05rem;color:var(--fg)}
@@ -573,9 +573,9 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 /* ---- Track */
 .track{display:grid;gap:12px}
 .trk{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:6px;min-width:0}
-.trl{font-size:.84rem;color:var(--muted)}
+.trl{font-size:.92rem;color:var(--muted)}
 .trbig{display:block;font-family:var(--font-brand);font-size:1.7rem;font-weight:800;line-height:1.15;color:var(--fg);font-variant-numeric:tabular-nums}
-.trs{margin:0;font-size:.84rem;color:var(--muted)}
+.trs{margin:0;font-size:.92rem;color:var(--muted)}
 .trq{opacity:.8}
 .trktop{grid-template-columns:minmax(0,1fr) auto;align-items:end}
 .trktop>div{display:grid;gap:2px}
@@ -584,8 +584,8 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .calhead{display:flex;align-items:center;justify-content:space-between}
 .calhead b{font-family:var(--font-brand);font-size:1.05rem}
 .calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;font-variant-numeric:tabular-nums}
-.calwd{font-size:.72rem;color:var(--muted)}
-.calday{aspect-ratio:1;display:grid;place-items:center;border-radius:8px;font-size:.84rem;color:var(--muted);border:1px solid transparent}
+.calwd{font-size:.8rem;color:var(--muted)}
+.calday{aspect-ratio:1;display:grid;place-items:center;border-radius:8px;font-size:.92rem;color:var(--muted);border:1px solid transparent}
 .calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--fg)}
 .calday.hit{background:var(--accent);color:var(--bg);font-weight:700}
 .calday.off{border:1px dashed color-mix(in srgb,var(--muted) 45%,transparent)}
@@ -608,17 +608,17 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .trkyears th,.trkyears td{padding:5px 0;text-align:right;border-bottom:1px solid var(--line)}
 .trkyears tr:last-child th,.trkyears tr:last-child td{border-bottom:0}
 .trkyears th:first-child{text-align:left;font-weight:500;color:var(--muted)}
-.trkyears thead th{font-size:.8rem;color:var(--muted);font-weight:600}
+.trkyears thead th{font-size:.88rem;color:var(--muted);font-weight:600}
 .mcard{justify-items:center;text-align:center}
 #tabbar button{position:relative}
 #tabbar .tz{position:relative}
-#splash .splerr{color:var(--muted);font-size:.85rem;max-width:280px;text-align:center;margin:8px 0 0}
+#splash .splerr{color:var(--muted);font-size:.92rem;max-width:280px;text-align:center;margin:8px 0 0}
 #splash .spstat{opacity:0;animation:fadein .9s ease .5s forwards;color:var(--accent);font-size:.85rem;letter-spacing:.04em;margin:4px 0 0}
 .pvctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 8px}
-.kindchip{all:unset;cursor:pointer;font-size:.84rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.kindchip{all:unset;cursor:pointer;font-size:.92rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .kindchip[aria-pressed="true"]{border-color:var(--accent);color:var(--fg);background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .tabsub{margin:-6px 0 10px}
-.tabnote{font-size:.84rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted);margin-left:10px;font-family:var(--font-ui, inherit)}
+.tabnote{font-size:.92rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted);margin-left:10px;font-family:var(--font-ui, inherit)}
 .fbcard textarea{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);resize:vertical}
 .fbshot{justify-self:start;cursor:pointer}
 .lab{display:grid;gap:12px}
@@ -627,12 +627,12 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .labline{padding:0;margin:0}
 .labline .line{margin:0}
 .labsw{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.labdot{all:unset;cursor:pointer;display:grid;justify-items:center;gap:3px;padding:6px 2px;border-radius:10px;border:1px solid var(--line);font-size:.72rem;color:var(--muted)}
+.labdot{all:unset;cursor:pointer;display:grid;justify-items:center;gap:3px;padding:6px 2px;border-radius:10px;border:1px solid var(--line);font-size:.8rem;color:var(--muted)}
 .labdot i{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
 .labdot.on{border-color:var(--accent);color:var(--fg)}
 .labgroup{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:10px}
 .labhead{margin:0;font-weight:600;font-size:.9rem}
-.labhead code{font-size:.75rem;color:var(--muted);font-weight:400;margin-left:6px}
+.labhead code{font-size:.83rem;color:var(--muted);font-weight:400;margin-left:6px}
 .labrow{display:grid;grid-template-columns:96px 1fr 52px;align-items:center;gap:8px;font-size:.85rem}
 .labrow b{font-weight:500;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
 .labrow input{width:100%}
@@ -643,8 +643,8 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .nrow b{font-family:var(--font-zh);font-size:1.1rem;font-weight:600;grid-row:span 2}
 .nrow .np{color:var(--accent);font-size:.85rem}
 .nrow .nm{font-size:.88rem;grid-column:2}
-.nrow .nm i{color:var(--muted);font-size:.84rem}
-.nrow small{grid-column:1/-1;color:var(--muted);font-size:.84rem}
+.nrow .nm i{color:var(--muted);font-size:.92rem}
+.nrow small{grid-column:1/-1;color:var(--muted);font-size:.92rem}
 .nrow.off{border-color:var(--line);opacity:.75}
 .nrow.long b{grid-row:auto;grid-column:1/-1}
 .nrow.long .np,.nrow.long .nm{grid-column:1/-1}
@@ -652,8 +652,10 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revpanel{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
 .revhead{display:flex;align-items:center;gap:10px}
 .revpanel .revhead{justify-content:flex-start}
+/* Two faint lines split the box into its three steps: how (Read, Write, Listen, Mix), which cards, how many. */
+.revpanel>.pills.hows,.revpanel>.pills.cats{padding-bottom:10px;border-bottom:1px solid color-mix(in srgb,var(--line) 75%,transparent)}
 .revhead b{font-family:var(--font-brand);font-size:1.2rem;font-weight:800}
-.revhead span{flex:1;min-width:0;color:var(--muted);font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.revhead span{flex:1;min-width:0;color:var(--muted);font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .revtoggle{all:unset;cursor:pointer;flex:1;min-width:0;display:flex;align-items:center;gap:10px}
 .revtoggle span{line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .revtoggle i{flex:none;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-135deg) translate(-2px,-2px);margin-right:4px;transition:transform .15s}
@@ -676,7 +678,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revpanel .seg2 button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);border-radius:8px;font-weight:700}
 .revpanel .seg2 button[aria-pressed="true"] span{color:var(--accent)}
 .revpanel .seg2 button[aria-pressed="true"]+button,.revpanel .seg2 button:has(+button[aria-pressed="true"]){border-color:transparent}
-.seg2 button span{color:var(--muted);font-size:.84rem;margin-left:2px}
+.seg2 button span{color:var(--muted);font-size:.92rem;margin-left:2px}
 .seg2 button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);border-color:var(--accent);font-weight:700}
 .seg2 button[aria-pressed="true"] span{color:inherit;opacity:.8}
 .seg2 button:disabled{opacity:.4;cursor:default}
@@ -696,7 +698,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
    accent with accent text, the same in every row. */
 .pills{display:flex;flex-wrap:wrap;gap:6px}
 .pills button{all:unset;cursor:pointer;box-sizing:border-box;flex:1 1 auto;text-align:center;white-space:nowrap;padding:8px 12px;border-radius:999px;font-size:.92rem;font-weight:600;color:var(--fg);background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
-.pills button span{color:var(--muted);font-weight:500;font-size:.84rem;margin-left:2px}
+.pills button span{color:var(--muted);font-weight:500;font-size:.92rem;margin-left:2px}
 .pills button[aria-pressed="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--bg));box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:700}
 .pills button[aria-pressed="true"] span{color:var(--accent);opacity:.85}
 .pills button:disabled{opacity:.4;cursor:default}
@@ -709,10 +711,10 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revdone{margin:0;text-align:center;color:var(--muted);font-size:.92rem}
 .listhead{margin:4px 0 0}
 .listhead:empty{display:none}
-.wdot .newtag{font-size:.75rem;font-weight:600;color:var(--muted);margin-right:6px;letter-spacing:.02em}
+.wdot .newtag{font-size:.83rem;font-weight:600;color:var(--muted);margin-right:6px;letter-spacing:.02em}
 .goalpills{margin:10px 0 4px}.goalpills button{padding:10px 12px;font-size:1rem}
 .goalcard .btn.wide{margin-top:12px}
-.backupnote{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.84rem;color:var(--muted);padding:8px 12px;border:1px dashed color-mix(in srgb,var(--sound) 55%,var(--line));border-radius:12px}
+.backupnote{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.92rem;color:var(--muted);padding:8px 12px;border:1px dashed color-mix(in srgb,var(--sound) 55%,var(--line));border-radius:12px}
 .wordlist{display:grid;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
 .wrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-top:1px solid var(--line)}
 .wrow:first-child{border-top:0}
@@ -725,18 +727,18 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .wrow .wmain{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;padding:11px 8px;min-width:0}
 .wrow .wdot{padding:14px 16px 14px 10px;display:flex;align-items:center}
 .wrow .wz{font-family:var(--font-zh);font-size:1.45rem;font-weight:600;min-width:2.2em}
-.wrow .wm{color:var(--muted);font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wrow .wm{color:var(--muted);font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wrow .wdot .dot{width:11px;height:11px}
 .stmenu{position:fixed;z-index:30;background:var(--surface);border-radius:14px;box-shadow:0 0 0 1px var(--line),0 16px 40px rgba(0,0,0,.45);padding:6px;display:grid;min-width:230px;animation:fade .15s ease}
 .stmenu button{all:unset;cursor:pointer;display:grid;grid-template-columns:14px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-radius:10px}
 .stmenu button:active,.stmenu button:focus-visible{background:color-mix(in srgb,var(--accent) 12%,transparent)}
-.stmenu b{display:block;font-weight:600;font-size:.95rem}.stmenu small{display:block;color:var(--muted);font-size:.84rem}
+.stmenu b{display:block;font-weight:600;font-size:.95rem}.stmenu small{display:block;color:var(--muted);font-size:.92rem}
 .stmenu em{font-style:normal;color:var(--accent)}
 .stmenu .confirm small{color:var(--sound)}
-.stmenu .sthead{margin:4px 12px 6px;font-size:.84rem;color:var(--muted)}
+.stmenu .sthead{margin:4px 12px 6px;font-size:.92rem;color:var(--muted)}
 .stmenu .sthead b{display:inline;font-family:var(--font-zh);color:var(--fg);font-size:1rem}
 .stmenu button[aria-checked="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent)}
-.stmenu b .now{display:inline;font-size:.68rem;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-left:4px;vertical-align:2px}
+.stmenu b .now{display:inline;font-size:.75rem;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-left:4px;vertical-align:2px}
 .stmenu .stfoot{display:flex;gap:8px;padding:8px 6px 4px;border-top:1px solid var(--line);margin-top:4px}
 .stmenu .stfoot button{display:block;flex:1;text-align:center;padding:9px 10px;border-radius:9px;font-weight:600;font-size:.88rem;background:var(--accent);color:var(--bg)}
 .stmenu .stfoot button.ghost{background:transparent;color:var(--accent);box-shadow:inset 0 0 0 1px var(--line)}
@@ -760,10 +762,10 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .slotbox{display:inline-block;width:min(140px,38vw);height:min(140px,38vw);border:2px dashed color-mix(in srgb,var(--muted) 60%,transparent);border-radius:12px;opacity:.7}
 .slotbox.sm{width:.85em;height:.85em;border-width:1.5px;border-radius:4px;vertical-align:-.05em;margin:0 1px}
 .wchars .slotbox,.revchars .slotbox{flex:none}
-.pattag{align-self:center;font-family:var(--font-ui);font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;vertical-align:middle}
+.pattag{align-self:center;font-family:var(--font-ui);font-size:.77rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;vertical-align:middle}
 .wz .pattag{font-size:.6rem;padding:1px 6px}
 .revchars .pattag{flex-basis:100%;text-align:center;border:0;padding:0}
-.legline{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font-size:.84rem;color:var(--muted)}
+.legline{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font-size:.92rem;color:var(--muted)}
 .legline span{display:inline-flex;align-items:center;gap:4px}
 .legline i{width:9px;height:9px;border-radius:3px;display:inline-block}
 .legline i+i{margin-left:-2px}
@@ -773,7 +775,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .dot.due{background:var(--st-due)}
 .dot.learning{background:var(--st-active)}
 .dot.known{background:var(--st-known)}
-.dotkey{display:flex;gap:12px;flex-wrap:wrap;font-size:.84rem;color:var(--muted)}
+.dotkey{display:flex;gap:12px;flex-wrap:wrap;font-size:.92rem;color:var(--muted)}
 .dotkey span{display:inline-flex;align-items:center;gap:5px}
 
 /* ---- review */
@@ -875,14 +877,14 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .guess input::placeholder{color:var(--muted);opacity:.45}
 .guess input{font-size:1.1rem;padding:11px 12px}
 .pyprev{justify-self:start;margin:-2px 0 0 calc(5.2em + 8px);font-size:1.1rem;padding:4px 10px;border-radius:8px;border:1px dashed var(--line);background:var(--surface);cursor:pointer}
-.pyprev span{font-size:.72rem;color:var(--muted);margin-left:4px}
+.pyprev span{font-size:.8rem;color:var(--muted);margin-left:4px}
 .guessacts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .guessacts.three{grid-template-columns:1fr 1fr 1fr}
 .guessacts.one{grid-template-columns:1fr}
 .hintbox{display:grid;gap:6px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,transparent);font-size:.92rem}
 .hintbox p{margin:0}
 .cluespot{min-height:2.6em;align-content:center;justify-items:center;text-align:center;padding:8px 12px}
-.cluespot .cluehint{color:var(--muted);font-size:.85rem}
+.cluespot .cluehint{color:var(--muted);font-size:.92rem}
 .cluespot p{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
 .cluechar{cursor:pointer;transition:transform .12s ease}
 .cluechar:active{transform:scale(.96)}
@@ -909,7 +911,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .setsec>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:10px;padding:14px 16px;position:relative}
 .setsec>summary::-webkit-details-marker{display:none}
 .setsec>summary b{font-weight:600;flex:none}
-.setsec>summary .sum{flex:1;min-width:0;text-align:right;color:var(--muted);font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:18px}
+.setsec>summary .sum{flex:1;min-width:0;text-align:right;color:var(--muted);font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:18px}
 .setsec>summary::after{content:"";position:absolute;right:16px;top:50%;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .2s}
 .setsec[open]>summary::after{transform:translateY(-30%) rotate(225deg)}
 .setsec>.panel,.setsec>.setbody,.setsec>.seg{margin:0 12px 14px}
@@ -932,13 +934,13 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .pcard .preview2 .fontglyph{width:30px;height:30px;font-size:25px}
 .plabel{display:grid;gap:1px;min-width:0;line-height:1.25}
 .plabel b{font-size:.9rem}
-.plabel span{font-size:.84rem;color:var(--muted)}
+.plabel span{font-size:.92rem;color:var(--muted)}
 .pcard .ptick{color:var(--accent);font-weight:700;visibility:hidden}
 .pcard[aria-pressed="true"] .ptick{visibility:visible}
 @media (max-width:360px){.pcard .preview2 svg,.pcard .preview2 .fontglyph{width:25px;height:25px}.pcard .preview2 .fontglyph{font-size:21px}}
-.rate{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:.85rem;color:var(--muted)}
+.rate{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:.92rem;color:var(--muted)}
 .rate input{width:100%;accent-color:var(--accent)}
-.about p{font-size:.85rem;color:var(--muted);margin:0;line-height:1.5}
+.about p{font-size:.92rem;color:var(--muted);margin:0;line-height:1.5}
 .acct p{margin:0}.acct input[type=email],.acct input[type=text]{font-size:1.05rem}
 #acctCode{letter-spacing:.3em;font-variant-numeric:tabular-nums}
 .acctmsg:empty,.acctstat:empty{display:none}
@@ -1011,6 +1013,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
         <textarea id="srcIn" rows="1" lang="zh" placeholder="今天讀什麼？" aria-label="Paste or type Chinese" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
         <button type="submit" class="srcgo" aria-label="Read this text"><i></i></button>
       </form>
+      </div>
       <textarea id="src" hidden aria-label="Your Chinese text">他的回答讓我很驚訝。他驚訝到瞪大眼睛。
 我們在登山口附近搭帳篷，趁天氣好去爬山。
 訓練AI需要很多資料，桌上有一堆資料。
@@ -1682,6 +1685,7 @@ function hexHsl(h) {
   if (M !== m) { const d = M - m; s = l > .5 ? d / (2 - M - m) : d / (M + m); hh = (M === r ? (g - b) / d + (g < b ? 6 : 0) : M === g ? (b - r) / d + 2 : (r - g) / d + 4) / 6; }
   return [hh, s, l];
 }
+const mixHex = (a, b, t) => "#" + [1, 3, 5].map(i => Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - t) + parseInt(b.slice(i, i + 2), 16) * t).toString(16).padStart(2, "0")).join("").toUpperCase();
 function hslHex(h, s, l) {
   const f = n => { const k = (n + h * 12) % 12, a = s * Math.min(l, 1 - l); return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, "0"); };
   return ("#" + f(0) + f(8) + f(4)).toUpperCase();
@@ -1702,6 +1706,7 @@ function applyPalette() {
   const root = document.documentElement.style, ui = uiOf(palette);
   root.setProperty("--sw", labFx().weight + "px");
   for (const k in ui) root.setProperty(`--${k}`, ui[k]);
+  root.setProperty("--muted", mixHex(ui.muted, ui.fg, .2));  // grey text a step closer to the text color (v38: easier to read)
   const mt = metalOf(ui.accent); for (const k in mt) root.setProperty(`--${k}`, mt[k]);
   ROLES.forEach((r, i) => root.setProperty(`--${r}`, noColor(palette) ? "var(--fg)" : roleColor(palette, i)));
   document.documentElement.classList.toggle("fontmode", palette === "font");
@@ -2412,13 +2417,13 @@ function submitSrc() {
   box.value = ""; box.blur(); setText(text);
 }
 $("srcForm").addEventListener("submit", e => { e.preventDefault(); submitSrc(); });
+// ＋ New text opens the box with the keyboard up (the focus has to happen inside the tap for iPhones to allow it).
+$("addPanel").querySelector("summary").onclick = e => { e.preventDefault(); const p = $("addPanel"); p.open = !p.open; if (p.open) $("srcIn").focus(); };
 $("srcIn").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); submitSrc(); } });
 $("srcIn").addEventListener("paste", e => {
   const img = [...((e.clipboardData && e.clipboardData.items) || [])].find(it => it.kind === "file" && it.type.startsWith("image/"));
   if (img) {  // a pasted screenshot: read the Chinese out of it
     e.preventDefault(); const file = img.getAsFile();
-// ＋ New text opens the box with the keyboard up (the focus has to happen inside the tap for iPhones to allow it).
-$("addPanel").querySelector("summary").onclick = e => { e.preventDefault(); const p = $("addPanel"); p.open = !p.open; if (p.open) $("srcIn").focus(); };
     (async () => { try { busy("Reading the screenshot…"); const text = await ocr(await imageToJpeg(file)); busy(text ? "" : "No Chinese text found in that picture."); if (text) setText(text, false, "photo"); } catch (err) { busy(err.message); } })();
     return;
   }
@@ -5453,12 +5458,12 @@ document.querySelectorAll("#targetSeg [data-t]").forEach(b => {
   setTimeout(() => { const l = $("reader").querySelector(".loading"); if (l) l.textContent = "Still loading the characters. Check your connection; this page fills in when they arrive."; }, 12000);
   try {
     { const saved = store.get("radical-text", null); if (saved !== null) $("src").value = saved; }
+    $("addPanel").open = !$("src").value.trim();  // nothing to read yet: the box to add text starts open
     upgradeKnown(); applyPalette(); onNewText(); updateCounts(); showDocBar(); updateRing();
     await ensure("部");
     document.querySelectorAll(".brandMark").forEach(x => { const m = svgFor("部", false, true); m.classList.add("brandMark"); x.replaceWith(m); });  // the lit 部 heads every tab
     const am = svgFor("部", false, true); am.style.width = am.style.height = "56px"; $("aboutMark").replaceWith(am);
     const big = svgFor("部", false, true); big.setAttribute("class", "mark"); $("splashMark").replaceWith(big);
-    $("addPanel").open = !$("src").value.trim();  // nothing to read yet: the box to add text starts open
     // The strokes draw over about 5 seconds; then "Tap to begin" fades in. Phones only allow sound after a touch, so
     // the tap is what lets the harp play.
     animate(big, "部", 1.4, () => sp0.classList.add("ready"));
