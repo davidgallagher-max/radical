@@ -1239,10 +1239,11 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <div class="seg uiseg" id="targetSeg" role="group" aria-label="Daily target"><button type="button" data-t="0">Off</button><button type="button" data-t="10">10</button><button type="button" data-t="20">20</button><button type="button" data-t="30">30</button><button type="button" data-t="50">50</button></div>
       <p class="note">Cards a day. Shown on This week and Track.</p>
     </div></details>
-    <details class="setsec"><summary><b>My goal</b><span class="sum" data-sum="modes"></span></summary>
+    <details class="setsec"><summary><b>Learning focus</b><span class="sum" data-sum="modes"></span></summary>
     <div class="panel">
-      <div class="seg uiseg" id="modesSeg" role="group" aria-label="My goal"><button type="button" data-m="read">Read</button><button type="button" data-m="write">Write</button><button type="button" data-m="listen">Listen</button></div>
-      <p class="note">What you want to keep up. The 練 badge and Today count these. Every mode is always there to practice.</p>
+      <div class="seg uiseg" id="modesSeg" role="group" aria-label="Learning focus"><button type="button" data-m="read">Read</button><button type="button" data-m="write">Write</button><button type="button" data-m="listen">Listen</button></div>
+      <p class="note">What you want to keep up. The red number on 練 and Today count these. Every mode is always there to practice.</p>
+      <div class="row" style="justify-content:space-between"><span>Red number on 練</span><button type="button" class="switch small" id="badgeSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
     </div></details>
     <details class="setsec"><summary><b>Your words</b><span class="sum" data-sum="words"></span></summary>
     <div class="panel">
@@ -3190,7 +3191,7 @@ const ivlText = d => d === 0 ? "this round" : d < 1 ? "later today" : d === 1 ? 
 // Each word keeps a schedule per practice mode (Read, Write, Listen). Every mode is always open to practice; Mix
 // covers all three.
 const KEYS = { read: "srs", write: "wsrs", listen: "lsrs" }, MODES = ["read", "write", "listen"];
-// Your goal (asked once; Settings, My goal): the modes you mean to keep up. The 練 badge counts Today's cards in these
+// Your learning focus (asked once; Settings, Learning focus; called "goal" in the code): the modes you mean to keep up. The 練 badge counts Today's cards in these
 // modes only. Practicing outside the goal is always allowed; it just isn't on the badge. The goal is never empty.
 let goal = store.get("radical-goal", null);
 if (!Array.isArray(goal) || !goal.length) goal = ["read", ...store.get("radical-modes", []).filter(m => m !== "read" && MODES.includes(m))];
@@ -3229,13 +3230,13 @@ function dueText(w) {
 }
 function updateCounts() {
   const n = dueCount();
-  $("dueBadge").textContent = n ? n : "";
+  $("dueBadge").textContent = n && store.get("radical-badge", true) ? n : "";
   if (!$("wordsScreen").hidden) renderWords();
 }
 // The badge keeps up on its own: when the app comes back to the front, once a minute while it's open, and when the
 // day turns at 4am (cards that came due while the phone was in a pocket show without a tap).
 { let day0 = localDay();
-  const fresh = () => { if (document.hidden) return; day0 = localDay(); const n = dueCount(); if ($("dueBadge").textContent !== String(n || "")) updateCounts(); };
+  const fresh = () => { if (document.hidden) return; day0 = localDay(); const n = dueCount(); if ($("dueBadge").textContent !== String(n && store.get("radical-badge", true) ? n : "")) updateCounts(); };
   document.addEventListener("visibilitychange", fresh); addEventListener("focus", fresh); addEventListener("pageshow", fresh);
   setInterval(() => { if (localDay() !== day0) { day0 = localDay(); updateCounts(); } else fresh(); }, 60e3); }
 
@@ -4816,7 +4817,7 @@ $("voiceTW").onclick = () => sayVoice("tw"); $("voiceCN").onclick = () => sayVoi
 function setSums() {
   const S = { acct: session ? `Signed in as ${session.email}` : "Not signed in",
     theme: (PALETTES[palette] || {}).name || "", appear: ({ dark: "Dark", light: "Light", system: "Match phone" }[store.get("radical-theme", "dark")] || "") + (cvd ? " · red-green safe" : ""),
-    modes: goal.map(m => HOW_NAME[m]).join(", "),
+    modes: goal.map(m => HOW_NAME[m]).join(", ") + (store.get("radical-badge", true) ? "" : " · no red number"),
     sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
     speech: `${PACES.find(x => x[0] === sayPace)[1]} · speed ${Math.round(rate * 100)}%`,
     target: store.get("radical-target", 20) ? `${store.get("radical-target", 20)} cards a day` : "Off",
@@ -4829,7 +4830,7 @@ document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "ch
 // tallies, what you're reading now and all of History, and your settings. A summary shows first; nothing leaves the
 // app until Save file.
 const SETTING_KEYS = ["radical-palette", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-target",
-  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd"];
+  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge"];
 function backupData() {
   const settings = {}; SETTING_KEYS.forEach(k => { try { const v = localStorage.getItem(k); if (v !== null) settings[k] = v; } catch (e) {} });
   return { app: "Radical", version: APP_VERSION, saved: new Date().toISOString(), words: myWords, learned, days: store.get("radical-days", {}),
@@ -5338,7 +5339,7 @@ $("wikiRandom").onclick = async () => {
 };
 
 // ================= start
-// My goal (Settings): tap to add or drop a mode; the last one can't be dropped.
+// Learning focus (Settings): tap to add or drop a mode; the last one can't be dropped.
 const paintGoal = row => row.querySelectorAll("[data-m]").forEach(b => b.setAttribute("aria-pressed", inGoal(b.dataset.m)));
 document.querySelectorAll("#modesSeg [data-m]").forEach(b => b.onclick = () => { setGoal(b.dataset.m, !inGoal(b.dataset.m)); paintGoal($("modesSeg")); setSums(); });
 paintGoal($("modesSeg"));
@@ -5347,7 +5348,7 @@ function askGoal() {
   if (document.querySelector(".sheet")) { setTimeout(askGoal, 1500); return; }
   store.set("radical-goal-asked", true);
   const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard");
-  card.append(el("h3", "", "My goal"), el("p", "", "What do you want to keep up? Pick one or more. The 練 badge counts today's cards for these."));
+  card.append(el("h3", "", "Learning focus"), el("p", "", "What's your learning focus? Pick one or more. The red number on 練 shows the minimum flash cards to practice Today."));
   const row = el("div", "pills goalpills"); row.setAttribute("role", "group");
   MODES.forEach(m => { const b = el("button", "", HOW_NAME[m]); b.type = "button"; b.dataset.m = m; b.onclick = () => { setGoal(m, !inGoal(m)); paintGoal(row); }; row.append(b); });
   paintGoal(row);
@@ -5356,6 +5357,9 @@ function askGoal() {
   sheet.append(card); document.body.append(sheet);
 }
 document.querySelectorAll("#cvdSeg [data-cvd]").forEach(b => {
+// The red number on 練 can be turned off (Settings, Learning focus). Today still counts the same.
+$("badgeSw").setAttribute("aria-checked", store.get("radical-badge", true));
+$("badgeSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-badge", on); e.currentTarget.setAttribute("aria-checked", on); updateCounts(); setSums(); };
   b.setAttribute("aria-pressed", String(+cvd) === b.dataset.cvd);
   b.onclick = () => { cvd = b.dataset.cvd === "1"; store.set("radical-cvd", cvd); document.querySelectorAll("#cvdSeg [data-cvd]").forEach(x => x.setAttribute("aria-pressed", x === b)); applyPalette(); buildPalettes(); };
 });
