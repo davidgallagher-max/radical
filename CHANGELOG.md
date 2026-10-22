@@ -2,6 +2,24 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v38
+
+- Most common characters, for beginners: one line on Practice under Add offers the 100, 500, 1,000 or 2,000 most common. A set joins your own words rather than living apart: a few characters a day fill the new-card slots your own new words leave, so nothing arrives as a pile. The line then reads "Common 500 · N familiar"; tap it to see just those words, grow the set, or remove it (only the unstudied ones go). Single-character cards now show a common word with that character on the answer side. New users are offered the first 100 once. The ranking comes from wordfreq (CC BY-SA, credited).
+- Track: characters now have three stages. Seen (in a word you've practiced), Familiar (right on two different days) and Learned (remembered after three weeks, as before). Familiar moves within days, so the effort shows. A bar shows all three, the Words bar adds Seen and Familiar, and the yearly table adds Words familiar. The old line chart only shows once there's a month of history and 50 familiar characters, and then shows familiar and learned together.
+- Track boxes: the three numbers under the calendar are yours to choose (Seen, Familiar, Learned, Characters read, Words learned, Cards reviewed, Days practiced). Tap a box to see its characters or words; touch and hold to change it. Also in Settings, Track boxes. This week shows the same three.
+- Friends: each signed-in person gets a short code on Track, with Share (a link) and a QR code. Enter a friend's code or open their link and you're connected both ways; either can remove it. Friends see your chosen name, characters by stage, this week and your chart. Never your words. No search and no public list.
+- The 部 mark, the splash and the Home Screen icon are Lacquer & Gold in every theme (阝 in cinnabar, the rest gold; deeper gold on light pages). Reading colors still follow your theme.
+- "My goal" is now Learning focus: "The red number on 練 shows the minimum flash cards to practice Today." A switch in Settings turns the red number off.
+- Today holds at most 30 cards; the rest wait. N more takes the ones that waited first.
+- The finish screen counts like the red number: "N left today" and "Tomorrow: about N cards".
+- Flash cards: when the meaning can't be graded and the card asks ✓ Right / ✗ Wrong, the 對 半 錯 flourish and its sound wait for your answer. The score now rolls the right way (the new number drops in from above) and only after the flourish fades.
+- ✎ on the answer side has I know this and Remove this word (tap twice), which take the word out of the set at once without scoring it.
+- Reader: numbers and English sit smaller, in the plain font, with no big gaps, and a number keeps its unit (401.3 km²).
+- Listen reads the whole text, turning pages on its own; turn a page yourself and it carries on from the top of that page. It keeps the line being read about a quarter to a third of the way down, and waits a few seconds after you scroll by hand. Switching tabs still stops it.
+- Read tab: the add box folds into one slim "＋ New text" row, so the article starts right under the controls. The "Read" heading above the colors is gone.
+- Grey text everywhere is about 10% bigger and a little lighter.
+- Two thin lines in the Flash cards box, under Read · Write · Listen · Mix and under the Today row.
+
 ## v37
 
 - Flash cards, redone. One box at the top of Practice holds everything as pills: Read · Write · Listen · Mix, then Today · New · Learning · Known · All (with counts, and the list below follows the one you pick), then how many, then Start. The count row only offers sizes smaller than the group, plus All; a small group just shows All (8). Learning is every word you don't know yet. New, Known and All come up shuffled.
