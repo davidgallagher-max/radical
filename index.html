@@ -411,16 +411,10 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .nopy .cell .py{display:none}
 .glyph{font-family:var(--font-zh);font-size:calc(var(--cell,38px) * .64);line-height:var(--cell,38px);height:var(--cell,38px);color:var(--muted);align-self:end;text-align:left;padding-left:calc(var(--cell,38px) * .12)}
 .glyph{white-space:nowrap}
-/* English words and numbers: the wordmark's serif, polished like the characters, with a slow shine passing over. */
-.glyph.latin{font-family:var(--font-brand),var(--font-zh),serif;font-weight:700;font-size:calc(var(--cell,38px) * .56);text-align:left;padding:0 0 0 calc(var(--cell,38px) * .08);white-space:nowrap;opacity:1;
-  color:transparent;-webkit-background-clip:text;background-clip:text;background-size:320% 100%;
-  background-image:linear-gradient(115deg,color-mix(in srgb,var(--fg) 82%,var(--accent)) 0%,var(--fg) 34%,#fff 47%,var(--fg) 58%,color-mix(in srgb,var(--fg) 55%,#000) 100%);
-  filter:drop-shadow(1px 1.5px 0 rgba(0,0,0,.45));animation:numshine 8s ease-in-out infinite}
-@keyframes numshine{0%,100%{background-position:100% 0}50%{background-position:0 0}}
-.nolight .glyph.latin{animation:none;background:none;color:var(--fg);filter:none}
-:root:not(.movelight) .glyph.latin{animation:none;background-position:30% 0}  /* still unless Moving light in text is on */
+/* English words and numbers: the plain interface font at half a square, so a number sits quietly in the Chinese
+   (v38: the big polished serif made "401.3 km²" take half a line). */
+.glyph.latin{font-family:var(--font-ui);font-weight:500;font-size:calc(var(--cell,38px) * .5);color:var(--fg);text-align:left;padding:0 0 0 calc(var(--cell,38px) * .06);white-space:nowrap;opacity:1}
 .glyph.latin.speaking{background-color:transparent;box-shadow:none;border-bottom:3px solid var(--accent);border-radius:0}
-@media (prefers-reduced-motion:reduce){.glyph.latin{animation:none}}
 .glue{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-items:end}
 .glue>*{min-width:0}
 .glue .glyph:not(.latin){text-align:left}
@@ -802,7 +796,6 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .wslot .fontglyph{width:44px;height:44px;font-size:36px}
 .wchars .fontglyph{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .preview2 .fontglyph{width:50px;height:50px;font-size:42px}
-.fontmode .glyph.latin{animation:none;background:none;color:var(--fg);filter:none}
 .fontmode .lit3d{filter:none!important}
 .drawn .dg{font-family:var(--font-zh);font-size:calc(var(--ds) * .82);line-height:var(--ds);color:var(--muted);width:calc(var(--ds) * .55);text-align:center}
 .drawn .dim{opacity:.55}
@@ -2040,7 +2033,7 @@ async function render() {
     reader.append(foot);
   }
   if (doc && doc.credit && doc.url) reader.append(el("p", "note", `Text: <a href="${esc(doc.url)}" target="_blank" rel="noopener">${esc(doc.credit)}</a>`));
-  requestAnimationFrame(() => lightReader(reader));
+  requestAnimationFrame(() => { fitLatin(reader); lightReader(reader); });
   watchLines(reader);
 }
 // One line of reading text, drawn on the grid. `onTap(group, tok, lineText)` decides what tapping a word does.
@@ -2049,10 +2042,10 @@ function buildLine(lineText, onTap, withEN = true) {
   // Non-Chinese text (English, numbers, punctuation) is gathered into runs, so "AI" or "(Coffee)" never splits mid-word.
   let run = "", runAt = 0, pos = 0; const spans = [];  // spans: which word sits at which position, for read-along
   const flush = () => {
-    // A stretch of Latin text (English, numbers with their units, superscripts, %, half-width brackets) is set as
-    // phrases with normal word spacing: "401.3 km² (154.9 mi²)" reads as English, not one piece per square. Wikipedia's
-    // non-breaking spaces count as spaces. A phrase breaks only at a space, when it would fill most of a line. Anything else
-    // (Chinese punctuation, rare characters) is one glyph each.
+    // A stretch of Latin text (English, numbers with their units, superscripts, %, half-width brackets) is set in short
+    // phrases with normal word spacing, at most about three squares each, so a long run wraps like the characters do and
+    // never leaves half a line empty. A number keeps its unit ("4.1 km²") and an opening bracket keeps its word.
+    // Wikipedia's non-breaking spaces count as spaces. Anything else (Chinese punctuation, rare characters) is one glyph each.
     // Full-width brackets around Latin text become half-width ones, so they hug it: （1.6 mi²） → (1.6 mi²).
     run = run.replace(/（([\u0020-\u007E\u00A0-\u024F\u2070-\u209F]+)）/gu, "($1)");
     const re = /[\u0021-\u007E\u00A0-\u024F\u2070-\u209F ]+|\S/gu; let m;
@@ -2066,7 +2059,10 @@ function buildLine(lineText, onTap, withEN = true) {
       while ((w = wr.exec(seg))) words.push({ text: w[0], at: m.index + w.index });
       for (let k = 0; k < words.length;) {
         let j = k, text = words[k].text;
-        while (j + 1 < words.length && latinWidth(text + " " + words[j + 1].text) <= latinRoom()) text += " " + words[++j].text;
+        // A number takes its unit with it, so "(1.6" is measured as "(1.6 mi²)" before it may join the phrase.
+        const unitAfter = i => i + 1 < words.length && /\d\S*$/.test(words[i].text) && UNIT.test(words[i + 1].text);
+        const fits = () => latinWidth(text + " " + words[j + 1].text + (unitAfter(j + 1) ? " " + words[j + 2].text : "")) <= latinRoom();
+        while (j + 1 < words.length && (unitAfter(j) || text === "(" || fits())) text += " " + words[++j].text;
         const latin = /[A-Za-z0-9]/.test(text), g = el("span", "glyph" + (latin ? " latin" : ""), esc(text));
         line.append(g);
         if (latin) spans.push({ start: runAt + words[k].at, end: runAt + words[j].at + words[j].text.length, group: g });  // numbers and English light up too
@@ -2134,15 +2130,16 @@ function holdToPick(b) {
 let renderLimit = 1500;
 // Line-breaking rules for Chinese: closing punctuation (，。）」) never starts a line, opening (（「) never ends one.
 const CLOSE = /^[，。、；：？！）」』》〉”’,.;:!?)\]…%]/, OPEN = /[（「『《〈“‘(\[$]$/;
-// English and numbers in the reader: their width in the font they're drawn in (bold, a little over half a square
-// high), and the most a phrase may take (most of a line, so it never spills over).
+// English and numbers in the reader: their width in the font they're drawn in (half a square high), and the most a
+// phrase may take before it splits at a space (about three squares). A unit after a number never splits off.
 const cellPx = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cell")) || 38;
+const UNIT = /^\(?[A-Za-zµ°%\u00B2\u00B3\u00B9\u2070-\u209F]{1,4}\)?[,.;:]?$/u;
 function latinWidth(t) {
   const ctx = latinWidth.ctx || (latinWidth.ctx = document.createElement("canvas").getContext("2d"));
-  ctx.font = `700 ${cellPx() * .56}px ${getComputedStyle(document.documentElement).getPropertyValue("--font-brand") || "serif"}`;
+  ctx.font = `500 ${cellPx() * .5}px ${getComputedStyle(document.documentElement).getPropertyValue("--font-ui") || "sans-serif"}`;
   return ctx.measureText(t).width;
 }
-const latinRoom = () => Math.max(cellPx() * 3, (Math.min(innerWidth, 760) - 80) * .75);
+const latinRoom = () => cellPx() * 3;
 function gluePunct(line) {
   const units = []; let openNext = false;
   for (const item of line.querySelectorAll(".cell, .glyph")) {
@@ -2152,17 +2149,34 @@ function gluePunct(line) {
     else units.push([item]);
     openNext = g && OPEN.test(t);
   }
-  // On the grid, an English word or number takes as many squares as it needs; a glued group takes the sum.
-  // Measured in the font it's drawn in, so a phrase gets just the squares it needs.
-  const cell = cellPx();
-  const cols = x => x.classList.contains("latin") ? Math.max(1, Math.ceil((latinWidth(x.textContent) + cell * .16) / cell)) : 1;
-  line.querySelectorAll(".glyph.latin").forEach(x => x.style.gridColumn = `span ${cols(x)}`);
   units.filter(u => u.length > 1).forEach(u => {
     const anchor = u.find(x => x.classList.contains("cell")) || u[0], glue = el("span", "glue");
     anchor.parentNode.insertBefore(glue, anchor);
-    u.forEach(x => { x.style.gridColumn = ""; glue.append(x); });
-    glue.style.gridColumn = `span ${u.reduce((n, x) => n + cols(x), 0)}`;
-    glue.style.gridTemplateColumns = u.map((x, i) => x.classList.contains("latin") && i < u.length - 1 ? "max-content" : cols(x) + "fr").join(" ");  // punctuation sits right after the English
+    u.forEach(x => glue.append(x));
+  });
+  spanLatin(line, cellPx());
+}
+// On the grid, an English word or number takes as many squares as it needs; a glued group takes the sum. Measured in
+// the font it's drawn in. `col` is the width of one square: --cell before the line is on screen, the real column
+// width after (leftover width is shared out, so columns are a little wider than --cell; see fitLatin).
+function spanLatin(line, col) {
+  const cell = cellPx(), lw = x => latinWidth(x.textContent) + cell * .12, isL = x => x.classList.contains("latin");
+  line.querySelectorAll(":scope > .glyph.latin").forEach(x => x.style.gridColumn = `span ${Math.max(1, Math.ceil(lw(x) / col))}`);
+  // A glued group (English with the punctuation after it, or a bracket and the character inside it) takes the
+  // squares its pieces need together; the bit left over from rounding up goes after the last piece, not between them.
+  line.querySelectorAll(":scope > .glue").forEach(glue => {
+    const u = [...glue.children], width = u.reduce((n, x) => n + (isL(x) ? lw(x) : col), 0);
+    glue.style.gridColumn = `span ${Math.max(u.length > 1 ? 2 : 1, Math.ceil(width / col - .02))}`;
+    glue.style.gridTemplateColumns = u.map((x, i) => i === u.length - 1 ? "minmax(0,1fr)" : isL(x) ? "max-content" : col.toFixed(1) + "px").join(" ");
+  });
+}
+// Once lines are on screen: recount English and numbers against the real column width, so they don't take more
+// squares than they need (that left gaps at the end of a line).
+function fitLatin(root) {
+  root.querySelectorAll(".line").forEach(line => {
+    if (!line.querySelector(".glyph.latin") || !line.clientWidth) return;
+    const n = getComputedStyle(line).gridTemplateColumns.split(" ").filter(Boolean).length;
+    if (n > 1) spanLatin(line, line.clientWidth / n);
   });
 }
 // Word, pinyin and a short meaning for a tapped word (your saved version first, then the dictionary).
@@ -2235,7 +2249,7 @@ function miniReader(text, mark, en, opts = {}) {
       body.append(line);
     });
     let tries = 0;
-    const light = () => { if (box.isConnected && body.getBoundingClientRect().width) lightReader(body, true); else if (tries++ < 120) requestAnimationFrame(light); };
+    const light = () => { if (box.isConnected && body.getBoundingClientRect().width) { fitLatin(body); lightReader(body, true); } else if (tries++ < 120) requestAnimationFrame(light); };
     light();
   };
   if ([...text].some(ch => isHan(ch) && !cache[ch])) ensure(text).then(paint); else paint();
@@ -2418,7 +2432,7 @@ function fitLegend(box = $("readLegend")) {
   if (box._fade) box._fade();
 }
 edgeFade($("readLegend"));
-addEventListener("resize", () => fitLegend());
+addEventListener("resize", () => { fitLegend(); fitLatin($("reader")); });
 // Frozen controls: once the bar reaches the top it gets a solid edge, the Traditional / Simplified label hides, and a
 // small ☰ appears at its right end (the page's own menu button has scrolled away).
 function pinned(screenId, barId, onChange) {
@@ -5343,6 +5357,9 @@ $("wikiRandom").onclick = async () => {
 const paintGoal = row => row.querySelectorAll("[data-m]").forEach(b => b.setAttribute("aria-pressed", inGoal(b.dataset.m)));
 document.querySelectorAll("#modesSeg [data-m]").forEach(b => b.onclick = () => { setGoal(b.dataset.m, !inGoal(b.dataset.m)); paintGoal($("modesSeg")); setSums(); });
 paintGoal($("modesSeg"));
+// The red number on 練 can be turned off (Settings, Learning focus). Today still counts the same.
+$("badgeSw").setAttribute("aria-checked", store.get("radical-badge", true));
+$("badgeSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-badge", on); e.currentTarget.setAttribute("aria-checked", on); updateCounts(); setSums(); };
 // Asked once: on a first launch after the walkthrough, and once to everyone who had the app before goals.
 function askGoal() {
   if (document.querySelector(".sheet")) { setTimeout(askGoal, 1500); return; }
@@ -5357,9 +5374,6 @@ function askGoal() {
   sheet.append(card); document.body.append(sheet);
 }
 document.querySelectorAll("#cvdSeg [data-cvd]").forEach(b => {
-// The red number on 練 can be turned off (Settings, Learning focus). Today still counts the same.
-$("badgeSw").setAttribute("aria-checked", store.get("radical-badge", true));
-$("badgeSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-badge", on); e.currentTarget.setAttribute("aria-checked", on); updateCounts(); setSums(); };
   b.setAttribute("aria-pressed", String(+cvd) === b.dataset.cvd);
   b.onclick = () => { cvd = b.dataset.cvd === "1"; store.set("radical-cvd", cvd); document.querySelectorAll("#cvdSeg [data-cvd]").forEach(x => x.setAttribute("aria-pressed", x === b)); applyPalette(); buildPalettes(); };
 });
