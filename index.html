@@ -5242,7 +5242,8 @@ async function openSettings(welcome) {
   await ensure(SAMPLE.join("") + sample().join(""));
   buildPalettes();
   $("setTitle").textContent = welcome ? "Pick your colors" : "Settings";
-  $("setIntro").hidden = !welcome; $("secAcct").hidden = welcome; if (welcome) $("secTheme").open = true;  // first launch: just the colors $("startBtn").hidden = !welcome; $("setBack").style.visibility = welcome ? "hidden" : "";
+  $("setIntro").hidden = !welcome; $("secAcct").hidden = welcome; if (welcome) $("secTheme").open = true;  // first launch: just the colors
+  $("startBtn").hidden = !welcome; $("setBack").style.visibility = welcome ? "hidden" : "";
   $("rate").value = rate; pickVoice();
   $("pw").value = store.get("radical-pw", ""); acctSent = false; renderAccount();
   buildLab(); setSums(); wordsWhere(); if (!session && !welcome) $("secAcct").open = true;  // not signed in: Account starts open
