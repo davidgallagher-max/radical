@@ -20,3 +20,5 @@ The Clear color palette is based on the Okabe-Ito colorblind-safe palette.
 
 - **pdf.js** (Mozilla, Apache License 2.0): reads PDFs in the browser, loaded from cdnjs.
 - **Wikipedia** (Chinese): articles are shown with a link to the source, under CC BY-SA 4.0.
+
+The most common characters sets (`lists/common.tsv`) are ranked from **wordfreq** by Robyn Speer (https://github.com/rspeer/wordfreq), whose Chinese data combines SUBTLEX-CH (Cai and Brysbaert), OpenSubtitles, Wikipedia and other sources, licensed CC BY-SA 4.0. `scripts/build_common.py` sums word frequencies into character frequencies, keeps the 2,000 most common characters with stroke data, and pairs each with its most common 2 or 3 character CC-CEDICT word. The list is shared under CC BY-SA 4.0.

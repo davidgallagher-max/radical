@@ -5,7 +5,7 @@ bash scripts/get_data.sh
 rm -rf public
 mkdir -p public
 cp index.html manifest.webmanifest public/
-cp -r icons data public/
+cp -r icons data lists public/
 cp CREDITS.md public/
 cp -r licenses public/
 # Upslope Labs company page, served on upslopelabs.com (see rewrites in vercel.json)

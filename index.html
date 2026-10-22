@@ -723,6 +723,14 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revdone{margin:0;text-align:center;color:var(--muted);font-size:.92rem}
 .listhead{margin:4px 0 0}
 .listhead:empty{display:none}
+.commonline{margin:4px 0 2px}.commonline:empty{display:none}
+.cmrow,.cmacts{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}.cmacts{margin-top:4px}
+.cmlabel{color:var(--muted);font-size:.92rem}
+.cmsize{font:inherit;font-size:.95rem;font-variant-numeric:tabular-nums;background:none;border:1px solid var(--line);color:var(--accent);border-radius:999px;padding:5px 12px;cursor:pointer}
+.cmhead{font:inherit;width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none;border:0;border-top:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-bottom:1px solid color-mix(in srgb,var(--line) 75%,transparent);color:var(--fg);padding:10px 2px;cursor:pointer;text-align:left}
+.cmchev{width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .2s}.commonline.open .cmchev{transform:rotate(45deg)}
+.commonline.open .note{margin:8px 2px 2px}
+.wdot .settag{color:var(--accent);opacity:.85}
 .wdot .newtag{font-size:.83rem;font-weight:600;color:var(--muted);margin-right:6px;letter-spacing:.02em}
 .goalpills{margin:10px 0 4px}.goalpills button{padding:10px 12px;font-size:1rem}
 .goalcard .btn.wide{margin-top:12px}
@@ -1099,6 +1107,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <p class="note" id="addStatus"></p>
       <div class="preview" id="preview" hidden></div>
     </div>
+    <div class="commonline" id="commonLine"></div>
     <h3 class="sec sub listhead" id="listHead"></h3>
     <div class="lookrow"><button type="button" class="btn ghost wide lookbtn" id="lookBtn" hidden></button></div>
     <div class="wordlist" id="wordList"></div>
@@ -3458,6 +3467,7 @@ function updateCounts() {
   const n = dueCount();
   $("dueBadge").textContent = n && store.get("radical-badge", true) ? n : "";
   if (!$("wordsScreen").hidden) renderWords();
+  if (typeof feedCommon === "function") feedCommon();  // a new day, or new words studied: the common set tops up
 }
 // The badge keeps up on its own: when the app comes back to the front, once a minute while it's open, and when the
 // day turns at 4am (cards that came due while the phone was in a pocket show without a tap).
@@ -3894,17 +3904,18 @@ function renderWords() {
   renderStrip(sizes);
   const list = $("wordList"); list.innerHTML = "";
   // The list shows the words in the choice above, newest first.
-  const inSet = new Set(sets[revCat]);
+  const inSet = new Set(commonView ? myWords.filter(w => w.common) : sets[revCat]);
+  renderCommon();
   const shown = myWords.map((w, i) => [w, i]).filter(([w]) => inSet.has(w))
     .sort((a, b) => (b[0].added || "").localeCompare(a[0].added || "") || a[1] - b[1]).map(x => x[0]);
   list.hidden = !shown.length;
-  $("listHead").textContent = myWords.length ? `${CATS.find(c => c[0] === revCat)[1]} · ${shown.length} word${shown.length === 1 ? "" : "s"}` : "";
+  $("listHead").textContent = myWords.length ? `${commonView ? "Most common" : CATS.find(c => c[0] === revCat)[1]} · ${shown.length} word${shown.length === 1 ? "" : "s"}` : "";
   shown.forEach(w => {
     const st = wStatus(w), on = picks.has(w), dot = st === "known" ? "known" : "learning";
     const r = el("div", "wrow" + (on ? " sel" : ""));
     r.innerHTML = `<button type="button" class="wsel" role="checkbox" aria-checked="${on}" aria-label="Select ${esc(w.word)}"><i></i></button>`
       + `<button type="button" class="wmain"><span class="wz" lang="zh">${slotHTML(w.word)}</span><span class="wm">${esc(wMeaning(w))}</span></button>`
-      + `<button type="button" class="wdot" aria-label="Status: ${STATUS_NAME[st]}. Change">${st === "new" ? '<span class="newtag">new</span>' : ""}<i class="dot ${dot}"></i></button>`;
+      + `<button type="button" class="wdot" aria-label="Status: ${STATUS_NAME[st]}. Change">${w.common ? '<span class="newtag settag">common</span>' : ""}${st === "new" ? '<span class="newtag">new</span>' : ""}<i class="dot ${dot}"></i></button>`;
     r.querySelector(".wsel").onclick = () => { on ? picks.delete(w) : picks.add(w); renderWords(); };
     r.querySelector(".wmain").onclick = () => openWord(w.word, { context: w.context });
     r.querySelector(".wdot").onclick = e => statusMenu(e.currentTarget, [w]);
@@ -3917,6 +3928,111 @@ function renderWords() {
   lb.onclick = () => openLook(set);
   renderSelBar(shown);
   if (!myWords.length) $("addStatus").textContent = "Add a word you're learning, paste a list, or import a file (the page icon in the box).";
+}
+
+// ---- the most common characters, for beginners: 100, 500, 1,000 or 2,000 (lists/common.tsv, from wordfreq; see
+// CREDITS.md). They join your own words rather than living apart: each day, while there's room in the day's new words
+// after your own new words, the next few characters are added (w.common = their rank) and get their cards then, so
+// they come up in Today like anything else and never arrive as a pile. Growing the set only moves the line further;
+// Remove set takes out the ones not studied yet and stops it. A character you already have (either script) or
+// removed is skipped. The set sizes are by mainland frequency; a Taiwan list waits for the Mainland/Taiwan setting.
+const COMMON_SIZES = [100, 500, 1000, 2000];
+let commonList = null, commonView = false;
+function loadCommon() {
+  if (!commonList) commonList = fetch("lists/common.tsv").then(r => r.ok ? r.text() : "").catch(() => "")
+    .then(t => t.split("\n").filter(l => l && !l.startsWith("#")).map(l => { const [c, word] = l.trim().split("\t"); return { c, word }; }).filter(x => x.c));
+  return commonList;
+}
+function commonSize() {
+  const t = store.get("radical-common", null); if (t) return t.size || 0;
+  const top = Math.max(0, ...myWords.map(w => w.common || 0));  // set on another phone: the words came by sync
+  return top ? COMMON_SIZES.find(n => n >= top) || 2000 : 0;
+}
+let feeding = null;
+function feedCommon() {
+  if (feeding) return feeding;
+  feeding = (async () => {
+    const size = commonSize(); if (!size) return 0;
+    const k = KEYS[goal[0]], fresh = myWords.filter(w => !w.skip && !w[k]).length;
+    let need = Math.max(0, newLeft(k)) - fresh; if (need <= 0) return 0;
+    const list = (await loadCommon()).slice(0, size);
+    const have = new Set(myWords.filter(w => [...w.word].length === 1).map(w => toSimp(w.word)));
+    Object.keys(deleted || {}).forEach(x => { if ([...x].length === 1) have.add(toSimp(x)); });
+    const add = [];
+    for (let i = 0; i < list.length && add.length < need; i++) if (!have.has(list[i].c)) add.push([conv(list[i].c), i + 1]);
+    if (!add.length) return 0;
+    await ensure(add.map(x => x[0]).join(""));
+    add.forEach(([word, rank]) => {
+      const d = lookup(word) || lookup(toSimp(word)), e = { word, added: localDay(), common: rank };
+      if (d) { e.pinyin = d[2] || d[1]; e.meaning = String(d[3] || "").split(/[\/;]/).map(x => x.trim()).filter(Boolean).slice(0, 2).join("; "); }
+      if (!e.pinyin && cache[word]) e.pinyin = cache[word].p[0];
+      if (!e.meaning && cache[word]) e.meaning = cache[word].d;
+      myWords.push(e);
+    });
+    saveWords(); myWords.filter(w => w.common && !w.card && !w[k]).forEach(queueCard); updateCounts();
+    return add.length;
+  })().finally(() => { feeding = null; });
+  return feeding;
+}
+function startCommon(size) {
+  store.set("radical-common", { size });
+  feedCommon().then(() => renderWords());
+}
+// One line under Add. Before: the four sizes. After: the set and how many of its characters are familiar; tapping it
+// shows just those words, with Grow to and Remove set.
+async function renderCommon() {
+  const box = $("commonLine"); if (!box) return;
+  const size = commonSize();
+  box.innerHTML = ""; box.classList.toggle("open", commonView && !!size);
+  if (!size) {
+    commonView = false;
+    const row = el("div", "cmrow"); row.append(el("span", "cmlabel", "Most common characters:"));
+    COMMON_SIZES.forEach(n => row.append(btn(num(n), "cmsize", () => startCommon(n))));
+    box.append(row); return;
+  }
+  const list = (await loadCommon()).slice(0, size), st = charStages(), fam = new Set([...st.familiar.keys()].map(c => toSimp(c)));
+  const nFam = list.filter(x => fam.has(x.c)).length;
+  box.innerHTML = "";
+  const head = btn("", "cmhead", () => { commonView = !commonView; renderWords(); });
+  head.innerHTML = `<span>Common ${num(size)} · ${num(nFam)} familiar</span><i class="cmchev"></i>`;
+  head.setAttribute("aria-expanded", commonView);
+  box.append(head);
+  if (!commonView) return;
+  const inList = myWords.filter(w => w.common), started_ = inList.filter(practiced).length;
+  box.append(el("p", "note", `${num(started_)} of ${num(size)} started. A few join your new cards each day, after your own new words.`));
+  const acts = el("div", "cmacts"), bigger = COMMON_SIZES.filter(n => n > size);
+  if (bigger.length) { acts.append(el("span", "cmlabel", "Grow to")); bigger.forEach(n => acts.append(btn(num(n), "cmsize", () => startCommon(n)))); }
+  const rm = btn("Remove set", "btn ghost small", () => {
+    if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove the unstudied ones?"; setTimeout(() => { if (rm.isConnected) { rm.classList.remove("confirm"); rm.textContent = "Remove set"; } }, 4000); return; }
+    myWords = myWords.filter(w => !(w.common && !practiced(w))); myWords.forEach(w => { if (w.common) delete w.common; });
+    store.set("radical-common", { size: 0 }); commonView = false; saveWords(); updateCounts(); renderWords();
+  });
+  acts.append(rm); box.append(acts);
+}
+// New users, once, after the learning focus: an offer to begin with the 100 most common.
+function offerCommon() {
+  if (myWords.length || store.get("radical-common-asked", false) || commonSize()) return;
+  if (document.querySelector(".sheet")) { setTimeout(offerCommon, 1500); return; }
+  store.set("radical-common-asked", true);
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard");
+  card.append(el("h3", "", "New to Chinese?"), el("p", "", "Start with the 100 most common characters. A few join your flash cards each day, and your own words always go first."));
+  card.append(btn("Start with 100", "btn wide", () => { sheet.remove(); startCommon(100); setTab("wordsScreen"); }), btn("Not now", "btn ghost wide", () => sheet.remove()));
+  card.append(el("p", "note", "Also on 練 Practice, under Add: 100, 500, 1,000 or 2,000."));
+  sheet.append(card); document.body.append(sheet);
+}
+// A character's most common word, for the answer side of a one-character card.
+function commonWordLine(w) {
+  if ([...w.word].length !== 1) return null;
+  const p = el("p", "mnem cmword"); p.hidden = true;
+  loadCommon().then(list => {
+    const x = list.find(y => y.c === toSimp(w.word)); if (!x || !x.word) return;
+    const word = conv(x.word);
+    ensure(word).then(() => {
+      const d = lookup(word) || lookup(x.word); if (!d) return;
+      p.innerHTML = `In a common word: <b lang="zh">${esc(word)}</b> ${esc(d[2] || d[1] || "")} · ${esc(String(d[3] || "").split(/[\/;]/)[0])}`; p.hidden = false;
+    });
+  });
+  return p;
 }
 
 // ---- selecting words: circles on the left; a bar at the bottom acts on the selection.
@@ -4824,6 +4940,7 @@ function showBack(w, how, st) {
   ed.setAttribute("aria-label", "Edit this card");
   const wm = el("p", "wmean", esc(wMeaning(w)) + markHTML(w, "meaning")); wm.append(ed);
   ans.append(wm, ...cardExtras(w));
+  const cw = commonWordLine(w); if (cw) ans.append(cw);
   if (c) {
     (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
     if (ex1) {
@@ -5075,7 +5192,7 @@ document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "ch
 // tallies, what you're reading now and all of History, and your settings. A summary shows first; nothing leaves the
 // app until Save file.
 const SETTING_KEYS = ["radical-palette", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-target",
-  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-tiles"];
+  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-tiles", "radical-common"];
 function backupData() {
   const settings = {}; SETTING_KEYS.forEach(k => { try { const v = localStorage.getItem(k); if (v !== null) settings[k] = v; } catch (e) {} });
   return { app: "Radical", version: APP_VERSION, saved: new Date().toISOString(), words: myWords, learned, familiar, days: store.get("radical-days", {}),
@@ -5603,7 +5720,7 @@ function askGoal() {
   const row = el("div", "pills goalpills"); row.setAttribute("role", "group");
   MODES.forEach(m => { const b = el("button", "", HOW_NAME[m]); b.type = "button"; b.dataset.m = m; b.onclick = () => { setGoal(m, !inGoal(m)); paintGoal(row); }; row.append(b); });
   paintGoal(row);
-  const close = () => { sheet.remove(); if (!$("wordsScreen").hidden) renderWords(); };
+  const close = () => { sheet.remove(); if (!$("wordsScreen").hidden) renderWords(); setTimeout(offerCommon, 600); };
   card.append(row, el("p", "note", "You can practice any mode any time, and change this in Settings."), btn("Done", "btn wide", close));
   sheet.append(card); document.body.append(sheet);
 }
@@ -5653,6 +5770,7 @@ document.querySelectorAll("#targetSeg [data-t]").forEach(b => {
   }
   fetchDaily();  // the day's Explore chips, fetched once a day in the background
   myWords.filter(w => !w.card).forEach(queueCard);  // cards still missing (added offline, or a request failed)
+  feedCommon();  // the day's most common characters, if a set is on
   if (session) syncNow(true).then(() => { myWords.filter(w => !w.card).forEach(queueCard); updateRing(); });  // pull what other phones changed
   if (document.fonts) document.fonts.ready.then(() => fitLegend());
 })();
