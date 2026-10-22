@@ -220,13 +220,50 @@ p.busy{margin:-4px 4px 0}
 .sheetcard p{margin:0;line-height:1.5}
 .sheetcard .row .btn{flex:1;padding:12px}
 .tourcard{gap:14px;padding-top:24px}
-.tourpage{display:grid;gap:10px;min-height:230px;align-content:start}
-.tourpage p{color:var(--fg);line-height:1.55;font-size:.98rem}
-.tourpage b{color:var(--accent)}
-.tourchar{justify-self:center;width:120px;height:120px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
-.tourchar svg{width:100%;height:100%}
-.tourico{width:15px;height:15px;vertical-align:-2px;color:var(--accent)}
-.tourzh{font-family:var(--font-zh);font-weight:600;color:var(--accent)}
+.tourpage{display:grid;gap:10px;align-content:start}
+.tourpage .note{text-align:center;min-height:1.5em}
+.tstage{position:relative;height:250px;border:1px solid var(--line);border-radius:14px;background:var(--bg);overflow:hidden}
+.tbig{position:absolute;left:50%;top:18px;width:150px;height:150px;transform:translateX(-50%);transition:opacity .6s}
+.tbig svg{width:100%;height:100%;transition:filter .5s}
+.tbig path{opacity:.18;transition:opacity .5s}.tbig path.on{opacity:1}
+.tstage .legline{position:absolute;left:0;right:0;bottom:14px;justify-content:center}
+.tfloat{position:absolute;left:50%;bottom:20px;white-space:nowrap;font-weight:700;font-size:1.02rem;padding:6px 14px;border-radius:999px;border:1.5px solid currentColor;background:var(--bg);animation:tfloat 2.3s ease-in-out forwards}
+.tfloat span{font-family:var(--font-zh)}
+@keyframes tfloat{0%{transform:translateX(calc(-50% - 170px));opacity:0}25%,75%{opacity:1}35%,65%{transform:translateX(-50%)}100%{transform:translateX(calc(-50% + 170px));opacity:0}}
+.tline{position:absolute;left:0;right:0;top:30px;display:flex;justify-content:center;gap:4px}
+.tc{width:48px;height:48px;border-radius:8px;padding:3px;transition:background .3s}
+.tc svg,.tc .fontglyph{width:100%;height:100%;display:block}
+.tc .fontglyph{font-size:38px;line-height:42px;text-align:center}
+.tc.pk{background:color-mix(in srgb,var(--accent) 24%,transparent)}
+.tc.hl{background:color-mix(in srgb,var(--accent2) 26%,transparent)}
+.tpeek{position:absolute;left:12px;right:12px;bottom:12px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);transform:translateY(150%);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.tpeek.up{transform:none}.tpeek b{font-family:var(--font-zh);font-size:1.1rem}
+.tpanel{position:absolute;inset:0;background:var(--surface);display:grid;place-content:center;justify-items:center;gap:6px;opacity:0;transform:scale(.5);transition:opacity .35s,transform .45s cubic-bezier(.2,.8,.2,1)}
+.tpanel.up{opacity:1;transform:none}.tpanel p{margin:0}
+.tpchars{display:flex;gap:6px}.tpchars svg,.tpchars .fontglyph{width:84px;height:84px;display:block}.tpchars .fontglyph{font-size:70px;line-height:84px;text-align:center}
+.tfinger{position:absolute;left:50%;top:60%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:color-mix(in srgb,var(--fg) 30%,transparent);border:2px solid color-mix(in srgb,var(--fg) 70%,transparent);transition:left .65s ease,top .65s ease,opacity .3s;opacity:0;pointer-events:none;z-index:5}
+.tfinger.tap{animation:ttap .35s}@keyframes ttap{50%{transform:scale(.65)}}
+.ttools{position:absolute;top:100px;left:0;right:0;display:flex;justify-content:center;gap:22px}
+.ttool{width:44px;height:34px;display:grid;place-items:center;border-radius:9px;color:var(--accent);font-weight:700;border:1px solid var(--line);transition:background .3s}
+.ttool svg{width:20px;height:20px}.ttool span{font-family:var(--font-zh)}
+.ttool.on{background:color-mix(in srgb,var(--accent) 22%,transparent)}
+.ten{position:absolute;top:150px;left:0;right:0;margin:0;text-align:center;font-size:1.05rem;opacity:0;transform:translateX(40px);transition:opacity .45s,transform .45s}
+.ten.in{opacity:1;transform:none}
+.tword{position:absolute;top:16px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:10px}
+.tword .tline{position:static}
+.tadd{padding:6px 12px;border-radius:999px;background:var(--metal,var(--accent));color:var(--metal-ink,var(--bg));font-weight:700;font-size:.9rem;min-width:52px;text-align:center}
+.tadd.done{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.tfly{position:absolute;right:auto;margin:0;transition:transform .75s cubic-bezier(.5,0,.7,1),opacity .75s;transform-origin:top left}
+.ttab{position:absolute;right:16px;bottom:14px;width:46px;height:46px;border-radius:12px;border:1px solid var(--line);display:grid;place-items:center;font-family:var(--font-zh);font-size:1.4rem;color:var(--fg)}
+.ttab i{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;border-radius:10px;background:#E5372F;color:#fff;font:700 .75rem/20px var(--font-ui);font-style:normal;text-align:center;transform:scale(0);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.ttab i.on{transform:scale(1)}
+.tcard{position:absolute;left:50%;top:84px;width:160px;height:118px;margin-left:-80px;border-radius:14px;background:var(--surface);border:1px solid var(--line);display:grid;place-content:center;justify-items:center;gap:4px;opacity:0;transform:scale(.8);transition:opacity .35s,transform .26s}
+.tcard.up{opacity:1;transform:none}.tcard.up.flip{transform:rotateY(90deg)}
+.tcard p{margin:0;font-size:.85rem;color:var(--muted)}
+.tcard .tpchars svg,.tcard .tpchars .fontglyph{width:52px;height:52px}.tcard .tpchars .fontglyph{font-size:44px;line-height:52px}
+.tpad{width:66px;height:66px;border:1px dashed var(--line);border-radius:8px}.tpad svg{width:100%;height:100%}.tpad path{transition:opacity .2s}
+.tsay{color:var(--accent)}.tsay svg{width:40px;height:40px}
+.tlabel{position:absolute;left:0;right:0;top:208px;margin:0;text-align:center;font-weight:700;color:var(--accent2)}
 .tourdots{display:flex;justify-content:center;gap:6px}
 .tourdots i{width:7px;height:7px;border-radius:50%;background:var(--line)}.tourdots i.on{background:var(--accent)}
 .revprev{all:unset;cursor:pointer;font-family:var(--font-ui);font-size:.84rem;font-weight:600;color:var(--accent);padding:2px 0;white-space:nowrap}  /* under the card count */
@@ -565,16 +602,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .edacts .edreset{margin-left:auto}
 .edout{display:flex;flex-wrap:wrap;gap:8px;padding-top:12px;margin-top:2px;border-top:1px solid var(--line)}
 .edout .edrm{color:var(--no,#E5533D)}
-.weekcard{display:grid;gap:4px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);margin-bottom:12px;font-size:.92rem;color:var(--muted)}
-.weekcard p{margin:0}
-.wkhead{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.wkhead b{font-family:var(--font-brand);font-size:1.05rem;color:var(--fg)}
-.wkdays{display:flex;align-items:center;gap:8px;font-size:.84rem}
-.wkdots{display:inline-flex;gap:3px}
-.wkdots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
-.wkdots i.on{background:var(--accent)}
-.wklearn{color:var(--fg)}
-.wktoday{color:var(--fg);font-weight:600}.wktoday.done{color:var(--accent)}
+.todaynum{margin-left:auto;background:none;border:0;padding:4px 2px;font:inherit;font-size:.92rem;font-weight:600;color:var(--accent2,var(--accent));cursor:pointer;font-variant-numeric:tabular-nums}
 /* ---- Track */
 .track{display:grid;gap:12px}
 .trk{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:6px;min-width:0}
@@ -609,11 +637,10 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .calwd{font-size:.8rem;color:var(--muted)}
 .calday{aspect-ratio:1;display:grid;place-items:center;border-radius:8px;font-size:.92rem;color:var(--muted);border:1px solid transparent}
 .calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--fg)}
-.calday.hit{background:var(--accent);color:var(--bg);font-weight:700}
 .calday.off{border:1px dashed color-mix(in srgb,var(--muted) 45%,transparent)}
 .calday.future{opacity:.35}.calday.blank{visibility:hidden}
 .calday.today{box-shadow:inset 0 0 0 2px var(--fg)}
-.kd{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 8px}.trs .kd:first-child{margin-left:0}.kd.hit{background:var(--accent)}.kd.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}.kd.off{border:1px dashed var(--muted)}
+.kd{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 8px}.trs .kd:first-child{margin-left:0}.kd.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}.kd.off{border:1px dashed var(--muted)}
 .tchart{width:100%;height:auto;display:block;overflow:visible}
 .tgrid{stroke:var(--line);stroke-width:1}
 .tline{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}.tline2{stroke:var(--st-active);stroke-width:1.8;stroke-dasharray:4 3}
@@ -721,6 +748,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .pills{display:flex;flex-wrap:wrap;gap:6px}
 .pills button{all:unset;cursor:pointer;box-sizing:border-box;flex:1 1 auto;text-align:center;white-space:nowrap;padding:8px 12px;border-radius:999px;font-size:.92rem;font-weight:600;color:var(--fg);background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
 .pills button span{color:var(--muted);font-weight:500;font-size:.92rem;margin-left:2px}
+.pills button span.pbadge,.pills button[aria-pressed="true"] span.pbadge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;margin-left:4px;border-radius:10px;background:#E5372F;color:#fff;font-size:.78rem;font-weight:700;opacity:1;vertical-align:1px}
 .pills button[aria-pressed="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--bg));box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:700}
 .pills button[aria-pressed="true"] span{color:var(--accent);opacity:.85}
 .pills button:disabled{opacity:.4;cursor:default}
@@ -734,12 +762,20 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .listhead{margin:4px 0 0}
 .listhead:empty{display:none}
 .commonline{margin:4px 0 2px}.commonline:empty{display:none}
-.cmrow,.cmacts{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}.cmacts{margin-top:4px}
-.cmlabel{color:var(--muted);font-size:.92rem}
-.cmsize{font:inherit;font-size:.95rem;font-variant-numeric:tabular-nums;background:none;border:1px solid var(--line);color:var(--accent);border-radius:999px;padding:5px 12px;cursor:pointer}
-.cmhead{font:inherit;width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none;border:0;border-top:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-bottom:1px solid color-mix(in srgb,var(--line) 75%,transparent);color:var(--fg);padding:10px 2px;cursor:pointer;text-align:left}
-.cmchev{width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .2s}.commonline.open .cmchev{transform:rotate(45deg)}
-.commonline.open .note{margin:8px 2px 2px}
+.cmhead{font:inherit;width:100%;display:flex;align-items:center;gap:10px;background:none;border:0;border-top:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-bottom:1px solid color-mix(in srgb,var(--line) 75%,transparent);padding:12px 2px;color:var(--fg);font-weight:600;cursor:pointer;text-align:left}
+.cmhead .cmnow{flex:1;text-align:right;color:var(--muted);font-weight:500;font-size:.92rem;font-variant-numeric:tabular-nums}
+.cmchev{width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);flex:none}
+.setgrid{display:grid;gap:8px}
+.setrow{display:grid;gap:8px}.setrow.four{grid-template-columns:repeat(4,minmax(0,1fr))}.setrow.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.setchip{all:unset;box-sizing:border-box;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:10px 4px;border-radius:999px;font-size:.92rem;font-weight:600;color:var(--fg);background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);font-variant-numeric:tabular-nums}
+.setchip[aria-pressed="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--bg));box-shadow:inset 0 0 0 1.5px var(--accent)}
+.setchip.wide{color:var(--accent)}
+.setchip.top{display:grid;line-height:1.15;padding:7px 2px;border-radius:14px;font-size:1rem}.setchip.top small{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.setchip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.setspanel .setsub{margin:-2px 0 4px}
+.setsheet .btn.small{justify-self:start}
+.signcard p{margin:0}.signcard input{font:inherit;font-size:1.05rem;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);width:100%;box-sizing:border-box}
+.linkbtn{all:unset;cursor:pointer;justify-self:center;padding:8px;color:var(--accent);font-weight:600}
 .wdot .settag{color:var(--accent);opacity:.85}
 .wdot .newtag{font-size:.83rem;font-weight:600;color:var(--muted);margin-right:6px;letter-spacing:.02em}
 .goalpills{margin:10px 0 4px}.goalpills button{padding:10px 12px;font-size:1rem}
@@ -1017,7 +1053,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 (function () {  // safety net: if the app's script never starts, the splash still shows a message and can be dismissed
   var s = document.getElementById("splash"), t0 = Date.now();
   s.addEventListener("click", function () { if (!window.__radicalStarted && Date.now() - t0 > 3000) { s.classList.add("out"); setTimeout(function () { s.remove(); }, 500); } });
-  setTimeout(function () { if (!window.__radicalStarted && document.getElementById("splash")) { s.classList.add("ready"); var p = document.createElement("p"); p.className = "splerr"; p.textContent = "Radical is taking a long time to load. Check your connection, then reload."; s.appendChild(p); } }, 10000);
+  setTimeout(function () { if (!window.__radicalStarted && document.getElementById("splash")) { s.classList.add("ready"); var p = document.createElement("p"); p.className = "splerr"; p.textContent = "Still loading. Check your connection, then reload."; s.appendChild(p); } }, 10000);
 })();
 </script>
 
@@ -1034,7 +1070,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <summary class="addsum"><span class="plus" aria-hidden="true">＋</span>New text</summary>
       <div class="addbody">
       <div class="toolbar">
-        <label class="tool" title="Take a photo, or open a photo, PDF, Word file, e-book, subtitles, text or spreadsheet"><span class="ti">拍</span>Photo/File
+        <label class="tool" title="Photo or file"><span class="ti">拍</span>Photo/File
           <input type="file" id="fileIn" accept="image/*,application/pdf,.pdf,.docx,.txt,.text,.md,.html,.htm,.epub,.srt,.vtt,.ass,.csv,.tsv,.xlsx" hidden></label>
         <button type="button" class="tool" id="wikiBtn"><span class="ti">探</span>Explore</button>
         <button type="button" class="tool" id="histBtn"><span class="ti">歷</span>History</button>
@@ -1103,14 +1139,13 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
     <h3 class="sec tabsec"><span lang="zh">練</span>Practice</h3>
-    <div class="weekcard" id="weekCard" hidden></div>
     <p class="backupnote" id="backupNote" hidden></p>
     <div id="revStrip"></div>
     <div class="addbox">
       <div class="addrow">
         <div class="addfield">
           <textarea id="addWord" rows="1" lang="zh" placeholder="Add word(s): type or paste" autocomplete="off" autocapitalize="off"></textarea>
-          <label class="fileicon" title="Import class notes (PDF or photo), a word list or a backup file" aria-label="Import file"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M6 3h8l4 4v14H6z M14 3v4h4"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 10v7m-3-3 3 3 3-3"/></svg><input type="file" id="importFile" multiple accept=".txt,.csv,.tsv,.json,.md,text/plain,application/json,application/pdf,.pdf,image/*,.heic" hidden></label>
+          <label class="fileicon" title="Import notes, a word list or a backup" aria-label="Import file"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M6 3h8l4 4v14H6z M14 3v4h4"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 10v7m-3-3 3 3 3-3"/></svg><input type="file" id="importFile" multiple accept=".txt,.csv,.tsv,.json,.md,text/plain,application/json,application/pdf,.pdf,image/*,.heic" hidden></label>
         </div>
         <button type="button" class="btn outl" id="addGo">Add</button>
       </div>
@@ -1167,7 +1202,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     </header>
     <button type="button" class="back" id="wikiBack" hidden>Back to reading</button>
     <h3 class="sec tabsec"><span lang="zh">探</span>Explore</h3>
-    <p class="note tabsub">Real Chinese Wikipedia, written by native speakers.</p>
+    <p class="note tabsub">Real Chinese Wikipedia.</p>
     <div class="excol exleft">
     <h3 class="sec sub">Pick a topic</h3>
     <div class="topics" id="wikiTopics"></div>
@@ -1222,6 +1257,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="menuhead"><span class="brand"><b>Radical</b></span><button type="button" class="iconbtn" data-close aria-label="Close menu">✕</button></div>
     <button type="button" data-go="settings"><span class="mi">設</span>Settings</button>
     <button type="button" data-go="tour"><span class="mi">導</span>How it works</button>
+    <button type="button" data-go="backup"><span class="mi">存</span>Backup</button>
     <hr>
     <button type="button" data-go="about"><span class="mi">部</span>About</button>
     <button type="button" id="feedbackBtn"><span class="mi">信</span>Send feedback</button>
@@ -1234,8 +1270,20 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
   <div class="inner">
     <div class="topbar"><button type="button" class="back" data-back>Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
     <h3 class="sec tabsec"><span lang="zh">歷</span>History</h3>
-    <p class="note">Everything you've read and every word list you've imported, newest first. Tap one to open it again.</p>
+    <p class="note">Everything you've read or imported, newest first.</p>
     <div class="list" id="histList"></div>
+  </div>
+</section>
+
+<!-- BACKUP (from the menu) -->
+<section class="screen sub" id="backupScreen" hidden>
+  <div class="inner">
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <h3 class="sec tabsec"><span lang="zh">存</span>Backup</h3>
+    <div class="panel">
+      <p class="note" id="wordsWhere"></p>
+      <div class="row"><button type="button" class="btn ghost" id="backupBtn">Save a backup</button><label class="btn ghost" id="restoreLbl">Restore from a backup<input type="file" id="restoreFile" accept=".json,application/json" hidden></label></div>
+    </div>
   </div>
 </section>
 
@@ -1244,7 +1292,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
   <div class="inner">
     <div class="topbar"><button type="button" class="back" data-back id="setBack">Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
     <h3 class="sec tabsec"><span lang="zh">設</span><span id="setTitle">Settings</span></h3>
-    <p class="note" id="setIntro" hidden>Every character is drawn with its components in color. Pick the look you like; you can change it later from the menu.</p>
+    <p class="note" id="setIntro" hidden>Pick your Radical look. Change it anytime.</p>
     <details class="setsec" id="secAcct"><summary id="acctHead"><b>Account</b><span class="sum" data-sum="acct"></span></summary>
     <div class="panel acct" id="acctPanel"></div></details>
     <details class="setsec" id="secTheme"><summary><b>Theme</b><span class="sum" data-sum="theme"></span></summary>
@@ -1258,13 +1306,11 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <button type="button" data-theme-set="dark">Dark</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="system">Match phone</button>
     </div>
     <p class="note setlbl">Color vision</p>
-    <div class="seg themeseg" id="cvdSeg" role="group" aria-label="Color vision"><button type="button" data-cvd="0">Standard</button><button type="button" data-cvd="1">Red-green safe</button></div>
-    <p class="note">Red-green safe keeps your theme but makes Meaning darker and Sound lighter, so the two never look alike.</p></details>
+    <div class="seg themeseg" id="cvdSeg" role="group" aria-label="Color vision"><button type="button" data-cvd="0">Standard</button><button type="button" data-cvd="1">Red-green safe</button></div></details>
     <details class="setsec"><summary><b>Sound and light</b><span class="sum" data-sum="sound"></span></summary>
     <div class="panel">
       <div class="row" style="justify-content:space-between"><span>Sounds (guzheng and woodblock)</span><button type="button" class="switch small" id="soundSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
-      <div class="row" style="justify-content:space-between"><span>Light on the characters</span><button type="button" class="switch small" id="lightSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
-      <p class="note">Sounds play when you check an answer, add a word, finish a character or a session. The light gives the characters a lacquer finish.</p>
+      <div class="row" style="justify-content:space-between"><span>3D lacquer lighting</span><button type="button" class="switch small" id="lightSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
     </div></details>
     <details class="setsec"><summary><b>Speech</b><span class="sum" data-sum="speech"></span></summary>
     <div class="panel">
@@ -1274,26 +1320,19 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <p class="note" id="voiceName"></p>
     </div></details>
     <input id="pw" type="hidden">
-    <details class="setsec"><summary><b>Daily target</b><span class="sum" data-sum="target"></span></summary>
+    <details class="setsec"><summary><b>Cards a day</b><span class="sum" data-sum="daily"></span></summary>
     <div class="panel">
-      <div class="seg uiseg" id="targetSeg" role="group" aria-label="Daily target"><button type="button" data-t="0">Off</button><button type="button" data-t="10">10</button><button type="button" data-t="20">20</button><button type="button" data-t="30">30</button><button type="button" data-t="50">50</button></div>
-      <p class="note">Cards a day. Shown on This week and Track.</p>
+      <div class="seg uiseg" id="dailySeg" role="group" aria-label="Cards a day"><button type="button" data-t="10">10</button><button type="button" data-t="20">20</button><button type="button" data-t="30">30</button><button type="button" data-t="50">50</button></div>
     </div></details>
     <details class="setsec"><summary><b>Track boxes</b><span class="sum" data-sum="tiles"></span></summary>
     <div class="panel">
       <div class="tilesel" id="tileSel"><select aria-label="First box"></select><select aria-label="Second box"></select><select aria-label="Third box"></select></div>
-      <p class="note">The three numbers under the calendar on Track, and on This week. You can also touch and hold a box on Track to change it.</p>
+      <p class="note">Your three headline stats, the big boxes on Track.</p>
     </div></details>
     <details class="setsec"><summary><b>Learning focus</b><span class="sum" data-sum="modes"></span></summary>
     <div class="panel">
       <div class="seg uiseg" id="modesSeg" role="group" aria-label="Learning focus"><button type="button" data-m="read">Read</button><button type="button" data-m="write">Write</button><button type="button" data-m="listen">Listen</button></div>
-      <p class="note">What you want to keep up. The red number on 練 and Today count these. Every mode is always there to practice.</p>
       <div class="row" style="justify-content:space-between"><span>Red number on 練</span><button type="button" class="switch small" id="badgeSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
-    </div></details>
-    <details class="setsec"><summary><b>Your words</b><span class="sum" data-sum="words"></span></summary>
-    <div class="panel">
-      <p class="note" id="wordsWhere"></p>
-      <div class="row"><button type="button" class="btn ghost" id="backupBtn">Save a backup</button><label class="btn ghost" id="restoreLbl">Restore from a backup<input type="file" id="restoreFile" accept=".json,application/json" hidden></label></div>
     </div></details>
   </div>
 </section>
@@ -1339,11 +1378,12 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
   if (g === "history") $("histBtn").click();
   else if (g === "settings") openSettings(false);
   else if (g === "about") go("aboutScreen");
+  else if (g === "backup") { wordsWhere(); go("backupScreen"); }
   else if (g === "tour") showTour(true);
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v38";
+const APP_VERSION = "v39";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1352,7 +1392,7 @@ function metaLine() {
 $("feedbackBtn").onclick = () => {
   closeMenu();
   const sheet = el("div", "sheet"), card = el("div", "sheetcard fbcard");
-  card.append(el("h3", "", "Send feedback"), el("p", "note", "Anything confusing, broken or great. It goes straight to the person making Radical, who may reply by email."));
+  card.append(el("h3", "", "Send feedback"), el("p", "note", "Confusing, broken or great? It goes straight to the Radical team."));
   const ta = el("textarea"); ta.rows = 6; ta.placeholder = "What happened, or what would you change?";
   let shot = "";
   const pick = el("label", "btn ghost small fbshot", "Add a screenshot"), file = el("input"); file.type = "file"; file.accept = "image/*"; file.hidden = true; pick.append(file);
@@ -1361,7 +1401,7 @@ $("feedbackBtn").onclick = () => {
   const send = btn("Send", "btn", async () => {
     const text = ta.value.trim(); if (!text) { ta.focus(); return; }
     send.disabled = true; msg.textContent = "Sending…";
-    try { await claude({ action: "feedback", text, meta: metaLine(), image: shot || undefined }); play("right"); card.innerHTML = ""; card.append(el("h3", "", "Thank you"), el("p", "note", "Your note was sent."), btn("Close", "btn", () => sheet.remove())); }
+    try { await claude({ action: "feedback", text, meta: metaLine(), image: shot || undefined }); play("right"); card.innerHTML = ""; card.append(el("h3", "", "Thank you"), el("p", "note", session ? "Your note was sent. A copy is on its way to you." : "Your note was sent."), btn("Close", "btn", () => sheet.remove())); }
     catch (e) { msg.textContent = e.message; send.disabled = false; }
   });
   const row = el("div", "row"); row.append(send, btn("Cancel", "btn ghost", () => sheet.remove()));
@@ -1653,33 +1693,33 @@ const ROLES = ["meaning","sound","idea","idea2","radical","whole","part1","part2
 // in dark and light. Part order: meaning, sound, idea, idea2, radical, whole (picture), part1, part2 (origin unclear), part3 (unassigned strokes, shown as origin unclear).
 const PALETTES = {
   scholar: { name: "Scholar's Ink", blurb: "Night-blue ink, jade and celadon", sheen: "#F2FFF9", sheenA: .55,
-    darkUI:  { bg: "#0A0F14", surface: "#111821", line: "#1F2C3A", fg: "#E3ECEF", muted: "#8597A3", accent: "#7FD3B6", grid: "#1A2531" },
-    lightUI: { bg: "#EEF2F0", surface: "#FBFCFB", line: "#D3DCDA", fg: "#14202A", muted: "#5A6B73", accent: "#0F7C5C", grid: "#E2E9E7" },
+    darkUI:  { bg: "#0A0F14", surface: "#111821", line: "#1F2C3A", fg: "#E3ECEF", muted: "#8597A3", accent: "#7FD3B6", accent2: "#55A3FB", grid: "#1A2531" },
+    lightUI: { bg: "#EEF2F0", surface: "#FBFCFB", line: "#D3DCDA", fg: "#14202A", muted: "#5A6B73", accent: "#0F7C5C", accent2: "#1068CC", grid: "#E2E9E7" },
     dark:  ["#2AE69F","#55A3FB","#9D7CFC","#F4C25A","#2AE69F","#EF9837","#8E9C9A","#8E9C9A","#46535F"],
     light: ["#048B61","#1068CC","#562BDE","#A97D15","#048B61","#A96715","#5E6B69","#5E6B69","#A3AEB6"] },
   lacquer: { name: "Lacquer & Gold", blurb: "Black lacquer, cinnabar, gold leaf and jade", sheen: "#FFF6DC", sheenA: .5,
-    darkUI:  { bg: "#0E0A09", surface: "#171110", line: "#2E2320", fg: "#F1E7DA", muted: "#A08F80", accent: "#D9A84E", grid: "#231A18" },
-    lightUI: { bg: "#F5EFE7", surface: "#FFFCF7", line: "#E2D6C8", fg: "#2A1B16", muted: "#7A6658", accent: "#A0661A", grid: "#EDE3D7" },
+    darkUI:  { bg: "#0E0A09", surface: "#171110", line: "#2E2320", fg: "#F1E7DA", muted: "#A08F80", accent: "#D9A84E", accent2: "#34C48E", grid: "#231A18" },
+    lightUI: { bg: "#F5EFE7", surface: "#FFFCF7", line: "#E2D6C8", fg: "#2A1B16", muted: "#7A6658", accent: "#A0661A", accent2: "#11845A", grid: "#EDE3D7" },
     dark:  ["#EC3B1E","#F9AD17","#34C48E","#9DC4EA","#EC3B1E","#EFE2C4","#B5875A","#B5875A","#5A4C45"],
     light: ["#C51D05","#A87104","#11845A","#3F74A8","#C51D05","#8A8172","#8A5A32","#8A5A32","#B3A59C"] },
   observatory: { name: "Observatory", blurb: "Midnight indigo, amber and violet", sheen: "iris", sheenA: .6,
-    darkUI:  { bg: "#090A16", surface: "#10122A", line: "#24274F", fg: "#ECEAF6", muted: "#9592B8", accent: "#B79BFF", grid: "#191B3A" },
-    lightUI: { bg: "#F0F0F7", surface: "#FCFCFF", line: "#D9D9EA", fg: "#17172E", muted: "#5F5D80", accent: "#5B3FD0", grid: "#E5E5F2" },
+    darkUI:  { bg: "#090A16", surface: "#10122A", line: "#24274F", fg: "#ECEAF6", muted: "#9592B8", accent: "#B79BFF", accent2: "#FAA842", grid: "#191B3A" },
+    lightUI: { bg: "#F0F0F7", surface: "#FCFCFF", line: "#D9D9EA", fg: "#17172E", muted: "#5F5D80", accent: "#5B3FD0", accent2: "#BB6F05", grid: "#E5E5F2" },
     dark:  ["#FAA842","#9470FB","#2EDFFA","#FB709C","#FAA842","#FBC65F","#8C8AA8","#8C8AA8","#3A3C5E"],
     light: ["#BB6F05","#5223F5","#048EA4","#D91F60","#BB6F05","#A97D04","#6E6C8C","#6E6C8C","#AAABC6"] },
   bauhaus: { name: "Bauhaus", blurb: "Red, yellow and blue on black, nothing wasted", sheen: "#FFFFFF", sheenA: .5,
-    darkUI:  { bg: "#111111", surface: "#1B1B1B", line: "#2C2C2A", fg: "#F2EFE8", muted: "#9A978F", accent: "#FFD23F", grid: "#1F1F1E" },
-    lightUI: { bg: "#F4F1EA", surface: "#FFFFFF", line: "#DDD8CD", fg: "#141414", muted: "#66625A", accent: "#C8200F", grid: "#E9E5DC" },
+    darkUI:  { bg: "#111111", surface: "#1B1B1B", line: "#2C2C2A", fg: "#F2EFE8", muted: "#9A978F", accent: "#FFD23F", accent2: "#4C82F7", grid: "#1F1F1E" },
+    lightUI: { bg: "#F4F1EA", surface: "#FFFFFF", line: "#DDD8CD", fg: "#141414", muted: "#66625A", accent: "#C8200F", accent2: "#1F4FD1", grid: "#E9E5DC" },
     dark:  ["#F0402F","#FFD23F","#4C82F7","#7FD3F8","#F0402F","#F2EFE8","#8A8A85","#8A8A85","#3A3A38"],
     light: ["#C8200F","#C29400","#1F4FD1","#2A8CC9","#C8200F","#141414","#9A968E","#9A968E","#C9C6BE"] },
   aurora: { name: "Aurora", blurb: "Magenta and green light over arctic night", sheen: "#E8FFF4", sheenA: .55,
-    darkUI:  { bg: "#071019", surface: "#0D1A26", line: "#1B2C3B", fg: "#E6F0F2", muted: "#8A9DAA", accent: "#7CF5B0", grid: "#12212E" },
-    lightUI: { bg: "#EEF3F5", surface: "#FFFFFF", line: "#D3DEE3", fg: "#0E1A24", muted: "#56687A", accent: "#0F7E4E", grid: "#E1E9ED" },
+    darkUI:  { bg: "#071019", surface: "#0D1A26", line: "#1B2C3B", fg: "#E6F0F2", muted: "#8A9DAA", accent: "#7CF5B0", accent2: "#FF5C8A", grid: "#12212E" },
+    lightUI: { bg: "#EEF3F5", surface: "#FFFFFF", line: "#D3DEE3", fg: "#0E1A24", muted: "#56687A", accent: "#0F7E4E", accent2: "#B0164A", grid: "#E1E9ED" },
     dark:  ["#FF5C8A","#7CF5B0","#56E3D9","#9475FF","#FF5C8A","#F0E6C8","#7E8E99","#7E8E99","#2E3D4A"],
     light: ["#8E0E35","#1BA868","#1A7FC0","#6B45D6","#8E0E35","#6B5A2E","#7A8790","#7A8790","#B6C2C9"] },
   riso: { name: "Risograph", blurb: "Fluorescent pink, sunflower and teal on newsprint", sheen: "#FFF0F6", sheenA: .5,
-    darkUI:  { bg: "#141216", surface: "#1D1B20", line: "#2F2C33", fg: "#F4EEE6", muted: "#9C95A0", accent: "#FF4F9A", grid: "#221F25" },
-    lightUI: { bg: "#F6F1E9", surface: "#FFFDF8", line: "#E3DACD", fg: "#1A1720", muted: "#6B6470", accent: "#D81B6A", grid: "#ECE5DA" },
+    darkUI:  { bg: "#141216", surface: "#1D1B20", line: "#2F2C33", fg: "#F4EEE6", muted: "#9C95A0", accent: "#FF4F9A", accent2: "#4FE3D0", grid: "#221F25" },
+    lightUI: { bg: "#F6F1E9", surface: "#FFFDF8", line: "#E3DACD", fg: "#1A1720", muted: "#6B6470", accent: "#D81B6A", accent2: "#007A6E", grid: "#ECE5DA" },
     dark:  ["#FF4F9A","#FFE04A","#4FE3D0","#6C8BFF","#FF4F9A","#FF8A3D","#8E8890","#8E8890","#3B3840"],
     light: ["#D81B6A","#A87F00","#007A6E","#3D5AFE","#D81B6A","#E2640F","#8B8590","#8B8590","#C4BEC8"] },
   original: { name: "Plain ink", blurb: "Drawn strokes in one ink, no color" },
@@ -2063,9 +2103,9 @@ function showOnly(id) {
   if (id === "readScreen" && typeof fitLegend === "function") requestAnimationFrame(() => fitLegend());
 }
 let tab = "readScreen", revSide = null;
-function setTab(id) { if (id === "wordsScreen") contOk = true; if (reading) stopReading(); if ($("wikiBack")) $("wikiBack").hidden = true; tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); if (id === "trackScreen") renderTrack(); }
+function setTab(id) { if (id === "wordsScreen") contOk = true, catPicked = false; if (reading) stopReading(); if ($("wikiBack")) $("wikiBack").hidden = true; tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); if (id === "trackScreen") renderTrack(); }
 // Pages that can be opened from the menu: their Back says "‹ Menu" then (and reopens it), "‹ Back" otherwise.
-const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen"];
+const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen", "backupScreen"];
 function go(id) {
   if (MENU_PAGES.includes(id)) { $(id).dataset.via = viaMenu ? "menu" : ""; const bk = $(id).querySelector(".topbar .back"); if (bk) bk.textContent = viaMenu ? "Menu" : "Back";
     const mb = $(id).querySelector(".topbar .menubtn"); if (mb) mb.style.visibility = viaMenu ? "hidden" : ""; }  // ‹ Menu already goes back to it
@@ -2075,7 +2115,7 @@ function back() {
   if (!stack.length) return;
   const leaving = stack.pop();
   if (leaving === "wordScreen") onLeaveWord();
-  if (leaving === "reviewScreen") { curHow = null; contOk = true; updateCounts(); }
+  if (leaving === "reviewScreen") { curHow = null; contOk = true; catPicked = false; updateCounts(); }
   if (leaving === "settingsScreen") { saveSettings(); $("settingsScreen").querySelectorAll("details.setsec").forEach(d => d.open = false); }  // Settings opens folded next time
   showOnly(stack.length ? stack[stack.length - 1] : tab);
   if ($(leaving).dataset.via === "menu") { $(leaving).dataset.via = ""; openMenu(); }
@@ -2115,9 +2155,9 @@ async function render() {
   await ensure(text);
   if (token !== renderToken) return;
   reader.innerHTML = ""; unpick(); if (reading) stopReading();  // new text on screen: the voice stops with it
-  if (!text.trim()) { $("addPanel").open = true; reader.innerHTML = '<p class="note">Paste or type Chinese above, or use Photo/File, or Explore.</p>'; return; }
+  if (!text.trim()) { $("addPanel").open = true; reader.innerHTML = '<p class="note">Add Chinese text above, or try Explore.</p>'; return; }
   // Every character is a drawing, so very long texts are shown in parts.
-  if (doc && doc.lv) reader.append(el("p", "simpnote", `${doc.lv === "easy" ? "Easiest" : "Easier"} version, rewritten by AI. Check anything important against the Original.`));
+  if (doc && doc.lv) reader.append(el("p", "simpnote", `${doc.lv === "easy" ? "Easiest" : "Easier"} version, rephrased by Radical.`));
   const LIMIT = 1500, all = text.split(/\n+/).filter(l => l.trim());
   let shownChars = 0, lines = [];
   for (const l of all) { if (shownChars && shownChars + l.length > renderLimit) break; lines.push(l); shownChars += l.length; }
@@ -2457,7 +2497,7 @@ async function addNewWords() {
   }
   setTab("wordsScreen");
   showPreview({ list, rows: true }, null);
-  if (!list.length) $("preview").firstChild.textContent = "Every word in this text is already in your list.";
+  if (!list.length) $("preview").firstChild.textContent = "You have every word here already.";
 }
 function onNewText() { renderLimit = 1500; onNewText0(); }
 function onNewText0() { typed = detect($("src").value); showScript(); }  // the text never flips your 繁/简 choice
@@ -2626,7 +2666,7 @@ function renderHistory() {
   });
   list.append(chips);
   const shown = textHistory.filter(h => histFilter === "all" || (histFilter === "file" ? h.kind === "file" || h.kind === "pdf" : h.kind === histFilter));
-  if (!shown.length) list.append(el("p", "note", "Nothing yet. What you read, and word lists you import, show up here."));
+  if (!shown.length) list.append(el("p", "note", "Nothing yet."));
   shown.forEach(h => {
     const row = el("div", "hitem");
     const first = h.doc ? h.title : h.kind === "list" ? (h.title || "Word list") : (h.title || (h.text || "").split("\n")[0]);
@@ -2644,10 +2684,12 @@ $("histBtn").onclick = () => { remember($("src").value); renderHistory(); go("hi
 // still works until it's removed from Vercel.
 async function claude(payload) {
   const token = await accessToken(), pw = store.get("radical-pw", "");
-  if (!token && !pw) { openSettings(false); $("secAcct").open = true; setTimeout(() => { const e = $("acctEmail"); if (e) e.focus(); }, 300); throw new Error("Sign in first (Settings, Account)."); }
+  if (!token && !pw) { signInSheet(); throw new Error("Sign in first."); }
   const auth = { ...(token ? { Authorization: `Bearer ${token}` } : { "x-app-password": pw }), "x-radical-day": localDay() };
-  const get = payload.action === "card";
-  const url = get ? `/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}` : "/api/claude";
+  // Cards and Word Sets are the same for everyone: asked with GET, so Vercel's CDN can answer them.
+  const get = payload.action === "card" || payload.action === "wordset";
+  const url = payload.action === "card" ? `/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}`
+    : get ? `/api/claude?v=1&action=wordset&theme=${encodeURIComponent(payload.theme)}` : "/api/claude";
   let r;
   try {
     r = await fetch(url, get ? { headers: auth }
@@ -2718,7 +2760,7 @@ async function fetchUsage() {
   } catch (e) { return null; }
 }
 const money = x => x >= .01 ? `$${x.toFixed(2)}` : x > 0 ? "under 1¢" : "$0";
-const AI_NAMES = { card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
+const AI_NAMES = { wordset: "Word Sets", card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
   zhquery: "Explore search", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
 function tallyText(a) { return `AI today: ${a.today.calls} call${a.today.calls === 1 ? "" : "s"} · ${money(a.today.cost)} · this month ${money(a.month.cost)} (all users)`; }
 function aiTally() {
@@ -2805,12 +2847,12 @@ function renderAccount() {
     fetchUsage().then(j => { if (!j || !ai.isConnected) return;
       ai.textContent = j.ai === false ? "The AI features aren't turned on for this account yet." : `AI this month: ${j.me.month >= .01 ? "about " : ""}${money(j.me.month)}`; });
   } else {
-    box.append(el("p", "note", "Sign in to keep your words in your account, on every phone you use. We email you a 6-digit code; no password."));
+    box.append(el("p", "note", "Keep your words with you, on any device. We'll email a 6-digit code."));
     const email = el("input"); email.type = "email"; email.id = "acctEmail"; email.placeholder = "Your email"; email.autocomplete = "email"; email.value = acctEmail;
     const send = btn(acctSent ? "Send a new code" : "Send code", acctSent ? "btn ghost small" : "btn", async () => {
       acctEmail = email.value.trim(); if (!/^\S+@\S+\.\S+$/.test(acctEmail)) { msg.textContent = "That email doesn't look right."; return; }
       send.disabled = true; msg.textContent = "Sending…";
-      try { await sbAuth("otp", { email: acctEmail, create_user: true }); acctSent = true; renderAccount(); $("acctMsg").textContent = `Code sent to ${acctEmail}. It can take a minute; check spam if it doesn't arrive.`; setTimeout(() => $("acctCode") && $("acctCode").focus(), 50); }
+      try { await sbAuth("otp", { email: acctEmail, create_user: true }); acctSent = true; renderAccount(); $("acctMsg").textContent = `Code sent to ${acctEmail}. Check spam if it's slow.`; setTimeout(() => $("acctCode") && $("acctCode").focus(), 50); }
       catch (e) { msg.textContent = e.message; send.disabled = false; }
     });
     box.append(email);
@@ -2834,6 +2876,36 @@ function renderAccount() {
   fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "status" }) })
     .then(r => r.json()).then(j => { st.textContent = j.ok ? "Account service: connected ✓" : `Account service: ${j.missing && j.missing.length ? "missing " + j.missing.join(", ") : esc(j.error || "not reachable")}`; })
     .catch(() => { st.textContent = ""; });
+}
+// Sign in where you are (v39): a small sheet instead of a trip to Settings. It comes up right after you choose a Word
+// Set (their cards need the account) and whenever something needs the AI service while signed out. `then` runs after
+// signing in; `skip` after Not now.
+function signInSheet(o = {}) {
+  if (document.querySelector(".sheet.signin")) return;
+  const sheet = el("div", "sheet signin"), card = el("div", "sheetcard signcard");
+  const done = ok => { sheet.remove(); const f = ok ? o.then : o.skip; if (f) f(); };
+  const msg = el("p", "note acctmsg"), email = el("input"), code = el("input"), row = el("div", "row");
+  email.type = "email"; email.placeholder = "Your email"; email.autocomplete = "email"; email.value = acctEmail;
+  code.type = "text"; code.inputMode = "numeric"; code.autocomplete = "one-time-code"; code.placeholder = "6-digit code"; code.maxLength = 10; code.hidden = true;
+  let sent = false;
+  const go = btn("Send code", "btn wide", async () => {
+    if (!sent) {
+      acctEmail = email.value.trim(); if (!/^\S+@\S+\.\S+$/.test(acctEmail)) { msg.textContent = "That email doesn't look right."; return; }
+      go.disabled = true; msg.textContent = "Sending…";
+      try { await sbAuth("otp", { email: acctEmail, create_user: true }); sent = true; code.hidden = false; go.textContent = "Sign in"; msg.textContent = `Code sent to ${acctEmail}. Check spam if it's slow.`; setTimeout(() => code.focus(), 50); }
+      catch (e) { msg.textContent = e.message; }
+      go.disabled = false; return;
+    }
+    const c = code.value.replace(/\D/g, ""); if (c.length < 6) { msg.textContent = "Enter the 6-digit code from the email."; return; }
+    go.disabled = true; msg.textContent = "Signing in…";
+    try { await signIn(acctEmail, c); play("right"); done(true); }
+    catch (e) { msg.textContent = /expired|invalid/i.test(e.message) ? "That code didn't work. Check it, or send a new one." : e.message; go.disabled = false; }
+  });
+  [email, code].forEach(x => x.addEventListener("keydown", e => { if (e.key === "Enter") go.click(); }));
+  row.append(btn("Not now", "btn ghost wide", () => done(false)));
+  card.append(el("h3", "", "Save your words"), el("p", "note", "We'll send a 6-digit code."), email, code, go, msg, row);
+  sheet.append(card); document.body.append(sheet);
+  setTimeout(() => email.focus(), 300);
 }
 // Explanations are kept once made (the same sentence never costs twice); at most 300 are kept, oldest dropped first.
 const explainCache = store.get("radical-explain", {});
@@ -3170,31 +3242,23 @@ function streakStats() {
   let used = 0; for (let i = 1; i < REST_WINDOW; i++) { const day = localDay(Date.now() - i * DAY); if (day >= first && !dayUsed(d[day])) used++; }
   return { now, best, rest: Math.max(0, REST_DAYS - used) };
 }
-// The headline numbers, for the opening screen and This week: streak, characters learned, days this week.
+// The headline numbers, for the opening screen: streak, characters learned, days this week.
 function headline() {
   const s = streakStats(), w = weekStats(), k = charStages().familiar.size;
   return [s.now > 1 ? `${s.now}-day streak` : "", k ? `${num(k)} familiar characters` : "", w.n ? `${w.n} day${w.n === 1 ? "" : "s"} this week` : ""].filter(Boolean);
 }
-function weekCard() {
-  const box = $("weekCard"); if (!box) return;
-  const w = weekStats(), s = streakStats(), target = store.get("radical-target", 20);
-  box.hidden = !w.n && !w.learned && !w.today;
-  if (box.hidden) return;
-  const dots = w.studied.map(x => `<i class="${x ? "on" : ""}"></i>`).join("");
-  const today = target ? `<p class="wktoday${w.today >= target ? " done" : ""}">Today: ${num(w.today)} of ${target} cards${w.today >= target ? " ✓" : ""}</p>` : "";
-  const line1 = [w.cards ? `${num(w.cards)} card${w.cards === 1 ? "" : "s"}` : "", w.read ? `${num(w.read)} characters read` : "", w.added ? `+${num(w.added)} word${w.added === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
-  const st = charStages(), line2 = [s.now > 1 ? `${s.now}-day streak` : "", ...trackTiles().map(k => TILES[k][1](tileValue(k, st)))].filter(Boolean).join(" · ");
-  box.innerHTML = `<div class="wkhead"><b>This week</b><span class="wkdays">${w.n} of 7 days <span class="wkdots" aria-hidden="true">${dots}</span></span></div>`
-    + today + (line1 ? `<p>${line1}</p>` : "") + `<p class="wklearn">${line2}</p>`;
-  box.onclick = () => setTab("trackScreen"); box.style.cursor = "pointer";
+// Cards done today, beside the Flash cards title on Practice (v39: the This week card is gone; Track has the rest).
+function todayNum() {
+  const b = $("todayNum"); if (!b) return;
+  const n = weekStats().today; b.hidden = !n; b.textContent = `${num(n)} today`;
 }
-// Called whenever the day's tally changes: the This week card and Track follow along.
+// Called whenever the day's tally changes: the count on Practice and Track follow along.
 function updateRing() {
-  if (!$("wordsScreen").hidden) weekCard();
+  if (!$("wordsScreen").hidden) todayNum();
   if (!$("trackScreen").hidden) renderTrack();
 }
 // ---- Track boxes: three numbers you choose (Settings, Track boxes, or touch and hold a box on Track). Each entry:
-// the box's name, its words on This week, and whether tapping it lists what's in it.
+// the box's name, its short form, and whether tapping it lists what's in it.
 const TILES = {
   seen: ["Characters seen", n => `${num(n)} seen`, true], familiar: ["Characters familiar", n => `${num(n)} familiar`, true],
   learned: ["Characters learned", n => `${num(n)} learned`, true], read: ["Characters read", n => `${num(n)} characters read`],
@@ -3257,14 +3321,14 @@ function paintTileSel() {
 let trackMonth = null;
 function renderTrack() {
   const box = $("trackBody"); if (!box) return;
-  const d = store.get("radical-days", {}), target = store.get("radical-target", 20), s = streakStats(), w = weekStats();
+  const d = store.get("radical-days", {}), s = streakStats(), w = weekStats();
   const all = Object.keys(d).sort(), firstUse = all.find(k => dayUsed(d[k]));
   const tot = (keys, f) => keys.reduce((a, k) => a + ((d[k] || {})[f] || 0), 0);
   box.innerHTML = "";
   // streak and today
   const top = el("div", "trk trktop");
   top.innerHTML = `<div><span class="trl">Streak</span><b class="trbig">${num(s.now)} day${s.now === 1 ? "" : "s"}</b><span class="trs">Best ${num(s.best)} · ${s.rest} rest day${s.rest === 1 ? "" : "s"} left</span></div>`
-    + (target ? `<div class="tright"><span class="trl">Today</span><b class="${w.today >= target ? "done" : ""}">${num(w.today)} of ${target} cards</b></div>` : "");
+    + `<div class="tright"><span class="trl">Today</span><b>${num(w.today)} card${w.today === 1 ? "" : "s"}</b></div>`;
   box.append(top);
   // calendar
   const now = new Date(Date.now() - DAY_START_H * 36e5);
@@ -3280,11 +3344,11 @@ function renderTrack() {
   let usedMonth = 0;
   for (let k = 1; k <= nDays; k++) {
     const key = `${trackMonth.y}-${String(trackMonth.m + 1).padStart(2, "0")}-${String(k).padStart(2, "0")}`, v = d[key];
-    const cls = key > today ? "future" : dayUsed(v) ? (target && (v.c || 0) >= target ? "hit" : "on") : firstUse && key >= firstUse && key < today ? "off" : "";
+    const cls = key > today ? "future" : dayUsed(v) ? "on" : firstUse && key >= firstUse && key < today ? "off" : "";
     if (dayUsed(v)) usedMonth++;
     const c = el("span", `calday ${cls}${key === today ? " today" : ""}`, String(k)); c.title = key + (v ? ` · ${v.c || 0} cards · ${v.r || 0} characters read` : ""); grid.append(c);
   }
-  cal.append(head, grid, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<i class="kd hit"></i> target reached <i class="kd on"></i> studied <i class="kd off"></i> rest day`));
+  cal.append(head, grid, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<i class="kd on"></i> studied <i class="kd off"></i> rest day`));
   box.append(cal);
   // your three boxes (tap: what's in it; touch and hold: change it), then the characters by stage
   const st = charStages(), tiles = el("div", "trtiles");
@@ -3300,7 +3364,7 @@ function renderTrack() {
   if (nS) {
     const cs = el("div", "trk"), cp = n => (n / nS * 100).toFixed(1);
     cs.innerHTML = `<span class="trl">Characters</span><div class="stagebar"><i style="width:${cp(nL)}%" class="sb-learned"></i><i style="width:${cp(nF - nL)}%" class="sb-learning"></i><i style="width:${cp(nS - nF)}%" class="sb-seen"></i></div>`
-      + `<p class="trs">${num(nS)} seen · ${num(nF)} familiar · ${num(nL)} learned <span class="trq">(familiar: right on two different days · learned: remembered after 3 weeks)</span></p>`;
+      + `<p class="trs">${num(nS)} seen · ${num(nF)} familiar · ${num(nL)} learned <span class="trq">(familiar: right on 2 days · learned: retained after 3 weeks)</span></p>`;
     box.append(cs);
   }
   // familiar and learned over time, once there's a month of it to show
@@ -3308,7 +3372,7 @@ function renderTrack() {
   if (Date.now() - since >= 30 * DAY && nF >= 50) { const series = stageSeries(); if (series.length > 1) box.append(chartBox("Familiar and learned characters", lineChart(series) + `<p class="trs">Line: familiar · dashes: learned</p>`)); }
   // chart 2: the last 30 days
   const last30 = []; for (let i = 29; i >= 0; i--) { const k = localDay(Date.now() - i * DAY); last30.push({ k, c: (d[k] || {}).c || 0, r: (d[k] || {}).r || 0 }); }
-  box.append(chartBox("Last 30 days", barChart(last30.map(x => x.c), "Cards", target) + barChart(last30.map(x => x.r), "Characters read")));
+  box.append(chartBox("Last 30 days", barChart(last30.map(x => x.c), "Cards") + barChart(last30.map(x => x.r), "Characters read")));
   // words by stage
   const nLearned = myWords.filter(x => learned[x.word]).length, nFam = myWords.filter(x => familiar[x.word] && !learned[x.word]).length;
   const nNew = myWords.filter(x => !practiced(x) && !familiar[x.word] && !learned[x.word]).length, nSeen = myWords.length - nNew - nFam - nLearned;
@@ -3330,7 +3394,7 @@ function renderTrack() {
     + `<tr><th>Words familiar</th><td>${num(fYear(y))}</td><td>${cell(fYear(y - 1))}</td><td>${num(Object.keys(familiar).length)}</td></tr>`
     + `<tr><th>Words learned</th><td>${num(lYear(y))}</td><td>${cell(lYear(y - 1))}</td><td>${num(Object.keys(learned).length)}</td></tr></tbody></table>`;
   box.append(yt);
-  box.append(friendsBox());
+  if (session) box.append(friendsBox());  // signed out: no Friends box (it needs an account)
   checkMilestones();
 }
 // Familiar (v) and learned (v2) characters over time, rebuilt from the two dated lists.
@@ -3396,18 +3460,14 @@ function friendsBox() {
 function paintFriends(b) {
   const f = store.get("radical-friends", null);
   b.innerHTML = '<span class="trl">Friends</span>';
-  if (!session) {
-    b.append(el("p", "trs", "See each other's progress with a friend's code. Sign in first (Settings, Account)."));
-    b.append(btn("Sign in", "btn ghost small", () => { openSettings(false); $("secAcct").open = true; }));
-    return;
-  }
+  if (!session) return;
   if (!f) { b.append(el("p", "trs frerr", "Getting your code…")); return; }
   f.friends.forEach(x => {
     const r = el("button", "frrow"); r.type = "button";
     r.innerHTML = `<b>${esc(x.name)}</b><span class="trs">${num(x.chars.familiar)} familiar · ${num(x.chars.learned)} learned · ${x.week.days} of 7 days</span>`;
     r.onclick = () => showFriend(x); b.append(r);
   });
-  if (!f.friends.length) b.append(el("p", "trs", "Add a friend with their code, or send them yours."));
+  if (!f.friends.length) b.append(el("p", "trs", "Swap codes with a friend."));
   const add = el("form", "frform"), inp = el("input"); inp.placeholder = "Friend's code"; inp.autocapitalize = "characters"; inp.autocomplete = "off"; inp.maxLength = 8; inp.setAttribute("aria-label", "Friend's code");
   const go = btn("Add", "btn outl small"); go.type = "submit"; const msg = el("p", "trs frmsg");
   add.append(inp, go);
@@ -3423,7 +3483,7 @@ function paintFriends(b) {
   const btns = el("div", "frme"); btns.append(share, btn("QR code", "btn ghost small", () => showQR(f.code)));
   const name = el("input", "frname"); name.placeholder = "Your name for friends"; name.value = f.name || ""; name.maxLength = 30; name.setAttribute("aria-label", "Your name for friends");
   name.onchange = () => friendsCall({ op: "name", name: name.value.trim() }).catch(() => {});
-  b.append(add, msg, me, btns, el("span", "trs", "Your name for friends"), name, el("p", "trs trq", "Friends see your name, characters by stage, this week and your chart. Never your words."));
+  b.append(add, msg, me, btns, el("span", "trs", "Your name for friends"), name, el("p", "trs trq", "Friends see your progress, never your words."));
 }
 function showFriend(x) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard frcard"), c = x.chars, cp = n => c.seen ? (n / c.seen * 100).toFixed(1) : 0;
@@ -3455,7 +3515,7 @@ function showQR(code) {
 async function joinPending() {
   const code = store.get("radical-friend-pending", ""); if (!code) return;
   if (!session) { setTimeout(() => { if (document.querySelector(".sheet")) return; const sheet = el("div", "sheet"), card = el("div", "sheetcard");
-    card.append(el("h3", "", "A friend's invitation"), el("p", "", "Sign in to connect with your friend. You'll be connected as soon as you're in."), btn("Sign in", "btn wide", () => { sheet.remove(); openSettings(false); $("secAcct").open = true; }), btn("Not now", "btn ghost wide", () => sheet.remove()));
+    card.append(el("h3", "", "A friend's invitation"), el("p", "", "Sign in to connect."), btn("Sign in", "btn wide", () => { sheet.remove(); signInSheet({ then: joinPending }); }), btn("Not now", "btn ghost wide", () => sheet.remove()));
     sheet.append(card); document.body.append(sheet); }, 1500); return; }
   store.set("radical-friend-pending", "");
   try { const r = await friendsCall({ op: "add", code }); milestone(`You and ${r.added} are now friends`, "You'll find each other on 記 Track."); }
@@ -3553,11 +3613,11 @@ const dueIn = (w, ms) => ms.some(m => modeDue(w, m));
 const dueAny = w => dueIn(w, MODES);
 const modesOf = how => how === "mix" ? MODES : [how];
 // Today: every word whose review time has come in these modes (longest waiting first), then a few new words (the day's
-// new-word allowance), at most TODAY_MAX a day. New words start in the first of the modes (Read when it's there).
-// Words you've practiced today keep their place (a missed one comes back) without taking a new one; past 30, the rest
+// new-word allowance), at most dailyMax() a day (Settings, Cards a day: 10, 20, 30 or 50; 30 unless changed). New words start in the first of the modes (Read when it's there).
+// Words you've practiced today keep their place (a missed one comes back) without taking a new one; past the cap, the rest
 // wait for tomorrow (N more at the end of Today takes those first, as the Learning words due soonest). With `at` (a
 // time), the list as it will stand then: Tomorrow on the finish screen.
-const TODAY_MAX = 30;
+const dailyMax = () => store.get("radical-daily", 30);
 function doneToday() { const r = store.get("radical-today-done", null); return new Set(r && r.day === localDay() ? r.w : []); }
 function markDone(w, k) {
   const m = MODES.find(x => KEYS[x] === k); if (!inGoal(m)) return;
@@ -3570,7 +3630,7 @@ function todayList(ms, at) {
   const due = myWords.filter(w => ms.some(m => dueAt(w, m))).sort((a, b) => first(a) - first(b));
   const k = KEYS[ms[0]], fresh = myWords.filter(w => !w.skip && !w[k] && !due.includes(w));
   const list = [...due, ...fresh.slice(0, Math.max(0, at ? NEW_PER_DAY : newLeft(k)))];
-  const done = at ? new Set() : doneToday(); let room = TODAY_MAX - done.size;
+  const done = at ? new Set() : doneToday(); let room = dailyMax() - done.size;
   return list.filter(w => done.has(w.word) || room-- > 0);
 }
 const isNewIn = (w, how) => !w.skip && !modesOf(how).some(m => w[KEYS[m]]);
@@ -3582,7 +3642,7 @@ function wStatus(w, how = (typeof revHow === "string" ? revHow : "read")) {
   return w.skip ? "known" : dueIn(w, modesOf(how)) ? "due" : isNewIn(w, how) ? "new" : "learning";
 }
 function dueText(w) {
-  if (w.skip) return `Known: comes back now and then for a quick check (next around ${localDay(w.srs && w.srs.due)}).`;
+  if (w.skip) return `Known · next check around ${localDay(w.srs && w.srs.due)}`;
   if (!w.srs) return "New: not studied yet.";
   if (w.srs.due <= Date.now()) return "In today's cards.";
   return `Next review ${localDay(w.srs.due)} (every ${w.srs.ivl <= 1 ? "day" : ivlText(w.srs.ivl)}).`;
@@ -3674,7 +3734,7 @@ function wordPage() {
   });
   page.append(row);
   // Once: say that holding a character enlarges it.
-  if (!store.get("radical-hold-tip", false)) { page.append(el("p", "note holdtip", "Touch and hold a character to enlarge it.")); store.set("radical-hold-tip", true); }
+  if (!store.get("radical-hold-tip", false)) { page.append(el("p", "note holdtip", "Hold a character to enlarge it.")); store.set("radical-hold-tip", true); }
   if (isPattern(s.word)) page.append(el("div", "kind", "Pattern · the box stands for whatever fills it"));
   { const l = legendLine(s.chars.join("")); if (l) page.append(l); }
   const py = el("div", "wpy", `<span class="bigpy">${syl.map(pyHTML).join(" ")}</span>${markHTML(saved, "pinyin")}${sayHTML(s.word)}`);
@@ -3683,7 +3743,7 @@ function wordPage() {
   page.append(el("p", "wmean", esc(mean) + markHTML(saved, "meaning") + (s.tw && !markOf(saved, "pinyin") ? ` <span class="note">(Taiwan reading)</span>` : "")));
   if (saved) page.append(...cardExtras(saved));
   // One line, and it's the way forward: no separate arrow repeating the next character.
-  const nav = el("div", "pnav"), go1 = el("button", "nx swipehint", `Swipe for each character's components and writing<i></i>`);
+  const nav = el("div", "pnav"), go1 = el("button", "nx swipehint", `Swipe for parts and writing<i></i>`);
   go1.type = "button"; go1.onclick = () => goPage(1); nav.append(el("span"), go1);
   page.append(nav);
   if (saved) page.append(savedCard(saved));
@@ -3738,9 +3798,9 @@ function savedCard(w) {
 }
 
 const NOTE = {
-  inferred: "The source doesn't record where this character came from. One component sounds like the whole and the other is its dictionary radical, so this is the likely meaning + sound split.",
+  inferred: "Origin unrecorded. One part sounds like the whole, so it's likely meaning + sound.",
   unknown: "The radical (the component dictionaries file it under) usually carries the meaning. Where the other component came from isn't recorded, so it gets the \"origin unclear\" color.",
-  pictographic: "This one started as a drawing: no meaning component or sound component. The whole shape is the picture.",
+  pictographic: "Started as a drawing. The whole shape is the picture.",
   whole: "A single sign with no smaller components."
 };
 function charPage(ch, i) {
@@ -3899,7 +3959,7 @@ function practice(top, ch, onBack, onCard) {
     onMistake: s => { const n = s.mistakesOnStroke; say(n >= 5 ? "Here's where it goes. Trace it." : n === 1 ? "Not quite. Try that stroke again." : `Not yet (${n} tries). Try again, or tap Hint.`); },
     onComplete: () => { coach.innerHTML = `<b>Finished.</b> ${firstTry} of ${total} strokes on the first try.`; padDone(wrap); play("reward"); }
   });
-  hint.onclick = () => { writer.highlightStroke(current); say("That stroke is highlighted. Trace it."); };
+  hint.onclick = () => { writer.highlightStroke(current); say("Trace the highlighted stroke."); };
   if (onCard) {  // on a flash card: watch it drawn or write it again; the bar's Back to card returns
     row.append(
       btn("Show me", "btn ghost", () => { try { writer.cancelQuiz(); } catch (e) {} inkStrokes.forEach(x => x.style.opacity = 1); coach.textContent = "Here's how it's written."; animate(ink, ch, 1); }),
@@ -3936,7 +3996,7 @@ let pending = null;
 // Practice: one box picks the session. The mode (Read, Write, Listen, Mix), which words (Today, New, Learning, Known,
 // All; the same choice filters the list below) and how many; then Start. Today is where Practice opens.
 const CATS = [["today", "Today"], ["new", "New"], ["learning", "Learning"], ["known", "Known"], ["all", "All"]];
-let revCat = "today", revCount = store.get("radical-revcount", 20);
+let revCat = "today", catPicked = false, revCount = store.get("radical-revcount", 20);
 // Read: see the word, recall its sound and meaning. Write: hear it and see the meaning, write the characters.
 let revHow = store.get("radical-revhow", goal.length > 1 ? "mix" : goal[0]);  // read, write, listen or mix
 if (!["read", "write", "listen", "mix"].includes(revHow)) revHow = "read";
@@ -3981,17 +4041,22 @@ const pills = (cls, items, on, pick) => {
   items.forEach(([k, label, extra, off]) => {
     const b = el("button", "", label + (extra != null ? ` <span>${extra}</span>` : "")); b.type = "button";
     b.setAttribute("aria-pressed", k === on); if (off) b.disabled = true;
-    b.onclick = () => { contOk = false; pick(k); renderWords(); };
+    b.onclick = () => { contOk = false; if (cls === "cats") catPicked = true; pick(k); renderWords(); };
     row.append(b);
   });
   return row;
 };
 function renderStrip(sizes) {
   const strip = $("revStrip"); strip.innerHTML = "";
-  const box = el("div", "revpanel");
-  box.append(el("div", "revhead", "<b>Flash cards</b>"));
+  // No words yet: Word Sets takes this spot (there's nothing to practice).
+  if (!myWords.length) { strip.append(setsPanel()); return; }
+  const box = el("div", "revpanel"), head = el("div", "revhead", "<b>Flash cards</b>");
+  const tn = btn("", "todaynum", () => setTab("trackScreen")); tn.id = "todayNum"; tn.hidden = true; head.append(tn);
+  box.append(head);
   box.append(pills("hows", [["read", "Read"], ["write", "Write"], ["listen", "Listen"], ["mix", "Mix"]], revHow, k => { revHow = k; store.set("radical-revhow", k); }));
-  box.append(pills("cats", CATS.map(([k, label]) => [k, label, sizes[k], k !== "today" && k !== "all" && !sizes[k]]), revCat, k => { revCat = k; }));
+  const cats = pills("cats", CATS.map(([k, label]) => [k, label, sizes[k], k !== "today" && k !== "all" && !sizes[k]]), revCat, k => { revCat = k; });
+  if (sizes.today) cats.firstChild.lastChild.className = "pbadge";  // Today's count in red, like the one on 練
+  box.append(cats);
   const n = sizes[revCat], count = countFor(n);
   if (n) box.append(pills("counts" + (countChoices(n).length ? "" : " solo"), [...countChoices(n).map(c => [c, String(c)]), ["all", `All (${n})`]], count, k => { revCount = k; store.set("radical-revcount", k); }));
   // A session you stepped away from (not quit) comes back where you left it, until the day ends.
@@ -4005,12 +4070,10 @@ function renderStrip(sizes) {
     if (more) box.append(btn(`${more} more`, "btn outl wide revgo", () => openReview("learning", 10)));
   } else box.append(el("p", "revdone", myWords.length ? "No words here." : "Add words to start."));
   // What each mode does: shown the first time you pick it, then How it works keeps it.
-  const NOTES = { write: "Write: you hear the word and see its meaning, then write the characters from memory. Writing keeps its own schedule.",
-    listen: "Listen: you hear the word without seeing it, then type its pinyin and meaning. Listening keeps its own schedule.",
-    mix: "Mix: each card comes up in Read, Write or Listen, in a mode where it's up for review. New words start in Read." };
+  const NOTES = { write: "Write: hear it, see the meaning, write it.", listen: "Listen: hear it, type pinyin and meaning.", mix: "Mix: Read, Write and Listen, shuffled." };
   const seen = store.get("radical-hownote", {});
   if (NOTES[revHow] && !seen[revHow]) { box.append(el("p", "note", NOTES[revHow])); seen[revHow] = true; store.set("radical-hownote", seen); }
-  strip.append(box);
+  strip.append(box); todayNum();
 }
 const HOW_NAME = { read: "Read", write: "Write", listen: "Listen", mix: "Mix" };
 // Backup reminder: your words live only on this phone, so after a week or 100 reviews without a backup, say so.
@@ -4023,23 +4086,26 @@ function showBackupNote() {
   box.append(btn("Save now", "btn ghost small", () => $("backupBtn").click()));
 }
 function renderWords() {
-  weekCard(); showBackupNote();
+  showBackupNote();
   const sets = {}, sizes = {}; CATS.forEach(([k]) => { sets[k] = pool(k); sizes[k] = sets[k].length; });
+  // Practice opens on Today while it has cards, and on All once it's done (so the list below isn't empty). A
+  // category you tap stays until you leave the tab or finish a session.
+  if (!catPicked) revCat = sizes.today ? "today" : "all";
   renderStrip(sizes);
   const list = $("wordList"); list.innerHTML = "";
   // The list shows the words in the choice above, newest first.
-  const inSet = new Set(commonView ? myWords.filter(w => w.common) : sets[revCat]);
+  const inSet = new Set(sets[revCat]);
   renderCommon();
   const shown = myWords.map((w, i) => [w, i]).filter(([w]) => inSet.has(w))
     .sort((a, b) => (b[0].added || "").localeCompare(a[0].added || "") || a[1] - b[1]).map(x => x[0]);
   list.hidden = !shown.length;
-  $("listHead").textContent = myWords.length ? `${commonView ? "Most common" : CATS.find(c => c[0] === revCat)[1]} · ${shown.length} word${shown.length === 1 ? "" : "s"}` : "";
+  $("listHead").textContent = myWords.length ? `${CATS.find(c => c[0] === revCat)[1]} · ${shown.length} word${shown.length === 1 ? "" : "s"}` : "";
   shown.forEach(w => {
     const st = wStatus(w), on = picks.has(w), dot = st === "known" ? "known" : "learning";
     const r = el("div", "wrow" + (on ? " sel" : ""));
     r.innerHTML = `<button type="button" class="wsel" role="checkbox" aria-checked="${on}" aria-label="Select ${esc(w.word)}"><i></i></button>`
       + `<button type="button" class="wmain"><span class="wz" lang="zh">${slotHTML(w.word)}</span><span class="wm">${esc(wMeaning(w))}</span></button>`
-      + `<button type="button" class="wdot" aria-label="Status: ${STATUS_NAME[st]}. Change">${w.common ? '<span class="newtag settag">common</span>' : ""}${st === "new" ? '<span class="newtag">new</span>' : ""}<i class="dot ${dot}"></i></button>`;
+      + `<button type="button" class="wdot" aria-label="Status: ${STATUS_NAME[st]}. Change">${w.common ? '<span class="newtag settag">top</span>' : w.set ? `<span class="newtag settag">${esc(w.set.toLowerCase())}</span>` : ""}${st === "new" ? '<span class="newtag">new</span>' : ""}<i class="dot ${dot}"></i></button>`;
     r.querySelector(".wsel").onclick = () => { on ? picks.delete(w) : picks.add(w); renderWords(); };
     r.querySelector(".wmain").onclick = () => openWord(w.word, { context: w.context });
     r.querySelector(".wdot").onclick = e => statusMenu(e.currentTarget, [w]);
@@ -4051,17 +4117,19 @@ function renderWords() {
   lb.hidden = !set.length; lb.textContent = picks.size ? `Review selection (${set.length})` : `Review ${set.length === 1 ? "this word" : `these ${set.length}`}`;
   lb.onclick = () => openLook(set);
   renderSelBar(shown);
-  if (!myWords.length) $("addStatus").textContent = "Add a word you're learning, paste a list, or import a file (the page icon in the box).";
 }
 
-// ---- the most common characters, for beginners: 100, 500, 1,000 or 2,000 (lists/common.tsv, from wordfreq; see
-// CREDITS.md). They join your own words rather than living apart: each day, while there's room in the day's new words
-// after your own new words, the next few characters are added (w.common = their rank) and get their cards then, so
-// they come up in Today like anything else and never arrive as a pile. Growing the set only moves the line further;
-// Remove set takes out the ones not studied yet and stops it. A character you already have (either script) or
-// removed is skipped. The set sizes are by mainland frequency; a Taiwan list waits for the Mainland/Taiwan setting.
+// ---- Word Sets (v39): ready-made lists to start from. Top 100, 500, 1,000 and 2,000 are the most common characters
+// (lists/common.tsv, from wordfreq; see CREDITS.md). They join your own words rather than living apart: each day, while
+// there's room in the day's new words after your own new words, the next few characters are added (w.common = their
+// rank) and get their cards then, so they come up in Today like anything else and never arrive as a pile. A level
+// (first start) starts further down the list (radical-common {size, from}). A character you already have (either
+// script) or removed is skipped. The sizes are by mainland frequency; a Taiwan list waits for the Mainland/Taiwan
+// setting. Themed sets (and ＋, any theme you type) come from the wordset action: about 24 words, kept only if the
+// dictionary knows them, added at once (w.set = the theme) with their cards queued.
 const COMMON_SIZES = [100, 500, 1000, 2000];
-let commonList = null, commonView = false;
+const THEMES = ["Food", "Travel", "Family", "Work", "Feelings", "Time"];
+let commonList = null;
 function loadCommon() {
   if (!commonList) commonList = fetch("lists/common.tsv").then(r => r.ok ? r.text() : "").catch(() => "")
     .then(t => t.split("\n").filter(l => l && !l.startsWith("#")).map(l => { const [c, word] = l.trim().split("\t"); return { c, word }; }).filter(x => x.c));
@@ -4072,6 +4140,12 @@ function commonSize() {
   const top = Math.max(0, ...myWords.map(w => w.common || 0));  // set on another phone: the words came by sync
   return top ? COMMON_SIZES.find(n => n >= top) || 2000 : 0;
 }
+const commonFrom = () => Math.max(1, (store.get("radical-common", null) || {}).from || 1);
+const commonHave = () => {
+  const have = new Set(myWords.filter(w => [...w.word].length === 1).map(w => toSimp(w.word)));
+  Object.keys(deleted || {}).forEach(x => { if ([...x].length === 1) have.add(toSimp(x)); });
+  return have;
+};
 let feeding = null;
 function feedCommon() {
   if (feeding) return feeding;
@@ -4079,11 +4153,8 @@ function feedCommon() {
     const size = commonSize(); if (!size) return 0;
     const k = KEYS[goal[0]], fresh = myWords.filter(w => !w.skip && !w[k]).length;
     let need = Math.max(0, newLeft(k)) - fresh; if (need <= 0) return 0;
-    const list = (await loadCommon()).slice(0, size);
-    const have = new Set(myWords.filter(w => [...w.word].length === 1).map(w => toSimp(w.word)));
-    Object.keys(deleted || {}).forEach(x => { if ([...x].length === 1) have.add(toSimp(x)); });
-    const add = [];
-    for (let i = 0; i < list.length && add.length < need; i++) if (!have.has(list[i].c)) add.push([conv(list[i].c), i + 1]);
+    const list = (await loadCommon()).slice(0, size), have = commonHave(), add = [];
+    for (let i = commonFrom() - 1; i < list.length && add.length < need; i++) if (!have.has(list[i].c)) add.push([conv(list[i].c), i + 1]);
     if (!add.length) return 0;
     await ensure(add.map(x => x[0]).join(""));
     add.forEach(([word, rank]) => {
@@ -4098,50 +4169,100 @@ function feedCommon() {
   })().finally(() => { feeding = null; });
   return feeding;
 }
-function startCommon(size) {
-  store.set("radical-common", { size });
+function startCommon(size, from = 1) {
+  store.set("radical-common", { size, from });
   feedCommon().then(() => renderWords());
 }
-// One line under Add. Before: the four sizes. After: the set and how many of its characters are familiar; tapping it
-// shows just those words, with Grow to and Remove set.
+// Characters of the chosen Top set still to come.
+async function commonToGo() {
+  const size = commonSize(); if (!size) return 0;
+  const list = (await loadCommon()).slice(commonFrom() - 1, size), have = commonHave();
+  return list.filter(x => !have.has(x.c)).length;
+}
+const hasSet = t => myWords.some(w => w.set === t);
+// A themed set: ask for it, keep the words the dictionary knows (in your script), skip ones you have or removed.
+async function addThemeSet(theme) {
+  const st = $("addStatus"); st.textContent = `Making ${theme}…`;
+  try {
+    const { words } = await claude({ action: "wordset", theme });
+    const items = (words || []).map(x => ({ ...x, word: conv(String(x.word || "").trim()) })).filter(x => x.word && !findWord(x.word) && !deleted[x.word]);
+    await ensure(items.map(x => x.word).join(""));
+    const take = items.filter(x => lookup(x.word) || lookup(toSimp(x.word)));
+    take.forEach(x => myWords.push({ word: x.word, pinyin: x.pinyin, meaning: x.meaning, added: localDay(), set: theme }));
+    saveWords(); take.forEach(w => queueCard(findWord(w.word)));
+    record({ kind: "list", title: theme, words: take.map(x => x.word) });
+    st.textContent = take.length ? `Added ${take.length} word${take.length === 1 ? "" : "s"} from ${theme}.` : `Nothing new in ${theme}.`;
+    play("right"); updateCounts(); renderWords();
+  } catch (e) { st.textContent = e.message; }
+}
+// Choosing a set comes with signing in when you aren't: its cards need the account. A Top set still starts on Not now
+// (its words work without cards for now); a themed set needs the AI service, so it waits.
+function chooseSet(fn, needsAI, after) {
+  const go = () => { fn(); if (after) after(); };
+  if (online()) return go();
+  signInSheet({ then: go, skip: needsAI ? null : go });
+}
+// The grid: every row full. Four Top sets, the six themes three to a row, then ＋ Make a set across.
+function setsGrid(close) {
+  const g = el("div", "setgrid"), size = commonSize();
+  const pick = (fn, ai) => () => { if (close) close(); chooseSet(fn, ai); };
+  const top = el("div", "setrow four");
+  COMMON_SIZES.forEach(n => { const b = btn("", "setchip top", pick(() => startCommon(n), false)); b.innerHTML = `<small>Top</small>${num(n)}`; b.setAttribute("aria-pressed", size === n); top.append(b); });
+  const th = el("div", "setrow three");
+  THEMES.forEach(t => { const b = btn(t, "setchip", pick(() => addThemeSet(t), true)); b.setAttribute("aria-pressed", hasSet(t)); th.append(b); });
+  g.append(top, th, btn("＋ Make a set", "setchip wide", () => { if (close) close(); makeSet(); }));
+  return g;
+}
+// No words yet: Word Sets in the Flash cards spot.
+function setsPanel() {
+  const box = el("div", "revpanel setspanel");
+  box.append(el("div", "revhead", "<b>Word Sets</b>"), el("p", "note setsub", "The 100 you'll see most, or a topic."), setsGrid());
+  return box;
+}
+// Any theme you type.
+function makeSet() {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard signcard"), inp = el("input"), msg = el("p", "note");
+  inp.type = "text"; inp.placeholder = "Restaurant words, my office…"; inp.maxLength = 60;
+  const go = btn("Make it", "btn wide", () => { const t = inp.value.trim(); if (!t) { msg.textContent = "Type a topic first."; return; } sheet.remove(); chooseSet(() => addThemeSet(t), true); });
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") go.click(); });
+  card.append(el("h3", "", "Make a set"), inp, go, msg, btn("Cancel", "btn ghost wide", () => sheet.remove()));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.append(sheet); setTimeout(() => inp.focus(), 300);
+}
+// With words: one slim line under Add ("Word Sets ›", or the Top set and how many are still to come), opening a sheet.
+function openSets() {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard setsheet"), close = () => sheet.remove();
+  card.append(el("h3", "", "Word Sets"), setsGrid(close));
+  if (commonSize()) {
+    const rm = btn(`Remove Top ${num(commonSize())}`, "btn ghost small", () => {
+      if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove the unstudied ones?"; return; }
+      myWords = myWords.filter(w => !(w.common && !practiced(w))); myWords.forEach(w => { if (w.common) delete w.common; });
+      store.set("radical-common", { size: 0 }); saveWords(); updateCounts(); renderWords(); close();
+    });
+    card.append(rm);
+  }
+  card.append(btn("Close", "btn ghost wide", close));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
+  document.body.append(sheet);
+}
 async function renderCommon() {
   const box = $("commonLine"); if (!box) return;
-  const size = commonSize();
-  box.innerHTML = ""; box.classList.toggle("open", commonView && !!size);
-  if (!size) {
-    commonView = false;
-    const row = el("div", "cmrow"); row.append(el("span", "cmlabel", "Most common characters:"));
-    COMMON_SIZES.forEach(n => row.append(btn(num(n), "cmsize", () => startCommon(n))));
-    box.append(row); return;
-  }
-  const list = (await loadCommon()).slice(0, size), st = charStages(), fam = new Set([...st.familiar.keys()].map(c => toSimp(c)));
-  const nFam = list.filter(x => fam.has(x.c)).length;
   box.innerHTML = "";
-  const head = btn("", "cmhead", () => { commonView = !commonView; renderWords(); });
-  head.innerHTML = `<span>Common ${num(size)} · ${num(nFam)} familiar</span><i class="cmchev"></i>`;
-  head.setAttribute("aria-expanded", commonView);
-  box.append(head);
-  if (!commonView) return;
-  const inList = myWords.filter(w => w.common), started_ = inList.filter(practiced).length;
-  box.append(el("p", "note", `${num(started_)} of ${num(size)} started. A few join your new cards each day, after your own new words.`));
-  const acts = el("div", "cmacts"), bigger = COMMON_SIZES.filter(n => n > size);
-  if (bigger.length) { acts.append(el("span", "cmlabel", "Grow to")); bigger.forEach(n => acts.append(btn(num(n), "cmsize", () => startCommon(n)))); }
-  const rm = btn("Remove set", "btn ghost small", () => {
-    if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove the unstudied ones?"; setTimeout(() => { if (rm.isConnected) { rm.classList.remove("confirm"); rm.textContent = "Remove set"; } }, 4000); return; }
-    myWords = myWords.filter(w => !(w.common && !practiced(w))); myWords.forEach(w => { if (w.common) delete w.common; });
-    store.set("radical-common", { size: 0 }); commonView = false; saveWords(); updateCounts(); renderWords();
-  });
-  acts.append(rm); box.append(acts);
+  if (!myWords.length) return;  // the Word Sets card is up top
+  const size = commonSize(), b = btn("", "cmhead", openSets);
+  b.innerHTML = `<span>Word Sets</span><span class="cmnow">${size ? `Top ${num(size)} · ${num(await commonToGo())} to go` : ""}</span><i class="cmchev"></i>`;
+  box.append(b);
 }
-// New users, once, after the learning focus: an offer to begin with the 100 most common.
+// First start, after Learning focus: one tap to a list at your level (where in the Top list you start), or a topic.
 function offerCommon() {
   if (myWords.length || store.get("radical-common-asked", false) || commonSize()) return;
   if (document.querySelector(".sheet")) { setTimeout(offerCommon, 1500); return; }
   store.set("radical-common-asked", true);
   const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard");
-  card.append(el("h3", "", "New to Chinese?"), el("p", "", "Start with the 100 most common characters. A few join your flash cards each day, and your own words always go first."));
-  card.append(btn("Start with 100", "btn wide", () => { sheet.remove(); startCommon(100); setTab("wordsScreen"); }), btn("Not now", "btn ghost wide", () => sheet.remove()));
-  card.append(el("p", "note", "Also on 練 Practice, under Add: 100, 500, 1,000 or 2,000."));
+  const lv = (label, size, from) => btn(label, "btn wide", () => { sheet.remove(); setTab("wordsScreen"); chooseSet(() => startCommon(size, from), false); });
+  const topic = btn("or pick a topic ›", "linkbtn", () => { sheet.remove(); setTab("wordsScreen"); });
+  card.append(el("h3", "", "Word Sets"), el("p", "", "Start with a curated list at your level."),
+    lv("New", 100, 1), lv("Some", 1000, 300), lv("Comfortable", 2000, 1000), topic, btn("Not now", "btn ghost wide", () => sheet.remove()));
   sheet.append(card); document.body.append(sheet);
 }
 // A character's most common word, for the answer side of a one-character card.
@@ -4804,7 +4925,7 @@ function showFront() {
   // tap plays the sound again. Pinyin is never a clue (it would give the answer away). One clue shows at a time, right under the big characters (where
   // the "Stuck?" line was), and each replaces the last. Every character keeps its own place in the order.
   // The guess boxes stay as they are. Any clue caps the suggested rating at Hard.
-  const hintBox = el("div", "hintbox cluespot"); hintBox.innerHTML = '<p class="cluehint">Tap a character for a clue · touch and hold to enlarge</p>';
+  const hintBox = el("div", "hintbox cluespot"); hintBox.innerHTML = '<p class="cluehint">Tap for a clue · hold to enlarge</p>';
   let used = 0;
   const big = box.querySelector(".revchars") || el("div"), word = conv(w.word), wchars = [...word];
   const syl = sylls(numToMarks(patternPy(wPinyin(w)).toLowerCase().replace(/[\s'’·-]+/g, ""))).filter(Boolean);
@@ -4957,7 +5078,7 @@ function writeFront(w) {
     const { wrap, pad, hint } = padHolder(padHost, size); curWrap = wrap; pad.classList.toggle("gridon", store.get("radical-grid", true));
     hint.onclick = () => {
       if (!writer) return; writer.highlightStroke(current); if (!hinted.has(current)) { hinted.add(current); stats.hints++; }
-      coach.innerHTML = lead + "That stroke is highlighted. Trace it.";
+      coach.innerHTML = lead + "Trace the highlighted stroke.";
     };
     const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
     writer = HanziWriter.create(pad, ch, {
@@ -5253,32 +5374,116 @@ async function openSettings(welcome) {
 function saveSettings() { store.set("radical-pw", $("pw").value.trim()); store.set("radical-palette", palette); myWords.filter(w => !w.card).forEach(queueCard); }
 $("pw").addEventListener("change", saveSettings);
 $("startBtn").onclick = () => { saveSettings(); history.back(); setTimeout(showTour, 400); };
-// ---- the walkthrough: three short cards (the colors, reading, saving and studying). Shown once, after the color
-// choice on a first launch (or once to existing users), and any time from the menu (導 How it works).
+// ---- the walkthrough: four pages, each one line and a short demo drawn live in the theme's colors (a still frame
+// with reduced motion). Shown once, after the look on a first launch, and any time from the menu (導 How it works).
+const calm = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+// A looping timeline on a stage; returns a stop function.
+function tourLoop(steps, every) {
+  let ids = [];
+  const go = () => { ids = steps.map(([t, f]) => setTimeout(f, t)); ids.push(setTimeout(go, every)); };
+  go(); return () => ids.forEach(clearTimeout);
+}
+// The pretend finger: moves to a node's middle and taps.
+function tourFinger(stage) {
+  const f = el("i", "tfinger"); stage.append(f);
+  const to = n => { const s = stage.getBoundingClientRect(), r = n.getBoundingClientRect(); f.style.left = (r.left - s.left + r.width / 2) + "px"; f.style.top = (r.top - s.top + r.height / 2) + "px"; f.style.opacity = 1; };
+  const tap = () => { f.classList.remove("tap"); void f.offsetWidth; f.classList.add("tap"); };
+  const hide = () => { f.style.opacity = 0; };
+  return { to, tap, hide };
+}
+function tourCells(text) {
+  const row = el("div", "tline");
+  [...text].forEach(c => { const cell = el("span", "tc"); cell.append(glyphFor(c, false)); row.append(cell); });
+  return row;
+}
+const TOUR = [
+  { line: "Every character, in color.", chars: "河山", build(stage) {
+    const big = el("div", "tbig"), big2 = el("div", "tbig"), r = ROLE;
+    const a = svgFor(conv("河"), false, false), b = svgFor("山", false, false);
+    big.append(a); big2.append(b); big2.style.opacity = 0; stage.append(big, big2);
+    const paths = svg => [...svg.querySelectorAll("path")];
+    const role = (svg, k) => paths(svg).filter(x => x.getAttribute("fill").includes(`--${k},`));
+    const light = (svg, k) => { paths(svg).forEach(x => x.classList.toggle("on", !!k && x.getAttribute("fill").includes(`--${k},`))); svg.style.filter = k ? `drop-shadow(0 0 10px var(--${k}))` : ""; };
+    const float = (k, html) => { const t = el("span", "tfloat", html); t.style.color = `var(--${k})`; stage.append(t); setTimeout(() => t.remove(), 2400); };
+    const reset = () => { big.style.opacity = 1; big2.style.opacity = 0; light(a, null); light(b, null); };
+    return { still() { big2.remove(); paths(a).forEach(x => x.classList.add("on")); stage.append(legendLine("河") || ""); },
+      run: () => tourLoop([[0, reset],
+        [500, () => { light(a, "meaning"); float("meaning", `${r.meaning} · <span lang="zh">氵</span> water`); }],
+        [2800, () => { light(a, "sound"); float("sound", `${r.sound} · <span lang="zh">可</span> kě → hé`); }],
+        [5100, () => { big.style.opacity = 0; big2.style.opacity = 1; light(b, "whole"); float("whole", `${r.whole} · three peaks`); }]], 7600) };
+  } },
+  { line: "Read anything.", note: "An article, a menu, your class notes.", chars: "我喜歡看書", build(stage) {
+    const text = conv("我喜歡看書"), row = tourCells(text), cells = [...row.children];
+    const peek = el("div", "tpeek", `<b lang="zh">${conv("喜歡")}</b> ${pyHTML("xǐhuan")} · to like`);
+    const page = el("div", "tpanel"), big = el("div", "tpchars");
+    [...conv("喜歡")].forEach(c => big.append(svgFor(c, false, false)));
+    page.append(big, el("p", "", `${pyHTML("xǐhuan")} · to like`));
+    stage.append(row, peek, page);
+    const f = tourFinger(stage), pick = on => [1, 2].forEach(k => cells[k].classList.toggle("pk", on));
+    const reset = () => { pick(false); peek.classList.remove("up"); page.classList.remove("up"); f.hide(); };
+    return { still() { pick(true); peek.classList.add("up"); },
+      run: () => tourLoop([[0, reset], [500, () => f.to(cells[2])], [1300, () => { f.tap(); pick(true); peek.classList.add("up"); }],
+        [3000, f.tap], [3150, () => { page.classList.add("up"); f.hide(); }]], 6000) };
+  } },
+  { line: "Hear it, translate it, explain it.", chars: "我喜歡看書解", build(stage) {
+    const text = conv("我喜歡看書"), row = tourCells(text), cells = [...row.children];
+    const tools = el("div", "ttools"), spk = el("span", "ttool", SPK), en = el("span", "ttool", "EN"), ex = el("span", "ttool", '<span lang="zh">解</span>');
+    tools.append(spk, en, ex);
+    const eng = el("p", "ten", "I like reading.");
+    const note = el("div", "tpeek", `<b lang="zh">${conv("喜歡")}</b> + verb: to like doing it`);
+    stage.append(row, tools, eng, note);
+    const f = tourFinger(stage);
+    const reset = () => { cells.forEach(c => c.classList.remove("hl")); [spk, en, ex].forEach(x => x.classList.remove("on")); eng.classList.remove("in"); note.classList.remove("up"); f.hide(); };
+    return { still() { cells.forEach(c => c.classList.add("hl")); eng.classList.add("in"); note.classList.add("up"); },
+      run: () => tourLoop([[0, reset], [400, () => f.to(spk)], [1100, () => { f.tap(); spk.classList.add("on"); }],
+        ...cells.map((c, k) => [1300 + k * 330, () => c.classList.add("hl")]),
+        [3100, () => { spk.classList.remove("on"); cells.forEach(c => c.classList.remove("hl")); f.to(en); }],
+        [3800, () => { f.tap(); en.classList.add("on"); eng.classList.add("in"); }],
+        [4900, () => f.to(ex)], [5600, () => { f.tap(); ex.classList.add("on"); note.classList.add("up"); }], [6600, f.hide]], 8600) };
+  } },
+  { line: "Save words. Practice three ways.", chars: "喜歡練", build(stage) {
+    const word = conv("喜歡"), top = el("div", "tword"), w = tourCells(word), add = el("span", "tadd", "+ Add");
+    top.append(w, add);
+    const tab = el("span", "ttab", `<span lang="zh">${conv("練")}</span><i></i>`), badge = tab.querySelector("i");
+    const card = el("div", "tcard"), label = el("p", "tlabel");
+    stage.append(top, tab, card, label);
+    const f = tourFinger(stage);
+    const face = k => {
+      card.innerHTML = ""; label.textContent = HOW_NAME[k];
+      if (k === "read") { const b = el("div", "tpchars"); [...word].forEach(c => b.append(glyphFor(c, false))); card.append(b, el("p", "", "pinyin? meaning?")); }
+      if (k === "write") { const s = svgFor(word[0], false, false), ps = [...s.querySelectorAll("path")]; ps.forEach(x => x.style.opacity = 0);
+        const pad = el("div", "tpad"); pad.append(s); card.append(el("p", "", "to like"), pad);
+        if (!calm()) ps.forEach((x, n) => setTimeout(() => { x.style.opacity = 1; }, 250 + n * 110)); else ps.forEach(x => x.style.opacity = 1); }
+      if (k === "listen") { const sp = el("span", "tsay", SPK); card.append(sp, el("p", "", "type what you hear")); }
+    };
+    const flip = k => { card.classList.add("flip"); setTimeout(() => { face(k); card.classList.remove("flip"); }, 260); };
+    const reset = () => { add.textContent = "+ Add"; add.classList.remove("done"); badge.textContent = ""; badge.classList.remove("on"); card.classList.remove("up"); label.textContent = ""; f.hide(); };
+    return { still() { add.textContent = "✓"; add.classList.add("done"); badge.textContent = "1"; badge.classList.add("on"); face("read"); card.classList.add("up"); },
+      run: () => tourLoop([[0, reset], [400, () => f.to(add)], [1100, () => { f.tap(); add.textContent = "✓"; add.classList.add("done"); }],
+        [1250, () => { f.hide(); const s = stage.getBoundingClientRect(), a = w.getBoundingClientRect(), b = tab.getBoundingClientRect(), fly = w.cloneNode(true);
+          fly.classList.add("tfly"); fly.style.left = (a.left - s.left) + "px"; fly.style.top = (a.top - s.top) + "px"; stage.append(fly);
+          requestAnimationFrame(() => requestAnimationFrame(() => { fly.style.transform = `translate(${b.left - a.left - a.width / 2 + b.width / 2}px, ${b.top - a.top}px) scale(.3)`; fly.style.opacity = .2; }));
+          setTimeout(() => fly.remove(), 800); }],
+        [2050, () => { badge.textContent = "1"; badge.classList.add("on"); }],
+        [2600, () => { face("read"); card.classList.add("up"); }], [4300, () => flip("write")], [6400, () => flip("listen")]], 8600) };
+  } }
+];
 async function showTour(fromMenu) {
-  await ensure("河");
+  await ensure(TOUR.map(p => p.chars).join("") + conv(TOUR.map(p => p.chars).join("")));
   const sheet = el("div", "sheet tour"), card = el("div", "sheetcard tourcard");
-  const B = t => `<b>${t}</b>`;
-  const pages = [
-    () => { const f = el("div", "tourpage"); const big = el("div", "tourchar"); big.append(svgFor("河", false, true)); f.append(big);
-      f.append(el("h3", "", "Every character, in color"), el("p", "", `Each part is colored by its job: ${B("meaning")} (what it's about), ${B("sound")} (a hint at how it's said), two ${B("ideas")} combined, a ${B("picture")}, or ${B("unclear")} where the origin isn't recorded. In 河 (river), 氵 is water, the meaning, and 可 kě gives the sound, hé.`));
-      const l = legendLine("河"); if (l) f.insertBefore(l, f.children[1]); return f; },
-    () => { const f = el("div", "tourpage");
-      f.append(el("h3", "", "Reading"), el("p", "", `Paste or open any Chinese text. ${B("Tap a word once")} to see its pinyin and meaning; ${B("tap again")} to open it: its characters, their parts and how to write them.`),
-        el("p", "", `Under each line: ${SPK.replace("<svg", '<svg class="tourico"')} listen, ${B("EN")} translate, <span lang="zh" class="tourzh">解</span> explain the grammar. ${B("Listen")} at the top reads the whole page, with a speed slider.`)); return f; },
-    () => { const f = el("div", "tourpage");
-      f.append(el("h3", "", "Saving and studying"), el("p", "", `${B("+ Add")} puts a word in Practice, with the sentence you met it in. Flash cards come three ways: ${B("Read")} (say it), ${B("Write")} (write it from memory) and ${B("Listen")} (hear it). Your ratings decide when each word comes back. ${B("Touch and hold")} any big character to enlarge it.`),
-        el("p", "", `${B("Review")} goes through your words face up, no grading. ${B("Explore")} finds real Chinese Wikipedia articles at your level.`)); return f; }
-  ];
-  let i = 0;
-  const close = () => { sheet.remove(); store.set("radical-tour-seen", true); if (fromMenu === true) openMenu(); else if (!store.get("radical-goal-asked", false)) setTimeout(askGoal, 300); };
+  let i = 0, stop = () => {};
+  const close = () => { stop(); sheet.remove(); store.set("radical-tour-seen", true); if (fromMenu === true) openMenu(); else if (!store.get("radical-goal-asked", false)) setTimeout(askGoal, 300); };
   const last = fromMenu === true ? "Back to menu" : fromMenu ? "Done" : "Start reading";
   const paint = () => {
-    card.innerHTML = ""; card.append(pages[i]());
-    const dots = el("div", "tourdots", pages.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join(""));
+    stop(); card.innerHTML = "";
+    const p = TOUR[i], page = el("div", "tourpage"), stage = el("div", "tstage");
+    page.append(el("h3", "", p.line), stage, el("p", "note", p.note || ""));
+    const dots = el("div", "tourdots", TOUR.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join(""));
     const row = el("div", "row");
-    row.append(btn(i ? "‹ Back" : fromMenu ? "Close" : "Skip", "btn ghost", () => { if (i) { i--; paint(); } else close(); }), btn(i < pages.length - 1 ? "Next ›" : last, "btn", () => { if (i < pages.length - 1) { i++; paint(); } else close(); }));
-    card.append(dots, row);
+    row.append(btn(i ? "‹ Back" : fromMenu ? "Close" : "Skip", "btn ghost", () => { if (i) { i--; paint(); } else close(); }), btn(i < TOUR.length - 1 ? "Next ›" : last, "btn", () => { if (i < TOUR.length - 1) { i++; paint(); } else close(); }));
+    card.append(page, dots, row);
+    const demo = p.build(stage);
+    if (calm()) { demo.still(); stop = () => {}; } else stop = demo.run();
   };
   sheet.onclick = ev => { if (ev.target === sheet) close(); };
   sheet.append(card); document.body.append(sheet); paint();
@@ -5306,17 +5511,16 @@ function setSums() {
     modes: goal.map(m => HOW_NAME[m]).join(", ") + (store.get("radical-badge", true) ? "" : " · no red number"),
     sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
     speech: `${PACES.find(x => x[0] === sayPace)[1]} · speed ${Math.round(rate * 100)}%`,
-    target: store.get("radical-target", 20) ? `${store.get("radical-target", 20)} cards a day` : "Off",
-    tiles: trackTiles().map(k => TILES[k][0].replace(/^Characters (\w)/, (m, c) => c.toUpperCase())).join(", "),
-    words: session ? "In your account" : "Only on this phone" };
+    daily: `${dailyMax()} a day`,
+    tiles: trackTiles().map(k => TILES[k][0].replace(/^Characters (\w)/, (m, c) => c.toUpperCase())).join(", ") };
   document.querySelectorAll("[data-sum]").forEach(x => x.textContent = S[x.dataset.sum] || "");
 }
-function wordsWhere() { const p = $("wordsWhere"); if (p) p.textContent = session ? "Saved to your account and synced to every phone you sign in on. A backup is an extra copy of everything." : "Only on this phone. Sign in (Account), or save a backup."; }
+function wordsWhere() { const p = $("wordsWhere"); if (p) p.textContent = session ? "Saved to your account and synced to every device you sign in on. A backup is an extra copy." : "Only on this phone. Sign in to keep them safe."; }
 document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "change"].forEach(ev => x.addEventListener(ev, () => setTimeout(setSums, 50))));
 // ---- backup: one file with everything. Words (with progress, edits and schedules), the learned list and daily
 // tallies, what you're reading now and all of History, and your settings. A summary shows first; nothing leaves the
 // app until Save file.
-const SETTING_KEYS = ["radical-palette", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-target",
+const SETTING_KEYS = ["radical-palette", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily",
   "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-tiles", "radical-common"];
 function backupData() {
   const settings = {}; SETTING_KEYS.forEach(k => { try { const v = localStorage.getItem(k); if (v !== null) settings[k] = v; } catch (e) {} });
@@ -5328,7 +5532,7 @@ $("backupBtn").onclick = () => {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard");
   card.append(el("h3", "", "Save a backup"),
     el("p", "", `${num(myWords.length)} words with progress · ${num(Object.keys(learned).length)} learned · ${num(days)} days of activity · ${num(textHistory.length)} item${textHistory.length === 1 ? "" : "s"} in History · what you're reading now · settings`),
-    el("p", "note", "One file with everything. Restore it from Settings, Your words."));
+    el("p", "note", "Your words, progress, history and settings, in one file."));
   const row = el("div", "row");
   row.append(btn("Cancel", "btn ghost", () => sheet.remove()), btn("Save file", "btn", async () => {
     sheet.remove();
@@ -5365,7 +5569,7 @@ $("restoreFile").onchange = async e => {
   const done = `Restored: ${added} new word${added === 1 ? "" : "s"}, ${updated} updated, ${hist} History item${hist === 1 ? "" : "s"}.`;
   if (j.settings && Object.keys(j.settings).length) {
     const sheet = el("div", "sheet"), card = el("div", "sheetcard");
-    card.append(el("h3", "", "Use the settings from this backup?"), el("p", "", done), el("p", "note", "Theme, light, speech, daily target, writing pad and color lab."));
+    card.append(el("h3", "", "Use the settings from this backup?"), el("p", "", done), el("p", "note", "Theme, light, speech, writing pad and color lab."));
     const row = el("div", "row");
     row.append(btn("No, keep mine", "btn ghost", () => sheet.remove()), btn("Yes, use them", "btn", () => { Object.entries(j.settings).forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch (e) {} }); location.reload(); }));
     card.append(row); sheet.append(card); document.body.append(sheet);
@@ -5397,7 +5601,7 @@ async function showDocPage(i) {
   if (reading) stopReading();  // turning the page stops the voice right away, before any rewrite or loading
   i = Math.max(0, Math.min(doc.pages.length - 1, i));
   if (doc.pages[i] == null) {
-    if (!pdfFile) { busy("Open the PDF again (Photo/File) to read pages not loaded yet."); return; }
+    if (!pdfFile) { busy("Open the PDF again for the rest."); return; }
     busy(`Reading page ${i + 1}…`);
     try { doc.pages[i] = await pdfPageText(i + 1); } catch (e) { busy(e.message); return; }
     busy("");
@@ -5584,7 +5788,7 @@ async function readOtherFile(f) {
       const d = new DOMParser().parseFromString(await zip.file(name).async("string"), "application/xml");
       [...d.getElementsByTagName("is")].forEach(x => cells.push(x.textContent));
     }
-    return { title, parts: toParts(cells.filter(c => /\p{Script=Han}/u.test(c)).join("\n")), note: "Reading a spreadsheet. If it's a word list, import it on the Practice tab." };
+    return { title, parts: toParts(cells.filter(c => /\p{Script=Han}/u.test(c)).join("\n")), note: "Word list? Import it on 練 Practice." };
   }
   if (["html", "htm"].includes(ext)) return { title, parts: toParts(domText(parseHTML(await readTextFile(f)).body)) };
   if (["srt", "vtt", "ass"].includes(ext)) {
@@ -5596,10 +5800,10 @@ async function readOtherFile(f) {
   if (["csv", "tsv"].includes(ext)) {
     const raw = await readTextFile(f);
     const cells = raw.split(/\r?\n/).flatMap(l => l.split(ext === "tsv" ? "\t" : ",")).map(c => c.replace(/^"|"$/g, "").trim()).filter(c => /\p{Script=Han}/u.test(c));
-    return { title, parts: toParts(cells.join("\n")), note: "Reading a spreadsheet. If it's a word list, import it on the Practice tab." };
+    return { title, parts: toParts(cells.join("\n")), note: "Word list? Import it on 練 Practice." };
   }
   if (["txt", "text", "md"].includes(ext) || f.type.startsWith("text/")) return { title, parts: toParts(await readTextFile(f)) };
-  throw new Error("That kind of file can't be opened. Try a photo, PDF, Word file, e-book, subtitles, text or spreadsheet.");
+  throw new Error("Can't open that file. Try a photo, PDF, Word (.docx), e-book (.epub), subtitles (.srt), text, web page or spreadsheet (.csv, .xlsx).");
 }
 function openTextDoc(title, parts, unit = "Page") {
   if (parts.length === 1) { setText(parts[0], false, "file", title); return; }
@@ -5841,21 +6045,21 @@ function askGoal() {
   if (document.querySelector(".sheet")) { setTimeout(askGoal, 1500); return; }
   store.set("radical-goal-asked", true);
   const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard");
-  card.append(el("h3", "", "Learning focus"), el("p", "", "What's your learning focus? Pick one or more. The red number on 練 shows the minimum flash cards to practice Today."));
+  card.append(el("h3", "", "What do you want to practice?"));
   const row = el("div", "pills goalpills"); row.setAttribute("role", "group");
   MODES.forEach(m => { const b = el("button", "", HOW_NAME[m]); b.type = "button"; b.dataset.m = m; b.onclick = () => { setGoal(m, !inGoal(m)); paintGoal(row); }; row.append(b); });
   paintGoal(row);
   const close = () => { sheet.remove(); if (!$("wordsScreen").hidden) renderWords(); setTimeout(offerCommon, 600); };
-  card.append(row, el("p", "note", "You can practice any mode any time, and change this in Settings."), btn("Done", "btn wide", close));
+  card.append(row, btn("Done", "btn wide", close));
   sheet.append(card); document.body.append(sheet);
 }
 document.querySelectorAll("#cvdSeg [data-cvd]").forEach(b => {
   b.setAttribute("aria-pressed", String(+cvd) === b.dataset.cvd);
   b.onclick = () => { cvd = b.dataset.cvd === "1"; store.set("radical-cvd", cvd); document.querySelectorAll("#cvdSeg [data-cvd]").forEach(x => x.setAttribute("aria-pressed", x === b)); applyPalette(); buildPalettes(); };
 });
-document.querySelectorAll("#targetSeg [data-t]").forEach(b => {
-  b.setAttribute("aria-pressed", +b.dataset.t === store.get("radical-target", 20));
-  b.onclick = () => { store.set("radical-target", +b.dataset.t); document.querySelectorAll("#targetSeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); updateRing(); };
+document.querySelectorAll("#dailySeg [data-t]").forEach(b => {
+  b.setAttribute("aria-pressed", +b.dataset.t === dailyMax());
+  b.onclick = () => { store.set("radical-daily", +b.dataset.t); document.querySelectorAll("#dailySeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); updateCounts(); };
 });
 (async function start() {
   // The splash takes a tap from the very first moment: a tap hides it even while the app is still loading behind it
