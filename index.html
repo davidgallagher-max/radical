@@ -31,6 +31,9 @@
   --t1:#F87171; --t2:#FBBF24; --t3:#68D391; --t4:#63B3ED; --t5:#98A3B3; color-scheme:dark}
 /* Word status colors are the same in every theme (not borrowed from the theme's component colors): only Due is warm,
    since it's the one asking for attention; Active is a calm blue, never red. */
+:root{--gold1:#C99A3E;--gold2:#A0661A;--gold3:#6E4A12;--gold4:#8E6220;--cinnabar:#C51D05}
+:root[data-theme="dark"]{--gold1:#F2DC9C;--gold2:#D1A24B;--gold3:#9C6E25;--gold4:#C4954A;--cinnabar:#EC3B1E}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--gold1:#F2DC9C;--gold2:#D1A24B;--gold3:#9C6E25;--gold4:#C4954A;--cinnabar:#EC3B1E}}
 :root{--st-due:#B86E00;--st-active:#2C6E9E;--st-new:#4B5563;--st-known:#9AA3AD}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--st-due:#F2A93B;--st-active:#6AAFD8;--st-new:#C9D2DA;--st-known:#77818C}}
 :root[data-theme="dark"]{--st-due:#F2A93B;--st-active:#6AAFD8;--st-new:#C9D2DA;--st-known:#77818C}
@@ -1859,6 +1862,20 @@ function segment(line) {
 }
 
 // ================= drawing
+// The brand mark: 部 in Lacquer & Gold (阝 cinnabar, the sound part gold) on every screen and in every theme (the reading colors are yours to choose; the
+// mark, the Home Screen icon and the splash stay the same). One gradient runs top to bottom across the whole
+// character; light pages get a deeper gold (--gold1 to --gold4) so it holds its contrast.
+let goldN = 0;
+const goldPaint = (d, i, id) => d && d.r[i] === "meaning" ? "var(--cinnabar)" : `url(#${id})`;  // 阝 in cinnabar, the rest in gold leaf
+function goldMark() {
+  const svg = svgFor("部", false, false), id = `gold${++goldN}`, defs = document.createElementNS(NS, "defs");
+  defs.innerHTML = `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="0" y1="900" x2="0" y2="-124"><stop offset="0" style="stop-color:var(--gold1)"/><stop offset=".35" style="stop-color:var(--gold2)"/><stop offset=".75" style="stop-color:var(--gold3)"/><stop offset="1" style="stop-color:var(--gold4)"/></linearGradient>`;
+  svg.prepend(defs);
+  const d = cache["部"];
+  svg.querySelectorAll("g.strokes path").forEach((p, i) => { const c = goldPaint(d, i, id); p.setAttribute("fill", c); p.setAttribute("stroke", c); });
+  svg.classList.add("goldmark");
+  return svg;
+}
 function svgFor(ch, grid, light) {
   const d = cache[ch], svg = document.createElementNS(NS, "svg");
   svg.setAttribute("viewBox", "0 0 1024 1024"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", ch);
@@ -1985,19 +2002,20 @@ function animate(svg, ch, speed = 1, onDone) {
   const sheen = svg.querySelector(".sheen"); if (sheen) sheen.style.opacity = 0;  // no glint on strokes not drawn yet
   const id = "a" + Math.random().toString(36).slice(2);
   const defs = document.createElementNS(NS, "defs"); g.append(defs);
+  const gold = svg.classList.contains("goldmark") && svg.querySelector("linearGradient"), fill = k => gold ? goldPaint(d, k, gold.id) : `var(--${d.r[k] || "part3"}, var(--part3))`;  // the brand mark draws in gold
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   // All the faint "to be written" shapes go underneath, then the strokes draw on top in order, so a later stroke's
   // placeholder can never cover an earlier stroke.
   const ghosts = document.createElementNS(NS, "g"); g.append(ghosts);
   // When the drawing is done (or another drawing starts), swap in the plain finished character.
-  const finish = () => { g.innerHTML = ""; d.s.forEach((p, k) => { const path = document.createElementNS(NS, "path"); path.setAttribute("d", p); path.setAttribute("fill", `var(--${d.r[k] || "part3"}, var(--part3))`); g.append(path); }); };
+  const finish = () => { g.innerHTML = ""; d.s.forEach((p, k) => { const path = document.createElementNS(NS, "path"); path.setAttribute("d", p); path.setAttribute("fill", fill(k)); g.append(path); }); };
   const lines = d.s.map((p, i) => {
     const cp = document.createElementNS(NS, "clipPath"); cp.id = `${id}-${i}`;
     const sp = document.createElementNS(NS, "path"); sp.setAttribute("d", p); cp.append(sp); defs.append(cp);
     const ghost = document.createElementNS(NS, "path"); ghost.setAttribute("d", p); ghost.setAttribute("fill", "var(--grid)"); ghosts.append(ghost);
     const pl = document.createElementNS(NS, "polyline");
     pl.setAttribute("points", d.md[i].map(pt => pt.join(",")).join(" "));
-    pl.setAttribute("fill", "none"); pl.setAttribute("stroke", `var(--${d.r[i] || "part3"}, var(--part3))`);
+    pl.setAttribute("fill", "none"); pl.setAttribute("stroke", fill(i));
     pl.setAttribute("stroke-width", 150); pl.setAttribute("stroke-linecap", "round"); pl.setAttribute("stroke-linejoin", "round");
     pl.setAttribute("clip-path", `url(#${id}-${i})`);
     g.append(pl);
@@ -5861,9 +5879,9 @@ document.querySelectorAll("#targetSeg [data-t]").forEach(b => {
     $("addPanel").open = !$("src").value.trim();  // nothing to read yet: the box to add text starts open
     upgradeKnown(); applyPalette(); onNewText(); updateCounts(); showDocBar(); updateRing();
     await ensure("部");
-    document.querySelectorAll(".brandMark").forEach(x => { const m = svgFor("部", false, true); m.classList.add("brandMark"); x.replaceWith(m); });  // the lit 部 heads every tab
-    const am = svgFor("部", false, true); am.style.width = am.style.height = "56px"; $("aboutMark").replaceWith(am);
-    const big = svgFor("部", false, true); big.setAttribute("class", "mark"); $("splashMark").replaceWith(big);
+    document.querySelectorAll(".brandMark").forEach(x => { const m = goldMark(); m.classList.add("brandMark"); x.replaceWith(m); });  // the gold 部 heads every tab
+    const am = goldMark(); am.style.width = am.style.height = "56px"; $("aboutMark").replaceWith(am);
+    const big = goldMark(); big.classList.add("mark"); $("splashMark").replaceWith(big);
     // The strokes draw over about 5 seconds; then "Tap to begin" fades in. Phones only allow sound after a touch, so
     // the tap is what lets the harp play.
     animate(big, "部", 1.4, () => sp0.classList.add("ready"));
