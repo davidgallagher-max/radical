@@ -7,6 +7,10 @@
 //   users/<id>/data.json            the words, learned list and daily tallies (merged on every sync)
 //   users/<id>/backups/<day>.json   the previous version, one per day
 //   usage/<id>/<day>.json           every AI call that day: action, model, tokens, estimated cost
+//   users/<id>/profile.json         your friend code and the name friends see
+//   users/<id>/friends.json         the ids of your friends (both sides always list each other)
+//   users/<id>/public.json          what friends see: name, characters by stage, this week, the chart (written at sync)
+//   codes/<code>.json               a friend code -> its owner's id
 
 const env = (...names) => { for (const n of names) if (process.env[n]) return process.env[n]; return ""; };
 const SB_URL = () => env("SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL").replace(/\/+$/, "");
@@ -116,6 +120,7 @@ function merge(a, b) {
 }
 async function sync(user, incoming) {
   const path = `users/${user.id}/data.json`;
+  if (incoming && incoming.summary) await writePublic(user, incoming.summary).catch(() => {});
   const remote = await getJSON(path);
   const merged = { ...merge(remote, incoming), email: user.email, updated: Date.now() };
   if (remote && remote.updated && day(remote.updated) !== day()) await putJSON(`users/${user.id}/backups/${day(remote.updated)}.json`, remote).catch(() => {});
@@ -200,4 +205,65 @@ const ownerEmails = () => emails("OWNER_EMAILS");
 // Feedback is kept as well as emailed, so nothing is lost if an email bounces.
 async function saveFeedback(user, today, entry) { if (!status().ok) return; try { await putJSON(`feedback/${today}/${Date.now()}-${String(user.id).slice(0, 8)}.json`, entry); } catch (e) {} }
 
-module.exports = { status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, DAILY_CAP, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };
+// ---- friends, by code only: no search and no public list. Each person gets a short code; entering someone's code
+// (or opening their link) connects both ways, and either side can remove it. Friends see only the summary the page
+// sends at sync (numbers and a chart), never words or mistakes.
+const CODE_ABC = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const cleanCode = c => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+const cleanName = n => String(n || "").replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 30);
+async function profileOf(user) {
+  const path = `users/${user.id}/profile.json`;
+  let p = await getJSON(path);
+  if (p && p.code) return p;
+  for (let i = 0; i < 8; i++) {
+    let code = ""; for (let k = 0; k < 6; k++) code += CODE_ABC[Math.floor(Math.random() * CODE_ABC.length)];
+    if (await getJSON(`codes/${code}.json`)) continue;
+    await putJSON(`codes/${code}.json`, { id: user.id });
+    p = { code, name: (p && p.name) || "" }; await putJSON(path, p); return p;
+  }
+  throw new Error("Couldn't make a friend code. Try again.");
+}
+async function writePublic(user, summary) {
+  const p = await getJSON(`users/${user.id}/profile.json`); if (!p || !p.code) return;  // only once friends are in use
+  const n = x => Math.max(0, Math.round(+x || 0));
+  const chars = summary.chars || {}, week = summary.week || {};
+  const series = (Array.isArray(summary.series) ? summary.series : []).slice(-60).map(x => ({ day: String(x.day || "").slice(0, 10), f: n(x.f), l: n(x.l) }));
+  await putJSON(`users/${user.id}/public.json`, { name: p.name, code: p.code, chars: { seen: n(chars.seen), familiar: n(chars.familiar), learned: n(chars.learned) },
+    week: { days: Math.min(7, n(week.days)), cards: n(week.cards), read: n(week.read) }, streak: n(summary.streak), series, updated: Date.now() });
+}
+async function friendIds(id) { const f = await getJSON(`users/${id}/friends.json`); return Array.isArray(f && f.ids) ? f.ids : []; }
+async function setFriendIds(id, ids) { await putJSON(`users/${id}/friends.json`, { ids: [...new Set(ids)].slice(0, 200) }); }
+async function friendsView(user) {
+  const p = await profileOf(user), ids = await friendIds(user.id);
+  const list = (await Promise.all(ids.map(id => getJSON(`users/${id}/public.json`).catch(() => null)))).filter(Boolean)
+    .map(x => ({ ...x, name: x.name || "A friend" }));
+  return { code: p.code, name: p.name || "", friends: list };
+}
+async function friends(user, body) {
+  const op = body.op || "me";
+  if (op === "name") {
+    const p = await profileOf(user); p.name = cleanName(body.name); await putJSON(`users/${user.id}/profile.json`, p);
+    const pub = await getJSON(`users/${user.id}/public.json`); if (pub) { pub.name = p.name; await putJSON(`users/${user.id}/public.json`, pub); }
+  }
+  if (body.summary) { await profileOf(user); await writePublic(user, body.summary); }
+  if (op === "add") {
+    const c = await getJSON(`codes/${cleanCode(body.code)}.json`);
+    if (!c || !c.id) return { error: "No one has that code. Check the letters and try again." };
+    if (c.id === user.id) return { error: "That's your own code." };
+    await profileOf(user);
+    await setFriendIds(user.id, [...await friendIds(user.id), c.id]);
+    await setFriendIds(c.id, [...await friendIds(c.id), user.id]);
+    const them = await getJSON(`users/${c.id}/public.json`);
+    return { ...(await friendsView(user)), added: (them && them.name) || "your friend" };
+  }
+  if (op === "remove") {
+    const c = await getJSON(`codes/${cleanCode(body.code)}.json`);
+    if (c && c.id) {
+      await setFriendIds(user.id, (await friendIds(user.id)).filter(x => x !== c.id));
+      await setFriendIds(c.id, (await friendIds(c.id)).filter(x => x !== user.id));
+    }
+  }
+  return friendsView(user);
+}
+
+module.exports = { friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, DAILY_CAP, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };

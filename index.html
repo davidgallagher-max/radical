@@ -585,6 +585,13 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .trtiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .trtile{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;padding:10px 10px;align-content:start}.trtile .trbig{font-size:1.45rem}.trtile.tapme{cursor:pointer}
 .trtip{margin:-4px 2px 0}
+.frrow{font:inherit;display:grid;gap:2px;text-align:left;background:none;border:0;border-bottom:1px solid color-mix(in srgb,var(--line) 75%,transparent);color:var(--fg);padding:8px 0;cursor:pointer}
+.frform{display:flex;gap:8px;margin-top:4px}.frform input,.frname{font:inherit;font-size:1rem;flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.frform input{text-transform:uppercase;letter-spacing:.12em;width:0}.frname{width:100%;box-sizing:border-box;flex:none}.trfriends>*{min-width:0;max-width:100%}
+.frme{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:4px}.frcode{font-family:var(--font-ui);font-weight:700;letter-spacing:.14em;font-size:1.15rem;color:var(--accent)}
+.frmsg:empty{display:none}
+.frcard{max-height:86vh;overflow:auto}.frcard .trtiles .trbig{font-size:1.4rem}
+.qrcard{justify-items:center;text-align:center}.qrbox{width:min(64vw,240px);aspect-ratio:1;background:#fff;padding:12px;border-radius:12px;display:grid;place-items:center}.qrbox svg{width:100%;height:100%;display:block}
 .tilepick{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tilepick .btn[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
 .tilelist .sheetcard{max-height:82vh;max-height:82dvh;overflow:auto;align-content:start}
 .tlhead{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:-20px;background:var(--surface);padding:4px 0;z-index:1}.tlhead h3{margin:0}
@@ -2675,6 +2682,7 @@ async function signIn(email, code) {
   store.set("radical-presync", { at: Date.now(), words: myWords, learned, days: store.get("radical-days", {}) });
   setSession(j); store.set("radical-owner", null);
   const n = myWords.length, m = await syncNow(true);
+  setTimeout(joinPending, 800);  // opened a friend's link before signing in
   return m ? m.words.length - n : 0;
 }
 function signOut() { setSession(null); store.set("radical-synced", 0); store.set("radical-owner", null); }
@@ -2741,7 +2749,7 @@ async function syncNow(quietErrors) {
   syncing = (async () => {
     const token = await accessToken(); if (!token) return null;
     const r = await fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, familiar, days: store.get("radical-days", {}) } }) });
+      body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, familiar, days: store.get("radical-days", {}), summary: store.get("radical-friends", null) ? friendSummary() : undefined } }) });
     const m = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(m.error || `Sync failed (${r.status}).`);
     applyMerged(m); store.set("radical-synced", Date.now());
@@ -3304,14 +3312,21 @@ function renderTrack() {
     + `<tr><th>Words familiar</th><td>${num(fYear(y))}</td><td>${cell(fYear(y - 1))}</td><td>${num(Object.keys(familiar).length)}</td></tr>`
     + `<tr><th>Words learned</th><td>${num(lYear(y))}</td><td>${cell(lYear(y - 1))}</td><td>${num(Object.keys(learned).length)}</td></tr></tbody></table>`;
   box.append(yt);
+  box.append(friendsBox());
   checkMilestones();
 }
 // Familiar (v) and learned (v2) characters over time, rebuilt from the two dated lists.
 function stageSeries() {
-  const upTo = (map, day) => { const set = new Set(); Object.entries(map).forEach(([word, d]) => { if (String(d) <= day) [...word].forEach(c => { if (isHan(c)) set.add(c); }); }); return set.size; };
-  const days = [...Object.values(familiar), ...Object.values(learned)].map(String).sort(); if (!days.length) return [];
-  const out = [], endDay = localDay();
-  for (let t = new Date(days[0] + "T12:00:00").getTime(); localDay(t) <= endDay && out.length < 800; t += DAY) { const day = localDay(t); out.push({ day, v: Math.max(upTo(familiar, day), upTo(learned, day)), v2: upTo(learned, day) }); }
+  const ev = m => Object.entries(m).map(([w, d]) => [String(d), w]).sort((a, b) => a[0].localeCompare(b[0]));
+  const F = ev(familiar), L = ev(learned); if (!F.length && !L.length) return [];
+  const fs = new Set(), ls = new Set(), out = [], endDay = localDay(), add = (set, w) => [...w].forEach(c => { if (isHan(c)) set.add(c); });
+  let i = 0, j = 0;
+  for (let t = new Date([F[0] && F[0][0], L[0] && L[0][0]].filter(Boolean).sort()[0] + "T12:00:00").getTime(); localDay(t) <= endDay && out.length < 800; t += DAY) {
+    const day = localDay(t);
+    for (; i < F.length && F[i][0] <= day; i++) add(fs, F[i][1]);
+    for (; j < L.length && L[j][0] <= day; j++) { add(ls, L[j][1]); add(fs, L[j][1]); }
+    out.push({ day, v: fs.size, v2: ls.size });
+  }
   return out;
 }
 // Characters learned over time, rebuilt each time from the learned list (each word keeps the day it was learned).
@@ -3338,6 +3353,97 @@ function barChart(vals, label, target) {
   const tl = target ? `<line x1="8" x2="${W - 8}" y1="${(H - 16 - target / max * (H - 26)).toFixed(1)}" y2="${(H - 16 - target / max * (H - 26)).toFixed(1)}" class="ttarget"/>` : "";
   return `<svg class="tchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}, last 30 days"><line x1="8" x2="${W - 8}" y1="${H - 16}" y2="${H - 16}" class="tgrid"/>${tl}${bars}<text x="8" y="${H - 3}" class="tax">${label}</text><text x="${W - 8}" y="${H - 3}" text-anchor="end" class="tax">most ${num(Math.max(...vals))}</text></svg>`;
 }
+// ---- friends, by code (no search, no public list; see api/_account.js). Each signed-in person has a short code; a
+// friend types it or opens your link (or scans its QR), and you're connected both ways until either removes it.
+// Friends see your chosen name, characters by stage, this week and the familiar/learned chart, sent at each sync.
+// Never your words or mistakes. The last list is kept on the phone (radical-friends) so Track draws it at once.
+function friendSummary() {
+  const st = charStages(), w = weekStats(), all = stageSeries(), series = all.filter((x, i) => i === all.length - 1 || (all.length - 1 - i) % 7 === 0).slice(-60);
+  return { chars: { seen: st.seen.size, familiar: st.familiar.size, learned: st.learned.size }, week: { days: w.n, cards: w.cards, read: w.read }, streak: streakStats().now,
+    series: series.map(x => ({ day: x.day, f: x.v, l: x.v2 })) };
+}
+const friendLink = code => `${location.origin}/?friend=${code}`;
+let friendsBusy = null;
+async function friendsCall(body = {}) {
+  const r = await claude({ action: "friends", ...body, summary: friendSummary() });
+  if (r && r.code) store.set("radical-friends", { code: r.code, name: r.name, friends: r.friends || [] });
+  return r;
+}
+function friendsBox() {
+  const b = el("div", "trk trfriends"); b.id = "friendsBox";
+  paintFriends(b);
+  if (session && !friendsBusy) friendsBusy = friendsCall().then(() => { const x = $("friendsBox"); if (x) paintFriends(x); }).catch(e => { const x = $("friendsBox"); if (x && !store.get("radical-friends", null)) x.querySelector(".frerr") && (x.querySelector(".frerr").textContent = e.message); }).finally(() => { friendsBusy = null; });
+  return b;
+}
+function paintFriends(b) {
+  const f = store.get("radical-friends", null);
+  b.innerHTML = '<span class="trl">Friends</span>';
+  if (!session) {
+    b.append(el("p", "trs", "See each other's progress with a friend's code. Sign in first (Settings, Account)."));
+    b.append(btn("Sign in", "btn ghost small", () => { openSettings(false); $("secAcct").open = true; }));
+    return;
+  }
+  if (!f) { b.append(el("p", "trs frerr", "Getting your code…")); return; }
+  f.friends.forEach(x => {
+    const r = el("button", "frrow"); r.type = "button";
+    r.innerHTML = `<b>${esc(x.name)}</b><span class="trs">${num(x.chars.familiar)} familiar · ${num(x.chars.learned)} learned · ${x.week.days} of 7 days</span>`;
+    r.onclick = () => showFriend(x); b.append(r);
+  });
+  if (!f.friends.length) b.append(el("p", "trs", "Add a friend with their code, or send them yours."));
+  const add = el("form", "frform"), inp = el("input"); inp.placeholder = "Friend's code"; inp.autocapitalize = "characters"; inp.autocomplete = "off"; inp.maxLength = 8; inp.setAttribute("aria-label", "Friend's code");
+  const go = btn("Add", "btn outl small"); go.type = "submit"; const msg = el("p", "trs frmsg");
+  add.append(inp, go);
+  add.onsubmit = async e => { e.preventDefault(); const code = inp.value.trim(); if (!code) return; go.disabled = true; msg.textContent = "";
+    try { const r = await friendsCall({ op: "add", code }); play("right"); msg.textContent = `You and ${r.added} are now friends.`; paintFriends(b); } catch (err) { msg.textContent = err.message; } finally { go.disabled = false; } };
+  const me = el("div", "frme");
+  me.innerHTML = `<span class="trs">Your code</span><b class="frcode">${esc(f.code)}</b>`;
+  const share = btn("Share", "btn ghost small", async () => {
+    const text = `Add me on Radical: ${f.code}`;
+    try { if (navigator.share) { await navigator.share({ title: "Radical", text, url: friendLink(f.code) }); return; } } catch (e) { return; }
+    try { await navigator.clipboard.writeText(`${text} ${friendLink(f.code)}`); share.textContent = "Link copied"; setTimeout(() => share.textContent = "Share", 2000); } catch (e) {}
+  });
+  const btns = el("div", "frme"); btns.append(share, btn("QR code", "btn ghost small", () => showQR(f.code)));
+  const name = el("input", "frname"); name.placeholder = "Your name for friends"; name.value = f.name || ""; name.maxLength = 30; name.setAttribute("aria-label", "Your name for friends");
+  name.onchange = () => friendsCall({ op: "name", name: name.value.trim() }).catch(() => {});
+  b.append(add, msg, me, btns, el("span", "trs", "Your name for friends"), name, el("p", "trs trq", "Friends see your name, characters by stage, this week and your chart. Never your words."));
+}
+function showFriend(x) {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard frcard"), c = x.chars, cp = n => c.seen ? (n / c.seen * 100).toFixed(1) : 0;
+  card.innerHTML = `<h3>${esc(x.name)}</h3>`
+    + `<div class="trtiles"><div class="trk"><span class="trl">Familiar</span><b class="trbig">${num(c.familiar)}</b></div><div class="trk"><span class="trl">Learned</span><b class="trbig">${num(c.learned)}</b></div><div class="trk"><span class="trl">Seen</span><b class="trbig">${num(c.seen)}</b></div></div>`
+    + `<div class="stagebar"><i style="width:${cp(c.learned)}%" class="sb-learned"></i><i style="width:${cp(c.familiar - c.learned)}%" class="sb-learning"></i><i style="width:${cp(c.seen - c.familiar)}%" class="sb-seen"></i></div>`
+    + `<p class="trs">This week: ${x.week.days} of 7 days · ${num(x.week.cards)} cards · ${num(x.week.read)} characters read${x.streak > 1 ? ` · ${x.streak}-day streak` : ""}</p>`
+    + (x.series && x.series.length > 1 ? `<div class="trk trchart"><span class="trl">Familiar and learned characters</span>${lineChart(x.series.map(p => ({ day: p.day, v: p.f, v2: p.l })))}</div>` : "");
+  const rm = btn("Remove friend", "btn ghost small", async () => {
+    if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove? Tap again"; return; }
+    sheet.remove(); try { await friendsCall({ op: "remove", code: x.code }); } catch (e) {} if (!$("trackScreen").hidden) renderTrack();
+  });
+  const row = el("div", "row"); row.append(btn("Done", "btn", () => sheet.remove()), rm); card.append(row);
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.append(sheet);
+}
+let qrLib = null;
+function showQR(code) {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard qrcard"), box = el("div", "qrbox");
+  card.append(el("h3", "", "Scan to add me"), box, el("p", "frcode", esc(code)), el("p", "note", "Opens Radical and connects you both."), btn("Done", "btn wide", () => sheet.remove()));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.append(sheet);
+  if (!qrLib) qrLib = new Promise((ok, no) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"; s.onload = ok; s.onerror = () => { qrLib = null; no(); }; document.head.append(s); });
+  qrLib.then(() => { const q = qrcode(0, "M"); q.addData(friendLink(code)); q.make(); box.innerHTML = q.createSvgTag(6, 0); }).catch(() => { box.textContent = "The QR code couldn't load. Share the link instead."; });
+}
+// A friend's link (?friend=CODE): kept until you're signed in, then connected once.
+{ const c = new URLSearchParams(location.search).get("friend");
+  if (c) { store.set("radical-friend-pending", c); try { history.replaceState(null, "", location.pathname); } catch (e) {} } }
+async function joinPending() {
+  const code = store.get("radical-friend-pending", ""); if (!code) return;
+  if (!session) { setTimeout(() => { if (document.querySelector(".sheet")) return; const sheet = el("div", "sheet"), card = el("div", "sheetcard");
+    card.append(el("h3", "", "A friend's invitation"), el("p", "", "Sign in to connect with your friend. You'll be connected as soon as you're in."), btn("Sign in", "btn wide", () => { sheet.remove(); openSettings(false); $("secAcct").open = true; }), btn("Not now", "btn ghost wide", () => sheet.remove()));
+    sheet.append(card); document.body.append(sheet); }, 1500); return; }
+  store.set("radical-friend-pending", "");
+  try { const r = await friendsCall({ op: "add", code }); milestone(`You and ${r.added} are now friends`, "You'll find each other on 記 Track."); }
+  catch (e) { if (!/own code/.test(e.message)) store.set("radical-friend-pending", code); }
+}
+
 // ---- milestones: a short moment at round numbers (characters learned, characters read, streak, cards). Each fires once;
 // anything already passed when this arrived is recorded quietly so nobody gets a pile of them at once.
 const MILESTONES = [["f", [50, 100, 250, 500, 1000, 2000], n => `${num(n)} familiar characters`], ["l", [50, 100, 250, 500, 1000, 1500, 2000, 3000], n => `${num(n)} characters learned`], ["r", [1000, 5000, 10000, 25000, 50000, 100000, 250000], n => `${num(n)} characters read`],
@@ -3351,10 +3457,10 @@ function checkMilestones(show = true) {
   store.set("radical-milestones", have);
   if (got && show && fresh.length) milestone(fresh[fresh.length - 1]);
 }
-function milestone(text) {
+function milestone(text, note = "Logged in Track.") {
   if (document.querySelector(".msheet")) return;
   const sheet = el("div", "sheet msheet"), card = el("div", "sheetcard mcard"), mark = el("div", "finmark");
-  card.append(mark, el("h3", "", text), el("p", "note", "Logged in Track."));
+  card.append(mark, el("h3", "", text), el("p", "note", note));
   card.append(btn("Keep going", "btn wide", () => sheet.remove()));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
   document.body.append(sheet); play("reward");
@@ -5771,6 +5877,7 @@ document.querySelectorAll("#targetSeg [data-t]").forEach(b => {
   fetchDaily();  // the day's Explore chips, fetched once a day in the background
   myWords.filter(w => !w.card).forEach(queueCard);  // cards still missing (added offline, or a request failed)
   feedCommon();  // the day's most common characters, if a set is on
+  setTimeout(joinPending, 2500);  // opened a friend's link
   if (session) syncNow(true).then(() => { myWords.filter(w => !w.card).forEach(queueCard); updateRing(); });  // pull what other phones changed
   if (document.fonts) document.fonts.ready.then(() => fitLegend());
 })();

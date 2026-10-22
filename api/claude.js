@@ -157,6 +157,14 @@ module.exports = async (req, res) => {
       if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
       return res.status(200).json(await account.sync(user, body.data || {}));
     }
+    // Friends by code: your code and name, add or remove a friend, and what your friends share (see _account.js).
+    if (body.action === "friends") {
+      if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+      if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
+      res.setHeader("Cache-Control", "no-store");
+      const out = await account.friends(user, body);
+      return res.status(out.error ? 400 : 200).json(out);
+    }
     // Your AI use this month (and everyone's, for owners). The page shows it as an estimate.
     if (body.action === "usage") {
       if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
