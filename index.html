@@ -129,6 +129,19 @@ textarea,input[type=password],input[type=text]{font:inherit;font-size:1rem;paddi
 :root[data-theme="dark"]{--panel:color-mix(in srgb,var(--bg) 75%,#000)}
 .tpanel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px 14px 16px;display:grid;gap:12px;min-width:0}
 .tpanel h3.sec{margin:0}
+/* Read tab: adding text is one slim row (＋ New text) that opens on a tap, so the article comes first. It starts open
+   only when there's nothing to read yet, and closes once a new text is read. */
+details.addbox{display:block;padding:0 14px}
+details.addbox[open]{padding-bottom:12px}
+.addsum{display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer;list-style:none;color:var(--accent);font-weight:600;font-size:1rem;-webkit-tap-highlight-color:transparent}
+.addsum::-webkit-details-marker{display:none}
+.addsum .plus{font-size:1.15rem;line-height:1}
+.addsum{position:relative;padding-right:28px}
+.addsum::after{content:"";position:absolute;right:6px;top:50%;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .2s}
+details.addbox[open] .addsum::after{transform:translateY(-30%) rotate(225deg)}
+.addbody{display:grid;gap:12px;min-width:0}
+.addbody>*{min-width:0}
+p.busy{margin:-4px 4px 0}
 .tpanel>*{min-width:0}
 .tpanel .docbar{min-width:0}
 .tpanel .tool,.tpanel .switch,.tpanel textarea,.tpanel .seg button[aria-pressed="false"],.tpanel .docbar{background:var(--bg)}
@@ -985,15 +998,15 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
     <h3 class="sec tabsec"><span lang="zh">讀</span>Read</h3>
-    <div class="tpanel" id="addPanel">
-      <h3 class="sec sub">Add text</h3>
+    <details class="tpanel addbox" id="addPanel">
+      <summary class="addsum"><span class="plus" aria-hidden="true">＋</span>New text</summary>
+      <div class="addbody">
       <div class="toolbar">
         <label class="tool" title="Take a photo, or open a photo, PDF, Word file, e-book, subtitles, text or spreadsheet"><span class="ti">拍</span>Photo/File
           <input type="file" id="fileIn" accept="image/*,application/pdf,.pdf,.docx,.txt,.text,.md,.html,.htm,.epub,.srt,.vtt,.ass,.csv,.tsv,.xlsx" hidden></label>
         <button type="button" class="tool" id="wikiBtn"><span class="ti">探</span>Explore</button>
         <button type="button" class="tool" id="histBtn"><span class="ti">歷</span>History</button>
       </div>
-      <p class="note" id="busy" hidden></p>
       <form class="srcform" id="srcForm">
         <textarea id="srcIn" rows="1" lang="zh" placeholder="今天讀什麼？" aria-label="Paste or type Chinese" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
         <button type="submit" class="srcgo" aria-label="Read this text"><i></i></button>
@@ -1002,9 +1015,9 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 我們在登山口附近搭帳篷，趁天氣好去爬山。
 訓練AI需要很多資料，桌上有一堆資料。
 我負責學區的審計工作。</textarea>
-    </div>
+    </details>
+    <p class="note busy" id="busy" hidden></p>
     <div class="tpanel" id="readPanel">
-      <h3 class="sec sub">Read</h3>
     <div class="bar" id="readBar">
       <div class="legrow">
         <div class="legend" id="readLegend">
@@ -2046,7 +2059,7 @@ async function render() {
   await ensure(text);
   if (token !== renderToken) return;
   reader.innerHTML = ""; unpick(); if (reading) stopReading();  // new text on screen: the voice stops with it
-  if (!text.trim()) { reader.innerHTML = '<p class="note">Paste or type Chinese above, or use Photo/File, or Explore.</p>'; return; }
+  if (!text.trim()) { $("addPanel").open = true; reader.innerHTML = '<p class="note">Paste or type Chinese above, or use Photo/File, or Explore.</p>'; return; }
   // Every character is a drawing, so very long texts are shown in parts.
   if (doc && doc.lv) reader.append(el("p", "simpnote", `${doc.lv === "easy" ? "Easiest" : "Easier"} version, rewritten by AI. Check anything important against the Original.`));
   const LIMIT = 1500, all = text.split(/\n+/).filter(l => l.trim());
@@ -2404,6 +2417,8 @@ $("srcIn").addEventListener("paste", e => {
   const img = [...((e.clipboardData && e.clipboardData.items) || [])].find(it => it.kind === "file" && it.type.startsWith("image/"));
   if (img) {  // a pasted screenshot: read the Chinese out of it
     e.preventDefault(); const file = img.getAsFile();
+// ＋ New text opens the box with the keyboard up (the focus has to happen inside the tap for iPhones to allow it).
+$("addPanel").querySelector("summary").onclick = e => { e.preventDefault(); const p = $("addPanel"); p.open = !p.open; if (p.open) $("srcIn").focus(); };
     (async () => { try { busy("Reading the screenshot…"); const text = await ocr(await imageToJpeg(file)); busy(text ? "" : "No Chinese text found in that picture."); if (text) setText(text, false, "photo"); } catch (err) { busy(err.message); } })();
     return;
   }
@@ -2523,7 +2538,7 @@ function remember(text) {
 }
 function setText(text, keepDoc, kind = "typed", title = "") {
   if (!keepDoc && doc) closeDoc();
-  $("src").value = text; store.set("radical-text", text); record({ kind, text, ...(title ? { title } : {}) });
+  $("src").value = text; store.set("radical-text", text); record({ kind, text, ...(title ? { title } : {}) }); $("addPanel").open = false;
   stack.length = 0; setTab("readScreen"); $("readScreen").scrollTop = 0;
   onNewText(); render();
 }
@@ -5443,6 +5458,7 @@ document.querySelectorAll("#targetSeg [data-t]").forEach(b => {
     document.querySelectorAll(".brandMark").forEach(x => { const m = svgFor("部", false, true); m.classList.add("brandMark"); x.replaceWith(m); });  // the lit 部 heads every tab
     const am = svgFor("部", false, true); am.style.width = am.style.height = "56px"; $("aboutMark").replaceWith(am);
     const big = svgFor("部", false, true); big.setAttribute("class", "mark"); $("splashMark").replaceWith(big);
+    $("addPanel").open = !$("src").value.trim();  // nothing to read yet: the box to add text starts open
     // The strokes draw over about 5 seconds; then "Tap to begin" fades in. Phones only allow sound after a touch, so
     // the tap is what lets the harp play.
     animate(big, "部", 1.4, () => sp0.classList.add("ready"));
