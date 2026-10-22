@@ -235,14 +235,14 @@ p.busy{margin:-4px 4px 0}
 .revscore{display:block;font-family:var(--font-ui);font-size:.92rem;font-weight:500;color:var(--muted);margin-top:2px}
 .revscore:empty{display:none}
 .revscore{cursor:pointer}.revscore .sc{font-family:var(--font-zh);font-weight:700;font-size:1.05em}
-/* A count that just went up: its character glows for a couple of seconds and the number rolls up like a dial. */
-.revscore .sc.glow{animation:scglow 2.5s ease-out}
-@keyframes scglow{0%,35%{text-shadow:0 0 10px currentColor,0 0 3px currentColor}100%{text-shadow:none}}
+/* A count that just went up: its character glows for a couple of seconds and the new number drops in like a dial. */
+.revscore .sc.glow{animation:scglow 2.5s ease-out both}
+@keyframes scglow{0%{text-shadow:none}1%,35%{text-shadow:0 0 10px currentColor,0 0 3px currentColor}100%{text-shadow:none}}
 .odo{display:inline-block;height:1.25em;line-height:1.25em;overflow:hidden;vertical-align:bottom}
 .odo>span{display:flex;flex-direction:column;animation:odo .7s .2s cubic-bezier(.3,.7,.25,1) both}
 .odo i{font-style:normal;height:1.25em}
-@keyframes odo{from{transform:translateY(0)}to{transform:translateY(-1.25em)}}
-@media (prefers-reduced-motion:reduce){.revscore .sc.glow{animation:none}.odo>span{animation:none;transform:translateY(-1.25em)}}
+@keyframes odo{from{transform:translateY(-1.25em)}to{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.revscore .sc.glow{animation:none}.odo>span{animation:none;transform:none}}
 .sc.ok{color:var(--on)}.sc.part{color:var(--part,#E2B33C)}.sc.no{color:var(--no,#E5533D)}
 /* The answer flourish: 對, 半 or 錯 blooms in the middle of the screen like ink spreading, then fades (never blocks a tap). */
 .bloom{position:fixed;left:50%;top:42%;z-index:60;pointer-events:none;font-family:var(--font-zh);font-weight:700;font-size:min(46vw,240px);line-height:1;transform:translate(-50%,-50%);opacity:0;animation:bloom 2s cubic-bezier(.2,.7,.3,1) forwards}
@@ -560,6 +560,8 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .editcard .edshow p{margin:2px 0}
 .editcard .edshow p[lang=zh]{font-family:var(--font-zh);font-size:1.15rem}
 .edacts .edreset{margin-left:auto}
+.edout{display:flex;flex-wrap:wrap;gap:8px;padding-top:12px;margin-top:2px;border-top:1px solid var(--line)}
+.edout .edrm{color:var(--no,#E5533D)}
 .weekcard{display:grid;gap:4px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);margin-bottom:12px;font-size:.92rem;color:var(--muted)}
 .weekcard p{margin:0}
 .wkhead{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -2880,7 +2882,8 @@ async function nextExample(w) {
 const sentencePinyin = t => segment(t).map(tok => tok.syl && tok.syl.length === tok.chars.length && tok.syl.every(Boolean) ? tok.syl.join("") : tok.chars.join("")).join(" ").replace(/\s+([，。！？、；：,.!?])/g, "$1").trim();
 // Edit a card: meaning, pinyin, example sentence (a new one from the AI, or your own) and notes. Only what differs
 // from the standard card is kept, on your word, and it syncs with your account. Back to standard drops it all.
-function editCard(w, done) {
+// opts.inSession: opened from a flash card's answer side, so the sheet also offers I know this and Remove this word.
+function editCard(w, done, opts = {}) {
   const c = w.card || {}, prev = w.mine || {}, std = { meaning: c.meaning || w.meaning || "", pinyin: c.pinyin || w.pinyin || "" };
   const flat = x => String(x || "").normalize("NFC").replace(/[\s'’·-]+/g, "").toLowerCase();
   let ex = { example: (cardOf(w) || {}).example || "", example_pinyin: (cardOf(w) || {}).example_pinyin || "", example_en: (cardOf(w) || {}).example_en || "" };
@@ -2929,7 +2932,19 @@ function editCard(w, done) {
   });
   const row = el("div", "row edacts"); row.append(save, btn("Cancel", "btn ghost", close));
   if (w.mine) row.append(btn("Back to standard", "btn ghost small edreset", () => { delete w.mine; delete w.fromClass; saveWords(); close(); if (done) done(); }));
-  card.append(row); sheet.append(card);
+  card.append(row);
+  // From a flash card: a word that's too easy can be marked Known, or one you don't want removed, without leaving the
+  // set. Either way the card leaves the set at once and isn't scored.
+  if (opts.inSession) {
+    const out = el("div", "edout");
+    if (!w.skip) out.append(btn("I know this", "btn ghost small", () => { close(); dropFromSession(w, false); }));
+    const rm = btn("Remove this word", "btn ghost small edrm", () => {
+      if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove? Tap again"; setTimeout(() => { if (rm.isConnected) { rm.classList.remove("confirm"); rm.textContent = "Remove this word"; } }, 4000); return; }
+      close(); dropFromSession(w, true);
+    });
+    out.append(rm); card.append(out);
+  }
+  sheet.append(card);
   sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet); q("edMean").focus();
 }
@@ -4114,6 +4129,15 @@ function showLook() {
 
 // ================= review
 let rq = [], rDone = 0, revHist = [];
+// A word leaves the set in the middle of a session (✎ on the answer side): marked Known, or removed from your words.
+// It isn't scored, can't be gone back to, and the set moves on to the next card.
+function dropFromSession(w, remove) {
+  if (remove) { const i = myWords.indexOf(w); if (i >= 0) myWords.splice(i, 1); } else setStatus(w, "known");
+  saveWords();
+  rq = rq.filter(x => x !== w); revHist = revHist.filter(h => h.w !== w); revOutcome.delete(w);
+  document.querySelectorAll(".bloom").forEach(x => x.remove());
+  play(remove ? "tap" : "right"); showFront(); $("reviewScreen").scrollTop = 0;
+}
 const revOutcome = new WeakMap();  // how the card on screen was answered (right, shaky, missed), for the tally
 // The session's score: how each card was answered (right, shaky, missed; see showBack), and the longest run without
 // a miss. Again also brings the card back as a repeat.
@@ -4124,7 +4148,10 @@ const scoreText = sc => `${sc.right} right · ${sc.shaky} half · ${sc.missed} w
 // With the score shown before (prev), the count that went up glows for a moment and its number rolls over like a dial.
 const scoreHTML = (sc, prev) => { const z = c => typeof conv === "function" ? conv(c) : c;
   const one = (k, cls, ch) => { const up = prev && sc[k] > prev[k];
-    return `<b class="sc ${cls}${up ? " glow" : ""}" lang="zh">${z(ch)}</b> ${up ? `<span class="odo"><span><i>${prev[k]}</i><i>${sc[k]}</i></span></span>` : sc[k]}`; };
+    // A count that went up rolls once the big 對 半 錯 has faded (so it reads as landing in the score), the new number
+    // dropping in from above.
+    const wait = `animation-delay:${Math.max(.2, ((bloom.until || 0) - Date.now()) / 1000).toFixed(2)}s`;
+    return `<b class="sc ${cls}${up ? " glow" : ""}" lang="zh"${up ? ` style="${wait}"` : ""}>${z(ch)}</b> ${up ? `<span class="odo"><span style="${wait}"><i>${sc[k]}</i><i>${prev[k]}</i></span></span>` : sc[k]}`; };
   return `${one("right", "ok", "對")} · ${one("shaky", "part", "半")} · ${one("missed", "no", "錯")}${sc.repeats ? ` · ${sc.repeats} repeat${sc.repeats === 1 ? "" : "s"}` : ""}`; };
 let scoreShown = null;  // the tally as last drawn in the strip, so a change can glow and roll  // revHist: the cards already rated this session, newest last, so you can go back
 // Going back undoes the last rating: the card's schedule, the queue and the day's new-word count return to how
@@ -4623,6 +4650,9 @@ function showBack(w, how, st) {
   if (how === "know" && !(st && st.quiet)) play("right");
   const hintsUsed = showBack.hints || 0; showBack.hints = 0;
   const hinted = how !== "write" && hintsUsed > 0, quiet = st && st.quiet;
+  // The sound and the big 對 半 錯 wait while the card asks you whether a meaning it couldn't check was right; they
+  // come when you answer (Right or Wrong).
+  let asking = false; const fanfare = !quiet || !!(st && st.answered);
   if (how === "write" && st && st.strokes) {
     // First-try strokes and hints decide the suggestion: clean is Good, a slip or one hint is Hard, more is Again.
     const r = st.first / st.strokes;
@@ -4634,19 +4664,19 @@ function showBack(w, how, st) {
   if (guess) {
     const asChars = guess.listen && /\p{Script=Han}/u.test(guess.py);
     const rp = asChars ? checkChars(guess.py, w) : checkPinyin(guess.py, wPinyin(w)), rm = (st && st.aiMean) || checkMeaning(guess.mean, wMeaning(w));
-    if (rm.ask) rm.note = "Couldn't check this one: was it right?";
+    if (rm.ask) { rm.note = "Couldn't check this one: was it right?"; asking = true; }
     const mark = (label, val, r) => val.trim() ? `<div class="res ${r.ok === true ? "ok" : r.ok === "part" ? "part" : r.ok === false ? "no" : ""}"><span>${label}</span><b${asChars && label !== "Meaning" ? ' lang="zh" class="reszh"' : ""}>${label !== "Meaning" && !asChars ? pyWordHTML(numToMarks(val)) : esc(val)}</b><em>${esc(r.note || "")}</em>${r.detail ? `<div class="resdetail">${r.detail}</div>` : ""}</div>` : `<div class="res"><span>${label}</span><em>left blank</em></div>`;
     const results = el("div", "results", mark(guess.listen ? "Answer" : "Pinyin", guess.py, rp) + mark("Meaning", guess.mean, rm));
     ans.append(results);
     // The AI couldn't judge the meaning: you say whether it was right, and the suggestion follows your answer.
     if (rm.ask) {
-      const yn = el("div", "askrow"), redo = ok => { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true, aiMean: { ok, note: ok ? "You marked it right." : "You marked it wrong." } }); };
+      const yn = el("div", "askrow"), redo = ok => { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true, answered: true, aiMean: { ok, note: ok ? "You marked it right." : "You marked it wrong." } }); };
       yn.append(btn("✓ Right", "btn ghost small", () => redo(true)), btn("✗ Wrong", "btn ghost small", () => redo(false)));
       results.lastElementChild.append(yn);
     }
     const score = [rp.ok, rm.ok].map(x => x === true ? 2 : x === "part" ? 1 : 0).reduce((a, b) => a + b, 0);
     suggest = score === 4 ? "good" : score >= 1 ? "hard" : "again";
-    if (!quiet) play(suggest === "again" ? "wrong" : "right");
+    if (fanfare && !asking) play(suggest === "again" ? "wrong" : "right");
   }
   // The tally records how you answered (the rating only decides when the card comes back): I know it or a fully
   // right check is right, a partly right check is shaky, Show answer or a wrong check is missed.
@@ -4654,13 +4684,13 @@ function showBack(w, how, st) {
   else if (how === "show") revOutcome.set(w, "missed");
   else if (how === "check" || how === "write") revOutcome.set(w, suggest === "good" ? "right" : suggest === "hard" ? "shaky" : "missed");
   if (hinted && suggest === "good") suggest = "hard";  // needed a hint: it comes back sooner
-  if (!quiet && ["check", "write", "know"].includes(how) && revOutcome.get(w)) bloom(revOutcome.get(w));
+  if (fanfare && !asking && ["check", "write", "know"].includes(how) && revOutcome.get(w)) bloom(revOutcome.get(w));
   // The colors used on this side (the big word and the example sentence), right under the big characters.
   const ex1 = exNow(w), leg = legendLine(conv(w.word) + (ex1 ? conv(ex1.example) : "")), bw = box.querySelector(".revchars");
   if (leg && bw) { box.querySelectorAll(".legline").forEach(x => x.remove()); bw.after(leg); }
   ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${markHTML(w, "pinyin")}${sayHTML(w.word)}`));
   // ✎ fixes the card right here; the answer side is redrawn with your version.
-  const ed = btn("✎", "edpen", () => editCard(w, () => { if (ans.isConnected) { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true }); } }));
+  const ed = btn("✎", "edpen", () => editCard(w, () => { if (ans.isConnected) { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true }); } }, { inSession: true }));
   ed.setAttribute("aria-label", "Edit this card");
   const wm = el("p", "wmean", esc(wMeaning(w)) + markHTML(w, "meaning")); wm.append(ed);
   ans.append(wm, ...cardExtras(w));
@@ -4712,6 +4742,7 @@ function bloom(out) {
   if (!ch) return;
   const b = el("div", "bloom " + cls, conv(ch)); b.lang = "zh"; b.setAttribute("aria-hidden", "true");
   document.body.append(b); setTimeout(() => b.remove(), 2100);
+  bloom.until = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : Date.now() + 1900;  // the score's count rolls after this
 }
 function placeAnswer() {
   const go = () => {
