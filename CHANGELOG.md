@@ -2,6 +2,21 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v39
+
+- Practice: the This week box is gone. "12 today" sits by the Flash cards title, in the theme's second color; tap it for Track. The daily target is gone too.
+- Practice opens on Today, with a red badge on its count, while Today has cards. Once Today is done it opens on All, so the list below is never empty. A pill you tap stays until you leave the tab.
+- Word Sets replace Most common characters. Top 100 · 500 · 1,000 · 2,000, six topics (Food, Travel, Family, Work, Feelings, Time) and ＋ Make a set for any topic you type, checked against the dictionary. With no words yet, Word Sets fill the top of Practice; after that, one line under Add opens them.
+- First start: "Start with a curated list at your level." New, Some or Comfortable (the Top list from #1, #300 or #1,000), or pick a topic.
+- Sign in comes right after you choose a set, in a small sheet: email, then the 6-digit code. Anything that needs the account opens the same sheet instead of jumping to Settings. Still optional.
+- How it works is four short pages, each one line and a little animation: the colors, reading, listening and explaining, saving and practicing. With reduced motion they're still pictures.
+- The Learning focus pop-up is now just "What do you want to practice?" with Read, Write, Listen.
+- Settings: Cards a day (10, 20, 30 or 50) sets the size of Today. Default 30.
+- Backup has its own page in the menu (存 Backup), out of Settings.
+- Feedback: when you're signed in, a copy of your note goes to your email.
+- Shorter text all over: hints, notes, errors and Settings. Friends hides when you're signed out. The Easier version line says "rephrased by Radical."
+- Fixed: on a first launch the Start reading button under the colors was missing.
+
 ## v38
 
 - Most common characters, for beginners: one line on Practice under Add offers the 100, 500, 1,000 or 2,000 most common. A set joins your own words rather than living apart: a few characters a day fill the new-card slots your own new words leave, so nothing arrives as a pile. The line then reads "Common 500 · N familiar"; tap it to see just those words, grow the set, or remove it (only the unstudied ones go). Single-character cards now show a common word with that character on the answer side. New users are offered the first 100 once. The ranking comes from wordfreq (CC BY-SA, credited).
