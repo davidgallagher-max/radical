@@ -68,6 +68,16 @@ const TRANSLATE_PROMPT = (sentence) => `Translate this Chinese into natural Engl
 
 ${sentence}`;
 
+// English in (v41): a passage typed or pasted in English becomes Chinese to read; a word or phrase in context gets the
+// Chinese words that fit it, best first.
+const USAGE = (simp) => simp ? "Simplified characters, mainland usage" : "Traditional characters, Taiwan usage";
+const TOZH_TEXT_PROMPT = (text, simp) => `Translate this English into natural Chinese that an adult learner can read: plain, everyday wording. Use ${USAGE(simp)}. Return only the Chinese, nothing else.
+
+${text}`;
+const TOZH_WORD_PROMPT = (text, simp) => `A learner of Mandarin wants the Chinese word for this English, in the sense it has here: "${text}"
+Give the 1 to 3 Chinese words that fit that sense, best fit first: real dictionary words, the everyday ones. Use ${USAGE(simp)}.
+Return ONLY JSON: {"words":[{"word":"the Chinese","pinyin":"pinyin with tone marks","meaning":"short English meaning, under 8 words"}]}`;
+
 // Wikipedia helpers: turn an English search into Chinese search words, and rate articles for a learner.
 const ZHQUERY_PROMPT = (q) => `A learner wants to find Chinese Wikipedia articles about this topic, typed in English: "${q}"
 Give the Chinese search words a Chinese Wikipedia editor would use for it (Traditional characters, Taiwan usage, usually 1 to 4 words). Return only the Chinese, nothing else.`;
@@ -151,6 +161,7 @@ function parseItems(text, key) {
   return items.length ? items : null;
 }
 
+const ANON_ACTIONS = new Set(["explain", "translate", "words", "zhquery", "simplify", "ocr", "notes", "tozh"]);
 module.exports = async (req, res) => {
   if (req.method !== "POST" && req.method !== "GET") return res.status(405).json({ error: "Use GET or POST." });
   const body = req.method === "GET" ? (req.query || {})
@@ -165,8 +176,10 @@ module.exports = async (req, res) => {
   }
   const user = await account.userOf(req);
   const byPassword = !user && !!process.env.APP_PASSWORD && req.headers["x-app-password"] === process.env.APP_PASSWORD;
-  if (!user && !byPassword) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
-  const who = user ? user.id : "password", today = account.dayOf(req);
+  // Signed out (v41): only the things a newcomer taps for, and only a few (see account.anonTake).
+  const anon = !user && !byPassword && !!req.headers["x-radical-anon"] && ANON_ACTIONS.has(body.action);
+  if (!user && !byPassword && !anon) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+  const who = user ? user.id : byPassword ? "password" : "anon", today = account.dayOf(req);
   try {
     if (body.action === "sync") {
       if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
@@ -224,7 +237,8 @@ module.exports = async (req, res) => {
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: "No API key on the server. Add ANTHROPIC_API_KEY in Vercel, Settings, Environment Variables, then redeploy." });
   }
-  // A high daily safety stop per person; every AI call is logged with its estimated cost.
+  if (anon && !(await account.anonTake(req, today))) return res.status(429).json({ error: "Sign in to keep going.", signin: true });
+  // A high daily safety stop per person (all signed-out use together counts as one); every AI call is logged with its estimated cost.
   if ((await account.spentToday(who, today)) >= account.DAILY_CAP()) return res.status(429).json({ error: "Today's AI limit is reached. It resets tomorrow; reading, saving and flash cards still work." });
   const askClaude = async (model, prompt, maxTokens) => { const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage, user && user.email, today); return r.text; };
   try {
@@ -346,6 +360,20 @@ module.exports = async (req, res) => {
         .map(t => ({ zh: t.zh.trim().slice(0, 8), en: String(t.en || "").slice(0, 24), py: String(t.py || "").slice(0, 40) })).slice(0, 9);
       if (!topics.length) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       return res.status(200).json({ topics });
+    }
+    if (body.action === "tozh") {
+      const text = String(body.text || "").trim().slice(0, 2000), simp = !!body.simp;
+      if (!text) return res.status(400).json({ error: "Nothing to translate." });
+      if (body.kind === "word") {
+        const list = parseItems(await askClaude(FAST_MODEL, TOZH_WORD_PROMPT(text.slice(0, 200), simp), 400), "words");
+        const words = (list || []).filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word))
+          .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").slice(0, 80) })).slice(0, 3);
+        if (!words.length) return res.status(502).json({ error: "No Chinese word came back. Try other words." });
+        return res.status(200).json({ words });
+      }
+      const zh = await askClaude(FAST_MODEL, TOZH_TEXT_PROMPT(text, simp), 2500);
+      if (!/\p{Script=Han}/u.test(zh)) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      return res.status(200).json({ zh });
     }
     if (body.action === "translate") {
       const sentence = String(body.sentence || "").trim().slice(0, 600);

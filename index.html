@@ -701,6 +701,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .labrow input{width:100%}
 .labgroup .btn{justify-self:start}
 .nlist{display:grid;gap:6px}
+.enpick{max-height:80vh;max-height:80dvh;overflow:auto;gap:8px}.enpick h3{margin:0 0 4px}
 .nrow{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid var(--accent)}
 .nrow .nbody{flex:1;min-width:0;display:grid;grid-template-columns:auto 1fr;column-gap:10px;row-gap:2px;align-items:baseline}
 .nrow b{font-family:var(--font-zh);font-size:1.1rem;font-weight:600;grid-row:span 2}
@@ -2541,7 +2542,24 @@ function onNewText0() { typed = detect($("src").value); showScript(); }  // the 
 // Pasting reads at once; typing reads on Enter (not while an input method is still composing) or the arrow.
 function submitSrc() {
   const box = $("srcIn"), text = cleanPasted(box.value); if (!text) { box.value = ""; return; }
-  box.value = ""; box.blur(); setText(text);
+  box.value = ""; box.blur();
+  if (isEnglish(text)) { readEnglish(text); return; }
+  setText(text);
+}
+// English in the Read box (v41): one word opens the pick list (tap one to open its page); anything longer is
+// translated into Chinese (your script; Taiwan usage for Traditional) and opens to read, kept in History under the English.
+async function readEnglish(text) {
+  try {
+    if (text.trim().split(/\s+/).length <= 2) {
+      busy("Looking it up…");
+      const r = await enToWords(text); busy(r.hits.length ? "" : `No Chinese found for “${text}”.`);
+      if (r.hits.length) pickEnglish(text, r.hits, r.best, x => openWord(x.word));
+      return;
+    }
+    busy("Putting it into Chinese…");
+    const { zh } = await claude({ action: "tozh", text, simp: script === "simp" }, "read it in Chinese");
+    busy(""); setText(conv(zh), false, "typed", text.length > 40 ? text.slice(0, 39) + "…" : text);
+  } catch (e) { busy(e.message); }
 }
 $("srcForm").addEventListener("submit", e => { e.preventDefault(); submitSrc(); });
 // ＋ New text opens the box with the keyboard up (the focus has to happen inside the tap for iPhones to allow it).
@@ -2715,13 +2733,21 @@ function renderHistory() {
 }
 $("histBtn").onclick = () => { remember($("src").value); renderHistory(); go("historyScreen"); };
 
-// ================= Claude (the key stays on the server; the page sends your password)
-// The AI features need you signed in (the server checks your account). An app password saved by an older version
-// still works until it's removed from Vercel.
-async function claude(payload) {
+// ================= the AI service (the key stays on the server)
+// The AI features need you signed in (the server checks your account), except a newcomer's first FREE_AI tries of the
+// things you tap for (Explain, English, finding words; v41): the server also caps those at 30 a day per network. Cards,
+// Word Sets and anything that runs on its own still need the account. `why` names what you were doing, for the
+// sign-in sheet ("Sign in to use Explain").
+const FREE_AI = 10, FREE_OK = new Set(["explain", "translate", "words", "zhquery", "simplify", "ocr", "notes", "tozh"]);
+const AI_WHY = { explain: "use Explain", translate: "see the English", words: "find words", zhquery: "search Explore", simplify: "make it easier", ocr: "read photos",
+  notes: "read class notes", tozh: "read it in Chinese", card: "make cards", wordset: "start a Word Set", example: "get new sentences", judge: "check meanings", friends: "add friends" };
+function deviceId() { let id = store.get("radical-device", ""); if (!id) { id = Math.random().toString(36).slice(2) + Date.now().toString(36); store.set("radical-device", id); } return id; }
+async function claude(payload, why) {
   const token = await accessToken(), pw = store.get("radical-pw", "");
-  if (!token && !pw) { signInSheet(); throw new Error("Sign in first."); }
-  const auth = { ...(token ? { Authorization: `Bearer ${token}` } : { "x-app-password": pw }), "x-radical-day": localDay() };
+  why = why || AI_WHY[payload.action] || "use the AI service";
+  const free = !token && !pw && FREE_OK.has(payload.action) && store.get("radical-free-ai", 0) < FREE_AI;
+  if (!token && !pw && !free) { signInSheet({ why }); throw new Error("Sign in first."); }
+  const auth = { ...(token ? { Authorization: `Bearer ${token}` } : pw ? { "x-app-password": pw } : { "x-radical-anon": deviceId() }), "x-radical-day": localDay() };
   // Cards and Word Sets are the same for everyone: asked with GET, so Vercel's CDN can answer them.
   const get = payload.action === "card" || payload.action === "wordset";
   const url = payload.action === "card" ? `/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}`
@@ -2734,7 +2760,9 @@ async function claude(payload) {
   const data = await r.json().catch(() => ({}));
   if (r.status === 404) throw new Error("Online features only work on the live site, not the Mac test server.");
   if (r.status === 401 && token) { setSession(null); if (!$("settingsScreen").hidden) renderAccount(); throw new Error("Your sign-in has expired. Sign in again (Settings, Account)."); }
+  if (free && (r.status === 401 || data.signin)) { store.set("radical-free-ai", FREE_AI); signInSheet({ why }); throw new Error("Sign in first."); }
   if (!r.ok) throw new Error(data.error || `Something went wrong (${r.status}).`);
+  if (free) store.set("radical-free-ai", store.get("radical-free-ai", 0) + 1);
   return data;
 }
 // ================= account: sign in with your email and a 6-digit code (Supabase), then your words sync
@@ -2797,7 +2825,7 @@ async function fetchUsage() {
 }
 const money = x => x >= .01 ? `$${x.toFixed(2)}` : x > 0 ? "under 1¢" : "$0";
 const AI_NAMES = { wordset: "Word Sets", card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
-  zhquery: "Explore search", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
+  zhquery: "Explore search", tozh: "English to Chinese", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
 function tallyText(a) { return `AI today: ${a.today.calls} call${a.today.calls === 1 ? "" : "s"} · ${money(a.today.cost)} · this month ${money(a.month.cost)} (all users)`; }
 function aiTally() {
   const b = $("aiTally");
@@ -2914,8 +2942,8 @@ function renderAccount() {
     .catch(() => { st.textContent = ""; });
 }
 // Sign in where you are (v39): a small sheet instead of a trip to Settings. It comes up right after you choose a Word
-// Set (their cards need the account) and whenever something needs the AI service while signed out. `then` runs after
-// signing in; `skip` after Not now.
+// Set (their cards need the account) and whenever something needs the AI service while signed out; its title says
+// which (`why`: "Sign in to use Explain"). `then` runs after signing in; `skip` after Not now.
 function signInSheet(o = {}) {
   if (document.querySelector(".sheet.signin")) return;
   const sheet = el("div", "sheet signin"), card = el("div", "sheetcard signcard");
@@ -2939,7 +2967,7 @@ function signInSheet(o = {}) {
   });
   [email, code].forEach(x => x.addEventListener("keydown", e => { if (e.key === "Enter") go.click(); }));
   row.append(btn("Not now", "btn ghost wide", () => done(false)));
-  card.append(el("h3", "", "Save your words"), el("p", "note", "We'll send a 6-digit code."), email, code, go, msg, row);
+  card.append(el("h3", "", `Sign in to ${esc(o.why || "save your words")}`), el("p", "note", "Keep your words on every device and follow your friends' progress. No password, just an emailed code. Your data is never sold."), email, code, go, msg, row);
   sheet.append(card); document.body.append(sheet);
   setTimeout(() => email.focus(), 300);
 }
@@ -3528,7 +3556,7 @@ function showQR(code) {
 async function joinPending() {
   const code = store.get("radical-friend-pending", ""); if (!code) return;
   if (!session) { setTimeout(() => { if (document.querySelector(".sheet")) return; const sheet = el("div", "sheet"), card = el("div", "sheetcard");
-    card.append(el("h3", "", "A friend's invitation"), el("p", "", "Sign in to connect."), btn("Sign in", "btn wide", () => { sheet.remove(); signInSheet({ then: joinPending }); }), btn("Not now", "btn ghost wide", () => sheet.remove()));
+    card.append(el("h3", "", "A friend's invitation"), el("p", "", "Sign in to connect."), btn("Sign in", "btn wide", () => { sheet.remove(); signInSheet({ then: joinPending, why: "connect with your friend" }); }), btn("Not now", "btn ghost wide", () => sheet.remove()));
     sheet.append(card); document.body.append(sheet); }, 1500); return; }
   store.set("radical-friend-pending", "");
   try { const r = await friendsCall({ op: "add", code }); milestone(`You and ${r.added} are now friends`, "You'll find each other on 記 Track."); }
@@ -4447,6 +4475,44 @@ function parseLine(line) {
   if (/\bskip\b/i.test(fields.slice(1).join(" "))) e.skip = true;
   return e;
 }
+// ---- English in (v41). One English word: the dictionary's Chinese for it (data/en-<letter>.json, built from CC-CEDICT
+// by scripts/build_english.py; whole-sense matches first, then the most common words), each with its own meaning, to
+// pick from. A few words ("patience with kids"): the AI service picks the words that fit that sense, best first. A
+// passage typed into the Read box becomes Chinese to read (see submitSrc).
+const isEnglish = t => !/\p{Script=Han}/u.test(t) && /[A-Za-z]/.test(t);
+const enLoads = {};
+async function enMatches(text) {
+  const k = text.toLowerCase().trim().replace(/\s+/g, " ").replace(/^(to|a|an|the) /, ""), f = /^[a-z]/.test(k) ? k[0] : "_";
+  if (!enLoads[f]) enLoads[f] = fetch(`data/en-${f}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  const d = await enLoads[f], got = d[k] || (/s$/.test(k) && d[k.slice(0, -1)]) || (/es$/.test(k) && d[k.slice(0, -2)]) || [];
+  const ws = [...new Set(got.map(x => conv(x[0])))];
+  await ensure(ws.join(""));
+  return ws.map(word => { const e = lookup(word) || lookup(toSimp(word)) || lookup(toTrad(word)); return e && { word, pinyin: script !== "simp" && e[2] || e[1], meaning: String(e[3] || "").split(/[\/;]/).map(x => x.trim()).filter(Boolean).slice(0, 2).join("; ") }; }).filter(Boolean);
+}
+async function enToWords(text) {
+  const one = !/\s/.test(text.trim()) || text.trim().split(/\s+/).length <= 2 && /^(to|a|an|the|be) /i.test(text.trim());
+  let hits = one ? await enMatches(text) : [], best = false;
+  if (!hits.length) {
+    const { words } = await claude({ action: "tozh", kind: "word", text, simp: script === "simp" }, "find the Chinese");
+    hits = (words || []).map(x => ({ ...x, word: conv(x.word) })); best = true;
+    await ensure(hits.map(x => x.word).join(""));
+  }
+  return { hits, best };
+}
+// The pick list: each Chinese word with its pinyin and its own meaning; tap one.
+function pickEnglish(query, hits, best, onPick) {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard enpick");
+  card.append(el("h3", "", `“${esc(query)}”`));
+  hits.forEach((x, i) => {
+    const b = el("button", "nrow enrow"); b.type = "button";
+    b.innerHTML = `<span class="nbody"><b lang="zh">${esc(x.word)}</b><span class="np">${esc(x.pinyin || "")}</span><span class="nm">${esc(x.meaning || "")}${best && i === 0 && hits.length > 1 ? " <i>best fit</i>" : ""}</span></span>`;
+    b.onclick = () => { sheet.remove(); onPick(x); };
+    card.append(b);
+  });
+  card.append(btn("Cancel", "btn ghost wide", () => sheet.remove()));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.append(sheet);
+}
 // Read candidates locally; if the text is messy (sentences, prose), ask Claude to pick out the vocabulary.
 async function findWords(text) {
   text = text.trim();
@@ -4560,6 +4626,17 @@ $("addWord").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shif
 $("addGo").onclick = async () => {
   const text = $("addWord").value.trim(); if (!text) return;
   const st = $("addStatus"); st.textContent = "Reading…";
+  if (isEnglish(text)) {  // English: pick the Chinese word
+    let r; try { r = await enToWords(text); } catch (e) { st.textContent = e.message; return; }
+    st.textContent = r.hits.length ? "" : `No Chinese found for “${text}”.`;
+    if (r.hits.length) pickEnglish(text, r.hits, r.best, async x => {
+      if (findWord(x.word)) { st.textContent = `${x.word} is already in your list.`; return; }
+      const entry = await addEntry(x.word, { pinyin: x.pinyin, meaning: x.meaning });
+      $("addWord").value = ""; growAdd(); renderWords(); st.textContent = `Added ${entry.word}.`; play("right");
+      ensureCard(entry).then(() => { renderWords(); refreshWordPage(); }).catch(() => {});
+    });
+    return;
+  }
   const found = await findWords(text);
   const list = dedupe(found.list);
   st.textContent = "";

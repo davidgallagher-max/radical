@@ -159,6 +159,20 @@ async function logUse(who, action, model, usage, email, today) {
   } catch (e) { /* logging never blocks the answer */ }
 }
 
+// ---- signed out (v41): a newcomer's first few AI tries (the page allows 10 per device) are capped here too, per network:
+// RADICAL_ANON_CAP calls a day (30 unless set) from one address. The address is kept only as a salted hash, in
+// anon/<day>/<hash>.json; the calls are logged under usage/anon/ like anyone's.
+const ANON_CAP = () => +env("RADICAL_ANON_CAP") || 30;
+async function anonTake(req, today = day()) {
+  if (!status().ok) return false;  // nowhere to count: no free tries
+  const h = req && req.headers || {}, ip = String(h["x-real-ip"] || h["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
+  const key = require("crypto").createHash("sha256").update(ip + "|" + env("SUPABASE_SECRET_KEY").slice(-12)).digest("hex").slice(0, 20);
+  const path = `anon/${today}/${key}.json`, u = (await getJSON(path).catch(() => null)) || { n: 0 };
+  if (u.n >= ANON_CAP()) return false;
+  u.n++; await putJSON(path, u).catch(() => {});
+  return true;
+}
+
 // ---- who may do what. Emails come from Vercel env vars, separated by commas or spaces.
 //   OWNER_EMAILS   see everyone's AI use (the tally in the menu)
 //   TESTER_EMAILS  if set, only these people (and owners) get the AI features; anyone can still sign in and read.
@@ -181,8 +195,8 @@ async function usage(user, today = day()) {
     const fs = id === user.id ? mine : await monthOf(id);
     if (!fs.length) continue;
     let email = (fs.find(f => f.u.email) || {}).u?.email || "";
-    if (!email && id !== "password") { const d = await getJSON(`users/${id}/data.json`).catch(() => null); email = (d && d.email) || ""; }
-    const p = { who: id === "password" ? "app password" : email || id.slice(0, 8), today: 0, month: 0, calls: 0 };
+    if (!email && id !== "password" && id !== "anon") { const d = await getJSON(`users/${id}/data.json`).catch(() => null); email = (d && d.email) || ""; }
+    const p = { who: id === "password" ? "app password" : id === "anon" ? "signed out" : email || id.slice(0, 8), today: 0, month: 0, calls: 0 };
     for (const f of fs) for (const c of f.u.calls || []) {
       const [, action, , , , cost] = c, isToday = f.day === today;
       p.month += cost; p.calls++; all.month.cost += cost; all.month.calls++;
@@ -267,4 +281,4 @@ async function friends(user, body) {
   return friendsView(user);
 }
 
-module.exports = { friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, DAILY_CAP, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };
+module.exports = { anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, DAILY_CAP, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };
