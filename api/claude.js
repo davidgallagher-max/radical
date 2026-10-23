@@ -141,6 +141,15 @@ function parseJSON(text) {
   if (m) { try { return JSON.parse(m[0]); } catch (e) {} }
   return null;
 }
+// A list of {word, ...} items, even from an answer that was cut off or wrapped in code fences: every complete item
+// that can be read is kept.
+function parseItems(text, key) {
+  const out = parseJSON(text);
+  if (out && Array.isArray(out[key])) return out[key];
+  const items = [];
+  for (const m of String(text || "").matchAll(/\{[^{}]*\}/g)) { try { const x = JSON.parse(m[0]); if (x && typeof x.word === "string") items.push(x); } catch (e) {} }
+  return items.length ? items : null;
+}
 
 module.exports = async (req, res) => {
   if (req.method !== "POST" && req.method !== "GET") return res.status(405).json({ error: "Use GET or POST." });
@@ -239,9 +248,9 @@ module.exports = async (req, res) => {
     if (body.action === "wordset") {
       const theme = String(body.theme || "").trim().replace(/\s+/g, " ").slice(0, 60);
       if (!theme) return res.status(400).json({ error: "No theme given." });
-      const out = parseJSON(await askClaude(FAST_MODEL, WORDSET_PROMPT(theme), 1500));
-      if (!out || !Array.isArray(out.words)) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
-      const words = out.words.filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word))
+      const list = parseItems(await askClaude(FAST_MODEL, WORDSET_PROMPT(theme), 3000), "words");
+      if (!list) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      const words = list.filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word))
         .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").slice(0, 80) })).slice(0, 30);
       if (req.method === "GET" && words.length) {  // the same for everyone: Vercel's CDN keeps a set for a year
         res.setHeader("Vercel-CDN-Cache-Control", "max-age=31536000");

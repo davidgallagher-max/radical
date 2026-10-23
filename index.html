@@ -222,6 +222,8 @@ p.busy{margin:-4px 4px 0}
 .tourcard{gap:14px;padding-top:24px}
 .tourpage{display:grid;gap:10px;align-content:start}
 .tourpage .note{text-align:center;min-height:1.5em}
+.treplay{position:absolute;right:10px;bottom:10px;z-index:5;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--accent);font-size:1.25rem;line-height:1;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .5s}
+.treplay.on{opacity:1;pointer-events:auto}
 .tstage{position:relative;height:250px;border:1px solid var(--line);border-radius:14px;background:var(--bg);overflow:hidden}
 .tbig{position:absolute;left:50%;top:18px;width:150px;height:150px;transform:translateX(-50%);transition:opacity .6s}
 .tbig svg{width:100%;height:100%;transition:filter .5s}
@@ -268,7 +270,8 @@ p.busy{margin:-4px 4px 0}
 .tourdots i{width:7px;height:7px;border-radius:50%;background:var(--line)}.tourdots i.on{background:var(--accent)}
 .revprev{all:unset;cursor:pointer;font-family:var(--font-ui);font-size:.84rem;font-weight:600;color:var(--accent);padding:2px 0;white-space:nowrap}  /* under the card count */
 /* One line under the title: ‹ Previous card on the left, the running score on the right. */
-.revsub{display:flex;align-items:baseline;justify-content:space-between;gap:10px;min-height:1.4em;margin-top:-6px}
+.revsub{display:flex;align-items:center;gap:6px;min-height:1.4em;margin-top:-6px}
+.revsub .revscore{margin-left:auto}
 .revsub .revscore{margin-top:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 @media (max-width:359px){#reviewScreen .scriptpick .sclabel{display:none}#reviewScreen .revtitle{font-size:1rem}}
 .revprev:focus-visible{outline:2px solid var(--accent);border-radius:6px}
@@ -590,7 +593,16 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .ymark{font-size:.68rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:999px;padding:0 6px;vertical-align:2px;margin-left:4px;white-space:nowrap}
 .classnote{margin-top:-4px}
 .mynote{font-size:.9rem;border-left:3px solid var(--accent);padding:2px 0 2px 10px;margin:4px 0;white-space:pre-wrap}
-.edpen{all:unset;cursor:pointer;color:var(--accent);font-size:1rem;padding:2px 8px;margin-left:6px;border-radius:8px;vertical-align:1px}
+.ico{width:1.05em;height:1.05em;flex:none;vertical-align:-.15em}
+.btn:has(> .ico){display:inline-flex;align-items:center;justify-content:center}
+.btn .ico{margin-right:6px}.btn.binbtn .ico{margin:0}.btn.binbtn.confirm .ico{margin-right:6px}
+.binbtn.confirm{color:var(--no,#E5533D);box-shadow:inset 0 0 0 1px var(--no,#E5533D)}
+.revdel{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--muted);padding:6px;border-radius:8px;font-size:.92rem;font-weight:600}
+.revdel .ico{width:20px;height:20px}
+.revdel.confirm{color:var(--no,#E5533D);box-shadow:inset 0 0 0 1px var(--no,#E5533D);padding:6px 9px}
+.revdel:focus-visible{outline:2px solid var(--accent)}
+.edpen{all:unset;cursor:pointer;color:var(--accent);padding:6px 8px;margin-left:2px;border-radius:8px;display:inline-flex;align-items:center}
+.edpen .ico{width:20px;height:20px}
 .edpen:active{background:color-mix(in srgb,var(--accent) 14%,transparent)}
 .editcard{max-height:88vh;overflow:auto}
 .editcard label,.editcard .edex{display:grid;gap:4px}
@@ -1112,7 +1124,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       </div>
       <div class="sizepop" id="sizePop" hidden>
         <span class="sizerow"><i lang="zh" aria-hidden="true">字</i><input type="range" id="sizeIn" min="26" max="64" step="2" value="38" aria-label="Text size"><b lang="zh" aria-hidden="true">字</b></span>
-        <button type="button" class="btn ghost small editbtn" id="editTextBtn">✎ Edit text</button>
+        <button type="button" class="btn ghost small editbtn" id="editTextBtn"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg><span>Edit text</span></button>
       </div>
     </div>
     <div class="docbar" id="docbar" hidden>
@@ -1359,6 +1371,21 @@ const store = {
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const btn = (label, cls, fn) => { const b = el("button", cls); b.type = "button"; b.textContent = label; if (fn) b.onclick = fn; return b; };
+// Edit (a pencil, tip down-left as on iPhone) and remove (a bin), drawn so they look the same on every phone.
+const PEN = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+const BIN = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zm2-10h8v10H8V9zm7.5-5-1-1h-5l-1 1H5v2h14V4h-3.5z"/></svg>';
+const iconBtn = (svg, label, cls, fn) => { const b = btn("", cls, fn); b.innerHTML = svg + (label ? `<span>${label}</span>` : ""); return b; };
+// A bin asks once: the first tap turns it into "Remove?", a second tap within 4 seconds does it.
+function binBtn(cls, label, ask, fn) {
+  const b = iconBtn(BIN, label, cls + " binbtn"); b.setAttribute("aria-label", label || ask);
+  let t = 0;
+  b.onclick = e => {
+    e.stopPropagation();
+    if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.innerHTML = BIN + `<span>${ask}</span>`; t = setTimeout(() => { b.classList.remove("confirm"); b.innerHTML = BIN + (label ? `<span>${label}</span>` : ""); }, 4000); return; }
+    clearTimeout(t); fn();
+  };
+  return b;
+}
 const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>';
 // ---- the menu (on every page): Settings, How it works, About, Send feedback. The tabs aren't in it (the tab
 // bar has them). Pages opened from the menu say "‹ Menu" and go back to it.
@@ -2166,7 +2193,7 @@ async function render() {
     const rest = all.slice(lines.length).join("").length;
     reader.append(btn(`Show more (${rest} more characters)`, "btn ghost more", () => { renderLimit += LIMIT; render(); }));
   }
-  const endRow = el("div", "endrow"); endRow.append(btn("+ Add new words", "btn ghost small addnew", addNewWords), btn("✎ Edit text", "btn ghost small editbtn endedit", editText));
+  const endRow = el("div", "endrow"); endRow.append(btn("+ Add new words", "btn ghost small addnew", addNewWords), iconBtn(PEN, "Edit text", "btn ghost small editbtn endedit", editText), binBtn("btn ghost small", "", "Remove?", clearText));
   reader.append(endRow);
   // Long documents: the same part navigation at the bottom, so you can move on without scrolling back up.
   if (doc && doc.pages && doc.pages.length > 1) {
@@ -2461,6 +2488,12 @@ $("readScreen").addEventListener("click", e => {
 });
 // Edit the text being read (copied or photographed text is often messy). For a PDF or article it's the page you're
 // on (or its Easier version, if that's showing); the edit is kept with the document.
+// The bin under the text: the reader empties and the box for new text opens. The text stays in History.
+function clearText() {
+  remember($("src").value); if (doc) closeDoc();
+  $("src").value = ""; store.set("radical-text", "");
+  onNewText(); render(); $("readScreen").scrollTop = 0;
+}
 function editText() {
   sizeOpen(false);
   const key = doc && doc.lv ? doc.i + ":" + doc.lv : null;
@@ -3005,7 +3038,7 @@ async function nextExample(w) {
 const sentencePinyin = t => segment(t).map(tok => tok.syl && tok.syl.length === tok.chars.length && tok.syl.every(Boolean) ? tok.syl.join("") : tok.chars.join("")).join(" ").replace(/\s+([，。！？、；：,.!?])/g, "$1").trim();
 // Edit a card: meaning, pinyin, example sentence (a new one from the AI, or your own) and notes. Only what differs
 // from the standard card is kept, on your word, and it syncs with your account. Back to standard drops it all.
-// opts.inSession: opened from a flash card's answer side, so the sheet also offers I know this and Remove this word.
+// opts.inSession: opened from a flash card, so the sheet opens without the keyboard.
 function editCard(w, done, opts = {}) {
   const c = w.card || {}, prev = w.mine || {}, std = { meaning: c.meaning || w.meaning || "", pinyin: c.pinyin || w.pinyin || "" };
   const flat = x => String(x || "").normalize("NFC").replace(/[\s'’·-]+/g, "").toLowerCase();
@@ -3058,18 +3091,9 @@ function editCard(w, done, opts = {}) {
   card.append(row);
   // From a flash card: a word that's too easy can be marked Known, or one you don't want removed, without leaving the
   // set. Either way the card leaves the set at once and isn't scored.
-  if (opts.inSession) {
-    const out = el("div", "edout");
-    if (!w.skip) out.append(btn("I know this", "btn ghost small", () => { close(); dropFromSession(w, false); }));
-    const rm = btn("Remove this word", "btn ghost small edrm", () => {
-      if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove? Tap again"; setTimeout(() => { if (rm.isConnected) { rm.classList.remove("confirm"); rm.textContent = "Remove this word"; } }, 4000); return; }
-      close(); dropFromSession(w, true);
-    });
-    out.append(rm); card.append(out);
-  }
   sheet.append(card);
   sheet.onclick = e => { if (e.target === sheet) close(); };
-  document.body.append(sheet); q("edMean").focus();
+  document.body.append(sheet); if (!opts.inSession) q("edMean").focus();  // from a card: no keyboard over the sheet
 }
 const findWord = word => myWords.find(w => w.word === word || (w.card && (w.card.word === word || w.card.simplified === word))) || myWords.find(w => toTrad(w.word) === toTrad(word));  // either script finds it
 // Add a word right away with its dictionary entry; Claude's card follows in the background when a password is set.
@@ -3250,7 +3274,7 @@ function headline() {
 // Cards done today, beside the Flash cards title on Practice (v39: the This week card is gone; Track has the rest).
 function todayNum() {
   const b = $("todayNum"); if (!b) return;
-  const n = weekStats().today; b.hidden = !n; b.textContent = `${num(n)} today`;
+  const n = weekStats().today; b.hidden = !n; b.textContent = `${num(n)} done today`;
 }
 // Called whenever the day's tally changes: the count on Practice and Track follow along.
 function updateRing() {
@@ -3338,8 +3362,8 @@ function renderTrack() {
   prev.setAttribute("aria-label", "Previous month"); next.setAttribute("aria-label", "Next month");
   next.disabled = trackMonth.y === now.getFullYear() && trackMonth.m === now.getMonth();
   head.append(prev, el("b", "", mName), next);
-  const grid = el("div", "calgrid"); ["M", "T", "W", "T", "F", "S", "S"].forEach(x => grid.append(el("span", "calwd", x)));
-  const firstDow = (new Date(trackMonth.y, trackMonth.m, 1).getDay() + 6) % 7, nDays = new Date(trackMonth.y, trackMonth.m + 1, 0).getDate(), today = localDay();
+  const grid = el("div", "calgrid"); ["S", "M", "T", "W", "T", "F", "S"].forEach(x => grid.append(el("span", "calwd", x)));  // weeks start on Sunday, like Google Calendar
+  const firstDow = new Date(trackMonth.y, trackMonth.m, 1).getDay(), nDays = new Date(trackMonth.y, trackMonth.m + 1, 0).getDate(), today = localDay();
   for (let i = 0; i < firstDow; i++) grid.append(el("span", "calday blank"));
   let usedMonth = 0;
   for (let k = 1; k <= nDays; k++) {
@@ -3786,7 +3810,7 @@ function savedCard(w) {
   box.append(el("p", "note", dueText(w)));
   const acts = el("div", "row");
   if (!c) box.prepend(cardPending(w, refreshWordPage));
-  acts.append(btn("✎ Edit card", "btn ghost small", () => editCard(w, refreshWordPage)));
+  acts.append(iconBtn(PEN, "Edit card", "btn ghost small", () => editCard(w, refreshWordPage)));
   acts.append(btn(w.skip ? "Put back in review" : "I know this", "btn ghost small", () => { setStatus(w, w.skip ? "learning" : "known"); saveWords(); refreshWordPage(); }));
   const rm = btn("Remove", "btn ghost small", () => {
     if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove? Tap again"; setTimeout(() => { if (rm.isConnected) { rm.classList.remove("confirm"); rm.textContent = "Remove"; } }, 4000); return; }
@@ -4247,11 +4271,12 @@ function openSets() {
 }
 async function renderCommon() {
   const box = $("commonLine"); if (!box) return;
-  box.innerHTML = "";
-  if (!myWords.length) return;  // the Word Sets card is up top
-  const size = commonSize(), b = btn("", "cmhead", openSets);
-  b.innerHTML = `<span>Word Sets</span><span class="cmnow">${size ? `Top ${num(size)} · ${num(await commonToGo())} to go` : ""}</span><i class="cmchev"></i>`;
-  box.append(b);
+  const my = renderCommon.n = (renderCommon.n || 0) + 1;  // two quick redraws: only the last one draws
+  if (!myWords.length) { box.innerHTML = ""; return; }  // the Word Sets card is up top
+  const size = commonSize(), b = btn("", "cmhead", openSets), left = size ? await commonToGo() : 0;
+  if (my !== renderCommon.n) return;
+  b.innerHTML = `<span>Word Sets</span><span class="cmnow">${size ? `Top ${num(size)} · ${num(left)} to go` : ""}</span><i class="cmchev"></i>`;
+  box.replaceChildren(b);
 }
 // First start, after Learning focus: one tap to a list at your level (where in the Top list you start), or a topic.
 function offerCommon() {
@@ -4620,7 +4645,8 @@ function showLook() {
 
 // ================= review
 let rq = [], rDone = 0, revHist = [];
-// A word leaves the set in the middle of a session (✎ on the answer side): marked Known, or removed from your words.
+// A word leaves the set in the middle of a session (the card's bin removes it from your words; Known is kept for
+// callers that mark it known).
 // It isn't scored, can't be gone back to, and the set moves on to the next card.
 function dropFromSession(w, remove) {
   if (remove) { const i = myWords.indexOf(w); if (i >= 0) myWords.splice(i, 1); } else setStatus(w, "known");
@@ -4644,6 +4670,14 @@ const scoreHTML = (sc, prev) => { const z = c => typeof conv === "function" ? co
     const wait = `animation-delay:${Math.max(.2, ((bloom.until || 0) - Date.now()) / 1000).toFixed(2)}s`;
     return `<b class="sc ${cls}${up ? " glow" : ""}" lang="zh"${up ? ` style="${wait}"` : ""}>${z(ch)}</b> ${up ? `<span class="odo"><span style="${wait}"><i>${sc[k]}</i><i>${prev[k]}</i></span></span>` : sc[k]}`; };
   return `${one("right", "ok", "對")} · ${one("shaky", "part", "半")} · ${one("missed", "no", "錯")}${sc.repeats ? ` · ${sc.repeats} repeat${sc.repeats === 1 ? "" : "s"}` : ""}`; };
+// The score takes in the answer on the answer side, rolling as the big 對 半 錯 fades. Rating then only confirms it, so
+// the next card doesn't roll it a second time.
+function scoreTakes(out) {
+  const sc = rScore || (rScore = newScore()), now = { ...sc }; now[out]++;
+  const was = scoreShown || { right: sc.right, shaky: sc.shaky, missed: sc.missed };
+  scoreShown = { right: now.right, shaky: now.shaky, missed: now.missed };
+  $("revScore").innerHTML = scoreHTML(now, was);
+}
 let scoreShown = null;  // the tally as last drawn in the strip, so a change can glow and roll  // revHist: the cards already rated this session, newest last, so you can go back
 // Going back undoes the last rating: the card's schedule, the queue and the day's new-word count return to how
 // they were, and the card opens on its answer side so you can look again and rate it again.
@@ -4863,6 +4897,7 @@ function showFront() {
   $("revQuit").style.visibility = !rq.length && rDone ? "hidden" : "";  // the finish screen has its own buttons
   $("revEnd").hidden = !rq.length;
   if (!rq.length) {
+    document.querySelectorAll(".revdel").forEach(x => x.remove());
     prog.textContent = ""; $("revBar").replaceChildren(); $("revBar").classList.remove("glow"); $("revPrev").style.visibility = "hidden";
     if (!rDone) { box.append(el("p", "wmean", "Nothing to review right now."), btn("Back to my words", "btn wide", () => history.back())); return; }
     // The finish: 完 (finished) draws itself in the lit ink, then the session in one glance, what it earned, what's next.
@@ -4891,6 +4926,9 @@ function showFront() {
   }
   const w = rq[0];
   const m0 = howOf(w);
+  // The bin under the title removes this word from your words, on either side of the card (asks once).
+  document.querySelectorAll(".revdel").forEach(x => x.remove());
+  $("revPrev").before(binBtn("revdel", "", "Remove?", () => dropFromSession(w, true)));
   prog.innerHTML = `${rDone + 1}/${rDone + rq.length}${w[srsKey(w)] ? "" : ' <span class="ptag">new</span>'}${(curHow || revHow) === "mix" ? ` <span class="ptag">${{ read: "Read", write: "Write", listen: "Listen" }[m0]}</span>` : ""}`;
   revSide = null;
   $("revScript").replaceChildren(scriptToggle(async () => {  // 繁/简 for the whole set; the card you're on is redrawn
@@ -5176,14 +5214,16 @@ function showBack(w, how, st) {
   else if (how === "check" || how === "write") revOutcome.set(w, suggest === "good" ? "right" : suggest === "hard" ? "shaky" : "missed");
   if (hinted && suggest === "good") suggest = "hard";  // needed a hint: it comes back sooner
   if (fanfare && !asking && ["check", "write", "know"].includes(how) && revOutcome.get(w)) bloom(revOutcome.get(w));
+  if (!asking && revOutcome.get(w)) scoreTakes(revOutcome.get(w));
   // The colors used on this side (the big word and the example sentence), right under the big characters.
   const ex1 = exNow(w), leg = legendLine(conv(w.word) + (ex1 ? conv(ex1.example) : "")), bw = box.querySelector(".revchars");
   if (leg && bw) { box.querySelectorAll(".legline").forEach(x => x.remove()); bw.after(leg); }
-  ans.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${markHTML(w, "pinyin")}${sayHTML(w.word)}`));
-  // ✎ fixes the card right here; the answer side is redrawn with your version.
-  const ed = btn("✎", "edpen", () => editCard(w, () => { if (ans.isConnected) { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true }); } }, { inSession: true }));
-  ed.setAttribute("aria-label", "Edit this card");
-  const wm = el("p", "wmean", esc(wMeaning(w)) + markHTML(w, "meaning")); wm.append(ed);
+  // The pencil, beside the pinyin and speaker, fixes the card right here; the answer side is redrawn with your version.
+  const wpy = el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${markHTML(w, "pinyin")}${sayHTML(w.word)}`);
+  const ed = iconBtn(PEN, "", "edpen", () => editCard(w, () => { if (ans.isConnected) { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true }); } }, { inSession: true }));
+  ed.setAttribute("aria-label", "Edit this card"); wpy.append(ed);
+  ans.append(wpy);
+  const wm = el("p", "wmean", esc(wMeaning(w)) + markHTML(w, "meaning"));
   ans.append(wm, ...cardExtras(w));
   const cw = commonWordLine(w); if (cw) ans.append(cw);
   if (c) {
@@ -5198,8 +5238,11 @@ function showBack(w, how, st) {
   // The rating bar ignores taps for a moment after it appears, so a tap meant for the button that was there before
   // (Check, See answer, Next character) can't rate the card by accident.
   const shownAt = Date.now();
-  [["again", "Again"], ["hard", "Hard"], ["good", "Good"], ["easy", "Easy"]].forEach(([g, label]) => {
-    const b = el("button", `btn ghost ${g}${g === suggest ? " suggest" : ""}`, `${label}<small>${ivlText(nextIvl(w[k], g))}</small>`); b.type = "button";
+  // I know it on a word that's new in this mode: Easy becomes Known (back in 2 to 6 months, not in a few days).
+  const knowNew = how === "know" && !hinted && !(w[k] && w[k].reps);
+  if (knowNew) suggest = "easy";
+  [["again", "Again"], ["hard", "Hard"], ["good", "Good"], ["easy", knowNew ? "Known" : "Easy"]].forEach(([g, label]) => {
+    const b = el("button", `btn ghost ${g}${g === suggest ? " suggest" : ""}`, label); b.type = "button";
     b.onclick = () => {
       if (Date.now() - shownAt < 500 && !quiet) return;
       revHist.push({ w, k, out: revOutcome.get(w), srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore, mw: rScore.mw.slice() } });
@@ -5208,7 +5251,7 @@ function showBack(w, how, st) {
       if (out === "missed") { sc.run = 0; if (!sc.mw.includes(w)) sc.mw.push(w); } else { sc.run++; sc.best = Math.max(sc.best, sc.run); }
       if (g === "again") { sc.repeats++; if (!sc.mw.includes(w)) sc.mw.push(w); }
       revOutcome.delete(w);
-      tick(g); grade(w, g, k); rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w);
+      tick(g); grade(w, g, k); if (knowNew && g === "easy") { setStatus(w, "known"); saveWords(); } rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w);
       // Today in Mix: a word due in another mode too comes back in that mode, so Today really empties.
       else if (lastSet && lastSet.mode === "today" && curHow === "mix") { const more = MODES.filter(m => modeDue(w, m)); if (more.length && !rq.includes(w)) { cardMode.set(w, more[0]); rq.push(w); } } showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);
@@ -5377,11 +5420,12 @@ $("startBtn").onclick = () => { saveSettings(); history.back(); setTimeout(showT
 // ---- the walkthrough: four pages, each one line and a short demo drawn live in the theme's colors (a still frame
 // with reduced motion). Shown once, after the look on a first launch, and any time from the menu (導 How it works).
 const calm = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-// A looping timeline on a stage; returns a stop function.
-function tourLoop(steps, every) {
-  let ids = [];
-  const go = () => { ids = steps.map(([t, f]) => setTimeout(f, t)); ids.push(setTimeout(go, every)); };
-  go(); return () => ids.forEach(clearTimeout);
+// A timeline on a stage, played once; it holds on its last frame and then calls tourLoop.done (the ↻ button).
+// Returns a stop function.
+function tourLoop(steps) {
+  const end = Math.max(...steps.map(x => x[0])) + 1200, done = tourLoop.done;
+  const ids = steps.map(([t, f]) => setTimeout(f, t)); ids.push(setTimeout(() => { if (done) done(); }, end));
+  return () => ids.forEach(clearTimeout);
 }
 // The pretend finger: moves to a node's middle and taps.
 function tourFinger(stage) {
@@ -5410,7 +5454,7 @@ const TOUR = [
       run: () => tourLoop([[0, reset],
         [500, () => { light(a, "meaning"); float("meaning", `${r.meaning} · <span lang="zh">氵</span> water`); }],
         [2800, () => { light(a, "sound"); float("sound", `${r.sound} · <span lang="zh">可</span> kě → hé`); }],
-        [5100, () => { big.style.opacity = 0; big2.style.opacity = 1; light(b, "whole"); float("whole", `${r.whole} · three peaks`); }]], 7600) };
+        [5100, () => { big.style.opacity = 0; big2.style.opacity = 1; light(b, "whole"); float("whole", `${r.whole} · three peaks`); }]]) };
   } },
   { line: "Read anything.", note: "An article, a menu, your class notes.", chars: "我喜歡看書", build(stage) {
     const text = conv("我喜歡看書"), row = tourCells(text), cells = [...row.children];
@@ -5423,7 +5467,7 @@ const TOUR = [
     const reset = () => { pick(false); peek.classList.remove("up"); page.classList.remove("up"); f.hide(); };
     return { still() { pick(true); peek.classList.add("up"); },
       run: () => tourLoop([[0, reset], [500, () => f.to(cells[2])], [1300, () => { f.tap(); pick(true); peek.classList.add("up"); }],
-        [3000, f.tap], [3150, () => { page.classList.add("up"); f.hide(); }]], 6000) };
+        [3000, f.tap], [3150, () => { page.classList.add("up"); f.hide(); }]]) };
   } },
   { line: "Hear it, translate it, explain it.", chars: "我喜歡看書解", build(stage) {
     const text = conv("我喜歡看書"), row = tourCells(text), cells = [...row.children];
@@ -5439,7 +5483,7 @@ const TOUR = [
         ...cells.map((c, k) => [1300 + k * 330, () => c.classList.add("hl")]),
         [3100, () => { spk.classList.remove("on"); cells.forEach(c => c.classList.remove("hl")); f.to(en); }],
         [3800, () => { f.tap(); en.classList.add("on"); eng.classList.add("in"); }],
-        [4900, () => f.to(ex)], [5600, () => { f.tap(); ex.classList.add("on"); note.classList.add("up"); }], [6600, f.hide]], 8600) };
+        [4900, () => f.to(ex)], [5600, () => { f.tap(); ex.classList.add("on"); note.classList.add("up"); }], [6600, f.hide]]) };
   } },
   { line: "Save words. Practice three ways.", chars: "喜歡練", build(stage) {
     const word = conv("喜歡"), top = el("div", "tword"), w = tourCells(word), add = el("span", "tadd", "+ Add");
@@ -5465,7 +5509,7 @@ const TOUR = [
           requestAnimationFrame(() => requestAnimationFrame(() => { fly.style.transform = `translate(${b.left - a.left - a.width / 2 + b.width / 2}px, ${b.top - a.top}px) scale(.3)`; fly.style.opacity = .2; }));
           setTimeout(() => fly.remove(), 800); }],
         [2050, () => { badge.textContent = "1"; badge.classList.add("on"); }],
-        [2600, () => { face("read"); card.classList.add("up"); }], [4300, () => flip("write")], [6400, () => flip("listen")]], 8600) };
+        [2600, () => { face("read"); card.classList.add("up"); }], [4300, () => flip("write")], [6400, () => flip("listen")]]) };
   } }
 ];
 async function showTour(fromMenu) {
@@ -5483,7 +5527,11 @@ async function showTour(fromMenu) {
     row.append(btn(i ? "‹ Back" : fromMenu ? "Close" : "Skip", "btn ghost", () => { if (i) { i--; paint(); } else close(); }), btn(i < TOUR.length - 1 ? "Next ›" : last, "btn", () => { if (i < TOUR.length - 1) { i++; paint(); } else close(); }));
     card.append(page, dots, row);
     const demo = p.build(stage);
-    if (calm()) { demo.still(); stop = () => {}; } else stop = demo.run();
+    if (calm()) { demo.still(); stop = () => {}; return; }
+    const again = btn("↻", "treplay", () => { again.classList.remove("on"); stop(); stop = demo.run(); });
+    again.setAttribute("aria-label", "Play again"); stage.append(again);
+    tourLoop.done = () => again.classList.add("on");
+    stop = demo.run();
   };
   sheet.onclick = ev => { if (ev.target === sheet) close(); };
   sheet.append(card); document.body.append(sheet); paint();
