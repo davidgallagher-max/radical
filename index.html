@@ -3150,7 +3150,8 @@ function ensureCard(w) {
 // 80 words doesn't fire 80 requests at once). Offline, the queue waits for the connection; words still missing a
 // card (from an earlier offline session or a failure) are queued again each time the app starts.
 const cardQueue = []; let cardBusy = 0;
-function queueCard(w) { if (!w || w.card || cardQueue.includes(w)) return; cardQueue.push(w); pumpCards(); }
+function queueCard(w) { if (!w || w.card || lazyCard(w) || cardQueue.includes(w)) return;  // set words: made when first studied
+  cardQueue.push(w); pumpCards(); }
 function pumpCards() {
   if (!online()) return;
   if (navigator.onLine === false) return;  // the "online" event starts it again
@@ -3640,13 +3641,29 @@ function markDone(w, k) {
 function todayList(ms, at) {
   const now = at || Date.now(), dueAt = (w, m) => { const k = KEYS[m], x = w[k]; return !!(x && x.due && x.due <= now && (k === "srs" || !w.skip)); };
   const first = w => Math.min(...ms.filter(m => dueAt(w, m)).map(m => w[KEYS[m]].due));
-  const due = myWords.filter(w => ms.some(m => dueAt(w, m))).sort((a, b) => first(a) - first(b));
-  const k = KEYS[ms[0]], fresh = myWords.filter(w => !w.skip && !w[k] && !due.includes(w));
+  const lw = listWords(), due = lw.filter(w => ms.some(m => dueAt(w, m))).sort((a, b) => first(a) - first(b));
+  const k = KEYS[ms[0]], fresh = lw.filter(w => !w.skip && !w[k] && !due.includes(w));
   const list = [...due, ...fresh.slice(0, Math.max(0, at ? NEW_PER_DAY : newLeft(k)))];
   const done = at ? new Set() : doneToday(); let room = dailyMax() - done.size;
   return list.filter(w => done.has(w.word) || room-- > 0);
 }
 const isNewIn = (w, how) => !w.skip && !modesOf(how).some(m => w[KEYS[m]]);
+// ---- Lists (v41): Practice works on one list at a time: Mine (words you added), Top N (lists/common.tsv) or a Word Set
+// (w.set). Today, the pills, Start, the list below and the 練 badge follow the picked list; the others are paused
+// (nothing piles up on them). The day's cap (Cards a day) and new-word allowance are shared, so switching lists never
+// gives a fresh 30. Set words get their card when first studied, not when the set is added.
+let curList = store.get("radical-list", "mine");
+const inList = (w, L = curList) => L === "mine" ? !w.common && !w.set : L === "top" ? !!w.common : w.set === L;
+const listWords = () => myWords.filter(w => inList(w));
+const lazyCard = w => !!(w.common || w.set) && !practiced(w);
+function allLists() {
+  const out = [["mine", "Mine"]], size = commonSize();
+  if (size) out.push(["top", `Top ${num(size)}`]);
+  [...new Set(myWords.filter(w => w.set).map(w => w.set))].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
+  return out;
+}
+function setList(L) { curList = L; store.set("radical-list", L); catPicked = false; contOk = false; updateCounts(); }
+const listName = (L = curList) => (allLists().find(x => x[0] === L) || [, "Mine"])[1];
 // The badge: words left in Today for your goal (a word due in two modes counts once).
 const dueCount = () => todayList(goal).length;
 // A word's place in the list: Known (marked known), New (never studied in this mode) or Learning; "due" means it's in
@@ -4022,15 +4039,15 @@ const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.f
 // The words in a choice, in the order a session takes them. Learning is every word that isn't Known (new ones too):
 // the ones whose review time has come first (longest waiting first), then the ones coming up soonest, new ones last.
 function pool(cat, how = revHow) {
-  const ms = modesOf(how);
+  const ms = modesOf(how), lw = listWords();
   if (cat === "today") return todayList(ms);
-  if (cat === "new") return myWords.filter(w => isNewIn(w, how));
-  if (cat === "known") return myWords.filter(w => w.skip);
+  if (cat === "new") return lw.filter(w => isNewIn(w, how));
+  if (cat === "known") return lw.filter(w => w.skip);
   if (cat === "learning") {
     const next = w => { const ds = ms.map(m => w[KEYS[m]]).filter(x => x && x.due).map(x => x.due); return ds.length ? Math.min(...ds) : Infinity; };
-    return myWords.filter(w => !w.skip).map(w => [w, next(w)]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
+    return lw.filter(w => !w.skip).map(w => [w, next(w)]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   }
-  return myWords.slice();
+  return lw;
 }
 // Mix: a card comes up in a mode where it's due (one picked at random if several); new words start in Read; any other
 // word gets one of the three at random.
@@ -4040,7 +4057,7 @@ function assignModes(q, how) {
 }
 function buildQueue(cat, count, how = revHow) {
   let q = pool(cat, how).slice();
-  if (cat === "new" || cat === "known" || cat === "all") shuffle(q);
+  if (cat === "known" || cat === "all" || (cat === "new" && curList !== "top")) shuffle(q);  // Top's new words go in order
   q = count === "all" ? q : q.slice(0, count);
   assignModes(q, how);
   return q;
@@ -4066,6 +4083,8 @@ function renderStrip(sizes) {
   const box = el("div", "revpanel"), head = el("div", "revhead", "<b>Flash cards</b>");
   const tn = btn("", "todaynum", () => setTab("trackScreen")); tn.id = "todayNum"; tn.hidden = true; head.append(tn);
   box.append(head);
+  const lists = allLists();
+  if (lists.length > 1) box.append(pills("lists", lists, curList, k => setList(k)));
   box.append(pills("hows", [["read", "Read"], ["write", "Write"], ["listen", "Listen"], ["mix", "Mix"]], revHow, k => { revHow = k; store.set("radical-revhow", k); }));
   const cats = pills("cats", CATS.map(([k, label]) => [k, label, sizes[k], k !== "today" && k !== "all" && !sizes[k]]), revCat, k => { revCat = k; });
   if (sizes.today) cats.firstChild.lastChild.className = "pbadge";  // Today's count in red, like the one on 練
@@ -4076,12 +4095,16 @@ function renderStrip(sizes) {
   const res = contOk && savedSession();
   const nCards = count === "all" ? n : Math.min(n, count);
   if (res) box.append(btn(`Continue · ${res.words.length} left`, "btn wide revgo", resumeSession));
-  else if (nCards) box.append(btn(`Start ${nCards}`, "btn wide revgo", () => { store.set(RES_KEY, null); openReview(revCat, count); }));
-  else if (revCat === "today" && myWords.some(w => !w.skip)) {
+  else if (nCards) box.append(btn(`Start ${nCards}`, "btn wide revgo", async () => {
+    store.set(RES_KEY, null);
+    if (curList === "top" && (revCat === "new" || revCat === "all")) await fillTop(nCards - pool(revCat).length);  // Top words join when first studied
+    openReview(revCat, count);
+  }));
+  else if (revCat === "today" && listWords().some(w => !w.skip)) {
     box.append(el("p", "revdone", "Nothing left for today."));
     const more = Math.min(10, sizes.learning || 0);
     if (more) box.append(btn(`${more} more`, "btn outl wide revgo", () => openReview("learning", 10)));
-  } else box.append(el("p", "revdone", myWords.length ? "No words here." : "Add words to start."));
+  } else box.append(el("p", "revdone", listWords().length ? "No words here." : curList === "mine" ? "Add words to start." : "No words here."));
   // What each mode does: shown the first time you pick it, then How it works keeps it.
   const NOTES = { write: "Write: hear it, see the meaning, write it.", listen: "Listen: hear it, type pinyin and meaning.", mix: "Mix: Read, Write and Listen, shuffled." };
   const seen = store.get("radical-hownote", {});
@@ -4100,7 +4123,10 @@ function showBackupNote() {
 }
 function renderWords() {
   showBackupNote();
+  if (!allLists().some(x => x[0] === curList)) { curList = "mine"; store.set("radical-list", "mine"); }
   const sets = {}, sizes = {}; CATS.forEach(([k]) => { sets[k] = pool(k); sizes[k] = sets[k].length; });
+  const up = curList === "top" ? topUpcoming() : [];  // Top words not studied yet: listed, joining when first studied
+  if (up.length) { sizes.new += up.length; sizes.all += up.length; }
   // Practice opens on Today while it has cards, and on All once it's done (so the list below isn't empty). A
   // category you tap stays until you leave the tab or finish a session.
   if (!catPicked) revCat = sizes.today ? "today" : "all";
@@ -4111,19 +4137,21 @@ function renderWords() {
   renderCommon();
   const shown = myWords.map((w, i) => [w, i]).filter(([w]) => inSet.has(w))
     .sort((a, b) => (b[0].added || "").localeCompare(a[0].added || "") || a[1] - b[1]).map(x => x[0]);
-  list.hidden = !shown.length;
-  $("listHead").textContent = myWords.length ? `${CATS.find(c => c[0] === revCat)[1]} · ${shown.length} word${shown.length === 1 ? "" : "s"}` : "";
+  const ups = revCat === "new" || revCat === "all" ? up : [], nList = shown.length + ups.length;
+  list.hidden = !nList;
+  $("listHead").textContent = myWords.length ? `${CATS.find(c => c[0] === revCat)[1]} · ${num(nList)} word${nList === 1 ? "" : "s"}` : "";
   shown.forEach(w => {
     const st = wStatus(w), on = picks.has(w), dot = st === "known" ? "known" : "learning";
     const r = el("div", "wrow" + (on ? " sel" : ""));
     r.innerHTML = `<button type="button" class="wsel" role="checkbox" aria-checked="${on}" aria-label="Select ${esc(w.word)}"><i></i></button>`
       + `<button type="button" class="wmain"><span class="wz" lang="zh">${slotHTML(w.word)}</span><span class="wm">${esc(wMeaning(w))}</span></button>`
-      + `<button type="button" class="wdot" aria-label="Status: ${STATUS_NAME[st]}. Change">${w.common ? '<span class="newtag settag">top</span>' : w.set ? `<span class="newtag settag">${esc(w.set.toLowerCase())}</span>` : ""}${st === "new" ? '<span class="newtag">new</span>' : ""}<i class="dot ${dot}"></i></button>`;
+      + `<button type="button" class="wdot" aria-label="Status: ${STATUS_NAME[st]}. Change">${st === "new" ? '<span class="newtag">new</span>' : ""}<i class="dot ${dot}"></i></button>`;
     r.querySelector(".wsel").onclick = () => { on ? picks.delete(w) : picks.add(w); renderWords(); };
     r.querySelector(".wmain").onclick = () => openWord(w.word, { context: w.context });
     r.querySelector(".wdot").onclick = e => statusMenu(e.currentTarget, [w]);
     list.append(r);
   });
+  upcomingRows(list, ups);
   for (const w of picks) if (!myWords.includes(w)) picks.delete(w);
   // Review: look through these words card by card. With words checked, just those (in list order).
   const lb = $("lookBtn"), sel = shown.filter(w => picks.has(w)), set = picks.size ? (sel.length ? sel : [...picks]) : shown;
@@ -4132,20 +4160,20 @@ function renderWords() {
   renderSelBar(shown);
 }
 
-// ---- Word Sets (v39): ready-made lists to start from. Top 100, 500, 1,000 and 2,000 are the most common characters
-// (lists/common.tsv, from wordfreq; see CREDITS.md). They join your own words rather than living apart: each day, while
-// there's room in the day's new words after your own new words, the next few characters are added (w.common = their
-// rank) and get their cards then, so they come up in Today like anything else and never arrive as a pile. A level
-// (first start) starts further down the list (radical-common {size, from}). A character you already have (either
-// script) or removed is skipped. The sizes are by mainland frequency; a Taiwan list waits for the Mainland/Taiwan
-// setting. Themed sets (and ＋, any theme you type) come from the wordset action: about 24 words, kept only if the
-// dictionary knows them, added at once (w.set = the theme) with their cards queued.
+// ---- Word Sets: ready-made lists to start from, each its own list on Practice (see Lists). Top 100, 500, 1,000 and
+// 2,000 come from lists/common.tsv (the most common characters by wordfreq, each with a common word; see CREDITS.md).
+// v41: a Top list teaches those WORDS (真的 for 的, 管理 for 管; a word two characters share comes once), and shows all of
+// them at once. A word joins your words (w.common = its rank) only when it's first studied: the day's new words in
+// Today, or Start on New or All. A level (first start) starts further down (radical-common {size, from}); the earlier
+// words are still in the list, after the rest. Words you have (either script) or removed are skipped. One-character
+// words from before v41 stay. Themed sets (and ＋, any theme you type) come from the wordset action: about 24 words,
+// kept only if the dictionary knows them, added at once (w.set = the theme); their cards are made when first studied.
 const COMMON_SIZES = [100, 500, 1000, 2000];
 const THEMES = ["Food", "Travel", "Family", "Work", "Feelings", "Time"];
-let commonList = null;
+let commonList = null, commonRows = null;
 function loadCommon() {
   if (!commonList) commonList = fetch("lists/common.tsv").then(r => r.ok ? r.text() : "").catch(() => "")
-    .then(t => t.split("\n").filter(l => l && !l.startsWith("#")).map(l => { const [c, word] = l.trim().split("\t"); return { c, word }; }).filter(x => x.c));
+    .then(t => commonRows = t.split("\n").filter(l => l && !l.startsWith("#")).map((l, i) => { const [c, word] = l.trim().split("\t"); return { c, word: word || c, rank: i + 1 }; }).filter(x => x.c));
   return commonList;
 }
 function commonSize() {
@@ -4154,75 +4182,86 @@ function commonSize() {
   return top ? COMMON_SIZES.find(n => n >= top) || 2000 : 0;
 }
 const commonFrom = () => Math.max(1, (store.get("radical-common", null) || {}).from || 1);
-const commonHave = () => {
-  const have = new Set(myWords.filter(w => [...w.word].length === 1).map(w => toSimp(w.word)));
-  Object.keys(deleted || {}).forEach(x => { if ([...x].length === 1) have.add(toSimp(x)); });
-  return have;
-};
+// The Top words not studied yet, in the order they'll come: from your level down, then the earlier ones.
+function topUpcoming() {
+  const size = commonSize(); if (!size) return [];
+  if (!commonRows) { loadCommon().then(() => { if (!$("wordsScreen").hidden) renderWords(); }); return []; }
+  const have = new Set(myWords.map(w => toSimp(w.word))), ranks = new Set(myWords.map(w => w.common).filter(Boolean));
+  Object.keys(deleted || {}).forEach(x => have.add(toSimp(x)));
+  const rows = commonRows.slice(0, size), from = Math.min(commonFrom(), rows.length) - 1, out = [], seen = new Set();
+  for (const r of [...rows.slice(from), ...rows.slice(0, from)]) {
+    const s = toSimp(r.word);
+    if (have.has(s) || ranks.has(r.rank) || seen.has(s)) continue;
+    seen.add(s); out.push(r);
+  }
+  return out;
+}
+// Bring the next n Top words into your words (no card yet: it's made when the word comes up).
+async function fillTop(n) {
+  if (n <= 0) return 0;
+  await loadCommon();
+  const add = topUpcoming().slice(0, n).map(r => [conv(r.word), r.rank]); if (!add.length) return 0;
+  await ensure(add.map(x => x[0]).join(""));
+  add.forEach(([word, rank]) => {
+    const d = lookup(word) || lookup(toSimp(word)), e = { word, added: localDay(), common: rank };
+    if (d) { e.pinyin = d[2] || d[1]; e.meaning = String(d[3] || "").split(/[\/;]/).map(x => x.trim()).filter(Boolean).slice(0, 2).join("; "); }
+    if (!e.pinyin && [...word].every(c => cache[c])) e.pinyin = [...word].map(c => cache[c].p[0]).join(" ");
+    if (!e.meaning && cache[word]) e.meaning = cache[word].d;
+    myWords.push(e);
+  });
+  saveWords();
+  return add.length;
+}
+// While Top is the list you're on, Today gets the day's new words from it.
 let feeding = null;
 function feedCommon() {
-  if (feeding) return feeding;
+  if (feeding || curList !== "top" || !commonSize()) return feeding;
   feeding = (async () => {
-    const size = commonSize(); if (!size) return 0;
-    const k = KEYS[goal[0]], fresh = myWords.filter(w => !w.skip && !w[k]).length;
-    let need = Math.max(0, newLeft(k)) - fresh; if (need <= 0) return 0;
-    const list = (await loadCommon()).slice(0, size), have = commonHave(), add = [];
-    for (let i = commonFrom() - 1; i < list.length && add.length < need; i++) if (!have.has(list[i].c)) add.push([conv(list[i].c), i + 1]);
-    if (!add.length) return 0;
-    await ensure(add.map(x => x[0]).join(""));
-    add.forEach(([word, rank]) => {
-      const d = lookup(word) || lookup(toSimp(word)), e = { word, added: localDay(), common: rank };
-      if (d) { e.pinyin = d[2] || d[1]; e.meaning = String(d[3] || "").split(/[\/;]/).map(x => x.trim()).filter(Boolean).slice(0, 2).join("; "); }
-      if (!e.pinyin && cache[word]) e.pinyin = cache[word].p[0];
-      if (!e.meaning && cache[word]) e.meaning = cache[word].d;
-      myWords.push(e);
-    });
-    saveWords(); myWords.filter(w => w.common && !w.card && !w[k]).forEach(queueCard); updateCounts();
-    return add.length;
+    const k = KEYS[goal[0]], fresh = listWords().filter(w => !w.skip && !w[k]).length;
+    const n = await fillTop(Math.max(0, newLeft(k)) - fresh);
+    if (n) updateCounts();
+    return n;
   })().finally(() => { feeding = null; });
   return feeding;
 }
 function startCommon(size, from = 1) {
   store.set("radical-common", { size, from });
-  feedCommon().then(() => renderWords());
-}
-// Characters of the chosen Top set still to come.
-async function commonToGo() {
-  const size = commonSize(); if (!size) return 0;
-  const list = (await loadCommon()).slice(commonFrom() - 1, size), have = commonHave();
-  return list.filter(x => !have.has(x.c)).length;
+  setList("top"); setTab("wordsScreen");
+  feedCommon(); loadCommon().then(() => renderWords());
 }
 const hasSet = t => myWords.some(w => w.set === t);
 // A themed set: ask for it, keep the words the dictionary knows (in your script), skip ones you have or removed.
+// Already there: just switch to it.
 async function addThemeSet(theme) {
+  if (hasSet(theme)) { setList(theme); setTab("wordsScreen"); return; }
   const st = $("addStatus"); st.textContent = `Making ${theme}…`;
   try {
-    const { words } = await claude({ action: "wordset", theme });
+    const { words } = await claude({ action: "wordset", theme }, `start ${theme}`);
     const items = (words || []).map(x => ({ ...x, word: conv(String(x.word || "").trim()) })).filter(x => x.word && !findWord(x.word) && !deleted[x.word]);
     await ensure(items.map(x => x.word).join(""));
     const take = items.filter(x => lookup(x.word) || lookup(toSimp(x.word)));
     take.forEach(x => myWords.push({ word: x.word, pinyin: x.pinyin, meaning: x.meaning, added: localDay(), set: theme }));
-    saveWords(); take.forEach(w => queueCard(findWord(w.word)));
+    saveWords();
     record({ kind: "list", title: theme, words: take.map(x => x.word) });
-    st.textContent = take.length ? `Added ${take.length} word${take.length === 1 ? "" : "s"} from ${theme}.` : `Nothing new in ${theme}.`;
-    play("right"); updateCounts(); renderWords();
+    st.textContent = take.length ? "" : `Nothing new in ${theme}.`;
+    play("right"); if (take.length) setList(theme); setTab("wordsScreen"); renderWords();
   } catch (e) { st.textContent = e.message; }
 }
 // Choosing a set comes with signing in when you aren't: its cards need the account. A Top set still starts on Not now
 // (its words work without cards for now); a themed set needs the AI service, so it waits.
-function chooseSet(fn, needsAI, after) {
+function chooseSet(fn, needsAI, after, why) {
   const go = () => { fn(); if (after) after(); };
   if (online()) return go();
-  signInSheet({ then: go, skip: needsAI ? null : go });
+  signInSheet({ then: go, skip: needsAI ? null : go, why });
 }
 // The grid: every row full. Four Top sets, the six themes three to a row, then ＋ Make a set across.
 function setsGrid(close) {
   const g = el("div", "setgrid"), size = commonSize();
-  const pick = (fn, ai) => () => { if (close) close(); chooseSet(fn, ai); };
+  const pick = (fn, ai, why) => () => { if (close) close(); chooseSet(fn, ai, null, why); };
   const top = el("div", "setrow four");
-  COMMON_SIZES.forEach(n => { const b = btn("", "setchip top", pick(() => startCommon(n), false)); b.innerHTML = `<small>Top</small>${num(n)}`; b.setAttribute("aria-pressed", size === n); top.append(b); });
+  COMMON_SIZES.forEach(n => { const b = btn("", "setchip top", pick(() => startCommon(n), false, `start Top ${num(n)}`)); b.innerHTML = `<small>Top</small>${num(n)}`; b.setAttribute("aria-pressed", size === n); top.append(b); });
   const th = el("div", "setrow three");
-  THEMES.forEach(t => { const b = btn(t, "setchip", pick(() => addThemeSet(t), true)); b.setAttribute("aria-pressed", hasSet(t)); th.append(b); });
+  THEMES.forEach(t => { const b = btn(t, "setchip", hasSet(t) ? () => { if (close) close(); addThemeSet(t); } : pick(() => addThemeSet(t), true, `start ${t}`)); b.setAttribute("aria-pressed", hasSet(t)); th.append(b); });
   g.append(top, th, btn("＋ Make a set", "setchip wide", () => { if (close) close(); makeSet(); }));
   return g;
 }
@@ -4236,21 +4275,27 @@ function setsPanel() {
 function makeSet() {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard signcard"), inp = el("input"), msg = el("p", "note");
   inp.type = "text"; inp.placeholder = "Restaurant words, my office…"; inp.maxLength = 60;
-  const go = btn("Make it", "btn wide", () => { const t = inp.value.trim(); if (!t) { msg.textContent = "Type a topic first."; return; } sheet.remove(); chooseSet(() => addThemeSet(t), true); });
+  const go = btn("Make it", "btn wide", () => { const t = inp.value.trim(); if (!t) { msg.textContent = "Type a topic first."; return; } sheet.remove(); chooseSet(() => addThemeSet(t), true, null, "make a set"); });
   inp.addEventListener("keydown", e => { if (e.key === "Enter") go.click(); });
   card.append(el("h3", "", "Make a set"), inp, go, msg, btn("Cancel", "btn ghost wide", () => sheet.remove()));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
   document.body.append(sheet); setTimeout(() => inp.focus(), 300);
 }
-// With words: one slim line under Add ("Word Sets ›", or the Top set and how many are still to come), opening a sheet.
+// Removing a list: the words you haven't studied go; the ones you have stay, in Mine.
+function removeList(L) {
+  myWords = myWords.filter(w => !(inList(w, L) && !practiced(w)));
+  myWords.forEach(w => { if (inList(w, L)) { delete w.common; delete w.set; } });
+  if (L === "top") store.set("radical-common", { size: 0 });
+  saveWords(); setList("mine"); renderWords();
+}
+// With words: one slim line under Add ("Word Sets ›" and the list you're on), opening a sheet.
 function openSets() {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard setsheet"), close = () => sheet.remove();
   card.append(el("h3", "", "Word Sets"), setsGrid(close));
-  if (commonSize()) {
-    const rm = btn(`Remove Top ${num(commonSize())}`, "btn ghost small", () => {
-      if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove the unstudied ones?"; return; }
-      myWords = myWords.filter(w => !(w.common && !practiced(w))); myWords.forEach(w => { if (w.common) delete w.common; });
-      store.set("radical-common", { size: 0 }); saveWords(); updateCounts(); renderWords(); close();
+  if (curList !== "mine") {
+    const rm = btn(`Remove ${listName()}`, "btn ghost small", () => {
+      if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove? Studied words stay"; return; }
+      close(); removeList(curList);
     });
     card.append(rm);
   }
@@ -4258,25 +4303,42 @@ function openSets() {
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
 }
-async function renderCommon() {
+function renderCommon() {
   const box = $("commonLine"); if (!box) return;
-  const my = renderCommon.n = (renderCommon.n || 0) + 1;  // two quick redraws: only the last one draws
   if (!myWords.length) { box.innerHTML = ""; return; }  // the Word Sets card is up top
-  const size = commonSize(), b = btn("", "cmhead", openSets), left = size ? await commonToGo() : 0;
-  if (my !== renderCommon.n) return;
-  b.innerHTML = `<span>Word Sets</span><span class="cmnow">${size ? `Top ${num(size)} · ${num(left)} to go` : ""}</span><i class="cmchev"></i>`;
+  const b = btn("", "cmhead", openSets);
+  b.innerHTML = `<span>Word Sets</span><span class="cmnow">${curList !== "mine" ? esc(listName()) : ""}</span><i class="cmchev"></i>`;
   box.replaceChildren(b);
 }
-// First start, after Learning focus: one tap to a list at your level (where in the Top list you start), or a topic.
+// The Top words not studied yet, under the ones you have: a few at a time (a list of 2,000 opens at once), each
+// filled in as it scrolls into view. Tap one to open it.
+let upShown = 60;
+function upcomingRows(list, ups) {
+  if (!ups.length) return;
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return; io.unobserve(e.target);
+    const r = e.target, word = r.dataset.w;
+    ensure(word).then(() => { const d = lookup(word) || lookup(toSimp(word)); if (d) r.querySelector(".wm").textContent = String(d[3] || "").split(/[\/;]/)[0]; });
+  }), { rootMargin: "300px" });
+  ups.slice(0, upShown).forEach(x => {
+    const word = conv(x.word), r = el("div", "wrow up");
+    r.dataset.w = word;
+    r.innerHTML = `<span class="wsel"></span><button type="button" class="wmain"><span class="wz" lang="zh">${esc(word)}</span><span class="wm"></span></button><span class="wdot"><span class="newtag">new</span></span>`;
+    r.querySelector(".wmain").onclick = () => openWord(word);
+    list.append(r); io.observe(r);
+  });
+  if (ups.length > upShown) list.append(btn(`Show more (${num(ups.length - upShown)})`, "btn ghost more", () => { upShown += 300; renderWords(); }));
+}
+// First start, after Learning focus: one tap to a Top list at your level (where in it you start), or a topic.
 function offerCommon() {
   if (myWords.length || store.get("radical-common-asked", false) || commonSize()) return;
   if (document.querySelector(".sheet")) { setTimeout(offerCommon, 1500); return; }
   store.set("radical-common-asked", true);
   const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard");
-  const lv = (label, size, from) => btn(label, "btn wide", () => { sheet.remove(); setTab("wordsScreen"); chooseSet(() => startCommon(size, from), false); });
+  const lv = (label, size, from) => { const b = btn("", "btn wide lvbtn", () => { sheet.remove(); chooseSet(() => startCommon(size, from), false, null, `start Top ${num(size)}`); }); b.innerHTML = `${label} <small>· Top ${num(size)}</small>`; return b; };
   const topic = btn("or pick a topic ›", "linkbtn", () => { sheet.remove(); setTab("wordsScreen"); });
-  card.append(el("h3", "", "Word Sets"), el("p", "", "Start with a curated list at your level."),
-    lv("New", 100, 1), lv("Some", 1000, 300), lv("Comfortable", 2000, 1000), topic, btn("Not now", "btn ghost wide", () => sheet.remove()));
+  card.append(el("h3", "", "How much Chinese do you know?"),
+    lv("Just starting", 100, 1), lv("A few hundred words", 1000, 300), lv("1,000+ words", 2000, 1000), topic, btn("Not now", "btn ghost wide", () => sheet.remove()));
   sheet.append(card); document.body.append(sheet);
 }
 // A character's most common word, for the answer side of a one-character card.
@@ -4873,7 +4935,7 @@ function revBar(label, flipLabel, flipIcon, onFlip, actions, cls, sub) {
   if (actions.length) { const row = el("div", cls); actions.forEach(a => row.append(a)); bar.append(row); }  // no actions: a slim bar
 }
 function showFront() {
-  if (rq && rq[0]) ensureCard(rq[0]).catch(() => {});  // have the full card ready by the time the answer shows
+  if (rq) rq.slice(0, 2).forEach(w => ensureCard(w).catch(() => {}));  // have the full card ready by the time the answer shows (this one and the next)
   const box = $("revCard"), prog = $("revProg"); box.innerHTML = ""; box.classList.remove("practicing");
   $("revPrev").style.visibility = revHist.length ? "visible" : "hidden";  // keeps its space, so the card never jumps
   const sc = rScore || (rScore = newScore()), rep = n => `${n} repeat${n === 1 ? "" : "s"}`;
@@ -6136,7 +6198,7 @@ document.querySelectorAll("#dailySeg [data-t]").forEach(b => {
   }
   fetchDaily();  // the day's Explore chips, fetched once a day in the background
   myWords.filter(w => !w.card).forEach(queueCard);  // cards still missing (added offline, or a request failed)
-  feedCommon();  // the day's most common characters, if a set is on
+  feedCommon();  // the day's new Top words, when Top is the list you're on
   setTimeout(joinPending, 2500);  // opened a friend's link
   if (session) syncNow(true).then(() => { myWords.filter(w => !w.card).forEach(queueCard); updateRing(); });  // pull what other phones changed
   if (document.fonts) document.fonts.ready.then(() => fitLegend());
