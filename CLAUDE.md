@@ -116,7 +116,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 ## Next batch list
 
-Empty: the Oct 22 list (9 items) shipped as v39.
+Empty: the Oct 22 list (9 items) shipped as v39; v40 (Oct 23) was a hotfix for the blank Read tab.
 
 ## Next batches (re-planned Oct 18, 2026: TestFlight first)
 

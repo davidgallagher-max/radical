@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v40
+
+- Hotfix: the Read tab was blank since v39. The tour's styling hid the text box and reading area.
+
 ## v39
 
 - Practice: the This week box is gone. "12 today" sits by the Flash cards title, in the theme's second color; tap it for Track. The daily target is gone too.
