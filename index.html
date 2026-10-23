@@ -1413,7 +1413,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v40";
+const APP_VERSION = "v41";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3685,7 +3685,7 @@ const inList = (w, L = curList) => L === "mine" ? !w.common && !w.set : L === "t
 const listWords = () => myWords.filter(w => inList(w));
 const lazyCard = w => !!(w.common || w.set) && !practiced(w);
 function allLists() {
-  const out = [["mine", "Mine"]], size = commonSize();
+  const out = curList === "mine" || myWords.some(w => inList(w, "mine")) ? [["mine", "Mine"]] : [], size = commonSize();  // Mine shows once it has words
   if (size) out.push(["top", `Top ${num(size)}`]);
   [...new Set(myWords.filter(w => w.set).map(w => w.set))].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
   return out;
@@ -4151,7 +4151,7 @@ function showBackupNote() {
 }
 function renderWords() {
   showBackupNote();
-  if (!allLists().some(x => x[0] === curList)) { curList = "mine"; store.set("radical-list", "mine"); }
+  if (!allLists().some(x => x[0] === curList)) { curList = "mine"; store.set("radical-list", "mine"); }  // a removed set
   const sets = {}, sizes = {}; CATS.forEach(([k]) => { sets[k] = pool(k); sizes[k] = sets[k].length; });
   const up = curList === "top" ? topUpcoming() : [];  // Top words not studied yet: listed, joining when first studied
   if (up.length) { sizes.new += up.length; sizes.all += up.length; }

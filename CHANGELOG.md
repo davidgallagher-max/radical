@@ -2,6 +2,25 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v41
+
+- Practice has lists. Mine, Top 1,000, Travel and each Word Set you start get a pill at the top of Flash cards. Today, the counts, Start, the list below and the red number on 練 follow the list you picked. The others wait: nothing piles up on them.
+- The daily cap is shared across lists. Do 20 on Travel and the rest of the day has 10 left, wherever you switch.
+- Top lists teach words, not single characters: 管理 for 管, 國際 for 際. The whole list shows at once; a word joins your words when you first study it. Single characters from before stay.
+- Word Sets: a set's cards are made when you first study a word, not when the set is added. Tapping a set you have switches to it. Remove (in the Word Sets sheet) drops the words you haven't studied; studied ones move to Mine.
+- First start asks "How much Chinese do you know?": Just starting (Top 100), A few hundred words (Top 1,000, starting at #300), 1,000+ words (Top 2,000, starting at #1,000), or pick a topic.
+- Progress is counted in words everywhere. Track's boxes sit under one Words heading: recognized, mastered, read. Familiar is now Recognized and Learned is Mastered. The Characters bar is gone; the Words bar's labels are colored like the bar. Milestones, the splash line, the chart, the yearly table and Friends count words too. Words read starts counting from this version.
+- Flash cards: a 🗑 on every card (tap, then Remove?) and a pencil beside the pinyin for Edit. Remove and I know this are out of the edit sheet, and it no longer pops the keyboard.
+- I know it on a new card marks it Known (back in 2 to 6 months), shown as Known on the rating button. No more days under the rating buttons.
+- The score rolls as the bloom fades, on the answer side.
+- "2 done today" instead of "2 today".
+- Add takes English. One word gives a list of Chinese words with their meanings, most common first; a few words in context ("patience with kids") gets the best fit. The Read box turns an English passage into Chinese to read, and one English word gives the same list.
+- 🗑 under the reading text clears it (it stays in History).
+- How it works plays each animation once, with ↻ to replay.
+- Track's calendar starts on Sunday.
+- The sign-in sheet says why it opened ("Sign in to use Explain") and what you get. Signed out, the first 10 uses of Explain, English and the like work without signing in.
+- Fixed: the Travel set said "The answer wasn't readable". The Word Sets line could show twice.
+
 ## v40
 
 - Hotfix: the Read tab was blank since v39. The tour's styling hid the text box and reading area.
