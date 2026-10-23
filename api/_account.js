@@ -9,7 +9,7 @@
 //   usage/<id>/<day>.json           every AI call that day: action, model, tokens, estimated cost
 //   users/<id>/profile.json         your friend code and the name friends see
 //   users/<id>/friends.json         the ids of your friends (both sides always list each other)
-//   users/<id>/public.json          what friends see: name, characters by stage, this week, the chart (written at sync)
+//   users/<id>/public.json          what friends see: name, words by stage, this week, the chart (written at sync)
 //   codes/<code>.json               a friend code -> its owner's id
 
 const env = (...names) => { for (const n of names) if (process.env[n]) return process.env[n]; return ""; };
@@ -226,9 +226,10 @@ async function profileOf(user) {
 async function writePublic(user, summary) {
   const p = await getJSON(`users/${user.id}/profile.json`); if (!p || !p.code) return;  // only once friends are in use
   const n = x => Math.max(0, Math.round(+x || 0));
-  const chars = summary.chars || {}, week = summary.week || {};
-  const series = (Array.isArray(summary.series) ? summary.series : []).slice(-60).map(x => ({ day: String(x.day || "").slice(0, 10), f: n(x.f), l: n(x.l) }));
-  await putJSON(`users/${user.id}/public.json`, { name: p.name, code: p.code, chars: { seen: n(chars.seen), familiar: n(chars.familiar), learned: n(chars.learned) },
+  // v41 counts words (summary.words); an older page still sends characters (summary.chars), which friends no longer see
+  const words = summary.words, week = summary.week || {};
+  const series = words && Array.isArray(summary.series) ? summary.series.slice(-60).map(x => ({ day: String(x.day || "").slice(0, 10), f: n(x.f), l: n(x.l) })) : [];
+  await putJSON(`users/${user.id}/public.json`, { name: p.name, code: p.code, words: words ? { seen: n(words.seen), familiar: n(words.familiar), learned: n(words.learned) } : null,
     week: { days: Math.min(7, n(week.days)), cards: n(week.cards), read: n(week.read) }, streak: n(summary.streak), series, updated: Date.now() });
 }
 async function friendIds(id) { const f = await getJSON(`users/${id}/friends.json`); return Array.isArray(f && f.ids) ? f.ids : []; }

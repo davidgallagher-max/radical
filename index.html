@@ -622,6 +622,8 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .trbig{display:block;font-family:var(--font-brand);font-size:1.7rem;font-weight:800;line-height:1.15;color:var(--fg);font-variant-numeric:tabular-nums}
 .trs{margin:0;font-size:.92rem;color:var(--muted)}
 .trq{opacity:.8}
+.trwords{margin:2px 2px -6px}
+.sblabels span{font-weight:600;white-space:nowrap}.sl-new{color:var(--muted)}.sl-seen{color:color-mix(in srgb,var(--st-active) 40%,var(--muted))}.sl-learning{color:var(--st-active)}.sl-learned{color:var(--accent)}
 .trktop{grid-template-columns:minmax(0,1fr) auto;align-items:end}
 .trktop>div{display:grid;gap:2px}
 .tright{text-align:right}.tright b{font-size:1.05rem}.tright b.done{color:var(--accent)}
@@ -1507,6 +1509,7 @@ function countLine(line) {
   const r = readToday(), k = lineKey(line._text || ""); if (r.h.includes(k)) return;
   r.h.push(k); if (r.h.length > 5000) r.h.shift(); store.set("radical-read-lines", r);
   logDay("r", hanIn(line._text));
+  const t = line._text || ""; logDay("w", (line._spans || []).filter(x => hanIn(t.slice(x.start, x.end))).length);  // w: words read (v41)
 }
 let lineSeen = null, readBank = 0;
 setInterval(() => {
@@ -3229,20 +3232,17 @@ function logDay(field, n = 1) {
 }
 // ---- this week, from the progress record: the last 7 days of the app's own calendar (today included).
 // A day counts as used when anything happened: cards, reading or words added.
-const dayUsed = v => !!(v && (v.c || v.r || v.n));
+const dayUsed = v => !!(v && (v.c || v.r || v.w || v.n));
 function weekStats() {
   const d = store.get("radical-days", {}), days = [];
   for (let i = 6; i >= 0; i--) days.push(localDay(Date.now() - i * DAY));
   const sum = f => days.reduce((a, k) => a + ((d[k] || {})[f] || 0), 0);
   const studied = days.map(k => dayUsed(d[k]));
   const total = Object.keys(learned).length, week = Object.values(learned).filter(v => days.includes(String(v))).length;
-  return { studied, n: studied.filter(Boolean).length, cards: sum("c"), read: sum("r"), added: sum("n"), back: sum("u"), learned: total, learnedWeek: week, today: (d[localDay()] || {}).c || 0 };
+  return { studied, n: studied.filter(Boolean).length, cards: sum("c"), read: sum("w"), added: sum("n"), back: sum("u"), learned: total, learnedWeek: week, today: (d[localDay()] || {}).c || 0 };
 }
 const num = n => n.toLocaleString("en-US");
 const started = w => !!w.skip || ["srs", "wsrs", "lsrs"].some(k => w[k] && (w[k].reps || w[k].ivl || w[k].lapses));
-// Characters learned: every distinct character in your learned words (marked Known, or three weeks between reviews;
-// see learn()). Up to a day: only words learned by then.
-function charsLearned(upTo) { const set = new Set(); Object.entries(learned).forEach(([word, day]) => { if (!upTo || String(day) <= upTo) [...word].forEach(c => { if (isHan(c)) set.add(c); }); }); return set.size; }
 // ---- streak: days used in a row, with rest days. Any 14 days in a row may have up to 3 days off; a 4th day off in
 // the same 14 ends the streak. Rest days don't add to the count. Today never breaks it (the day isn't over yet).
 const REST_DAYS = 3, REST_WINDOW = 14;
@@ -3266,10 +3266,10 @@ function streakStats() {
   let used = 0; for (let i = 1; i < REST_WINDOW; i++) { const day = localDay(Date.now() - i * DAY); if (day >= first && !dayUsed(d[day])) used++; }
   return { now, best, rest: Math.max(0, REST_DAYS - used) };
 }
-// The headline numbers, for the opening screen: streak, characters learned, days this week.
+// The headline numbers, for the opening screen: streak, words recognized, days this week.
 function headline() {
-  const s = streakStats(), w = weekStats(), k = charStages().familiar.size;
-  return [s.now > 1 ? `${s.now}-day streak` : "", k ? `${num(k)} familiar characters` : "", w.n ? `${w.n} day${w.n === 1 ? "" : "s"} this week` : ""].filter(Boolean);
+  const s = streakStats(), w = weekStats(), k = wordStages().familiar.size;
+  return [s.now > 1 ? `${s.now}-day streak` : "", k ? `${num(k)} word${k === 1 ? "" : "s"} recognized` : "", w.n ? `${w.n} day${w.n === 1 ? "" : "s"} this week` : ""].filter(Boolean);
 }
 // Cards done today, beside the Flash cards title on Practice (v39: the This week card is gone; Track has the rest).
 function todayNum() {
@@ -3282,18 +3282,17 @@ function updateRing() {
   if (!$("trackScreen").hidden) renderTrack();
 }
 // ---- Track boxes: three numbers you choose (Settings, Track boxes, or touch and hold a box on Track). Each entry:
-// the box's name, its short form, and whether tapping it lists what's in it.
+// the box's name (in the picker), the one word under its number, whether tapping it lists what's in it, and whether
+// it counts words (three word boxes share one "Words" heading). Everything counts words, never characters (v41).
 const TILES = {
-  seen: ["Characters seen", n => `${num(n)} seen`, true], familiar: ["Characters familiar", n => `${num(n)} familiar`, true],
-  learned: ["Characters learned", n => `${num(n)} learned`, true], read: ["Characters read", n => `${num(n)} characters read`],
-  words: ["Words learned", n => `${num(n)} word${n === 1 ? "" : "s"} learned`, true], cards: ["Cards reviewed", n => `${num(n)} card${n === 1 ? "" : "s"}`],
-  days: ["Days practiced", n => `${num(n)} day${n === 1 ? "" : "s"} practiced`] };
+  familiar: ["Recognized", "recognized", true, true], learned: ["Mastered", "mastered", true, true], read: ["Read", "read", false, true],
+  seen: ["Seen", "seen", true, true], cards: ["Cards reviewed", "cards", false], days: ["Days practiced", "days"] };
 const TILES0 = ["familiar", "learned", "read"];
-function trackTiles() { const t = store.get("radical-tiles", TILES0); return Array.isArray(t) && t.length === 3 && t.every(k => TILES[k]) ? t : TILES0; }
+function trackTiles() { let t = store.get("radical-tiles", TILES0); if (Array.isArray(t)) t = t.map(k => k === "words" ? "learned" : k); return Array.isArray(t) && t.length === 3 && t.every(k => TILES[k]) && new Set(t).size === 3 ? t : TILES0; }
 function setTile(i, k) { const t = [...trackTiles()]; t[i] = k; store.set("radical-tiles", t); paintTileSel(); updateRing(); }
-function tileValue(k, st = charStages()) {
+function tileValue(k, st = wordStages()) {
   const d = store.get("radical-days", {}), sum = f => Object.values(d).reduce((a, v) => a + ((v || {})[f] || 0), 0);
-  return { seen: st.seen.size, familiar: st.familiar.size, learned: st.learned.size, read: sum("r"), words: Object.keys(learned).length, cards: sum("c"), days: Object.values(d).filter(dayUsed).length }[k];
+  return { seen: st.seen.size, familiar: st.familiar.size, learned: st.learned.size, read: sum("w"), cards: sum("c"), days: Object.values(d).filter(dayUsed).length }[k];
 }
 // A tap and a touch and hold do different things on the same box.
 function holdOrTap(node, onHold, onTap) {
@@ -3318,13 +3317,13 @@ function pickTile(i) {
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
   document.body.append(sheet);
 }
-// What's in a box, to look at: characters (newest first) or learned words, drawn as they are everywhere else. Drawn as
-// they scroll into view, so a box of 2,000 opens at once.
+// What's in a box, to look at: its words (newest first), drawn as they are everywhere else. Drawn as they scroll into
+// view, so a box of 2,000 opens at once.
 async function showTileList(k, st) {
-  const items = k === "words" ? Object.entries(learned).sort((a, b) => String(b[1]).localeCompare(String(a[1]))).map(x => x[0]) : newestFirst(st[k]);
+  const items = newestFirst(st[k]);
   const sheet = el("div", "sheet tilelist"), card = el("div", "sheetcard");
   const head = el("div", "tlhead"); head.append(el("h3", "", `${TILES[k][0]} · ${num(items.length)}`), btn("Done", "btn ghost small", () => sheet.remove()));
-  const grid = el("div", k === "words" ? "tlwords" : "tlchars");
+  const grid = el("div", "tlwords");
   card.append(head, grid);
   if (!items.length) grid.append(el("p", "note", "None yet."));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
@@ -3370,62 +3369,57 @@ function renderTrack() {
     const key = `${trackMonth.y}-${String(trackMonth.m + 1).padStart(2, "0")}-${String(k).padStart(2, "0")}`, v = d[key];
     const cls = key > today ? "future" : dayUsed(v) ? "on" : firstUse && key >= firstUse && key < today ? "off" : "";
     if (dayUsed(v)) usedMonth++;
-    const c = el("span", `calday ${cls}${key === today ? " today" : ""}`, String(k)); c.title = key + (v ? ` · ${v.c || 0} cards · ${v.r || 0} characters read` : ""); grid.append(c);
+    const c = el("span", `calday ${cls}${key === today ? " today" : ""}`, String(k)); c.title = key + (v ? ` · ${v.c || 0} cards · ${v.w || 0} words read` : ""); grid.append(c);
   }
   cal.append(head, grid, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<i class="kd on"></i> studied <i class="kd off"></i> rest day`));
   box.append(cal);
-  // your three boxes (tap: what's in it; touch and hold: change it), then the characters by stage
-  const st = charStages(), tiles = el("div", "trtiles");
-  trackTiles().forEach((k, i) => {
-    const t = el("div", "trk trtile"); t.innerHTML = `<span class="trl">${TILES[k][0]}</span><b class="trbig">${num(tileValue(k, st))}</b>`;
+  // your three boxes (tap: what's in it; touch and hold: change it): a number and one word each, under "Words" when all
+  // three count words
+  const st = wordStages(), tiles = el("div", "trtiles"), tk = trackTiles();
+  if (tk.every(k => TILES[k][3])) box.append(el("span", "trl trwords", "Words"));
+  tk.forEach((k, i) => {
+    const t = el("div", "trk trtile"); t.innerHTML = `<b class="trbig">${num(tileValue(k, st))}</b><span class="trl">${TILES[k][1]}</span>`;
     if (TILES[k][2]) t.classList.add("tapme");
     holdOrTap(t, () => pickTile(i), () => { if (TILES[k][2]) showTileList(k, st); });
     tiles.append(t);
   });
   box.append(tiles);
   if (!store.get("radical-tile-tip", false)) { store.set("radical-tile-tip", true); box.append(el("p", "trs trtip", "Touch and hold a box to change it.")); }
-  const nS = st.seen.size, nF = st.familiar.size, nL = st.learned.size;
-  if (nS) {
-    const cs = el("div", "trk"), cp = n => (n / nS * 100).toFixed(1);
-    cs.innerHTML = `<span class="trl">Characters</span><div class="stagebar"><i style="width:${cp(nL)}%" class="sb-learned"></i><i style="width:${cp(nF - nL)}%" class="sb-learning"></i><i style="width:${cp(nS - nF)}%" class="sb-seen"></i></div>`
-      + `<p class="trs">${num(nS)} seen · ${num(nF)} familiar · ${num(nL)} learned <span class="trq">(familiar: right on 2 days · learned: retained after 3 weeks)</span></p>`;
-    box.append(cs);
-  }
-  // familiar and learned over time, once there's a month of it to show
+  // recognized and mastered words over time, once there's a month of it to show
   const since = store.get("radical-first-use", Date.now());
-  if (Date.now() - since >= 30 * DAY && nF >= 50) { const series = stageSeries(); if (series.length > 1) box.append(chartBox("Familiar and learned characters", lineChart(series) + `<p class="trs">Line: familiar · dashes: learned</p>`)); }
+  if (Date.now() - since >= 30 * DAY && st.familiar.size >= 50) { const series = stageSeries(); if (series.length > 1) box.append(chartBox("Words recognized and mastered", lineChart(series) + `<p class="trs">Line: recognized · dashes: mastered</p>`)); }
   // chart 2: the last 30 days
-  const last30 = []; for (let i = 29; i >= 0; i--) { const k = localDay(Date.now() - i * DAY); last30.push({ k, c: (d[k] || {}).c || 0, r: (d[k] || {}).r || 0 }); }
-  box.append(chartBox("Last 30 days", barChart(last30.map(x => x.c), "Cards") + barChart(last30.map(x => x.r), "Characters read")));
+  const last30 = []; for (let i = 29; i >= 0; i--) { const k = localDay(Date.now() - i * DAY); last30.push({ k, c: (d[k] || {}).c || 0, r: (d[k] || {}).w || 0 }); }
+  box.append(chartBox("Last 30 days", barChart(last30.map(x => x.c), "Cards") + barChart(last30.map(x => x.r), "Words read")));
   // words by stage
   const nLearned = myWords.filter(x => learned[x.word]).length, nFam = myWords.filter(x => familiar[x.word] && !learned[x.word]).length;
   const nNew = myWords.filter(x => !practiced(x) && !familiar[x.word] && !learned[x.word]).length, nSeen = myWords.length - nNew - nFam - nLearned;
   const ws = el("div", "trk");
   const pc = n => myWords.length ? (n / myWords.length * 100).toFixed(1) : 0;
   ws.innerHTML = `<span class="trl">Words</span><div class="stagebar"><i style="width:${pc(nNew)}%" class="sb-new"></i><i style="width:${pc(nSeen)}%" class="sb-seen"></i><i style="width:${pc(nFam)}%" class="sb-learning"></i><i style="width:${pc(nLearned)}%" class="sb-learned"></i></div>`
-    + `<p class="trs">${num(nNew)} new · ${num(nSeen)} seen · ${num(nFam)} familiar · ${num(nLearned)} learned</p>`;
+    + `<p class="trs sblabels"><span class="sl-new">${num(nNew)} new</span> · <span class="sl-seen">${num(nSeen)} seen</span> · <span class="sl-learning">${num(nFam)} recognized</span> · <span class="sl-learned">${num(nLearned)} mastered</span></p>`;
   box.append(ws);
   // years
   const y = new Date().getFullYear(), inYear = yr => all.filter(k => k.startsWith(yr + "-"));
-  const col = keys => [keys.filter(k => dayUsed(d[k])).length, tot(keys, "c"), tot(keys, "r"), tot(keys, "n")];
+  const col = keys => [keys.filter(k => dayUsed(d[k])).length, tot(keys, "c"), tot(keys, "w"), tot(keys, "n")];
   const lYear = yr => Object.values(learned).filter(v => String(v).startsWith(yr + "-")).length, fYear = yr => Object.values(familiar).filter(v => String(v).startsWith(yr + "-")).length;
   const A = col(inYear(y)), B = col(inYear(y - 1)), C = col(all), hasLast = B.some(Boolean) || lYear(y - 1);
   const cell = v => hasLast ? num(v) : "–";
-  const rows = [["Days used", 0], ["Cards reviewed", 1], ["Characters read", 2], ["Words added", 3]];
+  const rows = [["Days used", 0], ["Cards reviewed", 1], ["Words read", 2], ["Words added", 3]];
   const yt = el("div", "trk trkyears");
   yt.innerHTML = `<table><thead><tr><th></th><th>${y}</th><th>${y - 1}</th><th>All time</th></tr></thead><tbody>`
     + rows.map(([l, i]) => `<tr><th>${l}</th><td>${num(A[i])}</td><td>${cell(B[i])}</td><td>${num(C[i])}</td></tr>`).join("")
-    + `<tr><th>Words familiar</th><td>${num(fYear(y))}</td><td>${cell(fYear(y - 1))}</td><td>${num(Object.keys(familiar).length)}</td></tr>`
-    + `<tr><th>Words learned</th><td>${num(lYear(y))}</td><td>${cell(lYear(y - 1))}</td><td>${num(Object.keys(learned).length)}</td></tr></tbody></table>`;
+    + `<tr><th>Words recognized</th><td>${num(fYear(y))}</td><td>${cell(fYear(y - 1))}</td><td>${num(Object.keys(familiar).length)}</td></tr>`
+    + `<tr><th>Words mastered</th><td>${num(lYear(y))}</td><td>${cell(lYear(y - 1))}</td><td>${num(Object.keys(learned).length)}</td></tr></tbody></table>`;
   box.append(yt);
   if (session) box.append(friendsBox());  // signed out: no Friends box (it needs an account)
   checkMilestones();
 }
-// Familiar (v) and learned (v2) characters over time, rebuilt from the two dated lists.
+// Recognized (v) and mastered (v2) words over time, rebuilt from the two dated lists.
 function stageSeries() {
   const ev = m => Object.entries(m).map(([w, d]) => [String(d), w]).sort((a, b) => a[0].localeCompare(b[0]));
   const F = ev(familiar), L = ev(learned); if (!F.length && !L.length) return [];
-  const fs = new Set(), ls = new Set(), out = [], endDay = localDay(), add = (set, w) => [...w].forEach(c => { if (isHan(c)) set.add(c); });
+  const fs = new Set(), ls = new Set(), out = [], endDay = localDay(), add = (set, w) => set.add(w);
   let i = 0, j = 0;
   for (let t = new Date([F[0] && F[0][0], L[0] && L[0][0]].filter(Boolean).sort()[0] + "T12:00:00").getTime(); localDay(t) <= endDay && out.length < 800; t += DAY) {
     const day = localDay(t);
@@ -3433,13 +3427,6 @@ function stageSeries() {
     for (; j < L.length && L[j][0] <= day; j++) { add(ls, L[j][1]); add(fs, L[j][1]); }
     out.push({ day, v: fs.size, v2: ls.size });
   }
-  return out;
-}
-// Characters learned over time, rebuilt each time from the learned list (each word keeps the day it was learned).
-function learnedSeries() {
-  const days = Object.values(learned).map(String).sort(); if (!days.length) return [];
-  const out = [], endDay = localDay();
-  for (let t = new Date(days[0] + "T12:00:00").getTime(); localDay(t) <= endDay && out.length < 800; t += DAY) { const day = localDay(t); out.push({ day, v: charsLearned(day) }); }
   return out;
 }
 function chartBox(title, inner) { const b = el("div", "trk trchart"); b.innerHTML = `<span class="trl">${title}</span>${inner}`; return b; }
@@ -3450,7 +3437,7 @@ function lineChart(pts) {
   const area = `${path}L${X(n - 1).toFixed(1)},${H - 18}L${X(0).toFixed(1)},${H - 18}Z`;
   const two = pts[0].v2 != null, path2 = two ? pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.v2).toFixed(1)}`).join("") : "";
   const fmt = k => new Date(k + "T12:00:00").toLocaleString("en-US", { month: "short", day: "numeric" });
-  return `<svg class="tchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${two ? "Familiar and learned characters" : "Characters learned"} over time, now ${max}"><line x1="8" x2="${W - 8}" y1="${H - 18}" y2="${H - 18}" class="tgrid"/><path d="${area}" class="tarea"/><path d="${path}" class="tline"/>${two ? `<path d="${path2}" class="tline tline2"/>` : ""}<circle cx="${X(n - 1)}" cy="${Y(pts[n - 1].v)}" r="3.5" class="tdot"/>`
+  return `<svg class="tchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${two ? "Words recognized and mastered" : "Words"} over time, now ${max}"><line x1="8" x2="${W - 8}" y1="${H - 18}" y2="${H - 18}" class="tgrid"/><path d="${area}" class="tarea"/><path d="${path}" class="tline"/>${two ? `<path d="${path2}" class="tline tline2"/>` : ""}<circle cx="${X(n - 1)}" cy="${Y(pts[n - 1].v)}" r="3.5" class="tdot"/>`
     + `<text x="${X(n - 1)}" y="${Y(pts[n - 1].v) - 8}" text-anchor="end" class="tval">${num(pts[n - 1].v)}</text><text x="8" y="${H - 4}" class="tax">${fmt(pts[0].day)}</text><text x="${W - 8}" y="${H - 4}" text-anchor="end" class="tax">Today</text></svg>`;
 }
 function barChart(vals, label, target) {
@@ -3461,11 +3448,11 @@ function barChart(vals, label, target) {
 }
 // ---- friends, by code (no search, no public list; see api/_account.js). Each signed-in person has a short code; a
 // friend types it or opens your link (or scans its QR), and you're connected both ways until either removes it.
-// Friends see your chosen name, characters by stage, this week and the familiar/learned chart, sent at each sync.
+// Friends see your chosen name, words by stage, this week and the recognized/mastered chart, sent at each sync.
 // Never your words or mistakes. The last list is kept on the phone (radical-friends) so Track draws it at once.
 function friendSummary() {
-  const st = charStages(), w = weekStats(), all = stageSeries(), series = all.filter((x, i) => i === all.length - 1 || (all.length - 1 - i) % 7 === 0).slice(-60);
-  return { chars: { seen: st.seen.size, familiar: st.familiar.size, learned: st.learned.size }, week: { days: w.n, cards: w.cards, read: w.read }, streak: streakStats().now,
+  const st = wordStages(), w = weekStats(), all = stageSeries(), series = all.filter((x, i) => i === all.length - 1 || (all.length - 1 - i) % 7 === 0).slice(-60);
+  return { words: { seen: st.seen.size, familiar: st.familiar.size, learned: st.learned.size }, week: { days: w.n, cards: w.cards, read: w.read }, streak: streakStats().now,
     series: series.map(x => ({ day: x.day, f: x.v, l: x.v2 })) };
 }
 const friendLink = code => `${location.origin}/?friend=${code}`;
@@ -3488,7 +3475,7 @@ function paintFriends(b) {
   if (!f) { b.append(el("p", "trs frerr", "Getting your code…")); return; }
   f.friends.forEach(x => {
     const r = el("button", "frrow"); r.type = "button";
-    r.innerHTML = `<b>${esc(x.name)}</b><span class="trs">${num(x.chars.familiar)} familiar · ${num(x.chars.learned)} learned · ${x.week.days} of 7 days</span>`;
+    r.innerHTML = `<b>${esc(x.name)}</b><span class="trs">${x.words ? `${num(x.words.familiar)} recognized · ${num(x.words.learned)} mastered · ` : ""}${x.week.days} of 7 days</span>`;
     r.onclick = () => showFriend(x); b.append(r);
   });
   if (!f.friends.length) b.append(el("p", "trs", "Swap codes with a friend."));
@@ -3510,12 +3497,13 @@ function paintFriends(b) {
   b.append(add, msg, me, btns, el("span", "trs", "Your name for friends"), name, el("p", "trs trq", "Friends see your progress, never your words."));
 }
 function showFriend(x) {
-  const sheet = el("div", "sheet"), card = el("div", "sheetcard frcard"), c = x.chars, cp = n => c.seen ? (n / c.seen * 100).toFixed(1) : 0;
+  // Before v41 friends sent characters; until a friend's app updates, only their week shows.
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard frcard"), c = x.words, cp = n => c && c.seen ? (n / c.seen * 100).toFixed(1) : 0;
   card.innerHTML = `<h3>${esc(x.name)}</h3>`
-    + `<div class="trtiles"><div class="trk"><span class="trl">Familiar</span><b class="trbig">${num(c.familiar)}</b></div><div class="trk"><span class="trl">Learned</span><b class="trbig">${num(c.learned)}</b></div><div class="trk"><span class="trl">Seen</span><b class="trbig">${num(c.seen)}</b></div></div>`
-    + `<div class="stagebar"><i style="width:${cp(c.learned)}%" class="sb-learned"></i><i style="width:${cp(c.familiar - c.learned)}%" class="sb-learning"></i><i style="width:${cp(c.seen - c.familiar)}%" class="sb-seen"></i></div>`
-    + `<p class="trs">This week: ${x.week.days} of 7 days · ${num(x.week.cards)} cards · ${num(x.week.read)} characters read${x.streak > 1 ? ` · ${x.streak}-day streak` : ""}</p>`
-    + (x.series && x.series.length > 1 ? `<div class="trk trchart"><span class="trl">Familiar and learned characters</span>${lineChart(x.series.map(p => ({ day: p.day, v: p.f, v2: p.l })))}</div>` : "");
+    + (c ? `<span class="trl">Words</span><div class="trtiles"><div class="trk"><b class="trbig">${num(c.familiar)}</b><span class="trl">recognized</span></div><div class="trk"><b class="trbig">${num(c.learned)}</b><span class="trl">mastered</span></div><div class="trk"><b class="trbig">${num(c.seen)}</b><span class="trl">seen</span></div></div>`
+    + `<div class="stagebar"><i style="width:${cp(c.learned)}%" class="sb-learned"></i><i style="width:${cp(c.familiar - c.learned)}%" class="sb-learning"></i><i style="width:${cp(c.seen - c.familiar)}%" class="sb-seen"></i></div>` : "")
+    + `<p class="trs">This week: ${x.week.days} of 7 days · ${num(x.week.cards)} cards${c ? ` · ${num(x.week.read)} words read` : ""}${x.streak > 1 ? ` · ${x.streak}-day streak` : ""}</p>`
+    + (c && x.series && x.series.length > 1 ? `<div class="trk trchart"><span class="trl">Words recognized and mastered</span>${lineChart(x.series.map(p => ({ day: p.day, v: p.f, v2: p.l })))}</div>` : "");
   const rm = btn("Remove friend", "btn ghost small", async () => {
     if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove? Tap again"; return; }
     sheet.remove(); try { await friendsCall({ op: "remove", code: x.code }); } catch (e) {} if (!$("trackScreen").hidden) renderTrack();
@@ -3546,16 +3534,17 @@ async function joinPending() {
   catch (e) { if (!/own code/.test(e.message)) store.set("radical-friend-pending", code); }
 }
 
-// ---- milestones: a short moment at round numbers (characters learned, characters read, streak, cards). Each fires once;
-// anything already passed when this arrived is recorded quietly so nobody gets a pile of them at once.
-const MILESTONES = [["f", [50, 100, 250, 500, 1000, 2000], n => `${num(n)} familiar characters`], ["l", [50, 100, 250, 500, 1000, 1500, 2000, 3000], n => `${num(n)} characters learned`], ["r", [1000, 5000, 10000, 25000, 50000, 100000, 250000], n => `${num(n)} characters read`],
+// ---- milestones: a short moment at round numbers (words recognized, mastered and read, streak, cards). Each fires once;
+// anything already passed when this arrived is recorded quietly so nobody gets a pile of them at once. v41 counts words
+// (keys fw, lw, rw); the old character keys (f, l, r) stay in the record but no longer fire.
+const MILESTONES = [["fw", [25, 50, 100, 250, 500, 1000, 2000, 5000], n => `${num(n)} words recognized`], ["lw", [25, 50, 100, 250, 500, 1000, 2000, 5000], n => `${num(n)} words mastered`], ["rw", [1000, 5000, 10000, 25000, 50000, 100000, 250000], n => `${num(n)} words read`],
   ["s", [7, 14, 30, 60, 100, 200, 365], n => `A ${num(n)}-day streak`], ["c", [100, 500, 1000, 2500, 5000, 10000], n => `${num(n)} cards reviewed`]];
-function milestoneValues() { const d = store.get("radical-days", {}), keys = Object.keys(d); return { f: charStages().familiar.size, l: charsLearned(), r: keys.reduce((a, k) => a + (d[k].r || 0), 0), c: keys.reduce((a, k) => a + (d[k].c || 0), 0), s: streakStats().now }; }
+function milestoneValues() { const d = store.get("radical-days", {}), keys = Object.keys(d), st = wordStages(); return { fw: st.familiar.size, lw: st.learned.size, rw: keys.reduce((a, k) => a + (d[k].w || 0), 0), c: keys.reduce((a, k) => a + (d[k].c || 0), 0), s: streakStats().now }; }
 function checkMilestones(show = true) {
   const got = store.get("radical-milestones", null), v = milestoneValues(), fresh = [];
-  const have = got || {}, quietF = !have.f0;  // familiar arrived in v38: what's already passed is recorded quietly
-  MILESTONES.forEach(([key, steps, text]) => steps.forEach(n => { const id = key + n; if (v[key] >= n && !have[id]) { have[id] = localDay(); if (!(key === "f" && quietF)) fresh.push(text(n)); } }));
-  have.f0 = 1;
+  const have = got || {}, quietW = !have.w0;  // word milestones arrived in v41: what's already passed is recorded quietly
+  MILESTONES.forEach(([key, steps, text]) => steps.forEach(n => { const id = key + n; if (v[key] >= n && !have[id]) { have[id] = localDay(); if (!(quietW && key !== "s" && key !== "c")) fresh.push(text(n)); } }));
+  have.w0 = 1;
   store.set("radical-milestones", have);
   if (got && show && fresh.length) milestone(fresh[fresh.length - 1]);
 }
@@ -3595,10 +3584,10 @@ function gotRight(w) {
   else if (w.ok1 !== day) { familiar[w.word] = day; store.set("radical-familiar", familiar); }
 }
 const practiced = w => !!w.skip || ["srs", "wsrs", "lsrs"].some(k => w[k]);
-// Each stage's characters, with the day each one got there (the earliest word that brought it).
-function charStages() {
+// Each stage's words, with the day each one got there. Shown as Seen, Recognized (familiar) and Mastered (learned).
+function wordStages() {
   const seen = new Map(), fam = new Map(), lrn = new Map();
-  const put = (m, word, day) => { day = String(day || ""); [...word].forEach(c => { if (isHan(c) && (!m.has(c) || day < m.get(c))) m.set(c, day); }); };
+  const put = (m, word, day) => { day = String(day || ""); if (!m.has(word) || day < m.get(word)) m.set(word, day); };
   Object.entries(learned).forEach(([word, day]) => { put(lrn, word, day); put(fam, word, day); put(seen, word, day); });
   Object.entries(familiar).forEach(([word, day]) => { put(fam, word, day); put(seen, word, day); });
   myWords.forEach(w => { if (practiced(w)) put(seen, w.word, w.ok1 || w.added); });
@@ -4909,7 +4898,7 @@ function showFront() {
     const gained = Object.keys(learned).length - (sc.learned0 || 0), left = todayList(goal).length, next = todayList(goal, midnight() + DAY + 6e4).length;
     fin.append(el("p", "donescore", `${rDone} card${rDone === 1 ? "" : "s"} · ${scoreHTML(sc)}${sc.best > 1 ? ` · best run ${sc.best}` : ""}`));
     fin.append(el("p", "note", `<span lang="zh">${conv("對")}</span> right · <span lang="zh">${conv("半")}</span> half · <span lang="zh">${conv("錯")}</span> wrong`));
-    fin.append(el("p", "finnext", [gained > 0 ? `+${gained} learned` : "", left ? `${left} left today` : "", next ? `Tomorrow: about ${next} card${next === 1 ? "" : "s"}` : "Nothing due tomorrow"].filter(Boolean).join(" · ")));
+    fin.append(el("p", "finnext", [gained > 0 ? `+${gained} mastered` : "", left ? `${left} left today` : "", next ? `Tomorrow: about ${next} card${next === 1 ? "" : "s"}` : "Nothing due tomorrow"].filter(Boolean).join(" · ")));
     const acts = el("div", "finacts");
     const missed = sc.mw.filter(x => myWords.includes(x));
     // Another N: the same kind of set again, if there's anything left in it (not after a hand-picked set).
@@ -5560,7 +5549,7 @@ function setSums() {
     sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
     speech: `${PACES.find(x => x[0] === sayPace)[1]} · speed ${Math.round(rate * 100)}%`,
     daily: `${dailyMax()} a day`,
-    tiles: trackTiles().map(k => TILES[k][0].replace(/^Characters (\w)/, (m, c) => c.toUpperCase())).join(", ") };
+    tiles: trackTiles().map(k => TILES[k][0]).join(", ") };
   document.querySelectorAll("[data-sum]").forEach(x => x.textContent = S[x.dataset.sum] || "");
 }
 function wordsWhere() { const p = $("wordsWhere"); if (p) p.textContent = session ? "Saved to your account and synced to every device you sign in on. A backup is an extra copy." : "Only on this phone. Sign in to keep them safe."; }
@@ -5579,7 +5568,7 @@ $("backupBtn").onclick = () => {
   const d = backupData(), days = Object.keys(d.days).filter(k => dayUsed(d.days[k])).length;
   const sheet = el("div", "sheet"), card = el("div", "sheetcard");
   card.append(el("h3", "", "Save a backup"),
-    el("p", "", `${num(myWords.length)} words with progress · ${num(Object.keys(learned).length)} learned · ${num(days)} days of activity · ${num(textHistory.length)} item${textHistory.length === 1 ? "" : "s"} in History · what you're reading now · settings`),
+    el("p", "", `${num(myWords.length)} words with progress · ${num(Object.keys(learned).length)} mastered · ${num(days)} days of activity · ${num(textHistory.length)} item${textHistory.length === 1 ? "" : "s"} in History · what you're reading now · settings`),
     el("p", "note", "Your words, progress, history and settings, in one file."));
   const row = el("div", "row");
   row.append(btn("Cancel", "btn ghost", () => sheet.remove()), btn("Save file", "btn", async () => {
