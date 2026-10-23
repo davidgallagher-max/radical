@@ -238,8 +238,8 @@ p.busy{margin:-4px 4px 0}
 .tc.hl{background:color-mix(in srgb,var(--accent2) 26%,transparent)}
 .tpeek{position:absolute;left:12px;right:12px;bottom:12px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);transform:translateY(150%);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
 .tpeek.up{transform:none}.tpeek b{font-family:var(--font-zh);font-size:1.1rem}
-.tpanel{position:absolute;inset:0;background:var(--surface);display:grid;place-content:center;justify-items:center;gap:6px;opacity:0;transform:scale(.5);transition:opacity .35s,transform .45s cubic-bezier(.2,.8,.2,1)}
-.tpanel.up{opacity:1;transform:none}.tpanel p{margin:0}
+.tstage .tpanel{position:absolute;inset:0;background:var(--surface);border:0;border-radius:0;padding:0;display:grid;place-content:center;justify-items:center;gap:6px;opacity:0;transform:scale(.5);transition:opacity .35s,transform .45s cubic-bezier(.2,.8,.2,1)}
+.tstage .tpanel.up{opacity:1;transform:none}.tstage .tpanel p{margin:0}
 .tpchars{display:flex;gap:6px}.tpchars svg,.tpchars .fontglyph{width:84px;height:84px;display:block}.tpchars .fontglyph{font-size:70px;line-height:84px;text-align:center}
 .tfinger{position:absolute;left:50%;top:60%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:color-mix(in srgb,var(--fg) 30%,transparent);border:2px solid color-mix(in srgb,var(--fg) 70%,transparent);transition:left .65s ease,top .65s ease,opacity .3s;opacity:0;pointer-events:none;z-index:5}
 .tfinger.tap{animation:ttap .35s}@keyframes ttap{50%{transform:scale(.65)}}
