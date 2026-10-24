@@ -2,6 +2,26 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v42
+
+- 普通话 or 國語: a Mandarin setting (first on the start sheet, then first in Settings) picks Mainland or Taiwan. It sets the readings, the voice, the word choices in cards and sentences, and the script. No flags. Existing users keep what they had (Traditional means Taiwan).
+- English in the reader flows like a printed page: Chinese keeps its squares, English sits at its own width and breaks between words, and punctuation takes half a square. A comma or closing bracket never starts a line. English is a little bigger.
+- Top 1,000 is exactly 1,000 words (it was about 880, because several characters shared one word).
+- Picking a list or Word Deck opens on All. Coming back to 練 still opens on Today.
+- Today always fills to Cards a day: due, then new, then Learning, then Known. The hidden 10-new-words cap is gone.
+- Flash cards keep your place. The tab bar stays during cards (hidden while typing), 練 takes you back to your card, and Quit is the only way out. Exit and "Continue · N left" are gone. Tapping the card outside a box closes the keyboard.
+- The card 🗑 sits on the card's corner and is always there. The card header fits one line. Fixed: the header and score could stay hidden after the keyboard closed.
+- Rating bar: "Rate it to move on". "Suggested" takes the suggested button's color. "It decides when this comes back" is gone.
+- Mix: Listen cards have "Not now". The card becomes a Read card and Listen sits out the rest of the session.
+- Every speaker shows ■ while it talks; tap to stop. The next tap plays it slower.
+- Card sentences have the same controls as Read: speaker, EN, 解 Explain, then 拼 Pinyin, ↻ and 字 (size). While the sentence plays, a 慢–快 dial shows.
+- Word Sets are now Word Decks. With many decks, the row shows the one you're on, your recent ones and More.
+- A line divides the list pills from the mode pills.
+- Track's calendar is two greens again: bright for days you finished your Cards a day, pale for days you studied.
+- Friends need approval. A code or link sends a request; the other person sees a red number on 記 and Accept / Decline (Decline can be undone for a few seconds). Code tries are limited per day.
+- Your name for friends shows as text with a pencil; Save lights up only after a change.
+- Fixed: a sync answer with no words could empty your word list.
+
 ## v41
 
 - Practice has lists. Mine, Top 1,000, Travel and each Word Set you start get a pill at the top of Flash cards. Today, the counts, Start, the list below and the red number on 練 follow the list you picked. The others wait: nothing piles up on them.
