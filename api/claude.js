@@ -12,27 +12,33 @@ const CARD_MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-5-5";
 const FAST_MODEL = process.env.CLAUDE_FAST_MODEL || "claude-haiku-5-5";
 const OCR_MODEL = process.env.CLAUDE_OCR_MODEL || FAST_MODEL;  // reading text from photos and scanned pages
 
+// Mainland or Taiwan (v42, the page's 普通话 / 國語 setting, sent as region "cn" or "tw"): readings, word choices and
+// the voice of example sentences follow it. Taiwan is the default, so older pages get what they always got.
+const MAND = cn => cn ? "Mandarin as spoken in mainland China (Putonghua)" : "Taiwan Mandarin";
+const READING = cn => cn ? "standard mainland pronunciation (e.g. 垃圾 lājī)" : "Taiwan pronunciation (e.g. 訊息 xùnxí)";
+const CHOICES = cn => cn ? "Use mainland word choices (数据 not 資料, 网络 not 網路)." : "Use Taiwan word choices (資料 not 数据, 網路 not 网络).";
+
 // The card prompt leaves out the learner's own sentence on purpose: the same word
 // then always gets the same request, so Vercel's CDN can reuse the card (see below).
-const CARD_PROMPT = (word) => `You are making a study card for an adult learner of Taiwan Mandarin (low intermediate, Traditional characters).
+const CARD_PROMPT = (word, cn) => `You are making a study card for an adult learner of ${MAND(cn)} (low intermediate, ${cn ? "Simplified" : "Traditional"} characters).
 Word: ${word}
 
 Return ONLY a JSON object, no other text, with exactly these keys:
 {
   "word": "the word in Traditional characters",
   "simplified": "Simplified form, or empty string if identical",
-  "pinyin": "pinyin with tone marks, Taiwan pronunciation (e.g. 訊息 xùnxí)",
+  "pinyin": "pinyin with tone marks, ${READING(cn)}",
   "meaning": "short English meaning, under 12 words",
   "usage": "one short note on how it is used or a common collocation, or empty string",
   "chars": [ { "char": "one character", "pinyin": "its reading here", "parts": "its parts, e.g. 敬 jìng (sound) + 馬 horse (meaning)", "mnemonic": "one vivid memory hook, under 20 words" } ],
-  "examples": [ { "example": "a natural Taiwan Mandarin sentence using the word, Traditional characters, at low intermediate level", "example_pinyin": "pinyin of the sentence", "example_en": "English translation" } ],
+  "examples": [ { "example": "a natural ${MAND(cn)} sentence using the word, ${cn ? "Simplified" : "Traditional"} characters, at low intermediate level", "example_pinyin": "pinyin of the sentence", "example_en": "English translation" } ],
   "related": [ { "word": "related word", "pinyin": "pinyin", "meaning": "short meaning" } ]
 }
-Give exactly 3 examples, each in a clearly different everyday context. Give 0 to 3 related words that share a character with the word. Use Taiwan word choices (資料 not 数据, 網路 not 网络).`;
+Give exactly 3 examples, each in a clearly different everyday context. Give 0 to 3 related words that share a character with the word. ${CHOICES(cn)}`;
 
-const WORDS_PROMPT = (text) => `A learner of Taiwan Mandarin pasted the text below to add words to a vocabulary list. It may be a tidy list, a messy list with pinyin and English mixed in, or sentences.
+const WORDS_PROMPT = (text, cn) => `A learner of ${MAND(cn)} pasted the text below to add words to a vocabulary list. It may be a tidy list, a messy list with pinyin and English mixed in, or sentences.
 Pick out the Chinese vocabulary items they most likely want to study: words and set phrases, not whole sentences, and skip particles and very basic words (的, 了, 我, 是) unless the text is clearly just a list.
-Keep the learner's own pinyin and English when given; otherwise give Taiwan pinyin with tone marks and a short English meaning.
+Keep the learner's own pinyin and English when given; otherwise give ${cn ? "standard mainland" : "Taiwan"} pinyin with tone marks and a short English meaning.
 The English in the text often comes from a teacher's notes and can be misspelled or wrong. Fix spelling silently. If the English is actually wrong for the word (not just misspelled), give the right meaning and put the text's original English in "note".
 Set "from_text": true when the meaning comes from English in the text (even if you fixed its spelling), false when you supplied it.
 Return ONLY JSON: {"words":[{"word":"Traditional characters","pinyin":"...","meaning":"...","from_text":true,"note":""}]}, at most 80 items, in the order they appear.
@@ -52,7 +58,7 @@ For each item:
 Return ONLY JSON: {"items":[{"word":"","kind":"","pinyin":"","meaning":"","from_text":true,"note":""}]}, at most 60 items.`;
 
 // Fresh example sentences for a word (one or two), different from the ones the learner has.
-const EXAMPLE_PROMPT = (word, meaning, avoid, n = 1) => `Write ${n === 1 ? "one new natural Taiwan Mandarin example sentence" : `${n} new natural Taiwan Mandarin example sentences, each in a different everyday context,`} (Traditional characters, low intermediate level) using ${word}${meaning ? ` (${meaning})` : ""}.${avoid ? ` Make ${n === 1 ? "it" : "them"} clearly different from these: ${avoid}` : ""}
+const EXAMPLE_PROMPT = (word, meaning, avoid, n = 1, cn = false) => `Write ${n === 1 ? `one new natural ${MAND(cn)} example sentence` : `${n} new natural ${MAND(cn)} example sentences, each in a different everyday context,`} (${cn ? "Simplified" : "Traditional"} characters, low intermediate level, ${cn ? "mainland" : "Taiwan"} word choices) using ${word}${meaning ? ` (${meaning})` : ""}.${avoid ? ` Make ${n === 1 ? "it" : "them"} clearly different from these: ${avoid}` : ""}
 Return ONLY JSON: {"examples":[{"example":"...","example_pinyin":"pinyin with tone marks","example_en":"English translation"}]}`;
 // A card's three examples, kept as example/example_pinyin/example_en too (the first one) for older pages.
 function cardExamples(card) {
@@ -70,12 +76,12 @@ ${sentence}`;
 
 // English in (v41): a passage typed or pasted in English becomes Chinese to read; a word or phrase in context gets the
 // Chinese words that fit it, best first.
-const USAGE = (simp) => simp ? "Simplified characters, mainland usage" : "Traditional characters, Taiwan usage";
-const TOZH_TEXT_PROMPT = (text, simp) => `Translate this English into natural Chinese that an adult learner can read: plain, everyday wording. Use ${USAGE(simp)}. Return only the Chinese, nothing else.
+const USAGE = (simp, cn) => `${simp ? "Simplified" : "Traditional"} characters, ${cn ? "mainland" : "Taiwan"} usage`;
+const TOZH_TEXT_PROMPT = (text, simp, cn) => `Translate this English into natural Chinese that an adult learner can read: plain, everyday wording. Use ${USAGE(simp, cn)}. Return only the Chinese, nothing else.
 
 ${text}`;
-const TOZH_WORD_PROMPT = (text, simp) => `A learner of Mandarin wants the Chinese word for this English, in the sense it has here: "${text}"
-Give the 1 to 3 Chinese words that fit that sense, best fit first: real dictionary words, the everyday ones. Use ${USAGE(simp)}.
+const TOZH_WORD_PROMPT = (text, simp, cn) => `A learner of Mandarin wants the Chinese word for this English, in the sense it has here: "${text}"
+Give the 1 to 3 Chinese words that fit that sense, best fit first: real dictionary words, the everyday ones. Use ${USAGE(simp, cn)}.
 Return ONLY JSON: {"words":[{"word":"the Chinese","pinyin":"pinyin with tone marks","meaning":"short English meaning, under 8 words"}]}`;
 
 // Wikipedia helpers: turn an English search into Chinese search words, and rate articles for a learner.
@@ -96,7 +102,7 @@ Keep one paragraph per paragraph of the original. Write in ${trad ? "Traditional
 ${text}`;
 
 // Explain one sentence for a learner: how it's built, the grammar points in it, and words used in a less obvious sense.
-const EXPLAIN_PROMPT = (sentence, trad) => `Explain this Mandarin sentence to an adult learner at about intermediate level (Taiwan Mandarin, ${trad ? "Traditional" : "Simplified"} characters).
+const EXPLAIN_PROMPT = (sentence, trad, cn) => `Explain this Mandarin sentence to an adult learner at about intermediate level (${cn ? "mainland" : "Taiwan"} Mandarin, ${trad ? "Traditional" : "Simplified"} characters).
 Sentence: ${sentence}
 
 Return ONLY JSON with these keys:
@@ -106,7 +112,7 @@ Return ONLY JSON with these keys:
 0 to 4 points, 0 to 3 words; leave out anything obvious. Plain English, no jargon a learner wouldn't know; if you use a grammar term, say what it means. Use ${trad ? "Traditional" : "Simplified"} characters in patterns and words.`;
 
 // Explore's daily topic chips: seven varied picks across subjects and two tied to what the learner searches and reads.
-const TOPICS_PROMPT = (searches, reading, avoid) => `Suggest 9 topics for an adult learner of Taiwan Mandarin to read about on Chinese Wikipedia today.
+const TOPICS_PROMPT = (searches, reading, avoid) => `Suggest 9 topics for an adult learner of Mandarin to read about on Chinese Wikipedia today.
 Things they searched for recently (most used first): ${searches.length ? searches.join("; ") : "none yet"}
 Openings of texts they read recently: ${reading.length ? reading.join(" / ") : "none yet"}
 Make 2 topics close to these interests (related, not the same searches repeated) and 7 varied picks, each from a different subject (for example nature, science, history, food, sports, places, people, arts, technology, everyday life), chosen to surprise and delight. With no history, pick 9 varied, appealing topics.
@@ -115,10 +121,10 @@ Return ONLY JSON: {"topics":[{"zh":"台灣夜市","en":"Night markets","py":"Tá
 
 // Word Sets: a short list of useful words on a theme ("Food", or anything a learner types). The same theme always
 // makes the same request, so Vercel's CDN can share a set between learners (see the GET below).
-const WORDSET_PROMPT = (theme) => `An adult learner of Mandarin (beginner to low intermediate) wants a set of words to study on this theme: "${theme}"
+const WORDSET_PROMPT = (theme, cn) => `An adult learner of Mandarin (beginner to low intermediate) wants a set of words to study on this theme: "${theme}"
 List the 24 most useful words and short set phrases for it: common, everyday, the ones they'd meet or need first, most useful first. Real dictionary words only, no sentences.
-Use Taiwan usage and Traditional characters. If the theme isn't something words can be listed for, return an empty list.
-Return ONLY JSON: {"words":[{"word":"Traditional characters","pinyin":"pinyin with tone marks, Taiwan reading","meaning":"short English meaning, under 8 words"}]}`;
+Use ${cn ? "mainland" : "Taiwan"} usage. If the theme isn't something words can be listed for, return an empty list.
+Return ONLY JSON: {"words":[{"word":"Traditional characters","pinyin":"pinyin with tone marks, ${cn ? "mainland" : "Taiwan"} reading","meaning":"short English meaning, under 8 words"}]}`;
 
 // Judge a flash card answer that the app's simple word match rejected: abbreviations, synonyms, paraphrases
 // and small typos still count.
@@ -241,11 +247,12 @@ module.exports = async (req, res) => {
   // A high daily safety stop per person (all signed-out use together counts as one); every AI call is logged with its estimated cost.
   if ((await account.spentToday(who, today)) >= account.DAILY_CAP()) return res.status(429).json({ error: "Today's AI limit is reached. It resets tomorrow; reading, saving and flash cards still work." });
   const askClaude = async (model, prompt, maxTokens) => { const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage, user && user.email, today); return r.text; };
+  const cn = body.region === "cn" || body.r === "cn";  // mainland (cards and Word Sets carry it in the URL as r=cn)
   try {
     if (body.action === "card") {
       const word = String(body.word || "").trim().slice(0, 40);
       if (!word) return res.status(400).json({ error: "No word given." });
-      const text = await askClaude(CARD_MODEL, CARD_PROMPT(word), 1600);
+      const text = await askClaude(CARD_MODEL, CARD_PROMPT(word, cn), 1600);
       const card = parseJSON(text);
       if (!card) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       cardExamples(card);
@@ -262,7 +269,7 @@ module.exports = async (req, res) => {
     if (body.action === "wordset") {
       const theme = String(body.theme || "").trim().replace(/\s+/g, " ").slice(0, 60);
       if (!theme) return res.status(400).json({ error: "No theme given." });
-      const list = parseItems(await askClaude(FAST_MODEL, WORDSET_PROMPT(theme), 3000), "words");
+      const list = parseItems(await askClaude(FAST_MODEL, WORDSET_PROMPT(theme, cn), 3000), "words");
       if (!list) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       const words = list.filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word))
         .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").slice(0, 80) })).slice(0, 30);
@@ -275,7 +282,7 @@ module.exports = async (req, res) => {
     if (body.action === "words") {
       const text = String(body.text || "").trim().slice(0, 4000);
       if (!text) return res.status(400).json({ error: "No text given." });
-      const out = parseJSON(await askClaude(FAST_MODEL, WORDS_PROMPT(text), 3000));
+      const out = parseJSON(await askClaude(FAST_MODEL, WORDS_PROMPT(text, cn), 3000));
       if (!out || !Array.isArray(out.words)) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       return res.status(200).json({ words: out.words.filter(w => w && typeof w.word === "string").slice(0, 80) });
     }
@@ -293,7 +300,7 @@ module.exports = async (req, res) => {
       const word = String(body.word || "").trim().slice(0, 40);
       if (!word) return res.status(400).json({ error: "No word given." });
       const n = body.n === 2 ? 2 : 1;
-      const out = parseJSON(await askClaude(CARD_MODEL, EXAMPLE_PROMPT(word, String(body.meaning || "").slice(0, 120), String(body.avoid || "").slice(0, 600), n), 400 * n + 100));
+      const out = parseJSON(await askClaude(CARD_MODEL, EXAMPLE_PROMPT(word, String(body.meaning || "").slice(0, 120), String(body.avoid || "").slice(0, 600), n, cn), 400 * n + 100));
       const ex = out && cardExamples({ examples: out.examples, example: out.example, example_pinyin: out.example_pinyin, example_en: out.example_en }).examples.slice(0, n);
       if (!ex || !ex.length) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       return res.status(200).json({ examples: ex, ...ex[0] });
@@ -345,7 +352,7 @@ module.exports = async (req, res) => {
     if (body.action === "explain") {
       const sentence = String(body.sentence || "").trim().slice(0, 300);
       if (!sentence) return res.status(400).json({ error: "Nothing to explain." });
-      const out = parseJSON(await askClaude(CARD_MODEL, EXPLAIN_PROMPT(sentence, body.trad !== false), 900));
+      const out = parseJSON(await askClaude(CARD_MODEL, EXPLAIN_PROMPT(sentence, body.trad !== false, cn), 900));
       if (!out) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       const list = (x, n) => (Array.isArray(x) ? x : []).filter(v => v && typeof v === "object").slice(0, n);
       return res.status(200).json({ structure: String(out.structure || "").slice(0, 400),
@@ -362,16 +369,16 @@ module.exports = async (req, res) => {
       return res.status(200).json({ topics });
     }
     if (body.action === "tozh") {
-      const text = String(body.text || "").trim().slice(0, 2000), simp = !!body.simp;
+      const text = String(body.text || "").trim().slice(0, 2000), simp = !!body.simp, cnU = body.region ? cn : simp;  // older pages: the script said both
       if (!text) return res.status(400).json({ error: "Nothing to translate." });
       if (body.kind === "word") {
-        const list = parseItems(await askClaude(FAST_MODEL, TOZH_WORD_PROMPT(text.slice(0, 200), simp), 400), "words");
+        const list = parseItems(await askClaude(FAST_MODEL, TOZH_WORD_PROMPT(text.slice(0, 200), simp, cnU), 400), "words");
         const words = (list || []).filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word))
           .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").slice(0, 80) })).slice(0, 3);
         if (!words.length) return res.status(502).json({ error: "No Chinese word came back. Try other words." });
         return res.status(200).json({ words });
       }
-      const zh = await askClaude(FAST_MODEL, TOZH_TEXT_PROMPT(text, simp), 2500);
+      const zh = await askClaude(FAST_MODEL, TOZH_TEXT_PROMPT(text, simp, cnU), 2500);
       if (!/\p{Script=Han}/u.test(zh)) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       return res.status(200).json({ zh });
     }

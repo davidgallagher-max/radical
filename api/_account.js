@@ -220,8 +220,9 @@ const ownerEmails = () => emails("OWNER_EMAILS");
 async function saveFeedback(user, today, entry) { if (!status().ok) return; try { await putJSON(`feedback/${today}/${Date.now()}-${String(user.id).slice(0, 8)}.json`, entry); } catch (e) {} }
 
 // ---- friends, by code only: no search and no public list. Each person gets a short code; entering someone's code
-// (or opening their link) connects both ways, and either side can remove it. Friends see only the summary the page
-// sends at sync (numbers and a chart), never words or mistakes.
+// (or opening their link) sends a request (v42), and once they accept you're connected both ways; either side can
+// remove it. Friends see only the summary the page sends at sync (numbers and a chart), never words or mistakes.
+// Requests live in users/<id>/requests.json ({ ids: [requester ids] }); tries to add a code are capped a day.
 const CODE_ABC = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const cleanCode = c => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
 const cleanName = n => String(n || "").replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 30);
@@ -248,11 +249,22 @@ async function writePublic(user, summary) {
 }
 async function friendIds(id) { const f = await getJSON(`users/${id}/friends.json`); return Array.isArray(f && f.ids) ? f.ids : []; }
 async function setFriendIds(id, ids) { await putJSON(`users/${id}/friends.json`, { ids: [...new Set(ids)].slice(0, 200) }); }
+async function requestIds(id) { const f = await getJSON(`users/${id}/requests.json`); return Array.isArray(f && f.ids) ? f.ids : []; }
+async function setRequestIds(id, ids) { await putJSON(`users/${id}/requests.json`, { ids: [...new Set(ids)].slice(-50) }); }
+const ADD_TRIES = 20;  // codes one account can try a day
 async function friendsView(user) {
-  const p = await profileOf(user), ids = await friendIds(user.id);
+  const p = await profileOf(user), ids = await friendIds(user.id), rids = await requestIds(user.id);
   const list = (await Promise.all(ids.map(id => getJSON(`users/${id}/public.json`).catch(() => null)))).filter(Boolean)
     .map(x => ({ ...x, name: x.name || "A friend" }));
-  return { code: p.code, name: p.name || "", friends: list };
+  const requests = (await Promise.all(rids.map(id => getJSON(`users/${id}/profile.json`).catch(() => null)))).filter(x => x && x.code)
+    .map(x => ({ code: x.code, name: x.name || "Someone" }));
+  return { code: p.code, name: p.name || "", friends: list, requests };
+}
+async function connect(a, b) {
+  await setFriendIds(a, [...await friendIds(a), b]);
+  await setFriendIds(b, [...await friendIds(b), a]);
+  await setRequestIds(a, (await requestIds(a)).filter(x => x !== b));
+  await setRequestIds(b, (await requestIds(b)).filter(x => x !== a));
 }
 async function friends(user, body) {
   const op = body.op || "me";
@@ -262,14 +274,27 @@ async function friends(user, body) {
   }
   if (body.summary) { await profileOf(user); await writePublic(user, body.summary); }
   if (op === "add") {
+    const day = new Date().toISOString().slice(0, 10), tp = `users/${user.id}/tries.json`, t = (await getJSON(tp)) || {};
+    const n = t.day === day ? t.n || 0 : 0;
+    if (n >= ADD_TRIES) return { error: "Too many tries today. Try again tomorrow." };
+    await putJSON(tp, { day, n: n + 1 });
     const c = await getJSON(`codes/${cleanCode(body.code)}.json`);
     if (!c || !c.id) return { error: "No one has that code. Check the letters and try again." };
     if (c.id === user.id) return { error: "That's your own code." };
     await profileOf(user);
-    await setFriendIds(user.id, [...await friendIds(user.id), c.id]);
-    await setFriendIds(c.id, [...await friendIds(c.id), user.id]);
-    const them = await getJSON(`users/${c.id}/public.json`);
-    return { ...(await friendsView(user)), added: (them && them.name) || "your friend" };
+    const them = await getJSON(`users/${c.id}/profile.json`), name = (them && them.name) || "your friend";
+    if ((await friendIds(user.id)).includes(c.id)) return { ...(await friendsView(user)), added: name };
+    // They already asked you: this is a yes, so connect now
+    if ((await requestIds(user.id)).includes(c.id)) { await connect(user.id, c.id); return { ...(await friendsView(user)), added: name }; }
+    await setRequestIds(c.id, [...await requestIds(c.id), user.id]);
+    return { ...(await friendsView(user)), sent: name };
+  }
+  if (op === "accept" || op === "decline") {
+    const c = await getJSON(`codes/${cleanCode(body.code)}.json`);
+    if (c && c.id && (await requestIds(user.id)).includes(c.id)) {
+      if (op === "accept") await connect(user.id, c.id);
+      else await setRequestIds(user.id, (await requestIds(user.id)).filter(x => x !== c.id));
+    }
   }
   if (op === "remove") {
     const c = await getJSON(`codes/${cleanCode(body.code)}.json`);
