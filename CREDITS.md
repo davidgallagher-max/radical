@@ -23,4 +23,6 @@ The Clear color palette is based on the Okabe-Ito colorblind-safe palette.
 
 The most common characters sets (`lists/common.tsv`) are ranked from **wordfreq** by Robyn Speer (https://github.com/rspeer/wordfreq), whose Chinese data combines SUBTLEX-CH (Cai and Brysbaert), OpenSubtitles, Wikipedia and other sources, licensed CC BY-SA 4.0. `scripts/build_common.py` sums word frequencies into character frequencies, keeps the 2,000 most common characters with stroke data, and pairs each with its most common 2 or 3 character CC-CEDICT word. The list is shared under CC BY-SA 4.0.
 
+The Top word lists (`lists/topwords.txt`, since v42) are the 2,000 most common words in `lists/zhfreq.txt` (below) whose characters have stroke data, built by `scripts/build_topwords.py`, shared under CC BY-SA 4.0.
+
 The English index (typing an English word to add or read) is built from CC-CEDICT by `scripts/build_english.py`, ordered by how common each Chinese word is in `lists/zhfreq.txt`: the 40,000 most common words in wordfreq's Chinese data (same sources and license as above) that are in CC-CEDICT, shared under CC BY-SA 4.0.
