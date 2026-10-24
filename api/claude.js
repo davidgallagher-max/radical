@@ -181,11 +181,10 @@ module.exports = async (req, res) => {
     return res.status(200).json(st);
   }
   const user = await account.userOf(req);
-  const byPassword = !user && !!process.env.APP_PASSWORD && req.headers["x-app-password"] === process.env.APP_PASSWORD;
   // Signed out (v41): only the things a newcomer taps for, and only a few (see account.anonTake).
-  const anon = !user && !byPassword && !!req.headers["x-radical-anon"] && ANON_ACTIONS.has(body.action);
-  if (!user && !byPassword && !anon) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
-  const who = user ? user.id : byPassword ? "password" : "anon", today = account.dayOf(req);
+  const anon = !user && !!req.headers["x-radical-anon"] && ANON_ACTIONS.has(body.action);
+  if (!user && !anon) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+  const who = user ? user.id : "anon", today = account.dayOf(req);
   try {
     if (body.action === "sync") {
       if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
@@ -199,6 +198,11 @@ module.exports = async (req, res) => {
       res.setHeader("Cache-Control", "no-store");
       const out = await account.friends(user, body);
       return res.status(out.error ? 400 : 200).json(out);
+    }
+    // v43: the page reports an AI call that failed on its side (a meaning check that took too long). Not AI, no cost.
+    if (body.action === "fail") {
+      await account.logFail(who, body.what || "?", body.reason || "?", today);
+      return res.status(200).json({ ok: true });
     }
     // Your AI use this month (and everyone's, for owners). The page shows it as an estimate.
     if (body.action === "usage") {
@@ -244,8 +248,8 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: "No API key on the server. Add ANTHROPIC_API_KEY in Vercel, Settings, Environment Variables, then redeploy." });
   }
   if (anon && !(await account.anonTake(req, today))) return res.status(429).json({ error: "Sign in to keep going.", signin: true });
-  // A high daily safety stop per person (all signed-out use together counts as one); every AI call is logged with its estimated cost.
-  if ((await account.spentToday(who, today)) >= account.DAILY_CAP()) return res.status(429).json({ error: "Today's AI limit is reached. It resets tomorrow; reading, saving and flash cards still work." });
+  // A daily safety stop per person (owners none, signed-out use shares one pool); every AI call is logged with its estimated cost.
+  if ((await account.spentToday(who, today)) >= account.capFor(user, who)) return res.status(429).json({ error: "Today's AI limit is reached. It resets tomorrow; reading, saving and flash cards still work." });
   const askClaude = async (model, prompt, maxTokens) => { const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage, user && user.email, today); return r.text; };
   const cn = body.region === "cn" || body.r === "cn";  // mainland (cards and Word Sets carry it in the URL as r=cn)
   try {
@@ -344,9 +348,11 @@ module.exports = async (req, res) => {
     if (body.action === "judge") {
       const word = String(body.word || "").trim().slice(0, 40), meaning = String(body.meaning || "").trim().slice(0, 300), guess = String(body.guess || "").trim().slice(0, 120);
       if (!word || !guess) return res.status(400).json({ error: "Nothing to check." });
-      const out = parseJSON(await askClaude(FAST_MODEL, JUDGE_PROMPT(word, meaning, guess, !!body.pattern), 120));
-      const verdict = out && ["right", "close", "wrong"].includes(out.verdict) ? out.verdict : null;
-      if (!verdict) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      let raw;
+      try { raw = await askClaude(FAST_MODEL, JUDGE_PROMPT(word, meaning, guess, !!body.pattern), 200); }
+      catch (e) { await account.logFail(who, "judge", "server: " + e.message, today); throw e; }
+      const out = parseJSON(raw), verdict = out && ["right", "close", "wrong"].includes(out.verdict) ? out.verdict : null;
+      if (!verdict) { await account.logFail(who, "judge", "unreadable answer", today); return res.status(502).json({ error: "The answer wasn't readable. Try again." }); }
       return res.status(200).json({ verdict, note: String(out.note || "").slice(0, 120) });
     }
     if (body.action === "explain") {

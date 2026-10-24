@@ -116,7 +116,10 @@ function merge(a, b) {
     days[d] = days[d] || {};
     for (const [f, n] of Object.entries(v || {})) days[d][f] = Math.max(days[d][f] || 0, +n || 0);
   }
-  return { words, deleted, learned, familiar, days };
+  // v43: your deck names (and Mine's name): the newer copy wins
+  const clean = d => d && typeof d === "object" ? { mine: String(d.mine || "Mine").slice(0, 30), names: (Array.isArray(d.names) ? d.names : []).map(n => String(n).slice(0, 30)).filter(Boolean).slice(0, 100), t: +d.t || 0 } : null;
+  const decks = clean((+((b.decks || {}).t) || 0) > (+((a.decks || {}).t) || 0) ? b.decks : a.decks);
+  return { words, deleted, learned, familiar, days, ...(decks ? { decks } : {}) };
 }
 async function sync(user, incoming) {
   const path = `users/${user.id}/data.json`;
@@ -133,7 +136,7 @@ const PRICES = () => ({
   sonnet: [+env("PRICE_SONNET_IN") || 3, +env("PRICE_SONNET_OUT") || 15],
   haiku: [+env("PRICE_HAIKU_IN") || 1, +env("PRICE_HAIKU_OUT") || 5]
 });
-const DAILY_CAP = () => +env("RADICAL_DAILY_CAP") || 3;  // dollars per user per day: a high safety stop, not a budget
+const DAILY_CAP = () => +env("RADICAL_DAILY_CAP") || .25;  // dollars per person per day: a safety stop, not a budget (v43; was $3)
 function costOf(model, usage) {
   const p = PRICES()[/haiku/i.test(model) ? "haiku" : "sonnet"], u = usage || {};
   const inTok = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
@@ -176,9 +179,27 @@ async function anonTake(req, today = day()) {
 // ---- who may do what. Emails come from Vercel env vars, separated by commas or spaces.
 //   OWNER_EMAILS   see everyone's AI use (the tally in the menu)
 //   TESTER_EMAILS  if set, only these people (and owners) get the AI features; anyone can still sign in and read.
+//   GENEROUS_EMAILS  a higher daily AI stop for these people (see capFor)
 const emails = name => env(name).toLowerCase().split(/[\s,;]+/).filter(Boolean);
 const isOwner = user => !!(user && user.email) && emails("OWNER_EMAILS").includes(user.email.toLowerCase());
+// v43: the daily stop depends on who's asking. Owners have none (the Anthropic Console's monthly limit still holds);
+// GENEROUS_EMAILS get RADICAL_GENEROUS_CAP ($3 unless set); all signed-out use together gets RADICAL_ANON_POOL ($1).
+const capFor = (user, who) => isOwner(user) ? Infinity
+  : user && user.email && emails("GENEROUS_EMAILS").includes(user.email.toLowerCase()) ? (+env("RADICAL_GENEROUS_CAP") || 3)
+  : who === "anon" ? (+env("RADICAL_ANON_POOL") || 1) : DAILY_CAP();
 const mayUseAI = user => { const t = emails("TESTER_EMAILS"); return !t.length || (!!(user && user.email) && (t.includes(user.email.toLowerCase()) || isOwner(user))); };
+
+// v43: a failed AI call (a meaning check that timed out, an unreadable answer...) is noted in the same day file as
+// fails: [time, action, reason], so the owners' breakdown can show what's going wrong.
+async function logFail(who, action, reason, today) {
+  if (!status().ok) return;
+  try {
+    const path = usagePath(who, today), u = (await getJSON(path)) || { total: 0, calls: [] };
+    (u.fails || (u.fails = [])).push([Date.now(), String(action).slice(0, 20), String(reason).slice(0, 60)]);
+    if (u.fails.length > 200) u.fails = u.fails.slice(-200);
+    await putJSON(path, u);
+  } catch (e) {}
+}
 
 // ---- AI use: your own this month, and for owners, everyone's today and this month (by feature and by person).
 async function usage(user, today = day()) {
@@ -190,7 +211,7 @@ async function usage(user, today = day()) {
   const mine = await monthOf(user.id);
   const out = { month, me: { month: +mine.reduce((a, f) => a + (f.u.total || 0), 0).toFixed(4), calls: mine.reduce((a, f) => a + (f.u.calls || []).length, 0) } };
   if (!isOwner(user)) return out;
-  const all = { today: { calls: 0, cost: 0 }, month: { calls: 0, cost: 0 }, byAction: {}, byPerson: [] };
+  const all = { today: { calls: 0, cost: 0 }, month: { calls: 0, cost: 0 }, byAction: {}, byPerson: [], fails: {} };
   for (const id of await list("usage")) {
     const fs = id === user.id ? mine : await monthOf(id);
     if (!fs.length) continue;
@@ -204,6 +225,7 @@ async function usage(user, today = day()) {
       const a = all.byAction[action] || (all.byAction[action] = { calls: 0, cost: 0, today: 0 });
       a.calls++; a.cost += cost; if (isToday) a.today++;
     }
+    for (const f of fs) for (const [, action, reason] of f.u.fails || []) { const k = `${action}: ${reason}`; all.fails[k] = (all.fails[k] || 0) + 1; }
     all.byPerson.push(p);
   }
   const r4 = x => +x.toFixed(4);
@@ -273,6 +295,8 @@ async function friends(user, body) {
     const pub = await getJSON(`users/${user.id}/public.json`); if (pub) { pub.name = p.name; await putJSON(`users/${user.id}/public.json`, pub); }
   }
   if (body.summary) { await profileOf(user); await writePublic(user, body.summary); }
+  // v43: friends see your real name, so adding or accepting needs one
+  if ((op === "add" || op === "accept") && !(await profileOf(user)).name) return { error: "Add your name first." };
   if (op === "add") {
     const day = new Date().toISOString().slice(0, 10), tp = `users/${user.id}/tries.json`, t = (await getJSON(tp)) || {};
     const n = t.day === day ? t.n || 0 : 0;
@@ -306,4 +330,4 @@ async function friends(user, body) {
   return friendsView(user);
 }
 
-module.exports = { anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, DAILY_CAP, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };
+module.exports = { anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, logFail, DAILY_CAP, capFor, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };
