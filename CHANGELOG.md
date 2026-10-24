@@ -2,6 +2,25 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v43
+
+- English in the reader uses a serif that matches the Chinese, like a printed page.
+- Reading in portrait: once, after 20 seconds, a quiet tip says "Turn your phone for a wider page."
+- The dividing lines in the Flash cards box are a little stronger.
+- Your own decks: ＋ New deck in Word Decks (name it), rename or delete it (its words go back to Mine), and Mine can be renamed. A word you add goes into the deck you're in. Importing class notes asks which deck, or a new one ("Lesson 5"). Edit card moves a word to another deck. The AI topic deck is now "＋ Deck from a topic".
+- Friends: each friend is a row with a ›; tap it to open their numbers right there. Adding or accepting a friend needs your real name (first name and last initial), and anyone with friends but no name is asked once.
+- Settings → Account: "Your AI usage this month: about $X", with when it resets (the 1st, 4:00 am).
+- The AI safety stop is $0.25 a day per person. Owners have none, signed-out tries share $1 a day, and people on the GENEROUS_EMAILS list get $3. The old app password is gone.
+- Track's calendar: tap a day for its cards, words read and words added. Days you finished your cards show 達標 Goal met.
+- The Meaning box on cards has autocorrect.
+- The meaning check tries twice before asking you ✓ / ✗, and failed checks are logged (owners see them in the AI breakdown).
+- Today: words you've practiced today are done for the day, so the badge reaches zero. Hard means tomorrow, not later today; only Again repeats a card, in the same round. Today fills with new words only, never Known or Learning ones. A word you missed and left shows as "N to go over again".
+- Mastered: right with tones on two different days, rated Good or Easy both times. The word then goes to Known with one check a month later. I know it makes a word Recognized; at the month check, a right answer (or I know it again) makes it Mastered. Hard never counts.
+- A tone slip with the sounds and meaning right pushes the word out further (1.5 times the gap instead of 1.2).
+- Mastering a word on a card: 掌握 Mastered blooms in gold with a sweep up the guzheng.
+- A half-right answer (半) has its own soft middle note.
+- On iPhone, the first five card sessions say "Card sounds play when your phone isn't on silent." Settings says it too.
+
 ## v42
 
 - 普通话 or 國語: a Mandarin setting (first on the start sheet, then first in Settings) picks Mainland or Taiwan. It sets the readings, the voice, the word choices in cards and sentences, and the script. No flags. Existing users keep what they had (Traditional means Taiwan).
