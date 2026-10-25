@@ -73,7 +73,6 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .menupanel>button:active,.menupanel>button:focus-visible{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .menupanel .mi{font-family:var(--font-zh);font-size:1.25rem;font-weight:600;width:1.6em;text-align:center;color:var(--accent)}
 .menupanel hr{border:0;border-top:1px solid var(--line);margin:8px 4px}
-.menupanel>button.aitally{margin-top:auto;display:block;font-size:.92rem;font-weight:500;color:var(--muted);padding:10px;line-height:1.4;border-top:1px solid var(--line);border-radius:0}
 .aibreak{font-size:.85rem}
 .aibreak table{width:100%;border-collapse:collapse;margin:4px 0 12px}
 .aibreak td{padding:3px 0;border-bottom:1px solid var(--line)}
@@ -840,6 +839,7 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .setspanel .setsub{margin:-2px 0 4px}
 .setsheet .btn.small{justify-self:start}
 .noticetext{font-size:1.05rem;line-height:1.5;margin:0 0 14px}.noticeedit{font:inherit;width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.noticelive{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--accent);font-weight:600;margin-bottom:8px}.noticeedit.locked{opacity:.85}
 .noticeuntil{display:flex;align-items:center;gap:10px;margin:10px 0}.noticeuntil input{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 /* v44: your decks as a table: check circle, name (count), last used */
 .decktable{display:grid;border-radius:14px;box-shadow:inset 0 0 0 1px var(--line);overflow:hidden;margin-bottom:8px}
@@ -851,6 +851,7 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .dname{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dcount{font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}
 .dused{flex:none;color:var(--muted);font-size:.92rem}
 .deckbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 8px}
+.havekey{float:right;color:var(--accent)}
 .setchip.have::after{content:" ✓";color:var(--accent)}.setchip.top.have small::after{content:" ✓";color:var(--accent)}.setchip.top.have::after{content:none}
 .signcard p{margin:0}.signcard input{font:inherit;font-size:1.05rem;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);width:100%;box-sizing:border-box}
 .linkbtn{all:unset;cursor:pointer;justify-self:center;padding:8px;color:var(--accent);font-weight:600}
@@ -1347,8 +1348,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <hr>
     <button type="button" data-go="about"><span class="mi">部</span>About</button>
     <button type="button" id="feedbackBtn"><span class="mi">信</span>Send feedback</button>
-    <button type="button" id="noticeBtn" hidden><span class="mi">告</span>Notice</button>
-    <button type="button" class="aitally" id="aiTally" hidden></button>
+    <button type="button" data-go="admin" id="adminBtn" hidden><span class="mi">管</span>Admin tools</button>
   </nav>
 </div>
 
@@ -1374,6 +1374,19 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
   </div>
 </section>
 
+<!-- ADMIN TOOLS (owners only, from the menu) -->
+<section class="screen sub" id="adminScreen" hidden>
+  <div class="inner">
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <h3 class="sec tabsec"><span lang="zh">管</span>Admin tools</h3>
+    <h3 class="sec">AI use</h3>
+    <div class="panel"><p class="note" id="aiLine">Loading…</p><button type="button" class="btn ghost small" id="aiTally" hidden>By feature and person</button></div>
+    <h3 class="sec">Post an Open Message</h3>
+    <div class="panel" id="noticePanel"></div>
+    <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
+  </div>
+</section>
+
 <!-- SETTINGS -->
 <section class="screen sub" id="settingsScreen" hidden>
   <div class="inner">
@@ -1387,7 +1400,6 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <details class="setsec" id="secTheme"><summary><b>Theme</b><span class="sum" data-sum="theme"></span></summary>
     <div class="setbody">
     <div class="pgrid" id="paletteGrid"></div>
-    <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
     </div></details>
     <button type="button" class="btn wide" id="startBtn" hidden>Start reading</button>
     <details class="setsec"><summary><b>Appearance</b><span class="sum" data-sum="appear"></span></summary>
@@ -1493,11 +1505,12 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
   else if (g === "settings") openSettings(false);
   else if (g === "about") go("aboutScreen");
   else if (g === "backup") { wordsWhere(); go("backupScreen"); }
+  else if (g === "admin") openAdmin();
   else if (g === "tour") showTour(true);
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v44";
+const APP_VERSION = "v45";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2252,7 +2265,7 @@ function setTab(id) {
   tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); if (id === "trackScreen") renderTrack();
 }
 // Pages that can be opened from the menu: their Back says "‹ Menu" then (and reopens it), "‹ Back" otherwise.
-const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen", "backupScreen"];
+const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen", "backupScreen", "adminScreen"];
 function go(id) {
   if (MENU_PAGES.includes(id)) { $(id).dataset.via = viaMenu ? "menu" : ""; const bk = $(id).querySelector(".topbar .back"); if (bk) bk.textContent = viaMenu ? "Menu" : "Back";
     const mb = $(id).querySelector(".topbar .menubtn"); if (mb) mb.style.visibility = viaMenu ? "hidden" : ""; }  // ‹ Menu already goes back to it
@@ -2982,7 +2995,7 @@ async function fetchUsage() {
     const r = await fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}`, "x-radical-day": localDay() }, body: JSON.stringify({ action: "usage" }) });
     if (!r.ok) return null;
     const j = await r.json(); store.set("radical-owner", !!j.owner); store.set("radical-owner-at", Date.now()); if (j.all) store.set("radical-ai-tally", j.all);
-    if (!$("settingsScreen").hidden) buildLab();
+    if (!$("adminScreen").hidden) buildLab();
     return j;
   } catch (e) { return null; }
 }
@@ -2990,46 +3003,57 @@ const money = x => x >= .01 ? `$${x.toFixed(2)}` : x > 0 ? "under 1¢" : "$0";
 const AI_NAMES = { wordset: "Word Decks", card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
   zhquery: "Explore search", tozh: "English to Chinese", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
 function tallyText(a) { return `AI today: ${a.today.calls} call${a.today.calls === 1 ? "" : "s"} · ${money(a.today.cost)} · this month ${money(a.month.cost)} (all users)`; }
+// v45: everything only owners see lives on one page, Admin tools, behind one menu entry.
+function paintTally(a) { $("aiLine").textContent = a ? tallyText(a) : "No AI use yet."; $("aiTally").hidden = !a; }
 function aiTally() {
-  const b = $("aiTally");
+  const b = $("adminBtn");
   // Not an owner last time: ask again at most once an hour (owners can be added on the server at any time).
   if (!session || (store.get("radical-owner", null) === false && Date.now() - store.get("radical-owner-at", 0) < 36e5)) { b.hidden = true; return; }
   const last = store.get("radical-ai-tally", null);
-  if (last && store.get("radical-owner", false)) { b.hidden = false; b.textContent = tallyText(last); }
-  if (last && store.get("radical-owner", false)) $("noticeBtn").hidden = false;
-  fetchUsage().then(j => { if (j && j.all) { b.hidden = false; b.textContent = tallyText(j.all); } else if (!j || !j.owner) b.hidden = true; $("noticeBtn").hidden = !(j && j.owner); });
+  if (store.get("radical-owner", false)) { b.hidden = false; paintTally(last); }
+  fetchUsage().then(j => { b.hidden = !(j && j.owner); if (j && j.owner) paintTally(j.all); });
 }
+function openAdmin() { paintTally(store.get("radical-ai-tally", null)); noticePanel(); buildLab(); go("adminScreen"); aiTally(); }
 // v44: the owners' notice: everyone sees it once (per notice), a moment after the splash. Owners write it here.
 async function showNotice(tries = 0) {
   let n = null;
   try { const r = await fetch("/api/claude?action=notice"); n = (await r.json()).notice; } catch (e) { return; }
   if (!n || !n.id || !n.text || store.get("radical-notice-seen", "") === n.id) return;
-  if (document.querySelector(".sheet, #splash") || !$("reviewScreen").hidden) { if (tries < 20) setTimeout(() => showNotice(tries + 1), 5000); return; }
+  if (document.querySelector(".sheet, #splash") || !$("reviewScreen").hidden || !$("adminScreen").hidden) { if (tries < 20) setTimeout(() => showNotice(tries + 1), 5000); return; }
   store.set("radical-notice-seen", n.id);
   const sheet = el("div", "sheet"), card = el("div", "sheetcard noticecard");
   card.append(el("p", "noticetext", esc(n.text).replace(/\n/g, "<br>")), btn("OK", "btn wide", () => sheet.remove()));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
   document.body.append(sheet);
 }
-$("noticeBtn").onclick = async () => {
-  closeMenu();
+// Post an Open Message (Admin tools): what's live shows locked with the day it went up and ✎; Post only while editing.
+async function noticePanel(editing) {
+  const box = $("noticePanel");
   let cur = null; try { cur = (await (await fetch("/api/claude?action=notice&fresh=" + Date.now())).json()).notice; } catch (e) {}
-  const sheet = el("div", "sheet"), card = el("div", "sheetcard"), text = el("textarea", "noticeedit"), until = el("input"), msg = el("p", "note");
-  text.rows = 4; text.maxLength = 600; text.placeholder = "What everyone sees once, after the splash"; text.value = cur ? cur.text : "";
+  box.replaceChildren();
+  const text = el("textarea", "noticeedit"), until = el("input"), msg = el("p", "note");
+  text.rows = 4; text.maxLength = 600; text.placeholder = "Everyone sees it once"; text.value = cur ? cur.text : ""; text.setAttribute("aria-label", "Message");
   until.type = "date"; until.value = cur && cur.until || ""; until.setAttribute("aria-label", "Show until");
   const send = async body => { msg.textContent = ""; try { await claude({ action: "notice", ...body }); return true; } catch (e) { msg.textContent = e.message; return false; } };
-  const post = btn("Post", "btn", async () => { if (!text.value.trim()) { msg.textContent = "Write the notice first."; return; } post.disabled = true; if (await send({ op: "set", text: text.value, until: until.value })) { sheet.remove(); toast("Posted. Everyone sees it once."); } post.disabled = false; });
-  const row = el("div", "row"); row.append(post);
-  if (cur) row.append(btn("Take down", "btn ghost", async () => { if (await send({ op: "clear" })) { sheet.remove(); toast("Taken down."); } }));
-  row.append(btn("Close", "btn ghost", () => sheet.remove()));
   const ul = el("label", "noticeuntil"); ul.append(el("span", "trs", "Show until (optional)"), until);
-  card.append(el("h3", "", "Notice"), cur ? el("p", "note", "Showing now. Posting again shows the new one to everyone, once.") : "", text, ul, row, msg);
-  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
-  document.body.append(sheet); setTimeout(() => text.focus(), 300);
-};
+  const row = el("div", "row");
+  if (cur && !editing) {
+    const at = parseInt(cur.id, 36), when = at ? new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+    const live = el("div", "noticelive"); live.append(el("span", "", `Posted ${when}${cur.until ? ` · until ${dayShort(cur.until)}` : ""}`), iconBtn(PEN, "Edit", "btn ghost small", () => noticePanel(true)));
+    text.readOnly = true; text.classList.add("locked");
+    const down = btn("Take down", "btn ghost", () => armConfirm(down, on => down.textContent = on ? "Take down?" : "Take down", async () => { if (await send({ op: "clear" })) noticePanel(); }));
+    row.append(down); box.append(live, text, row, msg); return;
+  }
+  const post = btn("Post", "btn", async () => {
+    if (!text.value.trim()) { msg.textContent = "Write it first."; return; }
+    post.disabled = true; if (await send({ op: "set", text: text.value, until: until.value })) { await noticePanel(); return; } post.disabled = false;
+  });
+  row.append(post); if (cur) row.append(btn("Cancel", "btn ghost", () => noticePanel()));
+  box.append(text, ul, row, msg);
+  if (editing) setTimeout(() => { text.focus(); text.setSelectionRange(text.value.length, text.value.length); }, 50);
+}
 $("aiTally").onclick = () => {
   const a = store.get("radical-ai-tally", null); if (!a) return;
-  closeMenu();
   const sheet = el("div", "sheet"), card = el("div", "sheetcard aibreak");
   const rows = (list, f) => `<table>${list.map(f).join("")}</table>`;
   const acts = Object.entries(a.byAction).sort((x, y) => y[1].cost - x[1].cost);
@@ -4022,10 +4046,19 @@ function allLists() {
 }
 // Picking a list or deck shows all of it (All), not Today: you want to see what you chose.
 let keepCat = false;
-function groupName(L) { const n = groupKeys(L).map(k => k === "mine" ? decks.mine || "Mine" : k.slice(2)); return n.length > 2 ? `${n[0]} + ${n.length - 1} more` : n.join(" + "); }
+const keyName = k => k === "mine" ? decks.mine || "Mine" : k === "top" ? `Top ${num(commonSize())}` : isDeck(k) ? k.slice(2) : k;
+function groupName(L) { const n = groupKeys(L).map(keyName); return n.length > 2 ? `${n[0]} + ${n.length - 1} more` : n.join(" + "); }
 function setList(L) {
-  if (isGroup(L) || isDeck(L) || L === "mine") { groupKeys(L).forEach(k => decks.used[k] = localDay()); saveDecks(); }
+  stampUsed(L);
   curList = L; store.set("radical-list", L); store.set("radical-list-recent", [L, ...store.get("radical-list-recent", []).filter(x => x !== L)].slice(0, 8)); revCat = "all"; catPicked = keepCat = true; contOk = false; updateCounts(); }
+// When each deck was last used: stamped on picking it and on starting cards (v45: ready-made decks too).
+function stampUsed(L = curList) { const d = localDay(), ks = groupKeys(L).filter(k => decks.used[k] !== d); if (!ks.length) return; ks.forEach(k => decks.used[k] = d); saveDecks(); }
+// Before v44 nothing was stamped: fall back to the last day any of its words was studied.
+function lastStudied(k) {
+  let best = "";
+  myWords.forEach(w => { if (!inList(w, k)) return; ["srs", "wsrs", "lsrs"].forEach(m => { const x = w[m]; if (!x || !x.due || !x.reps && !x.lapses) return; const d = localDay(x.due - (x.ivl || 0) * DAY); if (d > best) best = d; }); });
+  return best > localDay() ? localDay() : best;
+}
 const listName = (L = curList) => (allLists().find(x => x[0] === L) || [, decks.mine || "Mine"])[1];
 // The badge: words left in Today for your goal (a word due in two modes counts once).
 const dueCount = () => todayList(goal).length;
@@ -4710,34 +4743,33 @@ function openSets() {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard setsheet"), close = () => sheet.remove();
   const cur = new Set(groupKeys(curList)), picked = new Set();
   const cut = t => t.length > DECK_MAX ? t.slice(0, DECK_MAX - 1) + "…" : t;
-  const rows = [["mine", decks.mine || "Mine"], ...decks.names.map(n => [deckKey(n), n])]
-    .map(([k, n], i) => ({ k, n, i, count: myWords.filter(w => inList(w, k)).length, used: decks.used[k] || "" }))
+  // v45: every deck you have, yours and the ready-made ones you've added
+  const ready = [...(commonSize() ? ["top"] : []), ...new Set(myWords.filter(w => w.set).map(w => w.set))];
+  const rows = [["mine", decks.mine || "Mine"], ...decks.names.map(n => [deckKey(n), n]), ...ready.map(k => [k, keyName(k)])]
+    .map(([k, n], i) => { const s = decks.used[k] || "", l = lastStudied(k); return { k, n, i, count: myWords.filter(w => inList(w, k)).length, used: s > l ? s : l }; })
     .sort((a, b) => b.used.localeCompare(a.used) || a.i - b.i);
   const table = el("div", "decktable"), bar = el("div", "deckbar"); bar.hidden = true;
   const paintBar = () => {
     bar.replaceChildren(); bar.hidden = !picked.size; if (!picked.size) return;
-    const keys = rows.map(r => r.k).filter(k => picked.has(k)), own = keys.filter(k => k !== "mine");
+    const keys = rows.map(r => r.k).filter(k => picked.has(k)), own = keys.filter(k => isDeck(k)), made = keys.filter(k => k !== "mine" && !isDeck(k)), gone = [...own, ...made];
     bar.append(btn(keys.length > 1 ? `Study ${keys.length} together` : "Study", "btn small", () => { close(); setList(keys.length > 1 ? groupKey(keys) : keys[0]); renderWords(); }));
-    if (keys.length === 1) bar.append(iconBtn(PEN, "Rename", "btn ghost small", () => { close(); const k = keys[0]; nameDeck(k === "mine" ? decks.mine || "Mine" : k.slice(2), n => renameDeck(k, n), openSets); }));
-    if (own.length) { const rm = btn("", "btn ghost small"), say = on => rm.textContent = on ? `Delete? Words go to ${decks.mine || "Mine"}` : own.length > 1 ? `Delete ${own.length}` : "Delete";
-      say(false); rm.onclick = () => armConfirm(rm, say, () => { close(); deleteDeck(own); }); bar.append(rm); }
+    if (keys.length === 1 && (keys[0] === "mine" || isDeck(keys[0]))) bar.append(iconBtn(PEN, "Rename", "btn ghost small", () => { close(); const k = keys[0]; nameDeck(k === "mine" ? decks.mine || "Mine" : k.slice(2), n => renameDeck(k, n), openSets); }));
+    // Your decks: every word goes to Mine. Ready-made: unstudied words go, studied ones move to Mine.
+    if (gone.length) { const rm = btn("", "btn ghost small"), mine = decks.mine || "Mine", word = made.length && !own.length ? "Remove" : "Delete";
+      const say = on => rm.textContent = on ? (made.length ? `${word}? Studied words go to ${mine}` : `Delete? Words go to ${mine}`) : gone.length > 1 ? `${word} ${gone.length}` : word;
+      say(false); rm.onclick = () => armConfirm(rm, say, () => { close(); made.forEach(removeList); if (own.length) deleteDeck(own); }); bar.append(rm); }
   };
   rows.forEach(r => {
     const row = el("div", "deckrow" + (cur.has(r.k) ? " on" : "")), ck = el("button", "dcheck", '<i class="ncheck" aria-hidden="true"></i>');
     ck.type = "button"; ck.setAttribute("role", "checkbox"); ck.setAttribute("aria-checked", "false"); ck.setAttribute("aria-label", `Select ${r.n}`);
     ck.onclick = () => { picked.has(r.k) ? picked.delete(r.k) : picked.add(r.k); ck.setAttribute("aria-checked", picked.has(r.k)); row.classList.toggle("picked", picked.has(r.k)); paintBar(); };
-    const main = el("button", "dmain", `<span class="dname">${esc(cut(r.n))} <span class="dcount">(${num(r.count)})</span></span><span class="dused">${dayShort(r.used)}</span>`);
+    const main = el("button", "dmain", `<span class="dname">${esc(cut(r.n))} <span class="dcount">(${num(r.count)})</span></span><span class="dused">${dayShort(r.used) || "—"}</span>`);
     main.type = "button"; main.setAttribute("aria-pressed", cur.has(r.k)); main.onclick = () => { close(); setList(r.k); renderWords(); };
     row.append(ck, main); table.append(row);
   });
   const newDeck = btn("＋ New deck", "setchip wide", () => { close(); nameDeck("", n => { if (!decks.names.includes(n)) decks.names.push(n); saveDecks(); setList(deckKey(n)); renderWords(); }, openSets); });
-  card.append(el("h3", "", "Word Decks"), el("span", "trl", "Yours"), table, bar, newDeck, el("span", "trl", "Ready-made"), setsGrid(close));
-  // The ready-made one you're on can be removed: unstudied words go, studied ones move to Mine
-  if (curList === "top" || (!isDeck(curList) && !isGroup(curList) && curList !== "mine")) {
-    const rm = btn("", "btn ghost small"), say = on => rm.textContent = on ? `Remove? Words you've studied move to ${decks.mine || "Mine"}` : `Remove the ${listName()} deck`;
-    say(false); rm.onclick = () => armConfirm(rm, say, () => { close(); removeList(curList); });
-    const acts = el("div", "row setacts"); acts.append(rm); card.append(acts);
-  }
+  const rh = el("span", "trl", 'Ready-made<span class="havekey">✓ you have it</span>');
+  card.append(el("h3", "", "Word Decks"), el("span", "trl", "Yours"), table, bar, newDeck, rh, setsGrid(close));
   card.append(btn("Close", "btn ghost wide", close));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
@@ -5330,7 +5362,7 @@ async function openReviewWith(ws) {
 }
 async function openReview(mode = "today", count = "all", again) {
   curHow = revHow; if (!again) noListen = false;
-  lastSet = { mode, count }; rq = buildQueue(mode, count, curHow); rDone = 0; revHist = []; rScore = newScore(); scoreShown = null;
+  lastSet = { mode, count }; stampUsed(); rq = buildQueue(mode, count, curHow); rDone = 0; revHist = []; rScore = newScore(); scoreShown = null;
   if (!again) { go("reviewScreen"); } else $("reviewScreen").scrollTop = 0;
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
@@ -5951,7 +5983,7 @@ function buildLab() {
   if (wrap.hidden) return;
   const key = palette, mode = labMode();
   box.innerHTML = "";
-  if (noColor(key)) { box.append(el("p", "note", "Pick a color theme above to tune it.")); return; }
+  if (noColor(key)) { box.append(el("p", "note", "Pick a color theme in Settings to tune it.")); return; }
   box.append(el("p", "note", `Tuning <b>${esc(PALETTES[key].name)}</b>, ${mode} mode. Only you see this; changes apply on this phone until you send them to be built in.`));
   const sample = el("div", "labsample"), big = el("div", "labbig");
   const line = el("div", "reader labline nopy"); line.lang = "zh";
@@ -6766,6 +6798,8 @@ document.querySelectorAll("#dailySeg [data-t]").forEach(b => {
   feedCommon();  // the day's new Top words, when Top is the list you're on
   setTimeout(joinPending, 2500);  // opened a friend's link
   setTimeout(showNotice, 3500);  // the owners' notice, once
+  // v45: and when the app comes back (a phone resumes it rather than reloading), at most every 10 minutes
+  let noticeAt = Date.now(); document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - noticeAt > 6e5) { noticeAt = Date.now(); setTimeout(showNotice, 1500); } });
   setTimeout(() => { friendBadge(); pingFriends(); }, 3000);  // friend requests waiting (red number on 記)
   if (session) syncNow(true).then(() => { myWords.filter(w => !w.card).forEach(queueCard); updateRing(); });  // pull what other phones changed
   if (document.fonts) document.fonts.ready.then(() => fitLegend());
