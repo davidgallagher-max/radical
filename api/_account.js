@@ -402,7 +402,13 @@ async function friends(user, body) {
 async function notice() { if (!status().ok) return null; const n = await getJSON("notice.json").catch(() => null); return n && n.text && !(n.until && n.until < day()) ? n : null; }
 // v46: every message also goes into notes.json (newest last, at most 50): the menu's Notes from David. Editing a live
 // message replaces it there; Take down removes it from both. A message can carry a shared deck { id, name, n }.
-async function notes() { if (!status().ok) return []; const n = await getJSON("notes.json").catch(() => null); return Array.isArray(n && n.list) ? n.list : []; }
+async function notes() {
+  if (!status().ok) return [];
+  const n = await getJSON("notes.json").catch(() => null), list = Array.isArray(n && n.list) ? n.list : [];
+  // a message posted before v46 lives only in notice.json: it counts as a note too
+  const cur = await notice().catch(() => null);
+  return cur && cur.id && !list.some(x => x.id === cur.id) ? [...list, cur] : list;
+}
 async function setNotice(user, body) {
   if (!isOwner(user)) return { error: "Owners only." };
   const cur = await getJSON("notice.json").catch(() => null), list = await notes();

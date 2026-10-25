@@ -14,6 +14,7 @@ What changed in each version, in plain words. Newest first.
 - The Open Message now asks the server fresh every time, checks whenever you come back to the app (at most once a minute), and waits while a sheet or cards are open instead of giving up. Admin tools shows what this phone last heard, with Preview.
 - Explore has a Today row: the featured article and On this day from Chinese Wikipedia, skipping wars, politics and disasters.
 - Fixed: a ready-made deck in History could stop the day's Explore chips from loading.
+- Fixed (same day): the message posted before v46 now shows in Notes from David, and opening Notes always clears the red dot.
 
 ## v45
 

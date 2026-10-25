@@ -3107,7 +3107,9 @@ async function openNotes() {
   box.replaceChildren();
   if (!list.length) box.append(el("p", "note", "Nothing yet."));
   [...list].reverse().forEach(n => { const it = el("div", "panel noteitem"); it.append(el("span", "trl", noticeWhen(n)), noteBody(n.text)); if (n.deck) it.append(noteDeckBtn(n.deck)); box.append(it); });
-  if (list.length) { const last = list[list.length - 1].id; store.set("radical-note-latest", last > store.get("radical-note-latest", "") ? last : store.get("radical-note-latest", "")); store.set("radical-notes-seen", store.get("radical-note-latest", "")); }
+  // opening Notes clears the dot, whatever came back (v46.1: an empty list left it on)
+  const last = list.length ? list[list.length - 1].id : ""; if (last > store.get("radical-note-latest", "")) store.set("radical-note-latest", last);
+  store.set("radical-notes-seen", store.get("radical-note-latest", ""));
   menuDot();
 }
 // Post an Open Message (Admin tools): what's live shows locked with the day it went up and ✎; Post only while editing.
