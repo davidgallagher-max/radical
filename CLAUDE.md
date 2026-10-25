@@ -96,6 +96,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v45 notes: Admin tools (`#adminScreen`, menu `#adminBtn` data-go="admin", `openAdmin()`; shown by `aiTally()` for owners): AI use (`#aiLine`, `paintTally`, `#aiTally` breakdown), Post an Open Message (`noticePanel(editing)`: live message locked with "Posted <day>" from the id's time, Edit, Take down via `armConfirm`; Post only while editing; never leaves the page), Color lab. `showNotice` also runs on visibilitychange to visible (10 min apart) and waits while Admin tools is open. Decks: `openSets` rows include `top` and themes (`keyName(k)`); Delete on own decks (`deleteDeck`), Remove on ready-made (`removeList`); Rename only for Mine/own decks. `stampUsed(L)` in `setList` (all lists) and `openReview`; `lastStudied(k)` estimates the last study day (due - ivl) as the fallback.
 
+- v46 notes: Today (`todayList`) = picked list due, new, then other lists' due, new (all up to `dailyMax()`); `keyOf(w)` names a word's list (tag in `#revProg`). Mine shows as Added (`MINE`, `mineName()`; an unrenamed "Mine" reads as Added). List pills: current, Added (or last used), More when 3+ lists. Topic size `TOPIC_SIZES` 12/24/50 (`radical-topic-size`, `.pills.topicsize` in `setsGrid`), `addThemeSet(theme, more)` (`moreSize`: 24, 50, 100), server `wordset` takes `n` (GET `&n=` only when not 24). Shared decks: `decks/<id>.json` snapshots (server `makeDeck`, GET `action=deck&id=` cached for good), op `senddeck` {deck, to: [codes], followers} (40 a day), inbox `users/<id>/inbox.json` (op `inboxdone`), `decks.ids` {id: key} synced, `shareSheet(k)`, `addSharedDeck(d)` (received words carry `got`, cards lazy), `?deck=ID` (`deckPending`, `offerDeck`), progress `sharedProgress()` in the friend summary (public.json `decks`), `sharedLines(x)` on friend rows. Builder: `builder.json` {id} (Admin tools: Make me the builder, op `bebuilder`, owners only), op follow/unfollow (`followers.json`, `users/<id>/follow.json`), `builder-decks.json`; `builderView` in friendsView, `builderRow(b, f)`. Invite: `inviteSheet(f)` (mailto). Notices: `fetchNotice` (no-store, `&m=` minute), `showNotice` waits while `noticeBlocked()`, re-checks on visibilitychange/pageshow/focus at most once a minute; `radical-notice-last` for Admin's `noticeTail`; `noticeCard(n, preview)`, `noteBody(text)` (Chinese runs in `miniReader`). Notes history `notes.json` (setNotice appends, `replace` on edit, clear removes), GET `action=notelist`; menu 箋 Notes from David (`#notesScreen`, `openNotes`, `menuDot`, `radical-note-latest`/`radical-notes-seen`). Explore Today: `fetchToday` (REST featured feed, fallback Wikipedia:历史上的今天, `CALM` filter, `radical-wiki-today`), `#wikiToday`.
+
 ## Accounts and sync (v30, v31)
 
 - The page sends its app day (`localDay()`, 4am start) in `x-radical-day`; the server's `dayOf(req)` trusts it within a day of UTC and uses it for usage files, the daily cap and the tally's "today".
@@ -111,6 +113,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 `card` (GET, cached at Vercel's CDN for a year), `words`, `tozh` (v41: English to Chinese; `kind: "word"` returns 1 to 3 words best first, else `{zh}`; `simp` picks the script, `region` the usage; Haiku), `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips), `explain` (解, card model), `notes` (class notes page image to items, card model), `example` (a new example sentence), `sync`, `usage`, `friends` (op me/name/add/accept/decline/remove; requests need approval since v42; not AI), `feedback` (Resend email; not AI, no tester check), `wordset` (GET, CDN cached; a themed Word Set, Haiku); public: `config`, `status`. Fast jobs use the Haiku model; cards use Sonnet.
 
 ## Waiting on David (as of Oct 25, 2026)
+
+- v46 one-time step: Admin tools, Make me the builder (until then nobody sees the builder row). iPhone check: the Open Message on the Home Screen icon app (Admin tools now says what this phone last heard), Notes from David and the ☰ dot, a bilingual message with a deck, Share a deck (link and to a friend), Follow from another account, Today filling past a small deck, Added pills, topic sizes and + More words, Email invite, Explore's Today row (untested against live Wikipedia: the cloud session can't reach it).
 
 - v45 iPhone check: post an Open Message, leave the app for 10+ minutes, come back and see it once; the Word Decks table with ready-made decks and their dates; Remove on a ready-made row.
 
@@ -134,7 +138,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 ## Next batch list
 
-v46: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends). v45 shipped Oct 25, 2026; see CHANGELOG.md.
+v47: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v46 shipped Oct 25, 2026; see CHANGELOG.md.
 
 ## Next batches (re-planned Oct 18, 2026: TestFlight first)
 

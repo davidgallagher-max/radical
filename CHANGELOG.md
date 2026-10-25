@@ -2,6 +2,19 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v46
+
+- Today always fills to your Cards a day. Your picked deck comes first; when it runs short, words due in your other lists come next, then new ones. A card from another deck shows that deck's name in its header. The 練 badge shows the same number.
+- Mine is now called Added. The list pills on Flash cards are the deck you're on, Added (or the last one you used), and More.
+- Topic decks: pick 12, 24 or 50 words in Word Decks before choosing a topic. A topic deck you have gets ＋ More words.
+- Share a deck: tick it in Word Decks, then Share. Send a link anyone can open, or send it to a friend, who gets it on 記 Track with Add or No thanks. It goes with your meanings, never your notes or progress. Opening one adds it as your own deck. A friend's row shows how far each of you is in the decks you share.
+- Follow the builder: Friends has a David G. row anyone can follow. Followers see David's progress and the decks David sends to followers. David sees only how many follow.
+- Friends: Email opens your own Mail with an invitation and your link. Nothing is sent from Radical.
+- 箋 Notes from David in the menu lists every Open Message, newest first, with a red dot on ☰ until you open it. Chinese in a message reads like Read: drawn, colored, tap a word, with a speaker. A message can carry a deck with an Add button.
+- The Open Message now asks the server fresh every time, checks whenever you come back to the app (at most once a minute), and waits while a sheet or cards are open instead of giving up. Admin tools shows what this phone last heard, with Preview.
+- Explore has a Today row: the featured article and On this day from Chinese Wikipedia, skipping wars, politics and disasters.
+- Fixed: a ready-made deck in History could stop the day's Explore chips from loading.
+
 ## v45
 
 - Word Decks: the table lists every deck you have, your own and the ready-made ones you've added, each with its word count and last used day. Study together works across all of them. A ready-made deck is removed from its row (tick it, then Remove: words you haven't studied go, studied ones move to Mine); the separate "Remove the Food deck" button is gone. "✓ you have it" sits beside the Ready-made heading.
