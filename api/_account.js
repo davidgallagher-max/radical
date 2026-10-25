@@ -117,7 +117,9 @@ function merge(a, b) {
     for (const [f, n] of Object.entries(v || {})) days[d][f] = Math.max(days[d][f] || 0, +n || 0);
   }
   // v43: your deck names (and Mine's name): the newer copy wins
-  const clean = d => d && typeof d === "object" ? { mine: String(d.mine || "Mine").slice(0, 30), names: (Array.isArray(d.names) ? d.names : []).map(n => String(n).slice(0, 30)).filter(Boolean).slice(0, 100), t: +d.t || 0 } : null;
+  // v44: plus when each was last used ({ key: day })
+  const used = u => Object.fromEntries(Object.entries(u && typeof u === "object" ? u : {}).filter(([k, v]) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)).slice(0, 200).map(([k, v]) => [String(k).slice(0, 40), v]));
+  const clean = d => d && typeof d === "object" ? { mine: String(d.mine || "Mine").slice(0, 30), names: (Array.isArray(d.names) ? d.names : []).map(n => String(n).slice(0, 30)).filter(Boolean).slice(0, 100), used: used(d.used), t: +d.t || 0 } : null;
   const decks = clean((+((b.decks || {}).t) || 0) > (+((a.decks || {}).t) || 0) ? b.decks : a.decks);
   return { words, deleted, learned, familiar, days, ...(decks ? { decks } : {}) };
 }
@@ -248,6 +250,9 @@ async function saveFeedback(user, today, entry) { if (!status().ok) return; try 
 const CODE_ABC = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const cleanCode = c => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
 const cleanName = n => String(n || "").replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 30);
+// v44: a username (anything) plus a real first and last name; friends see the username and "First L."
+const realOf = p => p && p.first && p.last ? `${p.first} ${p.last[0].toUpperCase()}.` : "";
+const callOf = p => { const r = realOf(p); return p && p.name && r && p.name !== r ? `${p.name} (${r})` : (p && p.name) || r; };
 async function profileOf(user) {
   const path = `users/${user.id}/profile.json`;
   let p = await getJSON(path);
@@ -256,7 +261,7 @@ async function profileOf(user) {
     let code = ""; for (let k = 0; k < 6; k++) code += CODE_ABC[Math.floor(Math.random() * CODE_ABC.length)];
     if (await getJSON(`codes/${code}.json`)) continue;
     await putJSON(`codes/${code}.json`, { id: user.id });
-    p = { code, name: (p && p.name) || "" }; await putJSON(path, p); return p;
+    p = { ...(p || {}), code, name: (p && p.name) || "" }; await putJSON(path, p); return p;
   }
   throw new Error("Couldn't make a friend code. Try again.");
 }
@@ -266,7 +271,7 @@ async function writePublic(user, summary) {
   // v41 counts words (summary.words); an older page still sends characters (summary.chars), which friends no longer see
   const words = summary.words, week = summary.week || {};
   const series = words && Array.isArray(summary.series) ? summary.series.slice(-60).map(x => ({ day: String(x.day || "").slice(0, 10), f: n(x.f), l: n(x.l) })) : [];
-  await putJSON(`users/${user.id}/public.json`, { name: p.name, code: p.code, words: words ? { seen: n(words.seen), familiar: n(words.familiar), learned: n(words.learned) } : null,
+  await putJSON(`users/${user.id}/public.json`, { name: p.name || realOf(p), real: realOf(p), code: p.code, words: words ? { seen: n(words.seen), familiar: n(words.familiar), learned: n(words.learned) } : null,
     week: { days: Math.min(7, n(week.days)), cards: n(week.cards), read: n(week.read) }, streak: n(summary.streak), series, updated: Date.now() });
 }
 async function friendIds(id) { const f = await getJSON(`users/${id}/friends.json`); return Array.isArray(f && f.ids) ? f.ids : []; }
@@ -277,10 +282,10 @@ const ADD_TRIES = 20;  // codes one account can try a day
 async function friendsView(user) {
   const p = await profileOf(user), ids = await friendIds(user.id), rids = await requestIds(user.id);
   const list = (await Promise.all(ids.map(id => getJSON(`users/${id}/public.json`).catch(() => null)))).filter(Boolean)
-    .map(x => ({ ...x, name: x.name || "A friend" }));
+    .map(x => ({ ...x, name: x.name || x.real || "A friend" }));
   const requests = (await Promise.all(rids.map(id => getJSON(`users/${id}/profile.json`).catch(() => null)))).filter(x => x && x.code)
-    .map(x => ({ code: x.code, name: x.name || "Someone" }));
-  return { code: p.code, name: p.name || "", friends: list, requests };
+    .map(x => ({ code: x.code, name: x.name || realOf(x) || "Someone", real: realOf(x) }));
+  return { code: p.code, name: p.name || "", first: p.first || "", last: p.last || "", friends: list, requests };
 }
 async function connect(a, b) {
   await setFriendIds(a, [...await friendIds(a), b]);
@@ -291,12 +296,14 @@ async function connect(a, b) {
 async function friends(user, body) {
   const op = body.op || "me";
   if (op === "name") {
-    const p = await profileOf(user); p.name = cleanName(body.name); await putJSON(`users/${user.id}/profile.json`, p);
-    const pub = await getJSON(`users/${user.id}/public.json`); if (pub) { pub.name = p.name; await putJSON(`users/${user.id}/public.json`, pub); }
+    const p = await profileOf(user); p.name = cleanName(body.name);
+    if ("first" in body) p.first = cleanName(body.first); if ("last" in body) p.last = cleanName(body.last);
+    await putJSON(`users/${user.id}/profile.json`, p);
+    const pub = await getJSON(`users/${user.id}/public.json`); if (pub) { pub.name = p.name || realOf(p); pub.real = realOf(p); await putJSON(`users/${user.id}/public.json`, pub); }
   }
   if (body.summary) { await profileOf(user); await writePublic(user, body.summary); }
-  // v43: friends see your real name, so adding or accepting needs one
-  if ((op === "add" || op === "accept") && !(await profileOf(user)).name) return { error: "Add your name first." };
+  // v43, v44: friends see your real name, so adding or accepting needs your first and last name
+  if ((op === "add" || op === "accept") && !realOf(await profileOf(user))) return { error: "Add your first and last name first." };
   if (op === "add") {
     const day = new Date().toISOString().slice(0, 10), tp = `users/${user.id}/tries.json`, t = (await getJSON(tp)) || {};
     const n = t.day === day ? t.n || 0 : 0;
@@ -306,7 +313,7 @@ async function friends(user, body) {
     if (!c || !c.id) return { error: "No one has that code. Check the letters and try again." };
     if (c.id === user.id) return { error: "That's your own code." };
     await profileOf(user);
-    const them = await getJSON(`users/${c.id}/profile.json`), name = (them && them.name) || "your friend";
+    const them = await getJSON(`users/${c.id}/profile.json`), name = callOf(them) || "your friend";
     if ((await friendIds(user.id)).includes(c.id)) return { ...(await friendsView(user)), added: name };
     // They already asked you: this is a yes, so connect now
     if ((await requestIds(user.id)).includes(c.id)) { await connect(user.id, c.id); return { ...(await friendsView(user)), added: name }; }
@@ -330,4 +337,16 @@ async function friends(user, body) {
   return friendsView(user);
 }
 
-module.exports = { anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, logFail, DAILY_CAP, capFor, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };
+// ---- the owners' notice (v44): one short message everyone sees once after the splash. notice.json = { id, text, until }.
+async function notice() { if (!status().ok) return null; const n = await getJSON("notice.json").catch(() => null); return n && n.text && !(n.until && n.until < day()) ? n : null; }
+async function setNotice(user, body) {
+  if (!isOwner(user)) return { error: "Owners only." };
+  if (body.op === "clear") { await putJSON("notice.json", {}); return { notice: null }; }
+  const text = String(body.text || "").replace(/[\u0000-\u0008<>]/g, "").trim().slice(0, 600);
+  if (!text) return { error: "Write the notice first." };
+  const until = /^\d{4}-\d{2}-\d{2}$/.test(body.until || "") ? body.until : "";
+  const n = { id: Date.now().toString(36), text, until };
+  await putJSON("notice.json", n); return { notice: n };
+}
+
+module.exports = { notice, setNotice, anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, logFail, DAILY_CAP, capFor, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };

@@ -53,9 +53,10 @@ For each item:
 - "kind": "word", "phrase", "pattern" or "sentence".
 - "pinyin": the pinyin printed above it if there is any (keep the teacher's Taiwan readings, e.g. 垃圾 lèsè), with tone marks, syllables of one word joined; otherwise "".
 - "meaning": the teacher's English for it, with spelling fixed. If she gave none, a short English meaning (for a sentence, its translation). If her English is wrong for the item (not just misspelled), give the right meaning.
-- "from_text": true if the meaning comes from her English, false if you supplied it.
+- "from_text": true if the page gives English for this item (even if you fixed its spelling), false only when the page has no English for it and you supplied the meaning.
+- "english": the English printed on the page for this item, exactly as written; "" if there is none.
 - "note": her original English, only when you changed what it means; otherwise "".
-Return ONLY JSON: {"items":[{"word":"","kind":"","pinyin":"","meaning":"","from_text":true,"note":""}]}, at most 60 items.`;
+Return ONLY JSON: {"items":[{"word":"","kind":"","pinyin":"","meaning":"","from_text":true,"english":"","note":""}]}, at most 60 items.`;
 
 // Fresh example sentences for a word (one or two), different from the ones the learner has.
 const EXAMPLE_PROMPT = (word, meaning, avoid, n = 1, cn = false) => `Write ${n === 1 ? `one new natural ${MAND(cn)} example sentence` : `${n} new natural ${MAND(cn)} example sentences, each in a different everyday context,`} (${cn ? "Simplified" : "Traditional"} characters, low intermediate level, ${cn ? "mainland" : "Taiwan"} word choices) using ${word}${meaning ? ` (${meaning})` : ""}.${avoid ? ` Make ${n === 1 ? "it" : "them"} clearly different from these: ${avoid}` : ""}
@@ -175,6 +176,11 @@ module.exports = async (req, res) => {
   // Public: the account service's address and publishable key (both are meant to be in the page), and whether the
   // keys are set up (names only, never values).
   if (body.action === "config") { res.setHeader("Cache-Control", "no-store"); return res.status(200).json(account.config()); }
+  // v44: the owners' notice, the same for everyone; the CDN keeps it a minute
+  if (body.action === "notice" && req.method === "GET") {
+    res.setHeader("Vercel-CDN-Cache-Control", "max-age=60"); res.setHeader("Cache-Control", "public, max-age=0");
+    try { return res.status(200).json({ notice: await account.notice() }); } catch (e) { return res.status(200).json({ notice: null }); }
+  }
   if (body.action === "status") {
     const st = account.status();
     if (st.ok) { try { await account.ensureBucket(); } catch (e) { st.ok = false; st.error = e.message; } }
@@ -198,6 +204,13 @@ module.exports = async (req, res) => {
       res.setHeader("Cache-Control", "no-store");
       const out = await account.friends(user, body);
       return res.status(out.error ? 400 : 200).json(out);
+    }
+    // v44: owners post or take down the notice (not AI)
+    if (body.action === "notice") {
+      if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+      res.setHeader("Cache-Control", "no-store");
+      const out = await account.setNotice(user, body);
+      return res.status(out.error ? 403 : 200).json(out);
     }
     // v43: the page reports an AI call that failed on its side (a meaning check that took too long). Not AI, no cost.
     if (body.action === "fail") {
@@ -358,9 +371,12 @@ module.exports = async (req, res) => {
     if (body.action === "explain") {
       const sentence = String(body.sentence || "").trim().slice(0, 300);
       if (!sentence) return res.status(400).json({ error: "Nothing to explain." });
-      const out = parseJSON(await askClaude(CARD_MODEL, EXPLAIN_PROMPT(sentence, body.trad !== false, cn), 900));
+      const trad = body.trad !== false && body.trad !== "0";
+      const out = parseJSON(await askClaude(CARD_MODEL, EXPLAIN_PROMPT(sentence, trad, cn), 900));
       if (!out) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       const list = (x, n) => (Array.isArray(x) ? x : []).filter(v => v && typeof v === "object").slice(0, n);
+      // v44: an explanation is the same for everyone, so asked with GET the CDN keeps it (the next person gets it at once)
+      if (req.method === "GET") { res.setHeader("Vercel-CDN-Cache-Control", "max-age=31536000"); res.setHeader("Cache-Control", "public, max-age=0"); }
       return res.status(200).json({ structure: String(out.structure || "").slice(0, 400),
         points: list(out.points, 4).map(p => ({ pattern: String(p.pattern || "").slice(0, 30), note: String(p.note || "").slice(0, 300) })).filter(p => p.pattern),
         words: list(out.words, 3).map(w => ({ word: String(w.word || "").slice(0, 12), note: String(w.note || "").slice(0, 200) })).filter(w => w.word) });
