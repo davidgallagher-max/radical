@@ -3926,11 +3926,11 @@ function paintFriends(b) {
   const me = el("div", "frme");
   me.innerHTML = `<span class="trs">Your code</span><b class="frcode">${esc(f.code)}</b>`;
   const share = btn("Share", "btn ghost small", async () => {
-    const text = `Add me on Radical: ${f.code}`;
+    const text = `I'm learning Chinese with Radical. Learn with me: my friend code is ${f.code}.`;  // v48: Share is the invite (Email is gone)
     try { if (navigator.share) { await navigator.share({ title: "Radical", text, url: friendLink(f.code) }); return; } } catch (e) { return; }
     try { await navigator.clipboard.writeText(`${text} ${friendLink(f.code)}`); share.textContent = "Link copied"; setTimeout(() => share.textContent = "Share", 2000); } catch (e) {}
   });
-  const btns = el("div", "frme"); btns.append(share, btn("QR code", "btn ghost small", () => showQR(f.code)), btn("Email", "btn ghost small", () => inviteSheet(f)));
+  const btns = el("div", "frme"); btns.append(share, btn("QR code", "btn ghost small", () => showQR(f.code)));
   // Your name: shown as text with the pencil; the pencil opens the boxes, and only Save changes it (v42, v44)
   const nameRow = el("div", "frnamerow");
   const showName = () => {
@@ -4135,18 +4135,6 @@ function sharedLines(x) {
   return Object.keys(theirs).filter(id => mine[id]).map(id => `<p class="trs frdeck"><b>${esc(keyName(decks.ids[id]))}</b>: you ${num(mine[id].f)} · ${who} ${num(theirs[id].f)} recognized <span class="trs">(of ${num(mine[id].n)})</span></p>`).join("");
 }
 // Invite by email (v46): your own Mail opens with the note and your link filled in; nothing is sent from Radical.
-function inviteSheet(f) {
-  const sheet = el("div", "sheet"), card = el("div", "sheetcard signcard"), inp = el("input"), close = () => sheet.remove();
-  inp.type = "email"; inp.placeholder = "Their email"; inp.autocomplete = "email"; inp.setAttribute("aria-label", "Their email");
-  const go = btn("Write it", "btn wide", () => {
-    const to = inp.value.trim(), body = `I'm learning Chinese with Radical. Add me as a friend:\n${friendLink(f.code)}\n\nMy code: ${f.code}`;
-    location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent("Learn Chinese with me on Radical")}&body=${encodeURIComponent(body)}`; close();
-  });
-  inp.addEventListener("keydown", e => { if (e.key === "Enter") go.click(); });
-  card.append(el("h3", "", "Invite by email"), inp, go, el("p", "note", "Opens your Mail. It comes from you."), btn("Cancel", "btn ghost wide", close));
-  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
-  document.body.append(sheet); setTimeout(() => inp.focus(), 300);
-}
 
 // ---- milestones: a short moment at round numbers (words recognized, mastered and read, streak, cards). Each fires once;
 // anything already passed when this arrived is recorded quietly so nobody gets a pile of them at once. v41 counts words
