@@ -2,6 +2,14 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v45
+
+- Word Decks: the table lists every deck you have, your own and the ready-made ones you've added, each with its word count and last used day. Study together works across all of them. A ready-made deck is removed from its row (tick it, then Remove: words you haven't studied go, studied ones move to Mine); the separate "Remove the Food deck" button is gone. "✓ you have it" sits beside the Ready-made heading.
+- Last used now shows for older decks too: the last day you studied any of its words, or "—" if never. Starting cards counts as using the deck.
+- The owners' message now shows when you come back to the app, not only on a fresh start (checked at most every 10 minutes).
+- Owners get one menu entry, 管 Admin tools: AI use (with the breakdown), Post an Open Message, and the Color lab (moved out of Settings).
+- Post an Open Message stays on the page after Post. A live message shows "Posted Oct 25" with Edit and Take down; Post only shows while you edit.
+
 ## v44
 
 - Friends: a username (anything you like) plus your real first and last name. Friends see your username, and your first name with your last initial when they open your row. Adding or accepting a friend needs both names, and anyone missing them is asked once.
