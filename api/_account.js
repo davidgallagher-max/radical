@@ -119,7 +119,9 @@ function merge(a, b) {
   // v43: your deck names (and Mine's name): the newer copy wins
   // v44: plus when each was last used ({ key: day })
   const used = u => Object.fromEntries(Object.entries(u && typeof u === "object" ? u : {}).filter(([k, v]) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)).slice(0, 200).map(([k, v]) => [String(k).slice(0, 40), v]));
-  const clean = d => d && typeof d === "object" ? { mine: String(d.mine || "Mine").slice(0, 30), names: (Array.isArray(d.names) ? d.names : []).map(n => String(n).slice(0, 30)).filter(Boolean).slice(0, 100), used: used(d.used), t: +d.t || 0 } : null;
+  // v46: which shared deck ids are which of your decks ({ id: key })
+  const ids = u => Object.fromEntries(Object.entries(u && typeof u === "object" ? u : {}).filter(([k, v]) => /^[a-z0-9]{8,16}$/.test(k) && typeof v === "string").slice(0, 100).map(([k, v]) => [k, v.slice(0, 60)]));
+  const clean = d => d && typeof d === "object" ? { mine: String(d.mine || "Mine").slice(0, 30), names: (Array.isArray(d.names) ? d.names : []).map(n => String(n).slice(0, 30)).filter(Boolean).slice(0, 100), used: used(d.used), ids: ids(d.ids), t: +d.t || 0 } : null;
   const decks = clean((+((b.decks || {}).t) || 0) > (+((a.decks || {}).t) || 0) ? b.decks : a.decks);
   return { words, deleted, learned, familiar, days, ...(decks ? { decks } : {}) };
 }
@@ -272,7 +274,15 @@ async function writePublic(user, summary) {
   const words = summary.words, week = summary.week || {};
   const series = words && Array.isArray(summary.series) ? summary.series.slice(-60).map(x => ({ day: String(x.day || "").slice(0, 10), f: n(x.f), l: n(x.l) })) : [];
   await putJSON(`users/${user.id}/public.json`, { name: p.name || realOf(p), real: realOf(p), code: p.code, words: words ? { seen: n(words.seen), familiar: n(words.familiar), learned: n(words.learned) } : null,
-    week: { days: Math.min(7, n(week.days)), cards: n(week.cards), read: n(week.read) }, streak: n(summary.streak), series, updated: Date.now() });
+    week: { days: Math.min(7, n(week.days)), cards: n(week.cards), read: n(week.read) }, streak: n(summary.streak), series, decks: cleanProgress(summary.decks), updated: Date.now() });
+}
+// v46: progress on shared decks, by deck id: { id: { n words, f recognized, l mastered } }, at most 30
+const DECK_ID = /^[a-z0-9]{8,16}$/;
+function cleanProgress(d) {
+  if (!d || typeof d !== "object") return {};
+  const out = {}, n = x => Math.max(0, Math.round(+x || 0));
+  Object.keys(d).filter(k => DECK_ID.test(k)).slice(0, 30).forEach(k => { const x = d[k] || {}; out[k] = { n: n(x.n), f: n(x.f), l: n(x.l) }; });
+  return out;
 }
 async function friendIds(id) { const f = await getJSON(`users/${id}/friends.json`); return Array.isArray(f && f.ids) ? f.ids : []; }
 async function setFriendIds(id, ids) { await putJSON(`users/${id}/friends.json`, { ids: [...new Set(ids)].slice(0, 200) }); }
@@ -285,7 +295,40 @@ async function friendsView(user) {
     .map(x => ({ ...x, name: x.name || x.real || "A friend" }));
   const requests = (await Promise.all(rids.map(id => getJSON(`users/${id}/profile.json`).catch(() => null)))).filter(x => x && x.code)
     .map(x => ({ code: x.code, name: x.name || realOf(x) || "Someone", real: realOf(x) }));
-  return { code: p.code, name: p.name || "", first: p.first || "", last: p.last || "", friends: list, requests };
+  const inbox = ((await getJSON(`users/${user.id}/inbox.json`).catch(() => null)) || {}).decks || [];
+  return { code: p.code, name: p.name || "", first: p.first || "", last: p.last || "", friends: list, requests, inbox, builder: await builderView(user) };
+}
+// ---- v46: shared decks. A deck you share is a snapshot in decks/<id>.json { id, name, from, by, words, t }: anyone
+// with the id can read it (GET action=deck, cached), so a link, a friend's inbox and an Open Message all point at it.
+const randId = () => { let s = ""; for (let k = 0; k < 12; k++) s += "abcdefghijkmnpqrstuvwxyz23456789"[Math.floor(Math.random() * 32)]; return s; };
+const cleanWords = ws => (Array.isArray(ws) ? ws : []).filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word)).slice(0, 300)
+  .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").replace(/[<>]/g, "").slice(0, 80) }));
+async function getDeck(id) { return DECK_ID.test(String(id || "")) ? getJSON(`decks/${id}.json`).catch(() => null) : null; }
+async function makeDeck(user, deck) {
+  const words = cleanWords(deck && deck.words), name = cleanName(deck && deck.name).slice(0, 20) || "Shared deck";
+  if (!words.length) return null;
+  const p = await profileOf(user), d = { id: randId(), name, from: p.code, by: p.name || realOf(p) || "A friend", words, t: Date.now() };
+  await putJSON(`decks/${d.id}.json`, d); return d;
+}
+const inboxOf = async id => ((await getJSON(`users/${id}/inbox.json`).catch(() => null)) || {}).decks || [];
+async function toInbox(id, d) { const ds = (await inboxOf(id)).filter(x => x.id !== d.id); await putJSON(`users/${id}/inbox.json`, { decks: [...ds, { id: d.id, name: d.name, n: d.words.length, by: d.by, t: d.t }].slice(-30) }); }
+const SEND_TRIES = 40;  // decks one account can share a day
+// ---- v46: the builder. One owner is the builder (builder.json { id }); anyone signed in can follow them one way:
+// followers see the builder's row like a friend's and the decks the builder sends to followers; the builder sees only
+// how many follow. followers.json { ids } is the builder's list; each follower keeps users/<id>/follow.json { on }.
+async function builderId() { const b = await getJSON("builder.json").catch(() => null); return b && b.id || ""; }
+async function builderView(user) {
+  const id = await builderId(); if (!id) return null;
+  if (id === user.id) { const f = await getJSON("followers.json").catch(() => null); return { me: true, followers: Array.isArray(f && f.ids) ? f.ids.length : 0 }; }
+  const pub = await getJSON(`users/${id}/public.json`).catch(() => null), fo = await getJSON(`users/${user.id}/follow.json`).catch(() => null);
+  const ds = ((await getJSON("builder-decks.json").catch(() => null)) || {}).decks || [];
+  return { following: !!(fo && fo.on), name: (pub && (pub.real || pub.name)) || "The builder", row: fo && fo.on && pub ? { ...pub, code: undefined } : null, decks: fo && fo.on ? ds.slice(-12) : [] };
+}
+async function setFollow(user, on) {
+  const id = await builderId(); if (!id || id === user.id) return;
+  const f = (await getJSON("followers.json").catch(() => null)) || {}, ids = new Set(Array.isArray(f.ids) ? f.ids : []);
+  on ? ids.add(user.id) : ids.delete(user.id);
+  await putJSON("followers.json", { ids: [...ids] }); await putJSON(`users/${user.id}/follow.json`, { on: !!on });
 }
 async function connect(a, b) {
   await setFriendIds(a, [...await friendIds(a), b]);
@@ -327,6 +370,24 @@ async function friends(user, body) {
       else await setRequestIds(user.id, (await requestIds(user.id)).filter(x => x !== c.id));
     }
   }
+  // v46: share a deck: to friends (their inbox), to followers (builder only), or just for a link (to: [])
+  if (op === "senddeck") {
+    const day = new Date().toISOString().slice(0, 10), tp = `users/${user.id}/sends.json`, t = (await getJSON(tp)) || {}, n = t.day === day ? t.n || 0 : 0;
+    if (n >= SEND_TRIES) return { error: "That's a lot of sharing for one day. Try again tomorrow." };
+    await putJSON(tp, { day, n: n + 1 });
+    const d = await makeDeck(user, body.deck); if (!d) return { error: "That deck has no words to share." };
+    const mine = await friendIds(user.id), to = (Array.isArray(body.to) ? body.to : []).slice(0, 50);
+    for (const code of to) { const c = await getJSON(`codes/${cleanCode(code)}.json`); if (c && c.id && mine.includes(c.id)) await toInbox(c.id, d); }
+    if (body.followers) {
+      if (!isOwner(user) || (await builderId()) !== user.id) return { error: "Only the builder sends to followers." };
+      const b = ((await getJSON("builder-decks.json").catch(() => null)) || {}).decks || [];
+      await putJSON("builder-decks.json", { decks: [...b, { id: d.id, name: d.name, n: d.words.length, t: d.t }].slice(-30) });
+    }
+    return { ...(await friendsView(user)), deck: { id: d.id, name: d.name, n: d.words.length } };
+  }
+  if (op === "inboxdone") { const id = String(body.id || ""); await putJSON(`users/${user.id}/inbox.json`, { decks: (await inboxOf(user.id)).filter(x => x.id !== id) }); }
+  if (op === "follow" || op === "unfollow") await setFollow(user, op === "follow");
+  if (op === "bebuilder") { if (!isOwner(user)) return { error: "Owners only." }; await profileOf(user); await putJSON("builder.json", { id: user.id }); }
   if (op === "remove") {
     const c = await getJSON(`codes/${cleanCode(body.code)}.json`);
     if (c && c.id) {
@@ -339,14 +400,20 @@ async function friends(user, body) {
 
 // ---- the owners' notice (v44): one short message everyone sees once after the splash. notice.json = { id, text, until }.
 async function notice() { if (!status().ok) return null; const n = await getJSON("notice.json").catch(() => null); return n && n.text && !(n.until && n.until < day()) ? n : null; }
+// v46: every message also goes into notes.json (newest last, at most 50): the menu's Notes from David. Editing a live
+// message replaces it there; Take down removes it from both. A message can carry a shared deck { id, name, n }.
+async function notes() { if (!status().ok) return []; const n = await getJSON("notes.json").catch(() => null); return Array.isArray(n && n.list) ? n.list : []; }
 async function setNotice(user, body) {
   if (!isOwner(user)) return { error: "Owners only." };
-  if (body.op === "clear") { await putJSON("notice.json", {}); return { notice: null }; }
-  const text = String(body.text || "").replace(/[\u0000-\u0008<>]/g, "").trim().slice(0, 600);
+  const cur = await getJSON("notice.json").catch(() => null), list = await notes();
+  if (body.op === "clear") { await putJSON("notice.json", {}); if (cur && cur.id) await putJSON("notes.json", { list: list.filter(x => x.id !== cur.id) }); return { notice: null }; }
+  const text = String(body.text || "").replace(/[\u0000-\u0008<>]/g, "").trim().slice(0, 1200);
   if (!text) return { error: "Write the notice first." };
   const until = /^\d{4}-\d{2}-\d{2}$/.test(body.until || "") ? body.until : "";
-  const n = { id: Date.now().toString(36), text, until };
-  await putJSON("notice.json", n); return { notice: n };
+  const d = body.deck && await getDeck(body.deck.id), deck = d ? { id: d.id, name: d.name, n: d.words.length } : null;
+  const n = { id: Date.now().toString(36), text, until, ...(deck ? { deck } : {}) };
+  const keep = list.filter(x => !(body.replace && x.id === body.replace));
+  await putJSON("notice.json", n); await putJSON("notes.json", { list: [...keep, n].slice(-50) }); return { notice: n };
 }
 
-module.exports = { notice, setNotice, anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, logFail, DAILY_CAP, capFor, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };
+module.exports = { notice, notes, getDeck, setNotice, anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, logFail, DAILY_CAP, capFor, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };

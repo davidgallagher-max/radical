@@ -122,8 +122,8 @@ Return ONLY JSON: {"topics":[{"zh":"台灣夜市","en":"Night markets","py":"Tá
 
 // Word Sets: a short list of useful words on a theme ("Food", or anything a learner types). The same theme always
 // makes the same request, so Vercel's CDN can share a set between learners (see the GET below).
-const WORDSET_PROMPT = (theme, cn) => `An adult learner of Mandarin (beginner to low intermediate) wants a set of words to study on this theme: "${theme}"
-List the 24 most useful words and short set phrases for it: common, everyday, the ones they'd meet or need first, most useful first. Real dictionary words only, no sentences.
+const WORDSET_PROMPT = (theme, cn, n = 24) => `An adult learner of Mandarin (beginner to low intermediate) wants a set of words to study on this theme: "${theme}"
+List the ${n} most useful words and short set phrases for it: common, everyday, the ones they'd meet or need first, most useful first. Real dictionary words only, no sentences.
 Use ${cn ? "mainland" : "Taiwan"} usage. If the theme isn't something words can be listed for, return an empty list.
 Return ONLY JSON: {"words":[{"word":"Traditional characters","pinyin":"pinyin with tone marks, ${cn ? "mainland" : "Taiwan"} reading","meaning":"short English meaning, under 8 words"}]}`;
 
@@ -180,6 +180,18 @@ module.exports = async (req, res) => {
   if (body.action === "notice" && req.method === "GET") {
     res.setHeader("Vercel-CDN-Cache-Control", "max-age=60"); res.setHeader("Cache-Control", "public, max-age=0");
     try { return res.status(200).json({ notice: await account.notice() }); } catch (e) { return res.status(200).json({ notice: null }); }
+  }
+  // v46: past messages (the menu's Notes from David), cached a minute; a shared deck by id, cached for good (a deck
+  // never changes once shared)
+  if (body.action === "notelist" && req.method === "GET") {
+    res.setHeader("Vercel-CDN-Cache-Control", "max-age=60"); res.setHeader("Cache-Control", "public, max-age=0");
+    try { return res.status(200).json({ notes: await account.notes() }); } catch (e) { return res.status(200).json({ notes: [] }); }
+  }
+  if (body.action === "deck" && req.method === "GET") {
+    const d = await account.getDeck(body.id).catch(() => null);
+    if (!d) { res.setHeader("Cache-Control", "no-store"); return res.status(404).json({ error: "That deck isn't there any more." }); }
+    res.setHeader("Vercel-CDN-Cache-Control", "max-age=31536000"); res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.status(200).json({ deck: { id: d.id, name: d.name, by: d.by, words: d.words } });
   }
   if (body.action === "status") {
     const st = account.status();
@@ -286,10 +298,12 @@ module.exports = async (req, res) => {
     if (body.action === "wordset") {
       const theme = String(body.theme || "").trim().replace(/\s+/g, " ").slice(0, 60);
       if (!theme) return res.status(400).json({ error: "No theme given." });
-      const list = parseItems(await askClaude(FAST_MODEL, WORDSET_PROMPT(theme, cn), 3000), "words");
+      // v46: 12, 24 (the default), 50, or 100 for + More words
+      const n = [12, 24, 50, 100].includes(+body.n) ? +body.n : 24;
+      const list = parseItems(await askClaude(FAST_MODEL, WORDSET_PROMPT(theme, cn, n), n > 50 ? 9000 : n > 24 ? 5000 : 3000), "words");
       if (!list) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       const words = list.filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word))
-        .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").slice(0, 80) })).slice(0, 30);
+        .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").slice(0, 80) })).slice(0, n + 6);
       if (req.method === "GET" && words.length) {  // the same for everyone: Vercel's CDN keeps a set for a year
         res.setHeader("Vercel-CDN-Cache-Control", "max-age=31536000");
         res.setHeader("Cache-Control", "public, max-age=0");

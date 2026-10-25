@@ -656,6 +656,20 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .trtiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .trtile{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;padding:10px 10px;align-content:start}.trtile .trbig{font-size:1.45rem}.trtile.tapme{cursor:pointer}
 .trtip{margin:-4px 2px 0}
+/* v46: sharing decks, the builder, Notes from David, Explore's Today */
+.menubtn,#notesBtn{position:relative}.menubtn.dot::after,#notesBtn.dot::after{content:"";position:absolute;width:9px;height:9px;border-radius:50%;background:#E5372F;box-shadow:0 0 0 2px var(--bg)}
+.menubtn.dot::after{top:1px;right:-1px}#notesBtn.dot::after{position:static;margin-left:auto;flex:none}
+.frtag{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);border-radius:6px;padding:1px 5px;margin-left:4px;vertical-align:2px}
+.frbuild .frhead .btn{flex:none}.frbuilder{margin:6px 0}.frdeck{margin:0}
+.frdeckrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0}
+.sharecard{display:grid;gap:8px}.sharecard h3,.sharecard p{margin:0}.sharecard .trl{margin-top:6px}
+.deckpeek{font-size:1.15rem;line-height:1.6;margin:0 0 12px}
+.notebody{display:grid;gap:10px;margin:6px 0 14px}.notebody .noticetext{margin:0}.noticecard{max-height:85vh;overflow:auto}
+.noteitem{margin:0 0 12px}.noteitem .notebody{margin-bottom:8px}
+.noticetail{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}.noticetail p{margin:0 0 8px}
+.noticedeck{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);max-width:60%}
+.wtoday{display:grid;gap:6px;margin:0 0 6px}.wtrow{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:10px;align-items:baseline;padding:10px 12px;border-radius:12px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
+.wtrow .wty{flex:none;color:var(--accent);font-weight:700;font-size:.92rem;font-variant-numeric:tabular-nums;min-width:3.2em}.wtrow .wtt{font-size:1.05rem;line-height:1.45;min-width:0}
 .frrow{border-bottom:1px solid color-mix(in srgb,var(--line) 85%,var(--fg))}
 .frhead{font:inherit;width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:none;border:0;color:var(--fg);padding:10px 0;cursor:pointer}
 .frwho{flex:1;display:grid;gap:2px;min-width:0}.frchev{font-style:normal;font-size:1.4rem;line-height:1;color:var(--accent);transition:transform .2s}
@@ -809,6 +823,7 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 /* Practice's one box: three rows of pills (mode, which words, how many), then Start. The picked pill is outlined in the
    accent with accent text, the same in every row. */
 .pills{display:flex;flex-wrap:wrap;gap:6px}
+.pills.topicsize{align-items:center;margin:8px 0}.pills.topicsize .tslabel{color:var(--muted);font-size:.92rem;margin-right:4px}.pills.topicsize button{flex:0 1 64px;padding:6px 10px}
 .pills button{all:unset;cursor:pointer;box-sizing:border-box;flex:1 1 auto;text-align:center;white-space:nowrap;padding:8px 12px;border-radius:999px;font-size:.92rem;font-weight:600;color:var(--fg);background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
 .pills button span{color:var(--muted);font-weight:500;font-size:.92rem;margin-left:2px}
 .pills button span.pbadge,.pills button[aria-pressed="true"] span.pbadge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;margin-left:4px;border-radius:10px;background:#E5372F;color:#fff;font-size:.78rem;font-weight:700;opacity:1;vertical-align:1px}
@@ -1291,6 +1306,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <h3 class="sec tabsec"><span lang="zh">探</span>Explore</h3>
     <p class="note tabsub">Real Chinese Wikipedia.</p>
     <div class="excol exleft">
+    <div id="wikiToday" hidden><h3 class="sec sub">Today</h3><div class="wtoday" id="wikiTodayList"></div></div>
     <h3 class="sec sub">Pick a topic</h3>
     <div class="topics" id="wikiTopics"></div>
     </div>
@@ -1346,6 +1362,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <button type="button" data-go="tour"><span class="mi">導</span>How it works</button>
     <button type="button" data-go="backup"><span class="mi">存</span>Backup</button>
     <hr>
+    <button type="button" data-go="notes" id="notesBtn"><span class="mi">箋</span>Notes from David</button>
     <button type="button" data-go="about"><span class="mi">部</span>About</button>
     <button type="button" id="feedbackBtn"><span class="mi">信</span>Send feedback</button>
     <button type="button" data-go="admin" id="adminBtn" hidden><span class="mi">管</span>Admin tools</button>
@@ -1384,6 +1401,15 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <h3 class="sec">Post an Open Message</h3>
     <div class="panel" id="noticePanel"></div>
     <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
+  </div>
+</section>
+
+<!-- NOTES FROM DAVID (v46) -->
+<section class="screen sub" id="notesScreen" hidden>
+  <div class="inner">
+    <div class="topbar"><button type="button" class="back" data-back>Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <h3 class="sec tabsec"><span lang="zh">箋</span>Notes from David</h3>
+    <div id="notesList"></div>
   </div>
 </section>
 
@@ -1506,11 +1532,12 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
   else if (g === "about") go("aboutScreen");
   else if (g === "backup") { wordsWhere(); go("backupScreen"); }
   else if (g === "admin") openAdmin();
+  else if (g === "notes") openNotes();
   else if (g === "tour") showTour(true);
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v45";
+const APP_VERSION = "v46";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2255,6 +2282,7 @@ function showOnly(id) {
 }
 let tab = "readScreen", revSide = null;
 function setTab(id) {
+  if (id === "wikiScreen") fetchToday();  // v46: Explore's Today (once a day)
   if (id === "wordsScreen") contOk = true, catPicked = keepCat; if (reading) stopReading(); if ($("wikiBack")) $("wikiBack").hidden = true;
   // A session you stepped away from (another tab) is where 練 takes you, until you Quit it or the day ends.
   if (id === "wordsScreen" && !keepCat && savedSession()) {
@@ -2265,7 +2293,7 @@ function setTab(id) {
   tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); if (id === "trackScreen") renderTrack();
 }
 // Pages that can be opened from the menu: their Back says "‹ Menu" then (and reopens it), "‹ Back" otherwise.
-const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen", "backupScreen", "adminScreen"];
+const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen", "backupScreen", "adminScreen", "notesScreen"];
 function go(id) {
   if (MENU_PAGES.includes(id)) { $(id).dataset.via = viaMenu ? "menu" : ""; const bk = $(id).querySelector(".topbar .back"); if (bk) bk.textContent = viaMenu ? "Menu" : "Back";
     const mb = $(id).querySelector(".topbar .menubtn"); if (mb) mb.style.visibility = viaMenu ? "hidden" : ""; }  // ‹ Menu already goes back to it
@@ -2921,7 +2949,7 @@ async function claude(payload, why) {
   payload = { region, ...payload };
   const url = payload.action === "card" ? `/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}${rp}`
     : payload.action === "explain" ? `/api/claude?v=1&action=explain&sentence=${encodeURIComponent(payload.sentence)}&trad=${payload.trad === false ? 0 : 1}${rp}`
-    : get ? `/api/claude?v=1&action=wordset&theme=${encodeURIComponent(payload.theme)}${rp}` : "/api/claude";
+    : get ? `/api/claude?v=1&action=wordset&theme=${encodeURIComponent(payload.theme)}${payload.n && payload.n !== 24 ? `&n=${payload.n}` : ""}${rp}` : "/api/claude";
   let r;
   try {
     r = await fetch(url, get ? { headers: auth }
@@ -3015,42 +3043,119 @@ function aiTally() {
 }
 function openAdmin() { paintTally(store.get("radical-ai-tally", null)); noticePanel(); buildLab(); go("adminScreen"); aiTally(); }
 // v44: the owners' notice: everyone sees it once (per notice), a moment after the splash. Owners write it here.
-async function showNotice(tries = 0) {
-  let n = null;
-  try { const r = await fetch("/api/claude?action=notice"); n = (await r.json()).notice; } catch (e) { return; }
-  if (!n || !n.id || !n.text || store.get("radical-notice-seen", "") === n.id) return;
-  if (document.querySelector(".sheet, #splash") || !$("reviewScreen").hidden || !$("adminScreen").hidden) { if (tries < 20) setTimeout(() => showNotice(tries + 1), 5000); return; }
-  store.set("radical-notice-seen", n.id);
-  const sheet = el("div", "sheet"), card = el("div", "sheetcard noticecard");
-  card.append(el("p", "noticetext", esc(n.text).replace(/\n/g, "<br>")), btn("OK", "btn wide", () => sheet.remove()));
-  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+// v46: asked fresh every time (never a stored answer; the minute in the address lets the CDN share it for a minute),
+// on start and on every return to the app (at most once a minute), and it waits for as long as a sheet, cards or
+// Admin tools are open instead of giving up. What this phone last heard is kept for Admin tools.
+let noticeBusy = false;
+const noticeWhen = n => { const at = n && parseInt(n.id, 36); return at ? new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""; };
+async function fetchNotice() {
+  const r = await fetch(`/api/claude?action=notice&m=${Math.floor(Date.now() / 6e4)}`, { cache: "no-store" });
+  const n = (await r.json()).notice || null;
+  store.set("radical-notice-last", { at: Date.now(), id: (n && n.id) || "" });
+  if (n && n.id) { store.set("radical-note-latest", n.id); menuDot(); }
+  return n;
+}
+const noticeBlocked = () => !!document.querySelector(".sheet, #splash") || !$("reviewScreen").hidden || !$("adminScreen").hidden;
+async function showNotice() {
+  if (noticeBusy) return; noticeBusy = true;
+  try {
+    let n = null;
+    try { n = await fetchNotice(); } catch (e) { store.set("radical-notice-last", { at: Date.now(), err: String(e.message || e).slice(0, 60) }); return; }
+    if (!n || !n.id || !n.text || store.get("radical-notice-seen", "") === n.id) return;
+    while (noticeBlocked()) { await new Promise(ok => setTimeout(ok, 4000)); if (document.hidden) return; }  // the next return tries again
+    store.set("radical-notice-seen", n.id); noticeCard(n);
+  } finally { noticeBusy = false; }
+}
+// A message's text: lines with Chinese read like Read (drawn, colored, tap a word, a speaker); the rest is plain.
+function noteBody(text) {
+  const box = el("div", "notebody");
+  const han = t => /\p{Script=Han}/u.test(t);
+  String(text || "").split(/\n+/).map(x => x.trim()).filter(Boolean).forEach(l => {
+    // a line mixing English and Chinese sentences: each run of sentences in its own kind
+    const runs = []; l.split(/(?<=[.!?。！？])\s*/).filter(Boolean).forEach(x => { const last = runs[runs.length - 1]; if (last && han(last) === han(x)) runs[runs.length - 1] += (han(x) ? "" : " ") + x; else runs.push(x); });
+    runs.forEach(x => box.append(han(x) ? miniReader(conv(x)) : el("p", "noticetext", esc(x))));
+  });
+  return box;
+}
+function noteDeckBtn(d, before) {
+  const has = () => haveShared(d.id), b = btn(has() ? `Open ${d.name}` : `Add ${d.name} · ${num(d.n)} words`, "btn outl wide", async () => {
+    if (before) before();
+    if (has()) { setList(decks.ids[d.id]); setTab("wordsScreen"); renderWords(); return; }
+    b.disabled = true; try { addSharedDeck(await getShared(d.id)); } catch (e) { toast(esc(e.message), 3000); } b.disabled = false;
+  });
+  return b;
+}
+function noticeCard(n, preview) {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard noticecard"), close = () => sheet.remove();
+  card.append(el("span", "trl", `Notes from David${preview ? " · preview" : ""}`), noteBody(n.text));
+  if (n.deck) card.append(noteDeckBtn(n.deck, close));
+  card.append(btn("OK", "btn wide", close));
+  if (!preview) card.append(btn("All notes", "btn ghost small", () => { close(); openNotes(); }));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
 }
+// v46: the menu's 箋 Notes from David: every message, newest first. A dot on ☰ (and here) until you've opened it.
+function menuDot() {
+  const latest = store.get("radical-note-latest", ""), on = !!latest && latest !== store.get("radical-notes-seen", "");
+  document.querySelectorAll(".menubtn, #notesBtn").forEach(b => b.classList.toggle("dot", on));
+}
+async function openNotes() {
+  const box = $("notesList"); box.replaceChildren(el("p", "note", "Loading…")); go("notesScreen");
+  let list = [];
+  try { list = (await (await fetch(`/api/claude?action=notelist&m=${Math.floor(Date.now() / 6e4)}`, { cache: "no-store" })).json()).notes || []; }
+  catch (e) { box.replaceChildren(el("p", "note", "Notes couldn't load. Are you online?")); return; }
+  box.replaceChildren();
+  if (!list.length) box.append(el("p", "note", "Nothing yet."));
+  [...list].reverse().forEach(n => { const it = el("div", "panel noteitem"); it.append(el("span", "trl", noticeWhen(n)), noteBody(n.text)); if (n.deck) it.append(noteDeckBtn(n.deck)); box.append(it); });
+  if (list.length) { const last = list[list.length - 1].id; store.set("radical-note-latest", last > store.get("radical-note-latest", "") ? last : store.get("radical-note-latest", "")); store.set("radical-notes-seen", store.get("radical-note-latest", "")); }
+  menuDot();
+}
 // Post an Open Message (Admin tools): what's live shows locked with the day it went up and ✎; Post only while editing.
+// v46: a message can carry one of your decks (Add deck on it); editing replaces it in Notes from David. Under it: what
+// this phone last heard, Preview, and the builder (who followers follow).
 async function noticePanel(editing) {
   const box = $("noticePanel");
-  let cur = null; try { cur = (await (await fetch("/api/claude?action=notice&fresh=" + Date.now())).json()).notice; } catch (e) {}
+  let cur = null; try { cur = (await (await fetch("/api/claude?action=notice&fresh=" + Date.now(), { cache: "no-store" })).json()).notice; } catch (e) {}
   box.replaceChildren();
-  const text = el("textarea", "noticeedit"), until = el("input"), msg = el("p", "note");
-  text.rows = 4; text.maxLength = 600; text.placeholder = "Everyone sees it once"; text.value = cur ? cur.text : ""; text.setAttribute("aria-label", "Message");
+  const text = el("textarea", "noticeedit"), until = el("input"), msg = el("p", "note"), deckSel = el("select", "noticedeck");
+  text.rows = 5; text.maxLength = 1200; text.placeholder = "Everyone sees it once. Chinese lines read like Read."; text.value = cur ? cur.text : ""; text.setAttribute("aria-label", "Message");
   until.type = "date"; until.value = cur && cur.until || ""; until.setAttribute("aria-label", "Show until");
+  deckSel.setAttribute("aria-label", "Deck to attach");
+  deckSel.innerHTML = `<option value="">No deck</option>` + allLists().filter(([k]) => k !== "top" && !isGroup(k)).map(([k, n]) => `<option value="${esc(k)}">${esc(n)}</option>`).join("");
   const send = async body => { msg.textContent = ""; try { await claude({ action: "notice", ...body }); return true; } catch (e) { msg.textContent = e.message; return false; } };
   const ul = el("label", "noticeuntil"); ul.append(el("span", "trs", "Show until (optional)"), until);
-  const row = el("div", "row");
+  const dl = el("label", "noticeuntil"); dl.append(el("span", "trs", "Attach a deck"), deckSel);
+  const row = el("div", "row"), tail = noticeTail(cur);
   if (cur && !editing) {
-    const at = parseInt(cur.id, 36), when = at ? new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
-    const live = el("div", "noticelive"); live.append(el("span", "", `Posted ${when}${cur.until ? ` · until ${dayShort(cur.until)}` : ""}`), iconBtn(PEN, "Edit", "btn ghost small", () => noticePanel(true)));
+    const live = el("div", "noticelive"); live.append(el("span", "", `Posted ${noticeWhen(cur)}${cur.until ? ` · until ${dayShort(cur.until)}` : ""}${cur.deck ? ` · ${esc(cur.deck.name)}` : ""}`), iconBtn(PEN, "Edit", "btn ghost small", () => noticePanel(true)));
     text.readOnly = true; text.classList.add("locked");
     const down = btn("Take down", "btn ghost", () => armConfirm(down, on => down.textContent = on ? "Take down?" : "Take down", async () => { if (await send({ op: "clear" })) noticePanel(); }));
-    row.append(down); box.append(live, text, row, msg); return;
+    row.append(down); box.append(live, text, row, msg, tail); return;
   }
   const post = btn("Post", "btn", async () => {
     if (!text.value.trim()) { msg.textContent = "Write it first."; return; }
-    post.disabled = true; if (await send({ op: "set", text: text.value, until: until.value })) { await noticePanel(); return; } post.disabled = false;
+    post.disabled = true;
+    let deck = null;
+    if (deckSel.value) { try { const d = await makeShared(deckSel.value); deck = d && { id: d.id }; } catch (e) { msg.textContent = e.message; post.disabled = false; return; } }
+    if (await send({ op: "set", text: text.value, until: until.value, deck, replace: editing && cur ? cur.id : "" })) { await noticePanel(); return; }
+    post.disabled = false;
   });
   row.append(post); if (cur) row.append(btn("Cancel", "btn ghost", () => noticePanel()));
-  box.append(text, ul, row, msg);
+  box.append(text, ul, dl, row, msg, tail);
   if (editing) setTimeout(() => { text.focus(); text.setSelectionRange(text.value.length, text.value.length); }, 50);
+}
+function noticeTail(cur) {
+  const t = el("div", "noticetail"), last = store.get("radical-notice-last", null), seen = store.get("radical-notice-seen", "");
+  const when = last && last.at ? new Date(last.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "";
+  const heard = !last ? "not checked yet" : last.err ? `couldn't check (${esc(last.err)})` : last.id ? `got the one from ${noticeWhen(last)} at ${when}` : `got no message at ${when}`;
+  t.append(el("p", "trs", `This phone: ${heard}${cur ? ` · ${seen === cur.id ? "seen" : "not seen yet"}` : ""}`));
+  const row = el("div", "row");
+  if (cur) row.append(btn("Preview", "btn ghost small", () => noticeCard(cur, true)));
+  const f = store.get("radical-friends", null), bd = f && f.builder;
+  if (bd && bd.me) t.append(el("p", "trs", `You're the builder · ${num(bd.followers || 0)} follower${bd.followers === 1 ? "" : "s"}`));
+  else { const mb = btn("Make me the builder", "btn ghost small", () => armConfirm(mb, on => mb.textContent = on ? "Followers follow you?" : "Make me the builder", async () => { try { await friendsCall({ op: "bebuilder" }); noticePanel(); } catch (e) { toast(esc(e.message), 3000); } })); row.append(mb); }
+  t.append(row);
+  return t;
 }
 $("aiTally").onclick = () => {
   const a = store.get("radical-ai-tally", null); if (!a) return;
@@ -3108,7 +3213,7 @@ function applyMerged(m) {
   learned = m.learned || learned; store.set("radical-learned", learned);
   if (m.familiar) { familiar = m.familiar; store.set("radical-familiar", familiar); }
   if (m.days) store.set("radical-days", m.days);
-  if (m.decks && (+m.decks.t || 0) >= (+decks.t || 0)) { decks = { mine: m.decks.mine || "Mine", names: Array.isArray(m.decks.names) ? m.decks.names : [], used: m.decks.used && typeof m.decks.used === "object" ? m.decks.used : decks.used || {}, t: +m.decks.t || 0 }; store.set("radical-decks", decks); }
+  if (m.decks && (+m.decks.t || 0) >= (+decks.t || 0)) { decks = { mine: m.decks.mine || "Mine", names: Array.isArray(m.decks.names) ? m.decks.names : [], used: m.decks.used && typeof m.decks.used === "object" ? m.decks.used : decks.used || {}, ids: m.decks.ids && typeof m.decks.ids === "object" ? m.decks.ids : decks.ids || {}, t: +m.decks.t || 0 }; store.set("radical-decks", decks); }
   store.set("radical-words", myWords); resetSigs(); updateCounts();
   if (!$("wordsScreen").hidden) renderWords();
 }
@@ -3313,7 +3418,7 @@ function editCard(w, done, opts = {}) {
   q("edNotes").value = prev.notes || "";
   // v43: move the word to another of your decks (a Top or topic word leaves that list for it)
   const other = w.common ? `Top ${num(commonSize() || 0)}` : w.set || "";
-  q("edDeck").innerHTML = (other ? `<option value="\u0002">${esc(other)}</option>` : "") + `<option value="">${esc(decks.mine || "Mine")}</option>` + [...new Set([...decks.names, ...(w.deck ? [w.deck] : [])])].map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  q("edDeck").innerHTML = (other ? `<option value="\u0002">${esc(other)}</option>` : "") + `<option value="">${esc(mineName())}</option>` + [...new Set([...decks.names, ...(w.deck ? [w.deck] : [])])].map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
   q("edDeck").value = other ? "\u0002" : w.deck || "";
   const showEx = () => { q("edShow").innerHTML = ex.example ? `<p lang="zh">${esc(conv(ex.example))}</p><p class="note">${esc(ex.example_en)}</p>` : `<p class="note">No example yet.</p>`; };
   showEx();
@@ -3722,19 +3827,19 @@ function barChart(vals, label, target) {
 function friendSummary() {
   const st = wordStages(), w = weekStats(), all = stageSeries(), series = all.filter((x, i) => i === all.length - 1 || (all.length - 1 - i) % 7 === 0).slice(-60);
   return { words: { seen: st.seen.size, familiar: st.familiar.size, learned: st.learned.size }, week: { days: w.n, cards: w.cards, read: w.read }, streak: streakStats().now,
-    series: series.map(x => ({ day: x.day, f: x.v, l: x.v2 })) };
+    series: series.map(x => ({ day: x.day, f: x.v, l: x.v2 })), decks: sharedProgress() };
 }
 const friendLink = code => `${location.origin}/?friend=${code}`;
 let friendsBusy = null;
 async function friendsCall(body = {}) {
   const r = await claude({ action: "friends", ...body, summary: friendSummary() });
-  if (r && r.code) store.set("radical-friends", { code: r.code, name: r.name, first: r.first || "", last: r.last || "", friends: r.friends || [], requests: r.requests || [] });
+  if (r && r.code) store.set("radical-friends", { code: r.code, name: r.name, first: r.first || "", last: r.last || "", friends: r.friends || [], requests: r.requests || [], inbox: r.inbox || [], builder: r.builder || null });
   friendBadge();
   return r;
 }
 // Friend requests waiting for you: a red number on 記 (v42), checked at start and when the app comes back (at most
 // every five minutes).
-function friendBadge() { const f = store.get("radical-friends", null), n = f && f.requests ? f.requests.length : 0; $("trackBadge").textContent = n || ""; }
+function friendBadge() { const f = store.get("radical-friends", null), n = f ? (f.requests || []).length + (f.inbox || []).length : 0; $("trackBadge").textContent = n || ""; }
 let friendPing = 0;
 function pingFriends() {
   if (!session || !store.get("radical-friends", null) || Date.now() - friendPing < 3e5 || friendsBusy) return;
@@ -3769,6 +3874,15 @@ function paintFriends(b) {
     });
     acts.append(accept, decline); b.append(r);
   });
+  // v46: decks friends sent you: Add (it becomes your own deck) or No thanks
+  (f.inbox || []).forEach(x => {
+    const r = el("div", "frreq"), acts = el("span", "frreqacts");
+    r.append(el("span", "", `<b>${esc(x.by || "A friend")}</b> <span class="trs">sent ${esc(x.name)} · ${num(x.n)} words</span>`), acts);
+    const done = () => { f.inbox = f.inbox.filter(y => y.id !== x.id); store.set("radical-friends", f); friendBadge(); friendsCall({ op: "inboxdone", id: x.id }).catch(() => {}); };
+    const add = btn("Add", "btn small", async () => { add.disabled = true; try { const d = await getShared(x.id); done(); addSharedDeck(d); } catch (e) { add.disabled = false; toast(esc(e.message), 3000); } });
+    acts.append(add, btn("No thanks", "btn ghost small", () => { done(); paintFriends(b); })); b.append(r);
+  });
+  builderRow(b, f);
   // v43: each friend is a row with a ›; tapping it opens their numbers right there (tap again to close)
   f.friends.forEach(x => {
     const r = el("div", "frrow"), head = el("button", "frhead"); head.type = "button"; head.setAttribute("aria-expanded", "false");
@@ -3794,7 +3908,7 @@ function paintFriends(b) {
     try { if (navigator.share) { await navigator.share({ title: "Radical", text, url: friendLink(f.code) }); return; } } catch (e) { return; }
     try { await navigator.clipboard.writeText(`${text} ${friendLink(f.code)}`); share.textContent = "Link copied"; setTimeout(() => share.textContent = "Share", 2000); } catch (e) {}
   });
-  const btns = el("div", "frme"); btns.append(share, btn("QR code", "btn ghost small", () => showQR(f.code)));
+  const btns = el("div", "frme"); btns.append(share, btn("QR code", "btn ghost small", () => showQR(f.code)), btn("Email", "btn ghost small", () => inviteSheet(f)));
   // Your name: shown as text with the pencil; the pencil opens the boxes, and only Save changes it (v42, v44)
   const nameRow = el("div", "frnamerow");
   const showName = () => {
@@ -3812,6 +3926,39 @@ function paintFriends(b) {
   if (!realName(f)) { b.firstElementChild.after(nameHead, nameRow); b.append(add, msg, me, btns); if ((f.friends.length || (f.requests || []).length) && !store.get("radical-name-asked2", false)) realNameSheet(b); }
   else b.append(add, msg, me, btns, nameHead, nameRow);
   b.append(el("p", "trs trq", "Friends see your progress, never your words."));
+}
+// v46: the builder's row (one owner, see builderView in api/_account.js). Anyone can follow, no approval: then the row
+// opens like a friend's (numbers, chart, the decks you both have) plus the decks the builder sent to followers. The
+// builder sees how many follow, nothing more.
+function builderRow(b, f) {
+  const x = f.builder; if (!x) return;
+  if (x.me) { b.append(el("p", "trs frbuilder", `You're the builder · ${num(x.followers || 0)} follower${x.followers === 1 ? "" : "s"}`)); return; }
+  const r = el("div", "frrow frbuild"), call = async (op, bt) => { bt.disabled = true; try { await friendsCall({ op }); paintFriends(b); } catch (e) { bt.disabled = false; toast(esc(e.message), 3000); } };
+  if (!x.following) {
+    const head = el("div", "frhead"), fo = btn("Follow", "btn outl small", () => call("follow", fo));
+    head.innerHTML = `<span class="frwho"><b>${esc(x.name)} <span class="frtag">builder</span></b><span class="trs">Progress and decks from Radical's maker</span></span>`;
+    head.append(fo); r.append(head); b.append(r); return;
+  }
+  const p = x.row || { name: x.name, week: {} }, w = p.words, head = el("button", "frhead"); head.type = "button"; head.setAttribute("aria-expanded", "false");
+  head.innerHTML = `<span class="frwho"><b>${esc(x.name)} <span class="frtag">builder</span></b><span class="trs">${w ? `${num(w.familiar)} recognized · ${num(w.learned)} mastered · ` : ""}${(p.week || {}).days || 0} of 7 days</span></span><i class="frchev" aria-hidden="true">›</i>`;
+  head.onclick = () => {
+    const open = r.classList.toggle("open"); head.setAttribute("aria-expanded", open);
+    if (!open || r.querySelector(".frbody")) return;
+    const body = p.week && p.week.days != null ? friendDetail({ ...p, week: { days: 0, cards: 0, read: 0, ...p.week } }) : el("div", "frbody");
+    if ((x.decks || []).length) body.append(el("span", "trl", "Decks"));
+    [...(x.decks || [])].reverse().forEach(d => {
+      const row = el("div", "frdeckrow"), has = haveShared(d.id);
+      row.append(el("span", "", `<b>${esc(d.name)}</b> <span class="trs">${num(d.n)} words</span>`));
+      const add = btn(has ? "✓ Added" : "Add", has ? "btn ghost small" : "btn small", async () => {
+        if (haveShared(d.id)) { setList(decks.ids[d.id]); setTab("wordsScreen"); renderWords(); return; }
+        add.disabled = true; try { addSharedDeck(await getShared(d.id)); } catch (e) { toast(esc(e.message), 3000); } add.disabled = false;
+      });
+      row.append(add); body.append(row);
+    });
+    const un = btn("Unfollow", "btn ghost small", () => armConfirm(un, on => un.textContent = on ? "Unfollow?" : "Unfollow", () => call("unfollow", un)));
+    const rr = el("div", "row"); rr.append(un); body.append(rr); r.append(body);
+  };
+  r.append(head); b.append(r);
 }
 // The three boxes: Username (anything you like), First name, Last name. Save needs first and last.
 function nameForm(f, saved) {
@@ -3846,7 +3993,9 @@ function friendDetail(x, removed) {
   card.innerHTML = (x.real && x.real !== x.name ? `<p class="frreal">${esc(x.real)}</p>` : "") + (c ? `<span class="trl">Words</span><div class="trtiles"><div class="trk"><b class="trbig">${num(c.familiar)}</b><span class="trl">recognized</span></div><div class="trk"><b class="trbig">${num(c.learned)}</b><span class="trl">mastered</span></div><div class="trk"><b class="trbig">${num(c.seen)}</b><span class="trl">seen</span></div></div>`
     + `<div class="stagebar"><i style="width:${cp(c.learned)}%" class="sb-learned"></i><i style="width:${cp(c.familiar - c.learned)}%" class="sb-learning"></i><i style="width:${cp(c.seen - c.familiar)}%" class="sb-seen"></i></div>` : "")
     + `<p class="trs">This week: ${x.week.days} of 7 days · ${num(x.week.cards)} cards${c ? ` · ${num(x.week.read)} words read` : ""}${x.streak > 1 ? ` · ${x.streak}-day streak` : ""}</p>`
-    + (c && x.series && x.series.length > 1 ? `<div class="trk trchart"><span class="trl">Words recognized and mastered</span>${lineChart(x.series.map(p => ({ day: p.day, v: p.f, v2: p.l })))}</div>` : "");
+    + (c && x.series && x.series.length > 1 ? `<div class="trk trchart"><span class="trl">Words recognized and mastered</span>${lineChart(x.series.map(p => ({ day: p.day, v: p.f, v2: p.l })))}</div>` : "")
+    + sharedLines(x);
+  if (!removed) return card;  // the builder's row: no Remove
   const rm = btn("Remove friend", "btn ghost small", () => armConfirm(rm, on => rm.textContent = on ? "Remove" : "Remove friend", async () => {
     rm.disabled = true; try { await friendsCall({ op: "remove", code: x.code }); } catch (e) {} removed();
   }));
@@ -3873,6 +4022,108 @@ async function joinPending() {
   store.set("radical-friend-pending", "");
   try { const r = await friendsCall({ op: "add", code }); if (r.sent) milestone(`Request sent to ${r.sent}`, "You're connected once they accept."); else milestone(`You and ${r.added} are now friends`, "You'll find each other on 記 Track."); }
   catch (e) { if (!/own code/.test(e.message)) store.set("radical-friend-pending", code); }
+}
+
+// ---- v46: sharing decks. Share on a deck (Word Decks) snapshots it on the server (decks/<id>.json) and sends it to
+// friends (their inbox on 記 Track), to followers (the builder only), or as a link (?deck=ID) for anyone. Opening one
+// adds it as your own deck with fresh schedules; your notes and schedule never go. decks.ids remembers which shared id
+// is which of your decks, so friend rows can show how far each of you is in it.
+const deckWords = k => myWords.filter(w => inList(w, k)).map(w => ({ word: w.word, pinyin: wPinyin(w), meaning: wMeaning(w) }));
+const deckLink = id => `${location.origin}/?deck=${id}`;
+async function makeShared(k, to = [], followers = false) {
+  const r = await friendsCall({ op: "senddeck", deck: { name: keyName(k).slice(0, 20), words: deckWords(k) }, to, followers });
+  if (r && r.deck) { decks.ids[r.deck.id] = k; saveDecks(); }
+  return r && r.deck;
+}
+async function linkOut(url, text, b) {
+  try { if (navigator.share) { await navigator.share({ title: "Radical", text, url }); return; } } catch (e) { return; }
+  try { await navigator.clipboard.writeText(`${text} ${url}`); if (b) { const t = b.textContent; b.textContent = "Link copied"; setTimeout(() => b.textContent = t, 2000); } } catch (e) {}
+}
+function shareSheet(k) {
+  if (!session) { signInSheet({ then: () => shareSheet(k), why: "share a deck" }); return; }
+  const f = store.get("radical-friends", null) || { friends: [] }, name = keyName(k), n = myWords.filter(w => inList(w, k)).length;
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard sharecard"), msg = el("p", "note"), close = () => sheet.remove();
+  const busy = async (b, fn) => { b.disabled = true; msg.textContent = ""; try { await fn(); } catch (e) { msg.textContent = e.message; } b.disabled = false; };
+  card.append(el("h3", "", `Share ${esc(name)}`), el("p", "note", `${num(n)} words, with your meanings.`));
+  const link = btn("Share a link", "btn wide", () => busy(link, async () => { const d = await makeShared(k); if (d) await linkOut(deckLink(d.id), `${name}: a Radical deck`, link); }));
+  card.append(link);
+  const fr = (f.friends || []).filter(x => x.code);
+  if (fr.length || (f.builder && f.builder.me)) card.append(el("span", "trl", "Send to"));
+  const sendTo = (b, to, followers, who) => busy(b, async () => { const d = await makeShared(k, to, followers); if (d) { b.textContent = "Sent ✓"; play("right"); toast(`${esc(name)} sent to ${esc(who)}`, 2500); } });
+  if (f.builder && f.builder.me) { const b = btn(`All followers (${num(f.builder.followers || 0)})`, "btn outl wide", () => sendTo(b, [], true, "your followers")); card.append(b); }
+  fr.forEach(x => { const b = btn(x.name, "btn outl wide", () => sendTo(b, [x.code], false, x.name)); card.append(b); });
+  card.append(msg, btn("Done", "btn ghost wide", close));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
+  document.body.append(sheet);
+}
+// Adding a shared deck: a new deck of your own (a number on the name if you have one called that). Words you have in
+// Added move into it; words in another deck stay there. Cards for its new words are made when first studied.
+function addSharedDeck(d) {
+  const base = String(d.name || "Shared deck").slice(0, DECK_MAX);
+  let name = base, i = 2; const taken = x => decks.names.includes(x) || x === mineName() || THEMES.includes(x);
+  while (taken(name)) name = `${base.slice(0, DECK_MAX - 3)} ${i++}`;
+  if (decks.names.length >= 100) { toast("You have too many decks. Delete one first.", 3000); return false; }
+  decks.names.push(name); let added = 0, moved = 0;
+  (d.words || []).forEach(x => {
+    const word = conv(String(x.word || "").trim()); if (!word) return;
+    const have = findWord(word);
+    if (have) { if (inList(have, "mine")) { have.deck = name; moved++; } return; }
+    delete deleted[word];
+    myWords.push({ word, pinyin: x.pinyin || "", meaning: x.meaning || "", added: localDay(), deck: name, got: 1 }); added++;
+  });
+  if (!added && !moved) { decks.names = decks.names.filter(x => x !== name); toast("You have all these words already.", 3000); return false; }  // every word is in another deck
+  decks.ids[d.id] = deckKey(name); saveDecks(); saveWords(); logDay("n");
+  setList(deckKey(name)); setTab("wordsScreen"); renderWords(); play("right");
+  toast(`${esc(name)} added · ${num(added)} new word${added === 1 ? "" : "s"}`, 3000);
+  return true;
+}
+async function getShared(id) {
+  const r = await fetch(`/api/claude?action=deck&id=${encodeURIComponent(id)}`); const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.deck) throw new Error(j.error || "That deck couldn't load."); return j.deck;
+}
+const haveShared = id => !!(decks.ids[id] && myWords.some(w => inList(w, decks.ids[id])));
+// A deck link (?deck=ID): kept until the app has started, then offered once.
+{ const c = new URLSearchParams(location.search).get("deck");
+  if (c && /^[a-z0-9]{8,16}$/.test(c)) { store.set("radical-deck-pending", c); try { history.replaceState(null, "", location.pathname); } catch (e) {} } }
+async function deckPending() {
+  const id = store.get("radical-deck-pending", ""); if (!id) return;
+  if (document.querySelector(".sheet")) { setTimeout(deckPending, 3000); return; }
+  store.set("radical-deck-pending", "");
+  if (haveShared(id)) { setList(decks.ids[id]); setTab("wordsScreen"); renderWords(); return; }
+  try { offerDeck(await getShared(id)); } catch (e) { toast(esc(e.message), 3000); }
+}
+function offerDeck(d, then) {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard"), close = () => sheet.remove();
+  const sample = (d.words || []).slice(0, 8).map(x => conv(x.word)).join(" · ");
+  card.append(el("h3", "", `Add ${esc(d.name)}?`), el("p", "note", `${num((d.words || []).length)} words${d.by ? ` from ${esc(d.by)}` : ""}`), el("p", "deckpeek", esc(sample)));
+  card.lastChild.lang = "zh";
+  card.append(btn("Add deck", "btn wide", () => { close(); if (addSharedDeck(d) && then) then(); }), btn("Not now", "btn ghost wide", close));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
+  document.body.append(sheet);
+}
+// Progress on shared decks, for friends (sent with the summary): { id: { n, f recognized, l mastered } }
+function sharedProgress() {
+  const st = wordStages(), out = {};
+  Object.entries(decks.ids).forEach(([id, k]) => { const ws = myWords.filter(w => inList(w, k)); if (ws.length) out[id] = { n: ws.length, f: ws.filter(w => st.familiar.has(w.word)).length, l: ws.filter(w => st.learned.has(w.word)).length }; });
+  return out;
+}
+// The decks you both have, under a friend's numbers: "Mountaineering: you 12 · Eric 8 recognized (of 17)"
+function sharedLines(x) {
+  const mine = sharedProgress(), theirs = x.decks || {}, who = esc((x.name || "Them").split(" ")[0]);
+  return Object.keys(theirs).filter(id => mine[id]).map(id => `<p class="trs frdeck"><b>${esc(keyName(decks.ids[id]))}</b>: you ${num(mine[id].f)} · ${who} ${num(theirs[id].f)} recognized <span class="trs">(of ${num(mine[id].n)})</span></p>`).join("");
+}
+// Invite by email (v46): your own Mail opens with the note and your link filled in; nothing is sent from Radical.
+function inviteSheet(f) {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard signcard"), inp = el("input"), close = () => sheet.remove();
+  inp.type = "email"; inp.placeholder = "Their email"; inp.autocomplete = "email"; inp.setAttribute("aria-label", "Their email");
+  const go = btn("Write it", "btn wide", () => {
+    const to = inp.value.trim(), body = `I'm learning Chinese with Radical. Add me as a friend:\n${friendLink(f.code)}\n\nMy code: ${f.code}`;
+    location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent("Learn Chinese with me on Radical")}&body=${encodeURIComponent(body)}`; close();
+  });
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") go.click(); });
+  card.append(el("h3", "", "Invite by email"), inp, go, el("p", "note", "Opens your Mail. It comes from you."), btn("Cancel", "btn ghost wide", close));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
+  document.body.append(sheet); setTimeout(() => inp.focus(), 300);
 }
 
 // ---- milestones: a short moment at round numbers (words recognized, mastered and read, streak, cards). Each fires once;
@@ -4007,13 +4258,15 @@ function markDone(w, k) {
 function todayList(ms, at) {
   const now = at || Date.now(), dueAt = (w, m) => { const k = KEYS[m], x = w[k]; return !!(x && x.due && x.due <= now && (k === "srs" || !w.skip)); };
   const first = w => Math.min(...ms.filter(m => dueAt(w, m)).map(m => w[KEYS[m]].due));
-  const lw = listWords(), due = lw.filter(w => ms.some(m => dueAt(w, m))).sort((a, b) => first(a) - first(b));
-  const k = KEYS[ms[0]], fresh = lw.filter(w => !w.skip && !w[k] && !due.includes(w));
+  const k = KEYS[ms[0]], dues = ws => ws.filter(w => ms.some(m => dueAt(w, m))).sort((a, b) => first(a) - first(b)), news = ws => ws.filter(w => !w.skip && !w[k] && !ms.some(m => dueAt(w, m)));
+  // v46: the picked list first; when it runs short, Today fills from your other lists (due, then new), so a small deck
+  // never shrinks the day below Cards a day.
+  const lw = listWords(), other = myWords.filter(w => !inList(w));
   const done = at ? new Set() : doneToday();
   // v43: Today is what's left of your day: words you've practiced today don't count again (a missed one repeats in
   // its round, nothing comes back later the same day), and it fills with new words only, never Known or Learning ones.
   let room = dailyMax() - done.size;
-  return [...due, ...fresh].filter(w => !done.has(w.word) && room-- > 0);
+  return [...dues(lw), ...news(lw), ...dues(other), ...news(other)].filter(w => !done.has(w.word) && room-- > 0);
 }
 // Words practiced today that are due again (missed and left before their repeat): offered quietly, not on the badge.
 const againToday = (ms = goal) => { const done = doneToday(), now = Date.now(); return listWords().filter(w => done.has(w.word) && ms.some(m => { const x = w[KEYS[m]]; return x && x.due && x.due <= now && (m === "read" || !w.skip); })); };
@@ -4026,7 +4279,9 @@ let curList = store.get("radical-list", "mine");
 // v43: your own decks. A word sits in one of them (w.deck, the deck's name) or in Mine, which you can rename. Names live
 // in radical-decks { mine, names, t } and sync with your words, so a deck you just made stays even while it's empty.
 let decks = store.get("radical-decks", null) || { mine: "Mine", names: [], t: 0 };
-decks.used = decks.used || {};
+decks.used = decks.used || {}; decks.ids = decks.ids || {};  // v46: shared deck ids { id: the deck's key here }
+// v46: Mine is called Added (the words you added yourself that aren't in a deck); an old unrenamed "Mine" reads as Added.
+const MINE = "Added", mineName = () => !decks.mine || decks.mine === "Mine" ? MINE : decks.mine;
 const DECK_MAX = 20;  // deck names (v44)
 const isDeck = L => typeof L === "string" && L.startsWith("d:"), deckKey = n => "d:" + n;
 // v44: several of your decks studied together: "g:" + their keys, one per line
@@ -4034,9 +4289,10 @@ const isGroup = L => typeof L === "string" && L.startsWith("g:"), groupKey = ks 
 function saveDecks() { decks.t = Date.now(); store.set("radical-decks", decks); if (typeof scheduleSync === "function") scheduleSync(); }
 const inList = (w, L = curList) => isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !w.deck : L === "top" ? !!w.common : isDeck(L) ? w.deck === L.slice(2) : w.set === L;
 const listWords = () => myWords.filter(w => inList(w));
-const lazyCard = w => !!(w.common || w.set) && !practiced(w);
+const keyOf = w => w.deck ? deckKey(w.deck) : w.set || (w.common ? "top" : "mine");  // the list a word belongs to
+const lazyCard = w => !!(w.common || w.set || w.got) && !practiced(w);  // v46: words from a shared deck too
 function allLists() {
-  const out = curList === "mine" || myWords.some(w => inList(w, "mine")) || decks.mine !== "Mine" ? [["mine", decks.mine || "Mine"]] : [], size = commonSize();  // Mine shows once it has words
+  const out = curList === "mine" || myWords.some(w => inList(w, "mine")) || mineName() !== MINE ? [["mine", mineName()]] : [], size = commonSize();  // Mine shows once it has words
   const cut = t => t.length > DECK_MAX ? t.slice(0, DECK_MAX - 1) + "…" : t;
   if (isGroup(curList)) out.unshift([curList, groupName(curList)]);
   new Set([...decks.names, ...myWords.filter(w => w.deck).map(w => w.deck)]).forEach(n => out.push([deckKey(n), cut(n)]));
@@ -4046,7 +4302,7 @@ function allLists() {
 }
 // Picking a list or deck shows all of it (All), not Today: you want to see what you chose.
 let keepCat = false;
-const keyName = k => k === "mine" ? decks.mine || "Mine" : k === "top" ? `Top ${num(commonSize())}` : isDeck(k) ? k.slice(2) : k;
+const keyName = k => k === "mine" ? mineName() : k === "top" ? `Top ${num(commonSize())}` : isDeck(k) ? k.slice(2) : k;
 function groupName(L) { const n = groupKeys(L).map(keyName); return n.length > 2 ? `${n[0]} + ${n.length - 1} more` : n.join(" + "); }
 function setList(L) {
   stampUsed(L);
@@ -4059,7 +4315,7 @@ function lastStudied(k) {
   myWords.forEach(w => { if (!inList(w, k)) return; ["srs", "wsrs", "lsrs"].forEach(m => { const x = w[m]; if (!x || !x.due || !x.reps && !x.lapses) return; const d = localDay(x.due - (x.ivl || 0) * DAY); if (d > best) best = d; }); });
   return best > localDay() ? localDay() : best;
 }
-const listName = (L = curList) => (allLists().find(x => x[0] === L) || [, decks.mine || "Mine"])[1];
+const listName = (L = curList) => (allLists().find(x => x[0] === L) || [, mineName()])[1];
 // The badge: words left in Today for your goal (a word due in two modes counts once).
 const dueCount = () => todayList(goal).length;
 // A word's place in the list: Known (marked known), New (never studied in this mode) or Learning; "due" means it's in
@@ -4478,12 +4734,12 @@ function renderStrip(sizes) {
   const tn = btn("", "todaynum", () => setTab("trackScreen")); tn.id = "todayNum"; tn.hidden = true; head.append(tn);
   box.append(head);
   const lists = allLists();
-  // One row of lists (v42): with more than four, the one you're on and the ones you used last, then More (every deck)
-  if (lists.length > 4) {
-    const recent = [curList, ...store.get("radical-list-recent", [])], keep = new Set();
-    for (const k of recent) if (keep.size < 3 && lists.some(x => x[0] === k)) keep.add(k);
-    for (const [k] of lists) if (keep.size < 3) keep.add(k);
-    const row = pills("lists", [...lists.filter(x => keep.has(x[0])), ["more", "More"]], curList, k => { if (k !== "more") setList(k); });
+  // One row of lists (v46): the one you're on, Added (or, when you're on Added, the one you used last), then More
+  if (lists.length > 2) {
+    const has = k => lists.some(x => x[0] === k), keep = new Set([curList]);
+    if (curList !== "mine" && has("mine")) keep.add("mine");
+    for (const k of [...store.get("radical-list-recent", []), ...lists.map(x => x[0])]) if (keep.size < 2 && has(k)) keep.add(k);
+    const row = pills("lists", [...[...keep].map(k => lists.find(x => x[0] === k)).filter(Boolean), ["more", "More"]], curList, k => { if (k !== "more") setList(k); });
     row.lastChild.onclick = () => openSets(); box.append(row);
   } else if (lists.length > 1) box.append(pills("lists", lists, curList, k => setList(k)));
   box.append(pills("hows", [["read", "Read"], ["write", "Write"], ["listen", "Listen"], ["mix", "Mix"]], revHow, k => { revHow = k; store.set("radical-revhow", k); }));
@@ -4647,13 +4903,17 @@ function startCommon(size, from = 1) {
   feedCommon(); loadCommon().then(() => renderWords());
 }
 const hasSet = t => myWords.some(w => w.set === t);
+// v46: a topic deck's size (Word Decks: 12, 24 or 50); + More words asks for the next size up and adds what's new.
+const TOPIC_SIZES = [12, 24, 50], topicSize = () => TOPIC_SIZES.includes(store.get("radical-topic-size", 24)) ? store.get("radical-topic-size", 24) : 24;
+const moreSize = t => { const n = myWords.filter(w => w.set === t).length; return [24, 50, 100].find(x => x > n + 4) || 100; };
 // A themed set: ask for it, keep the words the dictionary knows (in your script), skip ones you have or removed.
 // Already there: just switch to it.
-async function addThemeSet(theme) {
-  if (hasSet(theme)) { setList(theme); setTab("wordsScreen"); return; }
-  const st = $("addStatus"); st.textContent = `Making ${theme}…`;
+async function addThemeSet(theme, more) {
+  if (hasSet(theme) && !more) { setList(theme); setTab("wordsScreen"); return; }
+  const st = $("addStatus"), n = more ? moreSize(theme) : topicSize(); st.textContent = more ? `Adding to ${theme}…` : `Making ${theme}…`;
+  if (more) toast(`Adding to ${esc(theme)}…`, 2500);
   try {
-    const { words } = await claude({ action: "wordset", theme }, `start ${theme}`);
+    const { words } = await claude({ action: "wordset", theme, n }, `start ${theme}`);
     const items = (words || []).map(x => ({ ...x, word: conv(String(x.word || "").trim()) })).filter(x => x.word && !findWord(x.word) && !deleted[x.word]);
     await ensure(items.map(x => x.word).join(""));
     const take = items.filter(x => lookup(x.word) || lookup(toSimp(x.word)));
@@ -4661,6 +4921,7 @@ async function addThemeSet(theme) {
     saveWords();
     record({ kind: "list", title: theme, words: take.map(x => x.word) });
     st.textContent = take.length ? "" : `Nothing new in ${theme}.`;
+    if (more) toast(take.length ? `+${take.length} in ${esc(theme)}` : `Nothing new in ${esc(theme)}.`, 2500);
     play("right"); if (take.length) setList(theme); setTab("wordsScreen"); renderWords();
   } catch (e) { st.textContent = e.message; }
 }
@@ -4679,8 +4940,12 @@ function setsGrid(close) {
   // v44: green is the one you're on; a ✓ marks the ones you have
   COMMON_SIZES.forEach(n => { const b = btn("", "setchip top" + (size === n ? " have" : ""), size === n ? () => { if (close) close(); setList("top"); renderWords(); } : pick(() => startCommon(n), false, `start Top ${num(n)}`)); b.innerHTML = `<small>Top</small>${num(n)}`; b.setAttribute("aria-pressed", size === n && curList === "top"); top.append(b); });
   const th = el("div", "setrow three");
+  // v46: how many words a new topic deck gets
+  const sz = el("div", "pills topicsize"); sz.setAttribute("role", "group"); sz.append(el("span", "tslabel", "Words"));
+  TOPIC_SIZES.forEach(n => { const b = el("button", "", String(n)); b.type = "button"; b.setAttribute("aria-pressed", topicSize() === n);
+    b.onclick = () => { store.set("radical-topic-size", n); sz.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); }; sz.append(b); });
   THEMES.forEach(t => { const b = btn(t, "setchip" + (hasSet(t) ? " have" : ""), hasSet(t) ? () => { if (close) close(); addThemeSet(t); } : pick(() => addThemeSet(t), true, `start ${t}`)); b.setAttribute("aria-pressed", curList === t); th.append(b); });
-  g.append(top, th, btn("＋ Deck from a topic", "setchip wide", () => { if (close) close(); makeSet(close ? openSets : null); }));
+  g.append(top, sz, th, btn("＋ Deck from a topic", "setchip wide", () => { if (close) close(); makeSet(close ? openSets : null); }));
   return g;
 }
 // No words yet: Word Sets in the Flash cards spot.
@@ -4707,7 +4972,7 @@ function nameDeck(cur, done, back) {
   const go = btn("Save", "btn wide", () => {
     const n = inp.value.trim().replace(/\s+/g, " ");
     if (!n) { msg.textContent = "Type a name first."; return; }
-    if (n !== cur && (decks.names.includes(n) || n === (decks.mine || "Mine") || THEMES.includes(n))) { msg.textContent = "You have a deck with that name."; return; }
+    if (n !== cur && (decks.names.includes(n) || n === (mineName()) || THEMES.includes(n))) { msg.textContent = "You have a deck with that name."; return; }
     sheet.remove(); if (n !== cur) done(n);
   });
   inp.addEventListener("keydown", e => { if (e.key === "Enter") go.click(); });
@@ -4719,13 +4984,13 @@ function nameDeck(cur, done, back) {
 function renameDeck(L, n) {
   if (L === "mine") decks.mine = n;
   else { const old = L.slice(2); decks.names = decks.names.map(x => x === old ? n : x); myWords.forEach(w => { if (w.deck === old) w.deck = n; }); saveWords();
-    decks.used[deckKey(n)] = decks.used[L]; delete decks.used[L]; L = deckKey(n); }
+    decks.used[deckKey(n)] = decks.used[L]; delete decks.used[L]; Object.keys(decks.ids).forEach(i => { if (decks.ids[i] === L) decks.ids[i] = deckKey(n); }); L = deckKey(n); }
   saveDecks(); setList(L); renderWords();
 }
 // Deleting your decks keeps every word: they go back to Mine.
 function deleteDeck(Ls) {
   const old = new Set([].concat(Ls).map(L => L.slice(2))); decks.names = decks.names.filter(x => !old.has(x));
-  [].concat(Ls).forEach(L => delete decks.used[L]);
+  [].concat(Ls).forEach(L => { delete decks.used[L]; Object.keys(decks.ids).forEach(i => { if (decks.ids[i] === L) delete decks.ids[i]; }); });
   myWords.forEach(w => { if (old.has(w.deck)) delete w.deck; }); saveWords(); saveDecks(); setList("mine"); renderWords();
 }
 // Removing a list: the words you haven't studied go; the ones you have stay, in Mine.
@@ -4745,7 +5010,7 @@ function openSets() {
   const cut = t => t.length > DECK_MAX ? t.slice(0, DECK_MAX - 1) + "…" : t;
   // v45: every deck you have, yours and the ready-made ones you've added
   const ready = [...(commonSize() ? ["top"] : []), ...new Set(myWords.filter(w => w.set).map(w => w.set))];
-  const rows = [["mine", decks.mine || "Mine"], ...decks.names.map(n => [deckKey(n), n]), ...ready.map(k => [k, keyName(k)])]
+  const rows = [["mine", mineName()], ...decks.names.map(n => [deckKey(n), n]), ...ready.map(k => [k, keyName(k)])]
     .map(([k, n], i) => { const s = decks.used[k] || "", l = lastStudied(k); return { k, n, i, count: myWords.filter(w => inList(w, k)).length, used: s > l ? s : l }; })
     .sort((a, b) => b.used.localeCompare(a.used) || a.i - b.i);
   const table = el("div", "decktable"), bar = el("div", "deckbar"); bar.hidden = true;
@@ -4753,9 +5018,11 @@ function openSets() {
     bar.replaceChildren(); bar.hidden = !picked.size; if (!picked.size) return;
     const keys = rows.map(r => r.k).filter(k => picked.has(k)), own = keys.filter(k => isDeck(k)), made = keys.filter(k => k !== "mine" && !isDeck(k)), gone = [...own, ...made];
     bar.append(btn(keys.length > 1 ? `Study ${keys.length} together` : "Study", "btn small", () => { close(); setList(keys.length > 1 ? groupKey(keys) : keys[0]); renderWords(); }));
-    if (keys.length === 1 && (keys[0] === "mine" || isDeck(keys[0]))) bar.append(iconBtn(PEN, "Rename", "btn ghost small", () => { close(); const k = keys[0]; nameDeck(k === "mine" ? decks.mine || "Mine" : k.slice(2), n => renameDeck(k, n), openSets); }));
+    if (keys.length === 1 && made.length && keys[0] !== "top" && moreSize(keys[0]) <= 100 && myWords.filter(w => w.set === keys[0]).length < 100) bar.append(btn("＋ More words", "btn ghost small", () => { close(); chooseSet(() => addThemeSet(keys[0], true), true, null, `add to ${keys[0]}`); }));
+    if (keys.length === 1 && keys[0] !== "top") bar.append(btn("Share", "btn ghost small", () => { close(); shareSheet(keys[0]); }));
+    if (keys.length === 1 && (keys[0] === "mine" || isDeck(keys[0]))) bar.append(iconBtn(PEN, "Rename", "btn ghost small", () => { close(); const k = keys[0]; nameDeck(k === "mine" ? mineName() : k.slice(2), n => renameDeck(k, n), openSets); }));
     // Your decks: every word goes to Mine. Ready-made: unstudied words go, studied ones move to Mine.
-    if (gone.length) { const rm = btn("", "btn ghost small"), mine = decks.mine || "Mine", word = made.length && !own.length ? "Remove" : "Delete";
+    if (gone.length) { const rm = btn("", "btn ghost small"), mine = mineName(), word = made.length && !own.length ? "Remove" : "Delete";
       const say = on => rm.textContent = on ? (made.length ? `${word}? Studied words go to ${mine}` : `Delete? Words go to ${mine}`) : gone.length > 1 ? `${word} ${gone.length}` : word;
       say(false); rm.onclick = () => armConfirm(rm, say, () => { close(); made.forEach(removeList); if (own.length) deleteDeck(own); }); bar.append(rm); }
   };
@@ -5056,7 +5323,7 @@ function showPreview(found, source) {
     pendingDeck = isDeck(curList) ? curList.slice(2) : "";
     const dk = el("div", "pvdeck"), sel = el("select"), nm = el("input"); nm.type = "text"; nm.placeholder = "Deck name, e.g. Lesson 5"; nm.maxLength = DECK_MAX; nm.hidden = true;
     sel.setAttribute("aria-label", "Add to deck"); nm.setAttribute("aria-label", "New deck name");
-    sel.innerHTML = `<option value="">${esc(decks.mine || "Mine")}</option>` + decks.names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("") + `<option value="\u0001">New deck…</option>`;
+    sel.innerHTML = `<option value="">${esc(mineName())}</option>` + decks.names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("") + `<option value="\u0001">New deck…</option>`;
     sel.value = pendingDeck;
     if (found.notes && !pendingDeck) { sel.value = "\u0001"; nm.hidden = false; }
     const upd = () => { pendingDeck = sel.value === "\u0001" ? nm.value.trim().slice(0, DECK_MAX) : sel.value; nm.hidden = sel.value !== "\u0001"; };
@@ -5548,7 +5815,7 @@ function showFront() {
   }
   const w = rq[0];
   const m0 = howOf(w);
-  prog.innerHTML = `${rDone + 1}/${rDone + rq.length}${w[srsKey(w)] ? "" : ' <span class="ptag">new</span>'}${(curHow || revHow) === "mix" ? ` <span class="ptag">${{ read: "Read", write: "Write", listen: "Listen" }[m0]}</span>` : ""}`;
+  prog.innerHTML = `${rDone + 1}/${rDone + rq.length}${w[srsKey(w)] ? "" : ' <span class="ptag">new</span>'}${(curHow || revHow) === "mix" ? ` <span class="ptag">${{ read: "Read", write: "Write", listen: "Listen" }[m0]}</span>` : ""}${inList(w) ? "" : ` <span class="ptag">${esc(keyName(keyOf(w)))}</span>`}`;
   revSide = null;
   $("revScript").replaceChildren(scriptToggle(async () => {  // 繁/简 for the whole set; the card you're on is redrawn
     const back = revSide; await ensure(rq.map(x => conv(x.word) + conv(x.context || "") + exList(x).map(e => conv(e.example)).join("")).join(""));
@@ -6589,7 +6856,7 @@ let daily = store.get("radical-wiki-daily", null), dailyJob = null, activeChip =
 function fetchDaily() {
   if (dailyJob || (daily && daily.day === localDay()) || !online()) return dailyJob;
   const searches = [...myTopics].sort((a, b) => (b.n - a.n) || (b.at - a.at)).slice(0, 12).map(t => t.zh + (t.en ? ` (${t.en})` : ""));
-  const reading = textHistory.slice(0, 6).map(h => toTrad(h.text.split("\n")[0]).slice(0, 40));
+  const reading = textHistory.slice(0, 6).map(h => toTrad(String(h.text || h.title || "").split("\n")[0]).slice(0, 40)).filter(Boolean);  // v46: list and document entries have no text
   // Everything shown in the past week is avoided, so the chips change from day to day.
   const weekAgo = localDay(Date.now() - 7 * DAY), seen = store.get("radical-wiki-seen", []).filter(x => x.day > weekAgo);
   const recent = [...new Set([...seen.map(x => x.zh), ...(daily && daily.list || []).map(t => t.zh)])].slice(-70);
@@ -6621,6 +6888,44 @@ function searchHits(term) {
   return hitJobs.get(term);
 }
 function prefetchChips() { chipList().forEach(([zh]) => searchHits(conv(zh)).then(h => englishTitles(h, false)).catch(() => {})); }
+// v46: Today in Explore: two or three things from Chinese Wikipedia's own daily pages (the featured article and On this
+// day), fetched once a day. Anything about wars, politics or disasters is skipped, so it stays human interest.
+const CALM = /戰|战|軍|军|黨|党|政府|總統|总统|主席|選舉|选举|革命|獨立|独立|條約|条约|政變|政变|抗議|抗议|屠|殺|杀|恐怖|襲擊|袭击|爆炸|入侵|佔領|占领|共產|共产|國民黨|国民党|台灣|台湾|臺灣|西藏|新疆|香港|天安門|天安门|空難|空难|地震|海嘯|海啸|遇難|遇难|死亡|處決|处决|暗殺|暗杀|核/;
+let todayTried = "";
+async function fetchToday() {
+  const d = localDay(), c = store.get("radical-wiki-today", null);
+  if (c && c.day === d) { paintToday(c.items); return; }
+  if (todayTried === d) return; todayTried = d;  // once a day, even when Wikipedia had nothing
+  const [y, m, dd] = d.split("-"), items = [];
+  try {
+    const r = await fetch(`https://zh.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${dd}`);
+    if (r.ok) {
+      const j = await r.json(), tfa = j.tfa;
+      if (tfa && tfa.title && !CALM.test((tfa.extract || "") + tfa.title)) { const t = (tfa.titles && tfa.titles.normalized) || tfa.title; items.push({ y: "今日", t, s: t + (tfa.description ? `：${tfa.description}` : "") }); }
+      (j.onthisday || []).filter(e => e.text && e.pages && e.pages[0] && !CALM.test(e.text)).slice(0, 8).sort(() => Math.random() - .5).slice(0, 3 - items.length)
+        .forEach(e => items.push({ y: String(e.year || ""), t: e.pages[0].title, s: e.text }));
+    }
+  } catch (e) {}
+  if (items.length < 2) {  // the feed had too little: Wikipedia:歷史上的今天 for the day
+    try {
+      const j = await wget("action=parse&prop=text&disablelimitreport=1&page=" + encodeURIComponent(`Wikipedia:历史上的今天/${+m}月${+dd}日`));
+      const html = j.parse && (j.parse.text || ""), dom = new DOMParser().parseFromString(typeof html === "string" ? html : html["*"] || "", "text/html");
+      [...dom.querySelectorAll("li")].map(li => ({ li, a: [...li.querySelectorAll("a[title]")].find(a => !/^\d+年$/.test(a.title) && !a.title.includes(":")), txt: li.textContent.trim() }))
+        .filter(x => x.a && x.txt.length > 8 && !CALM.test(x.txt)).slice(0, 3 - items.length)
+        .forEach(x => { const yr = (x.txt.match(/^(\d{1,4})年/) || [])[1] || ""; items.push({ y: yr, t: x.a.title, s: x.txt.replace(/^\d{1,4}年[：:]?\s*/, "") }); });
+    } catch (e) {}
+  }
+  if (items.length) store.set("radical-wiki-today", { day: d, items });
+  paintToday(items);
+}
+function paintToday(items) {
+  const box = $("wikiToday"), list = $("wikiTodayList"); if (!box) return;
+  box.hidden = !items || !items.length; list.replaceChildren();
+  (items || []).forEach(x => {
+    const b = el("button", "wtrow", `<span class="wty">${esc(x.y)}</span><span class="wtt" lang="zh">${esc(conv(String(x.s || x.t)).slice(0, 70))}</span>`); b.type = "button";
+    b.onclick = () => openArticle(x.t); list.append(b);
+  });
+}
 function openExplore(fromReading) {
   wStat(""); wikiLabels(); setTab("wikiScreen"); $("wikiScreen").scrollTop = 0;  // chips change only here, never under your finger
   $("wikiBack").hidden = !fromReading;  // "Back to reading" only when you came from the reading panel's Explore button
@@ -6797,9 +7102,12 @@ document.querySelectorAll("#dailySeg [data-t]").forEach(b => {
   myWords.filter(w => !w.card).forEach(queueCard);  // cards still missing (added offline, or a request failed)
   feedCommon();  // the day's new Top words, when Top is the list you're on
   setTimeout(joinPending, 2500);  // opened a friend's link
+  setTimeout(deckPending, 2800);  // v46: opened a deck link
   setTimeout(showNotice, 3500);  // the owners' notice, once
-  // v45: and when the app comes back (a phone resumes it rather than reloading), at most every 10 minutes
-  let noticeAt = Date.now(); document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - noticeAt > 6e5) { noticeAt = Date.now(); setTimeout(showNotice, 1500); } });
+  // v45, v46: and every time the app comes back (a phone resumes it rather than reloading), at most once a minute
+  let noticeAt = Date.now(); const noticeAgain = () => { if (!document.hidden && Date.now() - noticeAt > 6e4) { noticeAt = Date.now(); setTimeout(showNotice, 1500); } };
+  document.addEventListener("visibilitychange", noticeAgain); window.addEventListener("pageshow", noticeAgain); window.addEventListener("focus", noticeAgain);
+  menuDot();
   setTimeout(() => { friendBadge(); pingFriends(); }, 3000);  // friend requests waiting (red number on 記)
   if (session) syncNow(true).then(() => { myWords.filter(w => !w.card).forEach(queueCard); updateRing(); });  // pull what other phones changed
   if (document.fonts) document.fonts.ready.then(() => fitLegend());
