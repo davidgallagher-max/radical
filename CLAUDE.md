@@ -138,6 +138,9 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 ## Next batch list
 
+Pending, carried on every batch list until David decides (Oct 25, 2026): Explore's On this day filter (`CALM`). David: "I don't like self-censoring." It currently skips politics, states, wars and disasters. Claude's suggestion: drop the politics part, keep wars and disasters out of the daily row. Raise it at each batch.
+
+
 v47: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v46 shipped Oct 25, 2026; see CHANGELOG.md.
 
 ## Next batches (re-planned Oct 18, 2026: TestFlight first)
