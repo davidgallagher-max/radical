@@ -6978,29 +6978,39 @@ function searchHits(term) {
 function prefetchChips() { chipList().forEach(([zh]) => searchHits(conv(zh)).then(h => englishTitles(h, false)).catch(() => {})); }
 // v46: On this day in Explore: two or three events from Chinese Wikipedia's On this day, fetched once a day, each shown
 // like a search hit (the article it's about, its length and difficulty; tap for the opening, then Read in Radical) with
-// the year and the event. Anything about wars, politics, states or disasters is skipped (the event and the article).
-const CALM = /戰|战|軍|军|黨|党|政府|政權|政权|總統|总统|主席|首相|總理|总理|國王|国王|皇帝|王朝|帝國|帝国|選舉|选举|革命|獨立|独立|條約|条约|決議|决议|聯合國|联合国|人民共和國|人民共和国|民國|民国|蘇聯|苏联|納粹|纳粹|國會|国会|議會|议会|憲法|宪法|政變|政变|抗議|抗议|示威|屠|殺|杀|恐怖|襲擊|袭击|爆炸|入侵|佔領|占领|共產|共产|國民黨|国民党|台灣|台湾|臺灣|西藏|新疆|香港|天安門|天安门|空難|空难|地震|海嘯|海啸|火山|颶風|飓风|遇難|遇难|死|處決|处决|暗殺|暗杀|核|宗教|教宗/;
+// the year and the event. v47: no topic is blocked for being political; the row looks for uplifting events (BRIGHT:
+// discoveries, firsts, launches, arts, science, sport, openings) and leaves out war, killing, disasters and deaths (DARK).
+const DARK = /戰|战|軍|军|屠|殺|杀|恐怖|襲擊|袭击|爆炸|入侵|佔領|占领|政變|政变|空難|空难|地震|海嘯|海啸|火山|颶風|飓风|洪水|遇難|遇难|死|處決|处决|暗殺|暗杀|核武|事故|沉沒|沉没|墜毀|坠毁|饑荒|饥荒|瘟疫|納粹|纳粹/;
+const BRIGHT = /發明|发明|發現|发现|首次|首個|首个|第一|首演|首映|開幕|开幕|開放|开放|發射|发射|登月|月球|太空|衛星|卫星|火箭|奧運|奥运|世界紀錄|世界纪录|冠軍|冠军|獎|奖|博物館|博物馆|圖書館|图书馆|電影|电影|音樂|音乐|歌劇|歌剧|專輯|专辑|小說|小说|出版|藝術|艺术|畫|画|科學|科学|疫苗|治癒|治愈|大學|大学|通車|通车|開通|开通|建成|落成|竣工|發行|发行|誕生|诞生|出生|動物|动物|發布|发布|啟用|启用|和平|友好|節|节|登頂|登顶|探險|探险|公園|公园|鐵路|铁路|橋|桥/;
+const brightness = e => (e.match(new RegExp(BRIGHT.source, "g")) || []).length;
+// The brightest three (a little shuffle among equals); neutral events only fill in when fewer than two are bright.
+function brightest(xs, text) {
+  const ok = xs.filter(x => !DARK.test(text(x))).map(x => ({ x, b: brightness(text(x)), r: Math.random() })).sort((a, b) => b.b - a.b || a.r - b.r);
+  const lit = ok.filter(o => o.b > 0);
+  return (lit.length >= 2 ? lit : ok).slice(0, 3).map(o => o.x);
+}
 let todayTried = "";
 async function fetchToday() {
-  const d = localDay(), c = store.get("radical-wiki-today2", null);
+  const d = localDay(), c = store.get("radical-wiki-today3", null);
   if (c && c.day === d) { paintToday(c.items); return; }
   if (todayTried === d) return; todayTried = d;  // once a day, even when Wikipedia had nothing
   const [y, m, dd] = d.split("-"), items = [];
   try {
     const r = await fetch(`https://zh.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${dd}`);
-    if (r.ok) (((await r.json()).onthisday) || []).filter(e => e.text && e.pages && e.pages[0] && !CALM.test(e.text + e.pages[0].title + (e.pages[0].extract || "")))
-      .sort(() => Math.random() - .5).slice(0, 3).forEach(e => items.push({ y: String(e.year || ""), t: e.pages[0].title, s: e.text }));
+    if (r.ok) brightest((((await r.json()).onthisday) || []).filter(e => e.text && e.pages && e.pages[0]), e => e.text + e.pages[0].title)
+      .forEach(e => items.push({ y: String(e.year || ""), t: e.pages[0].title, s: e.text }));
   } catch (e) {}
-  if (!items.length) {  // the feed had nothing calm: the Wikipedia:历史上的今天 page for the day
+  if (!items.length) {  // the feed had nothing: the Wikipedia:历史上的今天 page for the day
     try {
       const j = await wget("action=parse&prop=text&disablelimitreport=1&page=" + encodeURIComponent(`Wikipedia:历史上的今天/${+m}月${+dd}日`));
       const html = j.parse && (j.parse.text || ""), dom = new DOMParser().parseFromString(typeof html === "string" ? html : html["*"] || "", "text/html");
-      [...dom.querySelectorAll("li")].map(li => ({ a: [...li.querySelectorAll("a[title]")].find(a => !/^\d+年$/.test(a.title) && !a.title.includes(":")), txt: li.textContent.trim() }))
-        .filter(x => x.a && x.txt.length > 8 && !CALM.test(x.txt + x.a.title)).slice(0, 3)
+      const lis = [...dom.querySelectorAll("li")].map(li => ({ a: [...li.querySelectorAll("a[title]")].find(a => !/^\d+年$/.test(a.title) && !a.title.includes(":")), txt: li.textContent.trim() }))
+        .filter(x => x.a && x.txt.length > 8);
+      brightest(lis, x => x.txt + x.a.title)
         .forEach(x => { const yr = (x.txt.match(/^(\d{1,4})年/) || [])[1] || ""; items.push({ y: yr, t: x.a.title, s: x.txt.replace(/^\d{1,4}年[：:]?\s*/, "") }); });
     } catch (e) {}
   }
-  if (items.length) store.set("radical-wiki-today2", { day: d, items });
+  if (items.length) store.set("radical-wiki-today3", { day: d, items });
   paintToday(items);
 }
 let todayShown = "";
