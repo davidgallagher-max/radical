@@ -670,7 +670,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .noteitem{margin:0 0 12px}.noteitem .notebody{margin-bottom:8px}
 .noticetail{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}.noticetail p{margin:0 0 8px}
 .noticedeck{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);max-width:60%}
-.wtoday{margin:0 0 6px}.wtdate{color:var(--muted);font-weight:500;margin-left:6px}.wty{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;margin-right:2px}.wev{margin:0 0 8px;font-weight:600}
+.wtoday{margin:0 0 6px}.wtdate{color:var(--muted);font-weight:500;margin-left:6px}.wty{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;margin-right:2px}.wtoday .wev{font-weight:600;font-family:var(--font-zh)}.wtoday .wt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.wtoday .wen{color:var(--fg)}
 .frrow{border-bottom:1px solid color-mix(in srgb,var(--line) 85%,var(--fg))}
 .frhead{font:inherit;width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:none;border:0;color:var(--fg);padding:10px 0;cursor:pointer}
 .frwho{flex:1;display:grid;gap:2px;min-width:0}.frchev{font-style:normal;font-size:1.4rem;line-height:1;color:var(--accent);transition:transform .2s}
@@ -6989,28 +6989,31 @@ function brightest(xs, text) {
   const lit = ok.filter(o => o.b > 0);
   return (lit.length >= 2 ? lit : ok).slice(0, 3).map(o => o.x);
 }
+const YEARISH = /^(前|公元前)?\d{1,4}年(代)?$|^\d{1,2}月(\d{1,2}日)?$|^\d{1,2}世紀$|^\d{1,2}世纪$/;
 let todayTried = "";
 async function fetchToday() {
-  const d = localDay(), c = store.get("radical-wiki-today3", null);
+  const d = localDay(), c = store.get("radical-wiki-today4", null);
   if (c && c.day === d) { paintToday(c.items); return; }
   if (todayTried === d) return; todayTried = d;  // once a day, even when Wikipedia had nothing
   const [y, m, dd] = d.split("-"), items = [];
   try {
     const r = await fetch(`https://zh.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${dd}`);
-    if (r.ok) brightest((((await r.json()).onthisday) || []).filter(e => e.text && e.pages && e.pages[0]), e => e.text + e.pages[0].title)
-      .forEach(e => items.push({ y: String(e.year || ""), t: e.pages[0].title, s: e.text }));
+    // The feed lists the year's own page (1875年) first: the article is the first page that isn't a year or a date.
+    const topic = e => (e.pages || []).find(x => x && x.title && !YEARISH.test(x.title));
+    if (r.ok) brightest((((await r.json()).onthisday) || []).filter(e => e.text && topic(e)), e => e.text + topic(e).title)
+      .forEach(e => items.push({ y: String(e.year || ""), t: topic(e).title, s: e.text }));
   } catch (e) {}
   if (!items.length) {  // the feed had nothing: the Wikipedia:历史上的今天 page for the day
     try {
       const j = await wget("action=parse&prop=text&disablelimitreport=1&page=" + encodeURIComponent(`Wikipedia:历史上的今天/${+m}月${+dd}日`));
       const html = j.parse && (j.parse.text || ""), dom = new DOMParser().parseFromString(typeof html === "string" ? html : html["*"] || "", "text/html");
-      const lis = [...dom.querySelectorAll("li")].map(li => ({ a: [...li.querySelectorAll("a[title]")].find(a => !/^\d+年$/.test(a.title) && !a.title.includes(":")), txt: li.textContent.trim() }))
+      const lis = [...dom.querySelectorAll("li")].map(li => ({ a: [...li.querySelectorAll("a[title]")].find(a => !YEARISH.test(a.title) && !a.title.includes(":")), txt: li.textContent.trim() }))
         .filter(x => x.a && x.txt.length > 8);
       brightest(lis, x => x.txt + x.a.title)
         .forEach(x => { const yr = (x.txt.match(/^(\d{1,4})年/) || [])[1] || ""; items.push({ y: yr, t: x.a.title, s: x.txt.replace(/^\d{1,4}年[：:]?\s*/, "") }); });
     } catch (e) {}
   }
-  if (items.length) store.set("radical-wiki-today3", { day: d, items });
+  if (items.length) store.set("radical-wiki-today4", { day: d, items });
   paintToday(items);
 }
 let todayShown = "";
@@ -7022,9 +7025,10 @@ async function paintToday(items) {
   list.replaceChildren();
   const titles = items.map(x => x.t), ens = await englishTitles(titles).catch(() => titles.map(() => ""));
   const rows = items.map((x, k) => {
-    const r = wikiRow(x.t, ens[k]);
-    r.querySelector(".wt").insertAdjacentHTML("afterbegin", `<span class="wty">${esc(x.y)}</span> `);
-    r.querySelector(".wbody").insertAdjacentHTML("afterbegin", `<p class="wev" lang="zh">${esc(conv(x.y ? `${x.y}年：${x.s}` : x.s))}</p>`);
+    // One line of what happened (the year, then the event); under it the article's English name, length and difficulty.
+    const r = wikiRow(x.t, ens[k]), fill = r.fill, en = ens[k] || conv(x.t);
+    r.querySelector(".wt").innerHTML = `<span class="wty">${esc(x.y)}</span> <span class="wev" lang="zh">${esc(conv(x.s.replace(/[。.]\s*$/, "")))}</span>`;
+    r.fill = (text, level) => { fill(text, level); r.querySelector(".wmeta").insertAdjacentHTML("afterbegin", `<span class="wen">${esc(en)}</span> · `); };
     list.append(r); return r;
   });
   const texts = await Promise.all(titles.map(t => wget("action=query&prop=extracts&explaintext=1&exsectionformat=plain&redirects=1&titles=" + encodeURIComponent(t))

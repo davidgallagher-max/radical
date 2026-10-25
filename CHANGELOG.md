@@ -10,6 +10,7 @@ What changed in each version, in plain words. Newest first.
 - The word page and the back of a card show the word's decks as a chip. Tap it to add or take out decks. Edit card uses the same chip.
 - Practice list: tick words, then Add to deck ▾. On one of your decks, Take out of it. With 10 or more words in Basecamp, Sort into decks › starts this for you.
 - Explore's On this day no longer skips politics. It picks the most uplifting events of the day (discoveries, firsts, launches, arts, science, sport) and still leaves out war, disasters and deaths.
+- Fix (same day): On this day opened the year's own article (1875年) instead of the one the event is about. Each row now reads as one line, the year and what happened, with the article's English name, length and difficulty under it.
 
 ## v46
 
