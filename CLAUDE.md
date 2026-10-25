@@ -100,6 +100,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v47 notes: Mine (key `mine`) is Basecamp (`MINE`, `mineName()` fixed; no Rename). Words can be in several decks: `w.decks` (names; `w.deck` from before v47 still read), `wDecks(w)`, `setDecks(w, a)`, `inDeck(w, n)`; Basecamp = no deck, Top or set. `addEntry` never uses the open deck (pass `decks`); `deckPicker({ w, title, pick, done, base })` (with `w`: tick decks; else tap one), `deckChip(w)`, `deckRow(w)` (word page, card answer side, Edit card `#edDeck`), `addedToast(n)`; + Add ▾ (`.addsplit`, `.pcar` in `pickSpan`, `addBtn` returns the wrapper). Practice selection bar: Add to deck ▾, Take out of <deck>; `sorting` + `.sortnudge` (Basecamp 10+). On this day: `DARK` excluded, `BRIGHT` ranked (`brightest`), no politics block, cache `radical-wiki-today4`; `YEARISH` skips the feed's year page; the row head is the year and the event (`.wev`), the meta line starts with the English title (`.wen`).
 
+- v48 notes: list pills: Basecamp first (`.base`, gold `--gold2`), then `curList` or the latest in `radical-list-recent`, then More. `inviteSheet` removed; Share text is the invite. Streak: `logDay("w")` sets `rq` when words read reach `readGoal()` (`radical-read-goal`, 100/200/500, `#readGoalSeg`); `streakRule()` (`radical-streak-rule` either|both, `#ruleSeg`); `goalMet(v)`, `streakDay(v, day)` (days before `radical-streak-from`, `STREAK_FROM`, use `dayUsed`); calendar `.hit` and Goal met use `goalMet`.
+
 ## Accounts and sync (v30, v31)
 
 - The page sends its app day (`localDay()`, 4am start) in `x-radical-day`; the server's `dayOf(req)` trusts it within a day of UTC and uses it for usage files, the daily cap and the tally's "today".
@@ -115,6 +117,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 `card` (GET, cached at Vercel's CDN for a year), `words`, `tozh` (v41: English to Chinese; `kind: "word"` returns 1 to 3 words best first, else `{zh}`; `simp` picks the script, `region` the usage; Haiku), `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips), `explain` (解, card model), `notes` (class notes page image to items, card model), `example` (a new example sentence), `sync`, `usage`, `friends` (op me/name/add/accept/decline/remove; requests need approval since v42; not AI), `feedback` (Resend email; not AI, no tester check), `wordset` (GET, CDN cached; a themed Word Set, Haiku); public: `config`, `status`. Fast jobs use the Haiku model; cards use Sonnet.
 
 ## Waiting on David (as of Oct 25, 2026)
+
+- v48 iPhone check: the gold Basecamp pill in light and dark, Share's invite text in Messages, the calendar marking a reading-only day once you pass your words target, Settings Words read a day and Cards or reading / Both.
 
 - v47 iPhone check: + Add ▾ in the reader and in a card sentence, the deck chip on a word and on a card back, ticking words and Add to deck, Sort into decks (needs 10 words in Basecamp), a word in two decks counting in both, On this day showing cheerful events (untested against live Wikipedia).
 
@@ -142,7 +146,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 ## Next batch list
 
-v48: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v47 shipped Oct 25, 2026 (Basecamp and multi-deck words; On this day settled as uplifting-first, Oct 25); see CHANGELOG.md.
+v49: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v48 shipped Oct 25, 2026 (Basecamp first on the pills, no Email invite, goal-based streaks); see CHANGELOG.md.
 
 ## Next batches (re-planned Oct 18, 2026: TestFlight first)
 
