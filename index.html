@@ -1469,6 +1469,12 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="panel">
       <div class="seg uiseg" id="dailySeg" role="group" aria-label="Cards a day"><button type="button" data-t="10">10</button><button type="button" data-t="20">20</button><button type="button" data-t="30">30</button><button type="button" data-t="50">50</button></div>
     </div></details>
+    <details class="setsec"><summary><b>Words read a day</b><span class="sum" data-sum="readgoal"></span></summary>
+    <div class="panel">
+      <div class="seg uiseg" id="readGoalSeg" role="group" aria-label="Words read a day"><button type="button" data-t="100">100</button><button type="button" data-t="200">200</button><button type="button" data-t="500">500</button></div>
+      <p class="note">A streak day needs</p>
+      <div class="seg uiseg" id="ruleSeg" role="group" aria-label="A streak day needs"><button type="button" data-r="either">Cards or reading</button><button type="button" data-r="both">Both</button></div>
+    </div></details>
     <details class="setsec"><summary><b>Track boxes</b><span class="sum" data-sum="tiles"></span></summary>
     <div class="panel">
       <div class="tilesel" id="tileSel"><select aria-label="First box"></select><select aria-label="Second box"></select><select aria-label="Third box"></select></div>
@@ -1555,7 +1561,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v47";
+const APP_VERSION = "v48";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3611,6 +3617,7 @@ const isLearned = w => !!w.skip || ["srs", "wsrs", "lsrs"].some(k => w[k] && w[k
 function logDay(field, n = 1) {
   if (!n) return;
   const d = store.get("radical-days", {}), k = localDay(); d[k] = d[k] || {}; d[k][field] = (d[k][field] || 0) + n;
+  if (field === "w" && !d[k].rq && d[k].w >= readGoal()) d[k].rq = 1;  // v48: the day's reading target met
   const keys = Object.keys(d).sort(); while (keys.length > 400) delete d[keys.shift()];
   store.set("radical-days", d);
   if (field === "c" && typeof updateRing === "function") updateRing();
@@ -3628,6 +3635,14 @@ function weekStats() {
 }
 const num = n => n.toLocaleString("en-US");
 const started = w => !!w.skip || ["srs", "wsrs", "lsrs"].some(k => w[k] && (w[k].reps || w[k].ivl || w[k].lapses));
+// v48: the streak counts days the goal was met: Today finished (q) and/or the words-read target (rq), as picked in
+// Settings (Either, the default, or Both). Days before v48 arrived keep the old rule (anything done). The calendar's
+// solid days are goal days too.
+const readGoal = () => store.get("radical-read-goal", 200), streakRule = () => store.get("radical-streak-rule", "either");
+if (!store.get("radical-streak-from", null)) store.set("radical-streak-from", localDay());
+const STREAK_FROM = store.get("radical-streak-from", "");
+const goalMet = v => !!v && (streakRule() === "both" ? !!v.q && !!v.rq : !!v.q || !!v.rq);
+const streakDay = (v, day) => day < STREAK_FROM ? dayUsed(v) : goalMet(v);
 // ---- streak: days used in a row, with rest days. Any 14 days in a row may have up to 3 days off; a 4th day off in
 // the same 14 ends the streak. Rest days don't add to the count. Today never breaks it (the day isn't over yet).
 const REST_DAYS = 3, REST_WINDOW = 14;
@@ -3635,20 +3650,20 @@ function streakEnding(d, endDay, first) {
   let count = 0; const misses = [];
   for (let i = 0; ; i++) {
     const day = localDay(endDay - i * DAY); if (day < first) break;
-    if (dayUsed(d[day])) { count++; continue; }
-    if (i === 0 && day === localDay()) continue;  // today, not used yet
+    if (streakDay(d[day], day)) { count++; continue; }
+    if (i === 0 && day === localDay()) continue;  // today, not met yet
     misses.push(i);
     if (misses.filter(m => m < i + REST_WINDOW && m >= i).length > REST_DAYS || misses.filter(m => m <= i && m > i - REST_WINDOW).length > REST_DAYS) break;
   }
   return count;
 }
 function streakStats() {
-  const d = store.get("radical-days", {}), keys = Object.keys(d).filter(k => dayUsed(d[k])).sort();
+  const d = store.get("radical-days", {}), keys = Object.keys(d).filter(k => streakDay(d[k], k)).sort();
   if (!keys.length) return { now: 0, best: 0, rest: REST_DAYS };
   const first = keys[0], now = streakEnding(d, Date.now(), first);
   let best = now;
   for (const k of keys) { const t = new Date(k + "T12:00:00").getTime(); best = Math.max(best, streakEnding(d, t, first)); }
-  let used = 0; for (let i = 1; i < REST_WINDOW; i++) { const day = localDay(Date.now() - i * DAY); if (day >= first && !dayUsed(d[day])) used++; }
+  let used = 0; for (let i = 1; i < REST_WINDOW; i++) { const day = localDay(Date.now() - i * DAY); if (day >= first && !streakDay(d[day], day)) used++; }
   return { now, best, rest: Math.max(0, REST_DAYS - used) };
 }
 // The headline numbers, for the opening screen: streak, words recognized, days this week.
@@ -3758,11 +3773,11 @@ function renderTrack() {
     picked = c; c.classList.add("picked"); dayLine.hidden = false;
     const [y, m, dd] = key.split("-").map(Number), name = new Date(y, m - 1, dd).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
     const bits = v ? [[v.c, "card"], [v.w, "word", " read"], [v.n, "word", " added"]].filter(b => b[0]).map(([n, u, t = ""]) => `${num(n)} ${u}${n === 1 ? "" : "s"}${t}`) : [];
-    dayLine.innerHTML = `<b>${name}</b> · ${bits.length ? bits.join(" · ") : "Nothing that day"}${v && v.q ? ` · <span class="calmark"><span lang="zh">${mark}</span> Goal met</span>` : ""}`;
+    dayLine.innerHTML = `<b>${name}</b> · ${bits.length ? bits.join(" · ") : "Nothing that day"}${goalMet(v) ? ` · <span class="calmark"><span lang="zh">${mark}</span> Goal met</span>` : ""}`;
   };
   for (let k = 1; k <= nDays; k++) {
     const key = `${trackMonth.y}-${String(trackMonth.m + 1).padStart(2, "0")}-${String(k).padStart(2, "0")}`, v = d[key];
-    const cls = key > today ? "future" : dayUsed(v) ? (v.q ? "hit" : "on") : firstUse && key >= firstUse && key < today ? "off" : "";
+    const cls = key > today ? "future" : dayUsed(v) ? (goalMet(v) ? "hit" : "on") : firstUse && key >= firstUse && key < today ? "off" : "";
     if (dayUsed(v)) usedMonth++;
     const c = el(key > today ? "span" : "button", `calday ${cls}${key === today ? " today" : ""}`, String(k)); grid.append(c);
     if (key <= today) { c.type = "button"; c.onclick = () => showDay(c, key, v); }
@@ -6554,6 +6569,7 @@ function setSums() {
     sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
     speech: `${PACES.find(x => x[0] === sayPace)[1]} · speed ${Math.round(rate * 100)}%`,
     daily: `${dailyMax()} a day`,
+    readgoal: `${readGoal()} · ${streakRule() === "both" ? "both" : "cards or reading"}`,
     tiles: trackTiles().map(k => TILES[k][0]).join(", ") };
   document.querySelectorAll("[data-sum]").forEach(x => x.textContent = S[x.dataset.sum] || "");
 }
@@ -6562,7 +6578,7 @@ document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "ch
 // ---- backup: one file with everything. Words (with progress, edits and schedules), the learned list and daily
 // tallies, what you're reading now and all of History, and your settings. A summary shows first; nothing leaves the
 // app until Save file.
-const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily",
+const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule",
   "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-tiles", "radical-common", "radical-region"];
 function backupData() {
   const settings = {}; SETTING_KEYS.forEach(k => { try { const v = localStorage.getItem(k); if (v !== null) settings[k] = v; } catch (e) {} });
@@ -7163,6 +7179,14 @@ document.querySelectorAll("#cvdSeg [data-cvd]").forEach(b => {
 document.querySelectorAll("#dailySeg [data-t]").forEach(b => {
   b.setAttribute("aria-pressed", +b.dataset.t === dailyMax());
   b.onclick = () => { store.set("radical-daily", +b.dataset.t); document.querySelectorAll("#dailySeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); updateCounts(); };
+});
+document.querySelectorAll("#readGoalSeg [data-t]").forEach(b => {
+  b.setAttribute("aria-pressed", +b.dataset.t === readGoal());
+  b.onclick = () => { store.set("radical-read-goal", +b.dataset.t); document.querySelectorAll("#readGoalSeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); };
+});
+document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
+  b.setAttribute("aria-pressed", b.dataset.r === streakRule());
+  b.onclick = () => { store.set("radical-streak-rule", b.dataset.r); document.querySelectorAll("#ruleSeg [data-r]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); };
 });
 (async function start() {
   // The splash takes a tap from the very first moment: a tap hides it even while the app is still loading behind it
