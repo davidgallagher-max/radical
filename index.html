@@ -833,7 +833,8 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .pills button:disabled{opacity:.4;cursor:default}
 .pills button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .pills.hows{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
-.pills.lists{flex-wrap:nowrap}.pills.lists button{min-width:0;overflow:hidden;text-overflow:ellipsis;padding-left:10px;padding-right:10px}
+.pills.lists{flex-wrap:nowrap}.pills.lists button.base{flex:none;font-weight:800;letter-spacing:.01em;color:var(--gold2);box-shadow:inset 0 0 0 1.5px var(--gold2)}
+.pills.lists button.base[aria-pressed="true"]{color:var(--gold2);background:color-mix(in srgb,var(--gold2) 14%,var(--bg));box-shadow:inset 0 0 0 2px var(--gold2),0 0 12px color-mix(in srgb,var(--gold2) 45%,transparent)}.pills.lists button{min-width:0;overflow:hidden;text-overflow:ellipsis;padding-left:10px;padding-right:10px}
 .pills.hows button{padding:9px 2px;font-size:.95rem}
 .pills.counts button{flex:1 1 0;padding:8px 4px}
 .pills.counts.solo{justify-content:center}.pills.counts.solo button{flex:0 1 60%}
@@ -4765,14 +4766,16 @@ function renderStrip(sizes) {
   const tn = btn("", "todaynum", () => setTab("trackScreen")); tn.id = "todayNum"; tn.hidden = true; head.append(tn);
   box.append(head);
   const lists = allLists();
-  // One row of lists (v46): the one you're on, Basecamp (or, when you're on Basecamp, the one you used last), then More
-  if (lists.length > 2) {
-    const has = k => lists.some(x => x[0] === k), keep = new Set([curList]);
-    if (curList !== "mine" && has("mine")) keep.add("mine");
-    for (const k of [...store.get("radical-list-recent", []), ...lists.map(x => x[0])]) if (keep.size < 2 && has(k)) keep.add(k);
-    const row = pills("lists", [...[...keep].map(k => lists.find(x => x[0] === k)).filter(Boolean), ["more", "More"]], curList, k => { if (k !== "more") setList(k); });
-    row.lastChild.onclick = () => openSets(); box.append(row);
-  } else if (lists.length > 1) box.append(pills("lists", lists, curList, k => setList(k)));
+  // One row of lists (v48): Basecamp always first, then the deck you're on (or, on Basecamp, the one you used last),
+  // then More. Basecamp has its own look (.base); the one showing keeps the outline.
+  if (lists.length > 1) {
+    const has = k => lists.some(x => x[0] === k), keep = new Set(has("mine") ? ["mine"] : []);
+    for (const k of [curList, ...store.get("radical-list-recent", []), ...lists.map(x => x[0])]) if (keep.size < 2 && k !== "mine" && has(k)) keep.add(k);
+    const more = lists.length > 2, row = pills("lists", [...[...keep].map(k => lists.find(x => x[0] === k)).filter(Boolean), ...(more ? [["more", "More"]] : [])], curList, k => { if (k !== "more") setList(k); });
+    if (has("mine")) row.firstChild.classList.add("base");
+    if (more) row.lastChild.onclick = () => openSets();
+    box.append(row);
+  }
   box.append(pills("hows", [["read", "Read"], ["write", "Write"], ["listen", "Listen"], ["mix", "Mix"]], revHow, k => { revHow = k; store.set("radical-revhow", k); }));
   const cats = pills("cats", CATS.map(([k, label]) => [k, label, sizes[k], k !== "today" && k !== "all" && !sizes[k]]), revCat, k => { revCat = k; });
   if (sizes.today) cats.firstChild.lastChild.className = "pbadge";  // Today's count in red, like the one on 練
