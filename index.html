@@ -910,6 +910,22 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .screen.hassel{padding-bottom:calc(var(--bot) + var(--tabh) + 150px)}
 .selrow{display:flex;align-items:center;gap:8px}
 .selrow b{flex:1;font-size:.92rem}
+.selacts{flex-wrap:wrap}.selacts .btn{flex:1 1 30%}
+/* v47: + Add ▾ (Basecamp, or a deck), the deck chip, the deck picker, Sort into decks */
+.addsplit{display:inline-flex;align-items:stretch;flex:none}
+.addsplit.split>.btn:first-child{border-top-right-radius:0;border-bottom-right-radius:0}
+.addsplit.split>.btn:last-child{border-top-left-radius:0;border-bottom-left-radius:0;margin-left:1px;padding-left:10px;padding-right:12px;min-width:36px}
+.deckline{display:flex;justify-content:center;margin:2px 0 8px}
+.deckchip{min-height:36px;padding:0 14px;border-radius:18px;background:transparent;color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font:inherit;font-size:.92rem;cursor:pointer;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eddeck{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0}
+.eddeck>span:first-child{color:var(--muted);font-size:.92rem}
+.dplist{display:grid;margin:4px -6px 10px}
+.dprow{display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:var(--fg);font:inherit;font-size:1rem;text-align:left;cursor:pointer}
+.dprow.on{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.dprow i{font-style:normal;color:var(--accent)}
+.dprow.dpnew{color:var(--accent)}
+.dprow.fixed{opacity:.75;cursor:default}
+.sortnudge{display:block;width:100%;min-height:46px;margin:4px 0 8px;border:1px dashed var(--accent);border-radius:12px;background:transparent;color:var(--accent);font:inherit;font-size:.95rem;font-weight:500;cursor:pointer}
 .selrow .btn{flex:1;white-space:nowrap;padding-left:8px;padding-right:8px}.selrow:first-child .btn{flex:none}
 .lookbtn{font-size:.95rem;padding:11px}
 .lookrow{display:flex;gap:8px}.lookrow .lookbtn{flex:1;width:auto}
@@ -1538,7 +1554,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v46";
+const APP_VERSION = "v47";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2665,13 +2681,20 @@ function pickSpan(line, a, b, tok) {
   peek.querySelectorAll(".pgrow").forEach(x => x.onclick = e => { e.stopPropagation(); const d = +x.dataset.d; pickSpan(line, d < 0 ? a - 1 : a, d > 0 ? b + 1 : b, tok); });
   peek.querySelectorAll(".ptile.end").forEach(x => x.onclick = e => { e.stopPropagation(); const k = +x.dataset.k; pickSpan(line, k === 0 ? a + 1 : a, k === 0 ? b : b - 1, tok); });
   // + Add for the selection (✓ once it's in your words; tap that to open it).
-  const add = btn(findWord(word) ? "✓ Saved" : "+ Add", findWord(word) ? "btn ghost small padd" : "btn small padd", async e => {
+  // v47: + Add puts it in Basecamp; ▾ beside it picks a deck for this word only.
+  const doAdd = async n => {
+    add.disabled = car.disabled = true; const w = await addEntry(word, { context: text, ...(n ? { decks: [n] } : {}) }); play("right"); addedToast(n);
+    add.textContent = "✓ Added"; add.className = "btn ghost small padd"; add.disabled = false; car.hidden = true; updateCounts(); ensureCard(w).catch(() => {});
+  };
+  const add = btn(findWord(word) ? "✓ Added" : "+ Add", findWord(word) ? "btn ghost small padd" : "btn small padd", e => {
     e.stopPropagation();
     if (findWord(word)) { open(); return; }
-    add.disabled = true; const w = await addEntry(word, { context: text }); play("right");
-    add.textContent = "✓ Saved"; add.className = "btn ghost small padd"; add.disabled = false; updateCounts(); ensureCard(w).catch(() => {});
+    doAdd("");
   });
-  peek.querySelector(".prow:last-child").insertBefore(add, peek.querySelector(".popen"));
+  const car = btn("▾", "btn small padd pcar", e => { e.stopPropagation(); deckPicker({ title: `Add ${word} to`, pick: doAdd }); });
+  car.setAttribute("aria-label", "Add to a deck"); car.hidden = !!findWord(word);
+  const split = el("span", "addsplit split"); split.append(add, car);
+  peek.querySelector(".prow:last-child").insertBefore(split, peek.querySelector(".popen"));
   peek.hidden = false;
 }
 function unpick() {
@@ -3412,17 +3435,14 @@ function editCard(w, done, opts = {}) {
     <div class="edex"><span>Example sentence</span><div class="edshow" id="edShow"></div><div class="row" id="edBtns"></div>
       <textarea id="edOwn" rows="2" lang="zh" placeholder="Type or paste your own sentence" hidden></textarea></div>
     <label><span>Notes</span><textarea id="edNotes" rows="2" placeholder="Your teacher's comments, a memory trick…"></textarea></label>
-    <label><span>Deck</span><select id="edDeck"></select></label>
+    <div class="eddeck"><span>Decks</span><span id="edDeck"></span></div>
     <p class="note edmsg" id="edMsg"></p>`;
   const q = id => card.querySelector("#" + id);
   q("edMean").value = wMeaning(w); q("edMean").placeholder = std.meaning;
   q("edPy").value = wPinyin(w); q("edPy").placeholder = std.pinyin;
   q("edPy").addEventListener("input", e => { const v = e.target.value, m = numToMarks(v); if (m !== v && /\d/.test(v)) e.target.value = m; });
   q("edNotes").value = prev.notes || "";
-  // v43: move the word to another of your decks (a Top or topic word leaves that list for it)
-  const other = w.common ? `Top ${num(commonSize() || 0)}` : w.set || "";
-  q("edDeck").innerHTML = (other ? `<option value="\u0002">${esc(other)}</option>` : "") + `<option value="">${esc(mineName())}</option>` + [...new Set([...decks.names, ...(w.deck ? [w.deck] : [])])].map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
-  q("edDeck").value = other ? "\u0002" : w.deck || "";
+  q("edDeck").append(deckChip(w));  // v47: its decks (changes keep at once)
   const showEx = () => { q("edShow").innerHTML = ex.example ? `<p lang="zh">${esc(conv(ex.example))}</p><p class="note">${esc(ex.example_en)}</p>` : `<p class="note">No example yet.</p>`; };
   showEx();
   const fresh = btn("New sentence", "btn ghost small", async () => {
@@ -3451,8 +3471,6 @@ function editCard(w, done, opts = {}) {
     const fromClass = (w.fromClass || []).filter(f => mine[f] && mine[f] === prev[f]);
     if (Object.keys(mine).length) w.mine = mine; else delete w.mine;
     if (fromClass.length) w.fromClass = fromClass; else delete w.fromClass;
-    const dv = q("edDeck").value;
-    if (dv !== "\u0002" && dv !== (other ? "\u0002" : w.deck || "")) { delete w.common; delete w.set; if (dv) w.deck = dv; else delete w.deck; }
     saveWords(); close(); play("right"); if (done) done();
   });
   const row = el("div", "row edacts"); row.append(save, btn("Cancel", "btn ghost", close));
@@ -3489,7 +3507,7 @@ async function addEntry(word, extra = {}) {
   await ensure(word);
   if (extra.context) extra = { ...extra, context: sentenceOf(extra.context, word) };
   const d = lookup(word);
-  const e = { word, added: localDay(), ...(d ? { pinyin: region === "tw" && d[2] || d[1], meaning: d[3] } : {}), ...(isDeck(curList) ? { deck: curList.slice(2) } : {}), ...extra };
+  const e = { word, added: localDay(), ...(d ? { pinyin: region === "tw" && d[2] || d[1], meaning: d[3] } : {}), ...extra };
   for (const k of Object.keys(e)) if (e[k] === "" || e[k] == null) delete e[k];
   if (!e.pinyin && word.length && [...word].every(c => cache[c])) e.pinyin = [...word].map(c => cache[c].p[0]).join(" ");
   if (!e.meaning && [...word].length === 1 && cache[word]) e.meaning = cache[word].d;
@@ -4059,8 +4077,8 @@ function shareSheet(k) {
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
 }
-// Adding a shared deck: a new deck of your own (a number on the name if you have one called that). Words you have in
-// Added move into it; words in another deck stay there. Cards for its new words are made when first studied.
+// Adding a shared deck: a new deck of your own (a number on the name if you have one called that). Words you have
+// join it too (v47: a word can be in several decks). Cards for its new words are made when first studied.
 function addSharedDeck(d) {
   const base = String(d.name || "Shared deck").slice(0, DECK_MAX);
   let name = base, i = 2; const taken = x => decks.names.includes(x) || x === mineName() || THEMES.includes(x);
@@ -4070,9 +4088,9 @@ function addSharedDeck(d) {
   (d.words || []).forEach(x => {
     const word = conv(String(x.word || "").trim()); if (!word) return;
     const have = findWord(word);
-    if (have) { if (inList(have, "mine")) { have.deck = name; moved++; } return; }
+    if (have) { if (!inDeck(have, name)) { setDecks(have, [...wDecks(have), name]); moved++; } return; }
     delete deleted[word];
-    myWords.push({ word, pinyin: x.pinyin || "", meaning: x.meaning || "", added: localDay(), deck: name, got: 1 }); added++;
+    myWords.push({ word, pinyin: x.pinyin || "", meaning: x.meaning || "", added: localDay(), decks: [name], got: 1 }); added++;
   });
   if (!added && !moved) { decks.names = decks.names.filter(x => x !== name); toast("You have all these words already.", 3000); return false; }  // every word is in another deck
   decks.ids[d.id] = deckKey(name); saveDecks(); saveWords(); logDay("n");
@@ -4279,26 +4297,30 @@ const isNewIn = (w, how) => !w.skip && !modesOf(how).some(m => w[KEYS[m]]);
 // (nothing piles up on them). The day's cap (Cards a day) and new-word allowance are shared, so switching lists never
 // gives a fresh 30. Set words get their card when first studied, not when the set is added.
 let curList = store.get("radical-list", "mine");
-// v43: your own decks. A word sits in one of them (w.deck, the deck's name) or in Mine, which you can rename. Names live
+// v43: your own decks. v47: a word can sit in several (w.decks, their names; before v47 one, w.deck) or in none, which
+// is Basecamp: where new words land, a fixed name that can't be renamed or deleted. Names live
 // in radical-decks { mine, names, t } and sync with your words, so a deck you just made stays even while it's empty.
 let decks = store.get("radical-decks", null) || { mine: "Mine", names: [], t: 0 };
 decks.used = decks.used || {}; decks.ids = decks.ids || {};  // v46: shared deck ids { id: the deck's key here }
-// v46: Mine is called Added (the words you added yourself that aren't in a deck); an old unrenamed "Mine" reads as Added.
-const MINE = "Added", mineName = () => !decks.mine || decks.mine === "Mine" ? MINE : decks.mine;
+// v47: Mine (internal key "mine") is Basecamp, always; a name given to it before v47 is ignored.
+const MINE = "Basecamp", mineName = () => MINE;
+const wDecks = w => w.decks || (w.deck ? [w.deck] : []);
+function setDecks(w, a) { a = [...new Set(a.filter(Boolean))]; delete w.deck; if (a.length) w.decks = a; else delete w.decks; }
+const inDeck = (w, n) => wDecks(w).includes(n);
 const DECK_MAX = 20;  // deck names (v44)
 const isDeck = L => typeof L === "string" && L.startsWith("d:"), deckKey = n => "d:" + n;
 // v44: several of your decks studied together: "g:" + their keys, one per line
 const isGroup = L => typeof L === "string" && L.startsWith("g:"), groupKey = ks => "g:" + ks.join("\n"), groupKeys = L => isGroup(L) ? L.slice(2).split("\n") : [L];
 function saveDecks() { decks.t = Date.now(); store.set("radical-decks", decks); if (typeof scheduleSync === "function") scheduleSync(); }
-const inList = (w, L = curList) => isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !w.deck : L === "top" ? !!w.common : isDeck(L) ? w.deck === L.slice(2) : w.set === L;
+const inList = (w, L = curList) => isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L;
 const listWords = () => myWords.filter(w => inList(w));
-const keyOf = w => w.deck ? deckKey(w.deck) : w.set || (w.common ? "top" : "mine");  // the list a word belongs to
+const keyOf = w => wDecks(w).length ? (isDeck(curList) && inList(w, curList) ? curList : deckKey(wDecks(w)[0])) : w.set || (w.common ? "top" : "mine");  // the list a word belongs to
 const lazyCard = w => !!(w.common || w.set || w.got) && !practiced(w);  // v46: words from a shared deck too
 function allLists() {
-  const out = curList === "mine" || myWords.some(w => inList(w, "mine")) || mineName() !== MINE ? [["mine", mineName()]] : [], size = commonSize();  // Mine shows once it has words
+  const out = curList === "mine" || myWords.some(w => inList(w, "mine")) ? [["mine", mineName()]] : [], size = commonSize();  // Mine shows once it has words
   const cut = t => t.length > DECK_MAX ? t.slice(0, DECK_MAX - 1) + "…" : t;
   if (isGroup(curList)) out.unshift([curList, groupName(curList)]);
-  new Set([...decks.names, ...myWords.filter(w => w.deck).map(w => w.deck)]).forEach(n => out.push([deckKey(n), cut(n)]));
+  new Set([...decks.names, ...myWords.flatMap(wDecks)]).forEach(n => out.push([deckKey(n), cut(n)]));
   if (size) out.push(["top", `Top ${num(size)}`]);
   [...new Set(myWords.filter(w => w.set).map(w => w.set))].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
   return out;
@@ -4426,7 +4448,7 @@ function wordPage() {
   py.append(addBtn());
   page.append(py);
   page.append(el("p", "wmean", esc(mean) + markHTML(saved, "meaning") + (s.tw && !markOf(saved, "pinyin") ? ` <span class="note">(Taiwan reading)</span>` : "")));
-  if (saved) page.append(...cardExtras(saved));
+  if (saved) page.append(deckRow(saved), ...cardExtras(saved));
   // One line, and it's the way forward: no separate arrow repeating the next character.
   const nav = el("div", "pnav"), go1 = el("button", "nx swipehint", `Swipe for parts and writing<i></i>`);
   go1.type = "button"; go1.onclick = () => goPage(1); nav.append(el("span"), go1);
@@ -4436,20 +4458,26 @@ function wordPage() {
 }
 // "+ Add" for the whole word (word page) or for one character (character pages).
 function addBtn(word = wordState.word) {
-  const s = wordState, b = btn("", "btn addbtn");
-  const idle = () => { const w = findWord(word); b.textContent = w ? "✓ In my words" : (word === s.word ? "+ Add" : `+ Add ${word}`); b.className = w ? "btn ghost addbtn" : "btn addbtn"; b.disabled = false; };
-  idle();
+  const s = wordState, b = btn("", "btn addbtn"), wrap = el("span", "addsplit");
+  // v47: ▾ adds it straight into one of your decks (+ Add puts it in Basecamp)
+  const car = btn("▾", "btn addcar", () => deckPicker({ title: `Add ${conv(word)} to`, pick: n => doAdd(n) }));
+  car.setAttribute("aria-label", "Add to a deck");
+  const idle = () => { const w = findWord(word); b.textContent = w ? "✓ In my words" : (word === s.word ? "+ Add" : `+ Add ${word}`); b.className = w ? "btn ghost addbtn" : "btn addbtn"; b.disabled = false; car.hidden = !!w; wrap.classList.toggle("split", !w); };
+  idle(); wrap.append(b, car);
+  const doAdd = async n => {
+    b.disabled = true;
+    const w = await addEntry(word, { context: s.context && s.context !== word ? s.context : undefined, ...(n ? { decks: [n] } : {}) });
+    play("right"); addedToast(n); idle(); if (word === s.word) refreshWordPage();
+    ensureCard(w).then(refreshWordPage).catch(() => {});
+  };
   b.onclick = async () => {
     const have = findWord(word);
     if (have) {  // saved already: first tap asks, second tap removes
       armConfirm(b, on => on ? b.textContent = "Remove?" : idle(), () => { myWords.splice(myWords.indexOf(have), 1); saveWords(); idle(); if (word === s.word) refreshWordPage(); }); return;
     }
-    b.disabled = true;
-    const w = await addEntry(word, { context: s.context && s.context !== word ? s.context : undefined });
-    play("right"); idle(); if (word === s.word) refreshWordPage();
-    ensureCard(w).then(refreshWordPage).catch(() => {});
+    doAdd("");
   };
-  return b;
+  return wrap;
 }
 function refreshWordPage() {
   if ($("wordScreen").hidden || !wordState) return;
@@ -4737,7 +4765,7 @@ function renderStrip(sizes) {
   const tn = btn("", "todaynum", () => setTab("trackScreen")); tn.id = "todayNum"; tn.hidden = true; head.append(tn);
   box.append(head);
   const lists = allLists();
-  // One row of lists (v46): the one you're on, Added (or, when you're on Added, the one you used last), then More
+  // One row of lists (v46): the one you're on, Basecamp (or, when you're on Basecamp, the one you used last), then More
   if (lists.length > 2) {
     const has = k => lists.some(x => x[0] === k), keep = new Set([curList]);
     if (curList !== "mine" && has("mine")) keep.add("mine");
@@ -4779,6 +4807,7 @@ function showBackupNote() {
   box.innerHTML = `${at ? `Last backup: ${days} day${days === 1 ? "" : "s"} ago` : "No backup yet"}${revs ? ` · ${revs} review${revs === 1 ? "" : "s"} since` : ""}. Your words are only on this phone. `;
   box.append(btn("Save now", "btn ghost small", () => $("backupBtn").click()));
 }
+let sorting = false;
 function renderWords() {
   showBackupNote();
   if (!allLists().some(x => x[0] === curList)) { curList = "mine"; store.set("radical-list", "mine"); }  // a removed set
@@ -4799,6 +4828,9 @@ function renderWords() {
   const ups = revCat === "new" || revCat === "all" ? up : [], nList = shown.length + ups.length;
   list.hidden = !nList;
   $("listHead").textContent = myWords.length ? `${CATS.find(c => c[0] === revCat)[1]} · ${num(nList)} word${nList === 1 ? "" : "s"}` : "";
+  // v47: Basecamp with 10+ words: one line offers to sort them into decks
+  if (curList === "mine" && !sorting && !picks.size && myWords.filter(w => inList(w, "mine")).length >= 10)
+    list.append(btn("Sort into decks ›", "sortnudge", () => { sorting = true; renderWords(); }));
   shown.forEach(w => {
     const st = wStatus(w), on = picks.has(w), dot = st === "known" ? "known" : "learning";
     const r = el("div", "wrow" + (on ? " sel" : ""));
@@ -4985,18 +5017,57 @@ function nameDeck(cur, done, back) {
   document.body.append(sheet); setTimeout(() => { inp.focus(); inp.select(); }, 300);
 }
 function renameDeck(L, n) {
-  if (L === "mine") decks.mine = n;
-  else { const old = L.slice(2); decks.names = decks.names.map(x => x === old ? n : x); myWords.forEach(w => { if (w.deck === old) w.deck = n; }); saveWords();
+  if (L === "mine") return;  // Basecamp keeps its name
+  else { const old = L.slice(2); decks.names = decks.names.map(x => x === old ? n : x); myWords.forEach(w => { if (inDeck(w, old)) setDecks(w, wDecks(w).map(x => x === old ? n : x)); }); saveWords();
     decks.used[deckKey(n)] = decks.used[L]; delete decks.used[L]; Object.keys(decks.ids).forEach(i => { if (decks.ids[i] === L) decks.ids[i] = deckKey(n); }); L = deckKey(n); }
   saveDecks(); setList(L); renderWords();
 }
-// Deleting your decks keeps every word: they go back to Mine.
+// Deleting your decks keeps every word: they leave those decks (a word in no deck is in Basecamp).
 function deleteDeck(Ls) {
   const old = new Set([].concat(Ls).map(L => L.slice(2))); decks.names = decks.names.filter(x => !old.has(x));
   [].concat(Ls).forEach(L => { delete decks.used[L]; Object.keys(decks.ids).forEach(i => { if (decks.ids[i] === L) delete decks.ids[i]; }); });
-  myWords.forEach(w => { if (old.has(w.deck)) delete w.deck; }); saveWords(); saveDecks(); setList("mine"); renderWords();
+  myWords.forEach(w => { if (wDecks(w).some(x => old.has(x))) setDecks(w, wDecks(w).filter(x => !old.has(x))); }); saveWords(); saveDecks(); setList("mine"); renderWords();
 }
-// Removing a list: the words you haven't studied go; the ones you have stay, in Mine.
+// v47: picking decks. With a word you have (w): tick the decks it's in; Basecamp means none; changes keep at once.
+// Otherwise (▾ beside + Add, or a selection): tap one and it's done. ＋ New deck asks for a name first.
+function deckPicker({ w, title, pick, done, base = true }) {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard deckpick"), list = el("div", "dplist");
+  const close = () => { sheet.remove(); if (done) done(); };
+  const row = (label, on, fn, cls = "") => { const b = btn("", "dprow" + cls + (on ? " on" : ""), fn); b.innerHTML = `<span>${esc(label)}</span><i aria-hidden="true">${on ? "✓" : ""}</i>`; if (w) { b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", on); } list.append(b); return b; };
+  const paint = () => {
+    list.replaceChildren();
+    const names = [...new Set([...decks.names, ...(w ? wDecks(w) : [])])];
+    if (w) {
+      const fixed = w.common || w.set ? keyName(w.set || "top") : "";
+      if (fixed) row(fixed, true, null, " fixed").disabled = true;
+      else row(mineName(), !wDecks(w).length, () => { setDecks(w, []); saveWords(); paint(); });
+      names.forEach(n => row(n, inDeck(w, n), () => { setDecks(w, inDeck(w, n) ? wDecks(w).filter(x => x !== n) : [...wDecks(w), n]); saveWords(); paint(); }));
+    } else {
+      if (base) row(mineName(), false, () => { sheet.remove(); pick(""); });
+      names.forEach(n => row(n, false, () => { sheet.remove(); pick(n); }));
+    }
+    row("＋ New deck", false, () => { sheet.remove(); nameDeck("", n => {
+      if (!decks.names.includes(n)) { decks.names.push(n); saveDecks(); }
+      if (w) { setDecks(w, [...wDecks(w), n]); saveWords(); deckPicker({ w, title, done }); } else pick(n);
+    }, () => deckPicker({ w, title, pick, done, base })); }, " dpnew");
+  };
+  paint();
+  const head = el("div", "sheethead"); head.append(el("h3", "", esc(title)), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Close");
+  card.append(head, list); if (w) card.append(btn("Done", "btn wide", close));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
+  document.body.append(sheet);
+}
+// The decks a word is in, as a chip: tap to change them.
+function deckChip(w, after) {
+  const b = btn("", "deckchip");
+  const paint = () => { const ds = wDecks(w), names = ds.length ? ds : [w.common || w.set ? keyName(w.set || "top") : mineName()];
+    b.innerHTML = `<span>${esc(names[0])}${names.length > 1 ? ` +${names.length - 1}` : ""}</span> ▾`; b.setAttribute("aria-label", `Decks: ${names.join(", ")}. Change`); };
+  b.onclick = e => { e.stopPropagation(); deckPicker({ w, title: `${conv(w.word)} is in`, done: () => { paint(); updateCounts(); if (after) after(); } }); };
+  paint(); return b;
+}
+const deckRow = w => { const r = el("div", "deckline"); r.append(deckChip(w)); return r; };
+const addedToast = n => toast(`Added to <b>${esc(n || mineName())}</b>`, 2200);
+// Removing a list: the words you haven't studied go; the ones you have stay (in Basecamp unless in a deck).
 function removeList(L) {
   myWords = myWords.filter(w => !(inList(w, L) && !practiced(w)));
   myWords.forEach(w => { if (inList(w, L)) { delete w.common; delete w.set; } });
@@ -5023,8 +5094,8 @@ function openSets() {
     bar.append(btn(keys.length > 1 ? `Study ${keys.length} together` : "Study", "btn small", () => { close(); setList(keys.length > 1 ? groupKey(keys) : keys[0]); renderWords(); }));
     if (keys.length === 1 && made.length && keys[0] !== "top" && moreSize(keys[0]) <= 100 && myWords.filter(w => w.set === keys[0]).length < 100) bar.append(btn("＋ More words", "btn ghost small", () => { close(); chooseSet(() => addThemeSet(keys[0], true), true, null, `add to ${keys[0]}`); }));
     if (keys.length === 1 && keys[0] !== "top") bar.append(btn("Share", "btn ghost small", () => { close(); shareSheet(keys[0]); }));
-    if (keys.length === 1 && (keys[0] === "mine" || isDeck(keys[0]))) bar.append(iconBtn(PEN, "Rename", "btn ghost small", () => { close(); const k = keys[0]; nameDeck(k === "mine" ? mineName() : k.slice(2), n => renameDeck(k, n), openSets); }));
-    // Your decks: every word goes to Mine. Ready-made: unstudied words go, studied ones move to Mine.
+    if (keys.length === 1 && isDeck(keys[0])) bar.append(iconBtn(PEN, "Rename", "btn ghost small", () => { close(); const k = keys[0]; nameDeck(k.slice(2), n => renameDeck(k, n), openSets); }));
+    // Your decks: words leave them. Ready-made: unstudied words go, studied ones stay.
     if (gone.length) { const rm = btn("", "btn ghost small"), mine = mineName(), word = made.length && !own.length ? "Remove" : "Delete";
       const say = on => rm.textContent = on ? (made.length ? `${word}? Studied words go to ${mine}` : `Delete? Words go to ${mine}`) : gone.length > 1 ? `${word} ${gone.length}` : word;
       say(false); rm.onclick = () => armConfirm(rm, say, () => { close(); made.forEach(removeList); if (own.length) deleteDeck(own); }); bar.append(rm); }
@@ -5162,7 +5233,13 @@ function outsideStatus(e) { if (!e.target.closest("#stmenu")) { e.stopPropagatio
 function closeStatusMenu() { const m = $("stmenu"); if (m) m.remove(); document.removeEventListener("click", outsideStatus, true); }
 function renderSelBar(shown) {
   let bar = $("selbar");
-  $("wordsScreen").classList.toggle("hassel", picks.size > 0);
+  if (sorting && curList !== "mine") sorting = false;
+  $("wordsScreen").classList.toggle("hassel", picks.size > 0 || sorting);
+  if (!picks.size && sorting) {  // v47: Sort into decks: tick words, then Add to deck
+    if (!bar) { bar = el("div", "selbar"); bar.id = "selbar"; $("wordsScreen").append(bar); }
+    const top = el("div", "selrow"); top.append(el("b", "", "Tick words to sort"), btn("✕", "btn ghost small selx", () => { sorting = false; renderWords(); }));
+    bar.replaceChildren(top); return;
+  }
   if (!picks.size) { if (bar) bar.remove(); return; }
   if (!bar) { bar = el("div", "selbar"); bar.id = "selbar"; $("wordsScreen").append(bar); }
   const all = shown.length && shown.every(w => picks.has(w));
@@ -5170,15 +5247,22 @@ function renderSelBar(shown) {
   const top = el("div", "selrow");
   top.append(el("b", "", `${picks.size} selected`),
     btn(all ? "Select none" : `Select all ${shown.length}`, "btn ghost small", () => { if (all) shown.forEach(w => picks.delete(w)); else shown.forEach(w => picks.add(w)); renderWords(); }),
-    btn("✕", "btn ghost small selx", () => { picks.clear(); renderWords(); }));
-  const acts = el("div", "selrow");
+    btn("✕", "btn ghost small selx", () => { picks.clear(); sorting = false; renderWords(); }));
+  const acts = el("div", "selrow selacts");
+  // v47: into one of your decks (they leave Basecamp); on your own deck, out of it
+  const into = btn("Add to deck ▾", "btn", () => deckPicker({ title: `Add ${picks.size} to`, base: false, pick: n => {
+    const ws = [...picks]; ws.forEach(w => setDecks(w, [...wDecks(w), n])); picks.clear(); sorting = false; saveWords(); renderWords(); updateCounts();
+    toast(`${num(ws.length)} added to <b>${esc(n)}</b>`, 2500); } }));
+  const own = isDeck(curList) ? curList.slice(2) : "";
+  const out = own && btn(`Take out of ${own.length > 12 ? own.slice(0, 11) + "…" : own}`, "btn ghost", () => {
+    [...picks].forEach(w => setDecks(w, wDecks(w).filter(x => x !== own))); picks.clear(); saveWords(); renderWords(); updateCounts(); });
   const study = btn(`Flash cards (${picks.size})`, "btn", () => { const ws = [...picks]; picks.clear(); renderWords(); openReviewWith(ws); });
   const stat = btn("Set status ▾", "btn ghost", e => statusMenu(e.currentTarget, [...picks]));
   const del = btn("Remove", "btn ghost", () => {
     if (del.dataset.sure !== "1") { del.dataset.sure = "1"; del.textContent = `Remove ${picks.size}?`; del.classList.add("confirm"); return; }
     myWords = myWords.filter(w => !picks.has(w)); picks.clear(); saveWords(); renderWords(); updateCounts();
   });
-  acts.append(study, stat, del);
+  acts.append(study, into); if (out) acts.append(out); acts.append(stat, del);
   bar.append(top, acts);
 }
 
@@ -5324,7 +5408,7 @@ function showPreview(found, source) {
   const acts = el("div", "row"); acts.append(go_, btn("Cancel", "btn ghost", closePreview));
   // v43: which deck they go into (your decks or a new one; class notes ask for one, like "Lesson 5")
   if (!found.backup) {
-    pendingDeck = isDeck(curList) ? curList.slice(2) : "";
+    pendingDeck = "";  // v47: Basecamp unless you pick a deck
     const dk = el("div", "pvdeck"), sel = el("select"), nm = el("input"); nm.type = "text"; nm.placeholder = "Deck name, e.g. Lesson 5"; nm.maxLength = DECK_MAX; nm.hidden = true;
     sel.setAttribute("aria-label", "Add to deck"); nm.setAttribute("aria-label", "New deck name");
     sel.innerHTML = `<option value="">${esc(mineName())}</option>` + decks.names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("") + `<option value="\u0001">New deck…</option>`;
@@ -5349,13 +5433,13 @@ async function commitPending(isBackup) {
     const teacher = !!((from_text || english) && rest.meaning);  // the notes or list gave English for it
     const old = have && findWord(rest.word);
     if (old) {  // already yours: into the deck, and the teacher's English unless you wrote your own
-      if (pendingDeck) old.deck = pendingDeck;
+      if (pendingDeck) setDecks(old, [...wDecks(old), pendingDeck]);
       if (teacher && !(old.mine && old.mine.meaning)) { old.mine = { ...(old.mine || {}), meaning: rest.meaning }; old.fromClass = [...new Set([...(old.fromClass || []), "meaning"])]; }
       if (note && !old.classNote) old.classNote = note;
       n++; continue;
     }
     const d = lookup(rest.word);
-    const entry = { added: localDay(), ...rest, ...(pendingDeck ? { deck: pendingDeck } : {}) };
+    const entry = { added: localDay(), ...rest, ...(pendingDeck ? { decks: [pendingDeck] } : {}) };
     // The teacher's English (spelling fixed) is your meaning for this word, over the standard card's; her pinyin too,
     // when it differs from the dictionary (a Taiwan reading). Where her English was wrong, her original is kept.
     const mine = {}, fromClass = [];
@@ -5372,7 +5456,7 @@ async function commitPending(isBackup) {
   if (!isBackup && n) record({ kind: "list", title: pendingSource || "Pasted list", words: take.map(e => e.word) });
   const into = pendingDeck; if (into && !decks.names.includes(into)) { decks.names.push(into); saveDecks(); }
   saveWords(); closePreview(); $("addWord").value = ""; growAdd();
-  $("addStatus").textContent = `Added ${n} word${n === 1 ? "" : "s"}${into ? ` to ${into}` : ""}.`; play("right");
+  $("addStatus").textContent = `Added ${n} word${n === 1 ? "" : "s"} to ${esc(into || mineName())}.`; play("right");
   if (!isBackup && n) { if (into) setList(deckKey(into)); else if (isDeck(curList)) setList("mine"); }
   renderWords();
 }
@@ -5388,7 +5472,7 @@ $("addGo").onclick = async () => {
     if (r.hits.length) pickEnglish(text, r.hits, r.best, async x => {
       if (findWord(x.word)) { st.textContent = `${x.word} is already in your list.`; return; }
       const entry = await addEntry(x.word, { pinyin: x.pinyin, meaning: x.meaning });
-      $("addWord").value = ""; growAdd(); renderWords(); st.textContent = `Added ${entry.word}.`; play("right");
+      $("addWord").value = ""; growAdd(); renderWords(); st.textContent = `Added ${entry.word} to ${mineName()}.`; play("right");
       ensureCard(entry).then(() => { renderWords(); refreshWordPage(); }).catch(() => {});
     });
     return;
@@ -5401,7 +5485,7 @@ $("addGo").onclick = async () => {
     if (findWord(w.word)) { st.textContent = `${w.word} is already in your list.`; return; }
     const entry = await addEntry(w.word, { pinyin: w.pinyin, meaning: w.meaning, skip: w.skip });
     $("addWord").value = ""; growAdd(); renderWords();
-    st.textContent = `Added ${entry.word}.`; play("right");
+    st.textContent = `Added ${entry.word} to ${mineName()}.`; play("right");
     ensureCard(entry).then(() => { renderWords(); refreshWordPage(); }).catch(() => {});
     return;
   }
@@ -6135,7 +6219,7 @@ function showBack(w, how, st) {
   ed.setAttribute("aria-label", "Edit this card"); wpy.append(ed);
   ans.append(wpy);
   const wm = el("p", "wmean", esc(wMeaning(w)) + markHTML(w, "meaning"));
-  ans.append(wm, ...cardExtras(w));
+  ans.append(wm, deckRow(w), ...cardExtras(w));
   const cw = commonWordLine(w); if (cw) ans.append(cw);
   if (c) {
     (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
