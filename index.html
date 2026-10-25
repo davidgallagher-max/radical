@@ -117,7 +117,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .btn.ghost{background:var(--surface);color:var(--accent);box-shadow:inset 0 0 0 1px var(--line)}
 .btn.small{font-size:.84rem;padding:6px 11px}
 .btn.wide{width:100%;font-size:1.02rem;padding:13px}
-.btn.confirm{box-shadow:inset 0 0 0 1px var(--sound);color:var(--sound)}
+.btn.confirm{box-shadow:inset 0 0 0 1px var(--no,#E5533D);color:var(--no,#E5533D)}
+.arcancel{margin-left:8px}
 .btn:disabled{opacity:.6}
 /* Gold leaf (v36): the main button has a metal finish in the theme's accent; other selected controls get a thin
    accent outline and accent lettering, no fill. --metal* come from metalOf(). */
@@ -310,7 +311,7 @@ p.busy{margin:-4px 4px 0}
 .ratehead b{font-size:.95rem}.ratehead span{font-size:.92rem;color:var(--muted)}
 .flipbtn{justify-self:center}
 /* Flash cards: pinyin in plain ink (no tone colors), so the characters' colors stay the only color on the card. */
-#reviewScreen .bigpy span,#reviewScreen .cell .py span,#reviewScreen .res b span,#reviewScreen .sy span,#reviewScreen .minigloss .pp,#lookScreen .bigpy span,#lookScreen .cell .py span,#lookScreen .minigloss .pp{color:var(--fg)!important}
+#reviewScreen .bigpy span,#reviewScreen .cell .py span,#reviewScreen .res b span,#reviewScreen .sy span,#reviewScreen .peek .pp,#lookScreen .bigpy span,#lookScreen .cell .py span,#lookScreen .peek .pp{color:var(--fg)!important}
 .wtabrow{display:flex;flex-direction:column;align-items:stretch;gap:8px}
 #wordScript{display:flex;justify-content:flex-end}
 .scriptpick{display:inline-flex;flex-direction:column;align-items:center;gap:3px}
@@ -341,6 +342,7 @@ p.busy{margin:-4px 4px 0}
   display:grid;gap:4px;padding:8px 10px 8px 8px;border-radius:16px;background:var(--surface);
   box-shadow:0 0 0 1px var(--line),0 12px 30px rgba(0,0,0,.35);animation:peekin .18s ease;cursor:pointer}
 .peek .prow{display:flex;align-items:center;gap:6px;min-width:0}
+.peek.inline{position:static;margin:8px 0 0;max-width:none;z-index:auto;box-shadow:inset 0 0 0 1px var(--line)}
 .peek .ptiles{display:flex;gap:2px;min-width:0;overflow-x:auto;scrollbar-width:none}
 .peek .ptiles::-webkit-scrollbar{display:none}
 .peek .ptile{all:unset;cursor:default;font-family:var(--font-zh);font-size:1.35rem;font-weight:600;line-height:1;padding:5px 3px;border-radius:7px;flex:none}
@@ -662,6 +664,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .frform{display:flex;gap:8px;margin-top:4px}
 .frreq{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 75%,transparent)}
 .frreqacts{display:flex;align-items:center;gap:6px}
+.frnameform{display:grid;gap:8px;flex:1;min-width:0}.frnameform .btn{justify-self:start}.frtwo{display:flex;gap:8px}.frtwo .frname{flex:1;width:0}.frnote{margin:0}.frreal{margin:0 0 6px;font-weight:600}
 .frnamerow{display:flex;align-items:center;gap:8px}.frnamerow .frname{flex:1;width:auto}.frnm{font-size:1.05rem}.frform input,.frname{font:inherit;font-size:1rem;flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 .frform input{text-transform:uppercase;letter-spacing:.12em;width:0}.frname{width:100%;box-sizing:border-box;flex:none}.trfriends>*{min-width:0;max-width:100%}
 .frme{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:4px}.frcode{font-family:var(--font-ui);font-weight:700;letter-spacing:.14em;font-size:1.15rem;color:var(--accent)}
@@ -836,6 +839,19 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .setchip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .setspanel .setsub{margin:-2px 0 4px}
 .setsheet .btn.small{justify-self:start}
+.noticetext{font-size:1.05rem;line-height:1.5;margin:0 0 14px}.noticeedit{font:inherit;width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.noticeuntil{display:flex;align-items:center;gap:10px;margin:10px 0}.noticeuntil input{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+/* v44: your decks as a table: check circle, name (count), last used */
+.decktable{display:grid;border-radius:14px;box-shadow:inset 0 0 0 1px var(--line);overflow:hidden;margin-bottom:8px}
+.deckrow{display:flex;align-items:center;border-top:1px solid var(--line)}.deckrow:first-child{border-top:0}
+.deckrow.on{background:color-mix(in srgb,var(--accent) 12%,transparent)}.deckrow.on .dname{color:var(--accent)}
+.dcheck{all:unset;cursor:pointer;padding:12px 6px 12px 12px;display:grid;place-items:center}
+.dcheck[aria-checked="false"]>.ncheck{background:none;box-shadow:inset 0 0 0 1.5px var(--muted)}.dcheck[aria-checked="false"]>.ncheck::after{display:none}
+.dmain{all:unset;cursor:pointer;flex:1;min-width:0;display:flex;align-items:baseline;gap:8px;padding:12px 12px 12px 6px}
+.dname{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dcount{font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}
+.dused{flex:none;color:var(--muted);font-size:.92rem}
+.deckbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 8px}
+.setchip.have::after{content:" ✓";color:var(--accent)}.setchip.top.have small::after{content:" ✓";color:var(--accent)}.setchip.top.have::after{content:none}
 .signcard p{margin:0}.signcard input{font:inherit;font-size:1.05rem;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);width:100%;box-sizing:border-box}
 .linkbtn{all:unset;cursor:pointer;justify-self:center;padding:8px;color:var(--accent);font-weight:600}
 .wdot .settag{color:var(--accent);opacity:.85}
@@ -1331,6 +1347,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <hr>
     <button type="button" data-go="about"><span class="mi">部</span>About</button>
     <button type="button" id="feedbackBtn"><span class="mi">信</span>Send feedback</button>
+    <button type="button" id="noticeBtn" hidden><span class="mi">告</span>Notice</button>
     <button type="button" class="aitally" id="aiTally" hidden></button>
   </nav>
 </div>
@@ -1435,15 +1452,25 @@ const btn = (label, cls, fn) => { const b = el("button", cls); b.type = "button"
 const PEN = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
 const BIN = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zm2-10h8v10H8V9zm7.5-5-1-1h-5l-1 1H5v2h14V4h-3.5z"/></svg>';
 const iconBtn = (svg, label, cls, fn) => { const b = btn("", cls, fn); b.innerHTML = svg + (label ? `<span>${label}</span>` : ""); return b; };
-// A bin asks once: the first tap turns it into "Remove?", a second tap within 4 seconds does it.
-function binBtn(cls, label, ask, fn) {
+// v44: a delete asks once. The first tap arms it (red, with Cancel beside it); a second tap does it. It disarms after
+// 4 seconds, on Cancel, or on a tap anywhere else. `show(armed)` draws the button; `noCancel` for a button pinned in a
+// corner (the card bin), where a tap elsewhere is the cancel.
+function armConfirm(b, show, fn, noCancel) {
+  if (b._disarm) { b._disarm(); fn(); return; }
+  b.classList.add("confirm"); show(true);
+  const cancel = noCancel ? null : btn("Cancel", "btn ghost small arcancel");
+  if (cancel) b.after(cancel);
+  const off = e => { if (e.target === b || b.contains(e.target) || (cancel && cancel.contains(e.target))) return; disarm(); };
+  const disarm = () => { clearTimeout(t); document.removeEventListener("pointerdown", off, true); if (cancel) cancel.remove(); b._disarm = null; b.classList.remove("confirm"); if (b.isConnected) show(false); };
+  const t = setTimeout(disarm, 4000);
+  b._disarm = disarm;
+  if (cancel) cancel.onclick = e => { e.stopPropagation(); disarm(); };
+  setTimeout(() => { if (b._disarm === disarm) document.addEventListener("pointerdown", off, true); }, 0);
+}
+// A bin asks once (armConfirm).
+function binBtn(cls, label, ask, fn, noCancel) {
   const b = iconBtn(BIN, label, cls + " binbtn"); b.setAttribute("aria-label", label || ask);
-  let t = 0;
-  b.onclick = e => {
-    e.stopPropagation();
-    if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.innerHTML = BIN + `<span>${ask}</span>`; t = setTimeout(() => { b.classList.remove("confirm"); b.innerHTML = BIN + (label ? `<span>${label}</span>` : ""); }, 4000); return; }
-    clearTimeout(t); fn();
-  };
+  b.onclick = e => { e.stopPropagation(); armConfirm(b, on => b.innerHTML = BIN + (on ? `<span>${ask}</span>` : label ? `<span>${label}</span>` : ""), fn, noCancel); };
   return b;
 }
 const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>';
@@ -1470,7 +1497,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v43";
+const APP_VERSION = "v44";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2390,10 +2417,11 @@ function buildLine(lineText, onTap, withEN = true) {
   line._text = lineText; line._spans = spans.filter(x => x.group.classList.contains("glyph") || x.group.querySelector(".cell")).sort((a, b) => a.start - b.start);
   const ctl = el("span", "linectl");
   const say = el("button", "saybtn sm", SPK); say.type = "button"; say.setAttribute("aria-label", "Read this line aloud");
-  say.onclick = e => { e.stopPropagation(); const pace = altSpeed(line) < 1 ? slowerPace(sayPace) : sayPace;
-    if (pace === "step") sayPaced(lineText, "step"); else readAloud([line], false, pace === "slower" ? .75 : 1); };
+  // v44: like a card's speaker: your pace every time; ■ stops it; the 慢–快 slider shows while it reads.
+  say.onclick = e => { e.stopPropagation(); if (sayPace === "step") sayPaced(lineText, "step"); else readAloud([line], false, sayPace === "slower" ? .75 : 1); };
+  say._onSay = on => { const sp = $("speedPop"); if (!sp || !line.closest("#reader")) return; if (on) { sizeOpen(false); $("speedIn").value = rate; sp.hidden = false; } else if (!listenAll) sp.hidden = true; };
   ctl.append(say);
-  if (withEN) { const en = btn("EN", "enbtn"); en.title = "Translate this line"; en.onclick = () => translateLine(lineText, line, en); ctl.append(en); }
+  if (withEN) { const en = btn("ENG", "enbtn"); en.title = "Translate this line"; en.onclick = () => translateLine(lineText, line, en); ctl.append(en); }
   // 解 Explain: the sentence's structure, its grammar points and any word used in a less obvious sense. The button says
   // "解 Explain" until it has been used a few times, then just 解.
   if (/\p{Script=Han}/u.test(lineText)) {
@@ -2499,7 +2527,7 @@ function wordGloss(tok) {
 // opts.next: a ↻ button in the row that swaps in the next sentence (it returns {example, example_en}).
 function miniReader(text, mark, en, opts = {}) {
   const box = el("div", "mini" + (store.get("radical-py", false) ? "" : " nopy")); box.lang = "zh";
-  const body = el("div", "minibody"), gloss = el("div", "minigloss"); gloss.hidden = true;
+  const body = el("div", "minibody"), gloss = el("div", "peek inline"); gloss.hidden = true;
   // v42: the same controls as a line in Read (speaker, EN, 解 Explain), then 拼 Pinyin, ↻ and 字, all one style.
   const pyb = el("button", "enbtn minipy", '<span lang="zh">拼</span> Pinyin'); pyb.type = "button"; pyb.setAttribute("aria-pressed", !box.classList.contains("nopy"));
   pyb.onclick = e => { e.stopPropagation(); const on = box.classList.toggle("nopy") === false; pyb.setAttribute("aria-pressed", on); };
@@ -2514,12 +2542,12 @@ function miniReader(text, mark, en, opts = {}) {
   sp.onchange = () => { setRate(sp.value); if (!say.classList.contains("saying")) return; sayPaced(said(), sayPace); setTimeout(() => { if (voiceBusy()) markSaying(say); }, 80); };
   sp.oninput = () => { rate = +sp.value; };
   const lastLine = () => [...body.querySelectorAll(".line")].pop() || body;
-  const enb = el("button", "enbtn", "EN"); enb.type = "button"; enb.title = "Translate this sentence";
+  const enb = el("button", "enbtn", "ENG"); enb.type = "button"; enb.title = "Translate this sentence";
   enb.onclick = e => {
     e.stopPropagation();
     if (!en) { translateLine(text.split(/\n+/)[0], lastLine(), enb); return; }  // no English on the card: ask, as in Read
     const line = lastLine(), next = line.nextElementSibling;
-    if (next && next.classList.contains("trans")) { next.remove(); enb.textContent = "EN"; return; }
+    if (next && next.classList.contains("trans")) { next.remove(); enb.textContent = "ENG"; return; }
     const t = el("p", "trans", esc(en)); t.lang = "en"; line.after(t); enb.textContent = "Hide";
   };
   const exb = el("button", "enbtn exbtn", store.get("radical-explain-uses", 0) >= 3 ? '<span lang="zh">解</span>' : '<span lang="zh">解</span> Explain');
@@ -2532,35 +2560,14 @@ function miniReader(text, mark, en, opts = {}) {
   sz.oninput = () => { setCell(sz.value); store.set("radical-size", +sz.value); if ($("sizeIn")) $("sizeIn").value = sz.value; };
   const zib = el("button", "enbtn minisize", '<span lang="zh">字</span>'); zib.type = "button"; zib.setAttribute("aria-label", "Text size"); zib.setAttribute("aria-pressed", "false");
   zib.onclick = e => { e.stopPropagation(); pop.hidden = !pop.hidden; zib.setAttribute("aria-pressed", !pop.hidden); if (!pop.hidden) sz.value = store.get("radical-size", 38); };
-  let picked = null;
-  const clear = () => { body.querySelectorAll(".cell[aria-pressed=true]").forEach(x => x.setAttribute("aria-pressed", "false")); picked = null; gloss.hidden = true; };
-  const tap = (group, tok) => {
-    if (picked === group) { clear(); return; }
-    clear(); picked = group;
-    group.querySelectorAll(".cell").forEach(x => x.setAttribute("aria-pressed", "true"));
-    const g = wordGloss(tok);
-    gloss.innerHTML = `<b lang="zh">${esc(g.word)}</b><span class="pp">${esc(g.py)}</span><span class="pm">${esc(g.mean || "")}</span>${sayHTML(g.word, true)}`;
-    // + Add: save it to My words (with this sentence as where you met it) without leaving the card.
-    const add = el("button", "btn small miniadd"); add.type = "button";
-    const idle = () => { const have = findWord(g.word); add.textContent = have ? "✓ In my words" : "+ Add"; add.classList.toggle("ghost", !!have); add.classList.remove("confirm"); add.disabled = false; };
-    add.onclick = async e => {
-      e.stopPropagation();
-      const have = findWord(g.word);
-      if (have) {  // saved already: first tap asks, second tap removes
-        if (!add.classList.contains("confirm")) { add.classList.add("confirm"); add.textContent = "Remove?"; setTimeout(() => { if (add.isConnected && add.classList.contains("confirm")) idle(); }, 4000); return; }
-        myWords.splice(myWords.indexOf(have), 1); saveWords(); idle(); return;
-      }
-      add.disabled = true; const w = await addEntry(g.word, { context: text.split(/\n+/).find(l => l.includes(g.word)) || text }); play("right"); idle(); ensureCard(w).catch(() => {}); };
-    idle(); gloss.append(add);
-    const x = el("button", "miniclose", "×"); x.type = "button"; x.setAttribute("aria-label", "Close");
-    x.onclick = e => { e.stopPropagation(); clear(); };
-    gloss.append(x);
-    gloss.hidden = false;
-  };
+  // v44: tapping a word works as in Read: the pick strip (‹ ›, + Add, Open ›), a second tap opens it, holding a
+  // character enlarges it. Here the strip sits under the sentence instead of above the tab bar.
+  gloss.addEventListener("click", e => { if (e.target.closest("button")) return; if (picked && picked.peek === gloss) picked.open(); });
+  box.addEventListener("click", e => { if (picked && picked.peek === gloss && !e.target.closest(".cell, .peek, button")) unpick(); });
   const paint = () => {
     body.innerHTML = "";
     text.split(/\n+/).filter(l => l.trim()).forEach(t => {
-      const line = buildLine(t, tap, false);
+      const line = buildLine(t, readerTap, false);
       line.querySelectorAll(".linectl").forEach(x => x.remove());  // the sentence's controls are in the row underneath
       // The word being studied gets a quiet underline wherever it appears.
       if (mark) for (let i = t.indexOf(mark); i >= 0; i = t.indexOf(mark, i + 1))
@@ -2590,8 +2597,9 @@ function miniReader(text, mark, en, opts = {}) {
 // The selection is a run of characters on one line (cells a..b). It starts as the dictionary's word; ‹ › take in
 // the next character on that side, and tapping the first or last character drops it. Any run can be opened or added.
 let picked = null;
+const peekFor = line => (line.closest(".mini") && line.closest(".mini").querySelector(".peek")) || $("peek");
 function pickSpan(line, a, b, tok) {
-  unpick(true);
+  unpick();
   const cells = [...line.querySelectorAll(".cell")], text = line._text;
   cells.slice(a, b + 1).forEach(x => x.setAttribute("aria-pressed", "true"));
   const word = text.slice(cells[a]._at, cells[b]._at + cells[b]._ch.length).replace(/\s+/g, "");
@@ -2607,8 +2615,8 @@ function pickSpan(line, a, b, tok) {
     g = { word, py, mean: mean || "Not one dictionary word; Add makes a card for it" };
   }
   const open = () => openWord(word, isTok ? { context: text, syl: tok.syl, mean: tok.mean, tw: tok.tw } : { context: text, syl });
-  picked = { line, a, b, open, tok };
-  const peek = $("peek");
+  const peek = peekFor(line);
+  picked = { line, a, b, open, tok, peek };
   const tiles = span.map((c, k) => `<button type="button" class="ptile${span.length > 1 && (k === 0 || k === span.length - 1) ? " end" : ""}" data-k="${k}" lang="zh"${span.length > 1 && (k === 0 || k === span.length - 1) ? ` aria-label="Drop ${esc(c._ch)}"` : ' tabindex="-1"'}>${esc(c._ch)}</button>`).join("");
   peek.innerHTML = `<div class="prow"><button type="button" class="pgrow" data-d="-1" aria-label="Take in the character before"${a === 0 ? " disabled" : ""}>‹</button><span class="ptiles">${tiles}</span><button type="button" class="pgrow" data-d="1" aria-label="Take in the character after"${b === cells.length - 1 ? " disabled" : ""}>›</button>${sayHTML(word, true)}</div>`
     + `<div class="prow"><span class="pt"><span class="pp">${esc(g.py)}</span><span class="pm">${esc(g.mean || "Tap again for details")}</span></span><span class="popen">Open ›</span></div>`;
@@ -2624,9 +2632,10 @@ function pickSpan(line, a, b, tok) {
   peek.querySelector(".prow:last-child").insertBefore(add, peek.querySelector(".popen"));
   peek.hidden = false;
 }
-function unpick(keepPeek) {
-  document.querySelectorAll("#reader .cell[aria-pressed=true]").forEach(x => x.setAttribute("aria-pressed", "false"));
-  picked = null; if (!keepPeek) $("peek").hidden = true;
+function unpick() {
+  document.querySelectorAll(".cell[aria-pressed=true]").forEach(x => x.setAttribute("aria-pressed", "false"));
+  if (picked && picked.peek) picked.peek.hidden = true;
+  picked = null; $("peek").hidden = true;
 }
 $("peek").addEventListener("click", e => { if (e.target.closest("button")) return; if (picked) picked.open(); });
 // A tap anywhere on the page that isn't a word (or a control) clears the pick.
@@ -2894,9 +2903,11 @@ async function claude(payload, why) {
   const auth = { ...(token ? { Authorization: `Bearer ${token}` } : { "x-radical-anon": deviceId() }), "x-radical-day": localDay() };
   // Cards and Word Sets are the same for everyone: asked with GET, so Vercel's CDN can answer them.
   // Mainland cards and Word Sets are cached apart (r=cn); Taiwan keeps the URLs it always had.
-  const get = payload.action === "card" || payload.action === "wordset", rp = region === "cn" ? "&r=cn" : "";
+  // v44: explanations too, so the second person to tap 解 on a sentence gets it at once.
+  const get = ["card", "wordset", "explain"].includes(payload.action), rp = region === "cn" ? "&r=cn" : "";
   payload = { region, ...payload };
   const url = payload.action === "card" ? `/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}${rp}`
+    : payload.action === "explain" ? `/api/claude?v=1&action=explain&sentence=${encodeURIComponent(payload.sentence)}&trad=${payload.trad === false ? 0 : 1}${rp}`
     : get ? `/api/claude?v=1&action=wordset&theme=${encodeURIComponent(payload.theme)}${rp}` : "/api/claude";
   let r;
   try {
@@ -2908,7 +2919,7 @@ async function claude(payload, why) {
   if (r.status === 401 && token) { setSession(null); if (!$("settingsScreen").hidden) renderAccount(); throw new Error("Your sign-in has expired. Sign in again (Settings, Account)."); }
   if (free && (r.status === 401 || data.signin)) { store.set("radical-free-ai", FREE_AI); signInSheet({ why }); throw new Error("Sign in first."); }
   if (!r.ok) throw new Error(data.error || `Something went wrong (${r.status}).`);
-  if (free) store.set("radical-free-ai", store.get("radical-free-ai", 0) + 1);
+  if (free && r.headers.get("x-vercel-cache") !== "HIT") store.set("radical-free-ai", store.get("radical-free-ai", 0) + 1);  // a shared answer costs nothing
   return data;
 }
 // ================= account: sign in with your email and a 6-digit code (Supabase), then your words sync
@@ -2985,8 +2996,37 @@ function aiTally() {
   if (!session || (store.get("radical-owner", null) === false && Date.now() - store.get("radical-owner-at", 0) < 36e5)) { b.hidden = true; return; }
   const last = store.get("radical-ai-tally", null);
   if (last && store.get("radical-owner", false)) { b.hidden = false; b.textContent = tallyText(last); }
-  fetchUsage().then(j => { if (j && j.all) { b.hidden = false; b.textContent = tallyText(j.all); } else if (!j || !j.owner) b.hidden = true; });
+  if (last && store.get("radical-owner", false)) $("noticeBtn").hidden = false;
+  fetchUsage().then(j => { if (j && j.all) { b.hidden = false; b.textContent = tallyText(j.all); } else if (!j || !j.owner) b.hidden = true; $("noticeBtn").hidden = !(j && j.owner); });
 }
+// v44: the owners' notice: everyone sees it once (per notice), a moment after the splash. Owners write it here.
+async function showNotice(tries = 0) {
+  let n = null;
+  try { const r = await fetch("/api/claude?action=notice"); n = (await r.json()).notice; } catch (e) { return; }
+  if (!n || !n.id || !n.text || store.get("radical-notice-seen", "") === n.id) return;
+  if (document.querySelector(".sheet, #splash") || !$("reviewScreen").hidden) { if (tries < 20) setTimeout(() => showNotice(tries + 1), 5000); return; }
+  store.set("radical-notice-seen", n.id);
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard noticecard");
+  card.append(el("p", "noticetext", esc(n.text).replace(/\n/g, "<br>")), btn("OK", "btn wide", () => sheet.remove()));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.append(sheet);
+}
+$("noticeBtn").onclick = async () => {
+  closeMenu();
+  let cur = null; try { cur = (await (await fetch("/api/claude?action=notice&fresh=" + Date.now())).json()).notice; } catch (e) {}
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard"), text = el("textarea", "noticeedit"), until = el("input"), msg = el("p", "note");
+  text.rows = 4; text.maxLength = 600; text.placeholder = "What everyone sees once, after the splash"; text.value = cur ? cur.text : "";
+  until.type = "date"; until.value = cur && cur.until || ""; until.setAttribute("aria-label", "Show until");
+  const send = async body => { msg.textContent = ""; try { await claude({ action: "notice", ...body }); return true; } catch (e) { msg.textContent = e.message; return false; } };
+  const post = btn("Post", "btn", async () => { if (!text.value.trim()) { msg.textContent = "Write the notice first."; return; } post.disabled = true; if (await send({ op: "set", text: text.value, until: until.value })) { sheet.remove(); toast("Posted. Everyone sees it once."); } post.disabled = false; });
+  const row = el("div", "row"); row.append(post);
+  if (cur) row.append(btn("Take down", "btn ghost", async () => { if (await send({ op: "clear" })) { sheet.remove(); toast("Taken down."); } }));
+  row.append(btn("Close", "btn ghost", () => sheet.remove()));
+  const ul = el("label", "noticeuntil"); ul.append(el("span", "trs", "Show until (optional)"), until);
+  card.append(el("h3", "", "Notice"), cur ? el("p", "note", "Showing now. Posting again shows the new one to everyone, once.") : "", text, ul, row, msg);
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.append(sheet); setTimeout(() => text.focus(), 300);
+};
 $("aiTally").onclick = () => {
   const a = store.get("radical-ai-tally", null); if (!a) return;
   closeMenu();
@@ -3044,7 +3084,7 @@ function applyMerged(m) {
   learned = m.learned || learned; store.set("radical-learned", learned);
   if (m.familiar) { familiar = m.familiar; store.set("radical-familiar", familiar); }
   if (m.days) store.set("radical-days", m.days);
-  if (m.decks && (+m.decks.t || 0) >= (+decks.t || 0)) { decks = { mine: m.decks.mine || "Mine", names: Array.isArray(m.decks.names) ? m.decks.names : [], t: +m.decks.t || 0 }; store.set("radical-decks", decks); }
+  if (m.decks && (+m.decks.t || 0) >= (+decks.t || 0)) { decks = { mine: m.decks.mine || "Mine", names: Array.isArray(m.decks.names) ? m.decks.names : [], used: m.decks.used && typeof m.decks.used === "object" ? m.decks.used : decks.used || {}, t: +m.decks.t || 0 }; store.set("radical-decks", decks); }
   store.set("radical-words", myWords); resetSigs(); updateCounts();
   if (!$("wordsScreen").hidden) renderWords();
 }
@@ -3140,7 +3180,8 @@ function explainHTML(r) {
 }
 async function explainLine(text, line, b) {
   const box0 = [line.nextElementSibling, line.nextElementSibling && line.nextElementSibling.nextElementSibling].find(x => x && x.classList.contains("explain"));
-  if (box0) { const failed = box0.classList.contains("err"); box0.remove(); b.classList.remove("on"); if (!failed) return; }
+  if (box0) { const failed = box0.classList.contains("err"); box0.remove(); b.classList.remove("on"); b.innerHTML = b._label; if (!failed) return; }
+  b._label = b._label || b.innerHTML; b.textContent = "Hide";  // v44: like ENG, it says Hide while open
   const box = el("div", "explain"); box.lang = "en";
   const after = line.nextElementSibling && line.nextElementSibling.classList.contains("trans") ? line.nextElementSibling : line;
   after.after(box); b.classList.add("on");
@@ -3160,7 +3201,7 @@ const transCache = store.get("radical-trans", {});
 async function translateLine(text, line, b) {
   const next = line.nextElementSibling;
   if (next && next.classList.contains("trans")) {
-    const failed = next.classList.contains("err"); next.remove(); b.textContent = "EN";
+    const failed = next.classList.contains("err"); next.remove(); b.textContent = "ENG";
     if (!failed) return;
   }
   const box = el("p", "trans"); line.after(box);
@@ -3663,7 +3704,7 @@ const friendLink = code => `${location.origin}/?friend=${code}`;
 let friendsBusy = null;
 async function friendsCall(body = {}) {
   const r = await claude({ action: "friends", ...body, summary: friendSummary() });
-  if (r && r.code) store.set("radical-friends", { code: r.code, name: r.name, friends: r.friends || [], requests: r.requests || [] });
+  if (r && r.code) store.set("radical-friends", { code: r.code, name: r.name, first: r.first || "", last: r.last || "", friends: r.friends || [], requests: r.requests || [] });
   friendBadge();
   return r;
 }
@@ -3683,6 +3724,9 @@ function friendsBox() {
   if (session && !friendsBusy) friendsBusy = friendsCall().then(() => { const x = $("friendsBox"); if (x) paintFriends(x); }).catch(e => { const x = $("friendsBox"); if (x && !store.get("radical-friends", null)) x.querySelector(".frerr") && (x.querySelector(".frerr").textContent = e.message); }).finally(() => { friendsBusy = null; });
   return b;
 }
+// v44: a username (anything) plus your real first and last name; friends see "Username · First L."
+const realName = f => f && f.first && f.last ? `${f.first} ${f.last[0].toUpperCase()}.` : "";
+const whoLine = x => { const r = x.real || ""; return x.name && r && x.name !== r ? `${esc(x.name)} <span class="trs">· ${esc(r)}</span>` : esc(x.name || r); };
 function paintFriends(b) {
   const f = store.get("radical-friends", null);
   b.innerHTML = '<span class="trl">Friends</span>';
@@ -3691,9 +3735,9 @@ function paintFriends(b) {
   // Requests first: Accept connects you; Decline waits five seconds (Undo) before it's sent
   (f.requests || []).forEach(x => {
     const r = el("div", "frreq"), acts = el("span", "frreqacts");
-    r.append(el("span", "", `<b>${esc(x.name)}</b> <span class="trs">wants to be friends</span>`), acts);
+    r.append(el("span", "", `<b>${whoLine(x)}</b> <span class="trs">wants to be friends</span>`), acts);
     const settle = op => { f.requests = f.requests.filter(y => y.code !== x.code); store.set("radical-friends", f); friendBadge(); return friendsCall({ op, code: x.code }).catch(() => {}); };
-    const accept = btn("Accept", "btn small", async () => { if (!f.name) { const n = b.querySelector(".frname"); if (n) n.focus(); return; } accept.disabled = true; await settle("accept"); play("right"); paintFriends(b); });
+    const accept = btn("Accept", "btn small", async () => { if (!realName(f)) { const n = b.querySelector(".frtwo .frname"); if (n) n.focus(); return; } accept.disabled = true; await settle("accept"); play("right"); paintFriends(b); });
     const decline = btn("Decline", "btn ghost small", () => {
       let undone = false; acts.innerHTML = '<span class="trs">Declined · </span>';
       acts.append(btn("Undo", "linkbtn", () => { undone = true; paintFriends(b); }));
@@ -3716,7 +3760,7 @@ function paintFriends(b) {
   const go = btn("Add", "btn outl small"); go.type = "submit"; const msg = el("p", "trs frmsg");
   add.append(inp, go);
   add.onsubmit = async e => { e.preventDefault(); const code = inp.value.trim(); if (!code) return;
-    if (!f.name) { msg.textContent = "Add your name first."; const n = b.querySelector(".frname"); if (n) n.focus(); return; }
+    if (!realName(f)) { msg.textContent = "Add your first and last name first."; const n = b.querySelector(".frtwo .frname"); if (n) n.focus(); return; }
     go.disabled = true; msg.textContent = "";
     try { const r = await friendsCall({ op: "add", code }); play("right"); paintFriends(b); const m = b.querySelector(".frmsg"); if (m) m.textContent = r.sent ? `Request sent to ${r.sent}.` : `You and ${r.added} are now friends.`; } catch (err) { msg.textContent = err.message; } finally { go.disabled = false; } };
   const me = el("div", "frme");
@@ -3727,55 +3771,61 @@ function paintFriends(b) {
     try { await navigator.clipboard.writeText(`${text} ${friendLink(f.code)}`); share.textContent = "Link copied"; setTimeout(() => share.textContent = "Share", 2000); } catch (e) {}
   });
   const btns = el("div", "frme"); btns.append(share, btn("QR code", "btn ghost small", () => showQR(f.code)));
-  // Your name: shown as text with the pencil; the pencil opens the box, and only Save changes it (v42)
+  // Your name: shown as text with the pencil; the pencil opens the boxes, and only Save changes it (v42, v44)
   const nameRow = el("div", "frnamerow");
   const showName = () => {
-    nameRow.replaceChildren(el("b", "frnm", esc(f.name)), iconBtn(PEN, "", "iconbtn edpen", editName));
+    nameRow.replaceChildren(el("b", "frnm", whoLine({ name: f.name, real: realName(f) })), iconBtn(PEN, "", "iconbtn edpen", editName));
     nameRow.lastChild.setAttribute("aria-label", "Change your name");
   };
   const editName = () => {
-    const name = el("input", "frname"); name.placeholder = "First name and last initial"; name.autocapitalize = "words"; name.value = f.name || ""; name.maxLength = 30; name.setAttribute("aria-label", "Your name for friends");
-    const save = btn("Save", "btn small", async () => {
-      const v = name.value.trim(); if (!v || v === f.name) return; save.disabled = true;
-      try { await friendsCall({ op: "name", name: v }); f.name = v; store.set("radical-friends", { ...store.get("radical-friends", {}), name: v }); paintFriends(b); } catch (e) { save.disabled = false; }
-    });
-    save.disabled = true; name.oninput = () => save.disabled = !name.value.trim() || name.value.trim() === f.name;
-    name.onkeydown = e => { if (e.key === "Enter") save.click(); };
-    nameRow.replaceChildren(name, save);
-    if (f.name) name.focus();
+    const form = nameForm(f, () => paintFriends(b));
+    nameRow.replaceChildren(form.box);
+    if (realName(f)) form.first.focus();
   };
-  f.name ? showName() : editName();
-  const nameHead = el("span", "trs", "Your real name for friends");
-  // v43: no name yet: it comes first (adding and accepting wait for it), and once, a sheet asks for it
-  if (!f.name) { b.firstElementChild.after(nameHead, nameRow); b.append(add, msg, me, btns); if ((f.friends.length || (f.requests || []).length) && !store.get("radical-name-asked", false)) realNameSheet(b); }
+  realName(f) ? showName() : editName();
+  const nameHead = el("span", "trs", "Your name for friends");
+  // v43, v44: no real name yet: it comes first (adding and accepting wait for it), and once, a sheet asks for it
+  if (!realName(f)) { b.firstElementChild.after(nameHead, nameRow); b.append(add, msg, me, btns); if ((f.friends.length || (f.requests || []).length) && !store.get("radical-name-asked2", false)) realNameSheet(b); }
   else b.append(add, msg, me, btns, nameHead, nameRow);
   b.append(el("p", "trs trq", "Friends see your progress, never your words."));
 }
-function realNameSheet(b) {
-  store.set("radical-name-asked", true);
-  const sheet = el("div", "sheet"), card = el("div", "sheetcard"), name = el("input", "frname"), msg = el("p", "note");
-  name.placeholder = "First name and last initial"; name.maxLength = 30; name.autocapitalize = "words"; name.setAttribute("aria-label", "Your real name for friends");
-  const save = btn("Save", "btn wide", async () => {
-    const v = name.value.trim(); if (!v) return; save.disabled = true;
-    try { await friendsCall({ op: "name", name: v }); store.set("radical-friends", { ...store.get("radical-friends", {}), name: v }); sheet.remove(); if (b.isConnected) paintFriends(b); }
+// The three boxes: Username (anything you like), First name, Last name. Save needs first and last.
+function nameForm(f, saved) {
+  const box = el("div", "frnameform"), mk = (ph, v, label) => { const i = el("input", "frname"); i.placeholder = ph; i.value = v || ""; i.maxLength = 30; i.autocapitalize = "words"; i.setAttribute("aria-label", label); return i; };
+  const user = mk("Username (anything you like)", f.name, "Username"), first = mk("First name", f.first, "First name"), last = mk("Last name", f.last, "Last name");
+  user.autocapitalize = "off";
+  const msg = el("p", "note frnote", "Friends see your username and first name with your last initial.");
+  const vals = () => ({ name: user.value.trim(), first: first.value.trim(), last: last.value.trim() });
+  const save = btn("Save", "btn small", async () => {
+    const v = vals(); if (!v.first || !v.last) return; save.disabled = true;
+    try { await friendsCall({ op: "name", ...v }); Object.assign(f, v); store.set("radical-friends", { ...store.get("radical-friends", {}), ...v }); saved(); }
     catch (e) { msg.textContent = e.message; save.disabled = false; }
   });
-  save.disabled = true; name.oninput = () => save.disabled = !name.value.trim(); name.onkeydown = e => { if (e.key === "Enter") save.click(); };
-  card.append(el("h3", "", "Your real name for friends"), el("p", "note", "So your friends know it's you."), name, save, msg, btn("Not now", "btn ghost small", () => sheet.remove()));
+  const check = () => { const v = vals(); save.disabled = !v.first || !v.last || (v.name === (f.name || "") && v.first === (f.first || "") && v.last === (f.last || "")); };
+  [user, first, last].forEach(i => { i.oninput = check; i.onkeydown = e => { if (e.key === "Enter") save.click(); }; });
+  check();
+  const two = el("div", "frtwo"); two.append(first, last);
+  box.append(user, two, msg, save);
+  return { box, first, save };
+}
+function realNameSheet(b) {
+  store.set("radical-name-asked2", true);
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard"), f = store.get("radical-friends", {});
+  const form = nameForm(f, () => { sheet.remove(); if (b.isConnected) paintFriends(b); });
+  card.append(el("h3", "", "Your name for friends"), form.box, btn("Not now", "btn ghost small", () => sheet.remove()));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
-  document.body.append(sheet); setTimeout(() => name.focus(), 50);
+  document.body.append(sheet); setTimeout(() => form.first.focus(), 50);
 }
 function friendDetail(x, removed) {
   // Before v41 friends sent characters; until a friend's app updates, only their week shows.
   const card = el("div", "frbody"), c = x.words, cp = n => c && c.seen ? (n / c.seen * 100).toFixed(1) : 0;
-  card.innerHTML = (c ? `<span class="trl">Words</span><div class="trtiles"><div class="trk"><b class="trbig">${num(c.familiar)}</b><span class="trl">recognized</span></div><div class="trk"><b class="trbig">${num(c.learned)}</b><span class="trl">mastered</span></div><div class="trk"><b class="trbig">${num(c.seen)}</b><span class="trl">seen</span></div></div>`
+  card.innerHTML = (x.real && x.real !== x.name ? `<p class="frreal">${esc(x.real)}</p>` : "") + (c ? `<span class="trl">Words</span><div class="trtiles"><div class="trk"><b class="trbig">${num(c.familiar)}</b><span class="trl">recognized</span></div><div class="trk"><b class="trbig">${num(c.learned)}</b><span class="trl">mastered</span></div><div class="trk"><b class="trbig">${num(c.seen)}</b><span class="trl">seen</span></div></div>`
     + `<div class="stagebar"><i style="width:${cp(c.learned)}%" class="sb-learned"></i><i style="width:${cp(c.familiar - c.learned)}%" class="sb-learning"></i><i style="width:${cp(c.seen - c.familiar)}%" class="sb-seen"></i></div>` : "")
     + `<p class="trs">This week: ${x.week.days} of 7 days · ${num(x.week.cards)} cards${c ? ` · ${num(x.week.read)} words read` : ""}${x.streak > 1 ? ` · ${x.streak}-day streak` : ""}</p>`
     + (c && x.series && x.series.length > 1 ? `<div class="trk trchart"><span class="trl">Words recognized and mastered</span>${lineChart(x.series.map(p => ({ day: p.day, v: p.f, v2: p.l })))}</div>` : "");
-  const rm = btn("Remove friend", "btn ghost small", async () => {
-    if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove? Tap again"; return; }
+  const rm = btn("Remove friend", "btn ghost small", () => armConfirm(rm, on => rm.textContent = on ? "Remove" : "Remove friend", async () => {
     rm.disabled = true; try { await friendsCall({ op: "remove", code: x.code }); } catch (e) {} removed();
-  });
+  }));
   const row = el("div", "row"); row.append(rm); card.append(row);
   return card;
 }
@@ -3952,14 +4002,19 @@ let curList = store.get("radical-list", "mine");
 // v43: your own decks. A word sits in one of them (w.deck, the deck's name) or in Mine, which you can rename. Names live
 // in radical-decks { mine, names, t } and sync with your words, so a deck you just made stays even while it's empty.
 let decks = store.get("radical-decks", null) || { mine: "Mine", names: [], t: 0 };
+decks.used = decks.used || {};
+const DECK_MAX = 20;  // deck names (v44)
 const isDeck = L => typeof L === "string" && L.startsWith("d:"), deckKey = n => "d:" + n;
+// v44: several of your decks studied together: "g:" + their keys, one per line
+const isGroup = L => typeof L === "string" && L.startsWith("g:"), groupKey = ks => "g:" + ks.join("\n"), groupKeys = L => isGroup(L) ? L.slice(2).split("\n") : [L];
 function saveDecks() { decks.t = Date.now(); store.set("radical-decks", decks); if (typeof scheduleSync === "function") scheduleSync(); }
-const inList = (w, L = curList) => L === "mine" ? !w.common && !w.set && !w.deck : L === "top" ? !!w.common : isDeck(L) ? w.deck === L.slice(2) : w.set === L;
+const inList = (w, L = curList) => isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !w.deck : L === "top" ? !!w.common : isDeck(L) ? w.deck === L.slice(2) : w.set === L;
 const listWords = () => myWords.filter(w => inList(w));
 const lazyCard = w => !!(w.common || w.set) && !practiced(w);
 function allLists() {
   const out = curList === "mine" || myWords.some(w => inList(w, "mine")) || decks.mine !== "Mine" ? [["mine", decks.mine || "Mine"]] : [], size = commonSize();  // Mine shows once it has words
-  const cut = t => t.length > 18 ? t.slice(0, 17) + "…" : t;
+  const cut = t => t.length > DECK_MAX ? t.slice(0, DECK_MAX - 1) + "…" : t;
+  if (isGroup(curList)) out.unshift([curList, groupName(curList)]);
   new Set([...decks.names, ...myWords.filter(w => w.deck).map(w => w.deck)]).forEach(n => out.push([deckKey(n), cut(n)]));
   if (size) out.push(["top", `Top ${num(size)}`]);
   [...new Set(myWords.filter(w => w.set).map(w => w.set))].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
@@ -3967,7 +4022,10 @@ function allLists() {
 }
 // Picking a list or deck shows all of it (All), not Today: you want to see what you chose.
 let keepCat = false;
-function setList(L) { curList = L; store.set("radical-list", L); store.set("radical-list-recent", [L, ...store.get("radical-list-recent", []).filter(x => x !== L)].slice(0, 8)); revCat = "all"; catPicked = keepCat = true; contOk = false; updateCounts(); }
+function groupName(L) { const n = groupKeys(L).map(k => k === "mine" ? decks.mine || "Mine" : k.slice(2)); return n.length > 2 ? `${n[0]} + ${n.length - 1} more` : n.join(" + "); }
+function setList(L) {
+  if (isGroup(L) || isDeck(L) || L === "mine") { groupKeys(L).forEach(k => decks.used[k] = localDay()); saveDecks(); }
+  curList = L; store.set("radical-list", L); store.set("radical-list-recent", [L, ...store.get("radical-list-recent", []).filter(x => x !== L)].slice(0, 8)); revCat = "all"; catPicked = keepCat = true; contOk = false; updateCounts(); }
 const listName = (L = curList) => (allLists().find(x => x[0] === L) || [, decks.mine || "Mine"])[1];
 // The badge: words left in Today for your goal (a word due in two modes counts once).
 const dueCount = () => todayList(goal).length;
@@ -4092,8 +4150,7 @@ function addBtn(word = wordState.word) {
   b.onclick = async () => {
     const have = findWord(word);
     if (have) {  // saved already: first tap asks, second tap removes
-      if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.textContent = "Remove?"; setTimeout(() => { if (b.isConnected && b.classList.contains("confirm")) idle(); }, 4000); return; }
-      myWords.splice(myWords.indexOf(have), 1); saveWords(); idle(); if (word === s.word) refreshWordPage(); return;
+      armConfirm(b, on => on ? b.textContent = "Remove?" : idle(), () => { myWords.splice(myWords.indexOf(have), 1); saveWords(); idle(); if (word === s.word) refreshWordPage(); }); return;
     }
     b.disabled = true;
     const w = await addEntry(word, { context: s.context && s.context !== word ? s.context : undefined });
@@ -4123,10 +4180,7 @@ function savedCard(w) {
   if (!c) box.prepend(cardPending(w, refreshWordPage));
   acts.append(iconBtn(PEN, "Edit card", "btn ghost small", () => editCard(w, refreshWordPage)));
   acts.append(btn(w.skip ? "Put back in review" : "I know this", "btn ghost small", () => { setStatus(w, w.skip ? "learning" : "known"); saveWords(); refreshWordPage(); }));
-  const rm = btn("Remove", "btn ghost small", () => {
-    if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = "Remove? Tap again"; setTimeout(() => { if (rm.isConnected) { rm.classList.remove("confirm"); rm.textContent = "Remove"; } }, 4000); return; }
-    myWords.splice(myWords.indexOf(w), 1); saveWords(); refreshWordPage();
-  });
+  const rm = btn("Remove", "btn ghost small", () => armConfirm(rm, on => rm.textContent = on ? "Remove" : "Remove", () => { myWords.splice(myWords.indexOf(w), 1); saveWords(); refreshWordPage(); }));
   acts.append(rm);
   box.append(acts);
   return box;
@@ -4589,10 +4643,11 @@ function setsGrid(close) {
   const g = el("div", "setgrid"), size = commonSize();
   const pick = (fn, ai, why) => () => { if (close) close(); chooseSet(fn, ai, null, why); };
   const top = el("div", "setrow four");
-  COMMON_SIZES.forEach(n => { const b = btn("", "setchip top", pick(() => startCommon(n), false, `start Top ${num(n)}`)); b.innerHTML = `<small>Top</small>${num(n)}`; b.setAttribute("aria-pressed", size === n); top.append(b); });
+  // v44: green is the one you're on; a ✓ marks the ones you have
+  COMMON_SIZES.forEach(n => { const b = btn("", "setchip top" + (size === n ? " have" : ""), size === n ? () => { if (close) close(); setList("top"); renderWords(); } : pick(() => startCommon(n), false, `start Top ${num(n)}`)); b.innerHTML = `<small>Top</small>${num(n)}`; b.setAttribute("aria-pressed", size === n && curList === "top"); top.append(b); });
   const th = el("div", "setrow three");
-  THEMES.forEach(t => { const b = btn(t, "setchip", hasSet(t) ? () => { if (close) close(); addThemeSet(t); } : pick(() => addThemeSet(t), true, `start ${t}`)); b.setAttribute("aria-pressed", hasSet(t)); th.append(b); });
-  g.append(top, th, btn("＋ Deck from a topic", "setchip wide", () => { if (close) close(); makeSet(); }));
+  THEMES.forEach(t => { const b = btn(t, "setchip" + (hasSet(t) ? " have" : ""), hasSet(t) ? () => { if (close) close(); addThemeSet(t); } : pick(() => addThemeSet(t), true, `start ${t}`)); b.setAttribute("aria-pressed", curList === t); th.append(b); });
+  g.append(top, th, btn("＋ Deck from a topic", "setchip wide", () => { if (close) close(); makeSet(close ? openSets : null); }));
   return g;
 }
 // No words yet: Word Sets in the Flash cards spot.
@@ -4601,20 +4656,21 @@ function setsPanel() {
   box.append(el("div", "revhead", "<b>Word Decks</b>"), el("p", "note setsub", "The 100 you'll see most, or a topic."), setsGrid());
   return box;
 }
-// Any theme you type.
-function makeSet() {
+// Any theme you type. Cancel goes `back` (to Word Decks).
+function makeSet(back) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard signcard"), inp = el("input"), msg = el("p", "note");
   inp.type = "text"; inp.placeholder = "Restaurant words, my office…"; inp.maxLength = 60;
   const go = btn("Make it", "btn wide", () => { const t = inp.value.trim(); if (!t) { msg.textContent = "Type a topic first."; return; } sheet.remove(); chooseSet(() => addThemeSet(t), true, null, "make a deck"); });
   inp.addEventListener("keydown", e => { if (e.key === "Enter") go.click(); });
-  card.append(el("h3", "", "Deck from a topic"), inp, go, msg, btn("Cancel", "btn ghost wide", () => sheet.remove()));
-  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  const cancel = () => { sheet.remove(); if (back) back(); };
+  card.append(el("h3", "", "Deck from a topic"), inp, go, msg, btn("Cancel", "btn ghost wide", cancel));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) cancel(); };
   document.body.append(sheet); setTimeout(() => inp.focus(), 300);
 }
-// Naming a deck (new or renamed): one box and Save. Names are unique and at most 30 characters.
-function nameDeck(cur, done) {
+// Naming a deck (new or renamed): one box and Save. Names are unique and at most 20 characters. Cancel goes `back`.
+function nameDeck(cur, done, back) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard signcard"), inp = el("input"), msg = el("p", "note");
-  inp.type = "text"; inp.placeholder = "Lesson 5, Travel, My office…"; inp.maxLength = 30; inp.value = cur; inp.setAttribute("aria-label", "Deck name");
+  inp.type = "text"; inp.placeholder = "Lesson 5, Travel, My office…"; inp.maxLength = DECK_MAX; inp.value = cur.slice(0, DECK_MAX); inp.setAttribute("aria-label", "Deck name");
   const go = btn("Save", "btn wide", () => {
     const n = inp.value.trim().replace(/\s+/g, " ");
     if (!n) { msg.textContent = "Type a name first."; return; }
@@ -4622,19 +4678,22 @@ function nameDeck(cur, done) {
     sheet.remove(); if (n !== cur) done(n);
   });
   inp.addEventListener("keydown", e => { if (e.key === "Enter") go.click(); });
-  card.append(el("h3", "", cur ? "Rename deck" : "New deck"), inp, go, msg, btn("Cancel", "btn ghost wide", () => sheet.remove()));
-  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  const cancel = () => { sheet.remove(); if (back) back(); };
+  card.append(el("h3", "", cur ? "Rename deck" : "New deck"), inp, go, msg, btn("Cancel", "btn ghost wide", cancel));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) cancel(); };
   document.body.append(sheet); setTimeout(() => { inp.focus(); inp.select(); }, 300);
 }
 function renameDeck(L, n) {
   if (L === "mine") decks.mine = n;
-  else { const old = L.slice(2); decks.names = decks.names.map(x => x === old ? n : x); myWords.forEach(w => { if (w.deck === old) w.deck = n; }); saveWords(); L = deckKey(n); }
+  else { const old = L.slice(2); decks.names = decks.names.map(x => x === old ? n : x); myWords.forEach(w => { if (w.deck === old) w.deck = n; }); saveWords();
+    decks.used[deckKey(n)] = decks.used[L]; delete decks.used[L]; L = deckKey(n); }
   saveDecks(); setList(L); renderWords();
 }
-// Deleting one of your decks keeps every word: they go back to Mine.
-function deleteDeck(L) {
-  const old = L.slice(2); decks.names = decks.names.filter(x => x !== old);
-  myWords.forEach(w => { if (w.deck === old) delete w.deck; }); saveWords(); saveDecks(); setList("mine"); renderWords();
+// Deleting your decks keeps every word: they go back to Mine.
+function deleteDeck(Ls) {
+  const old = new Set([].concat(Ls).map(L => L.slice(2))); decks.names = decks.names.filter(x => !old.has(x));
+  [].concat(Ls).forEach(L => delete decks.used[L]);
+  myWords.forEach(w => { if (old.has(w.deck)) delete w.deck; }); saveWords(); saveDecks(); setList("mine"); renderWords();
 }
 // Removing a list: the words you haven't studied go; the ones you have stay, in Mine.
 function removeList(L) {
@@ -4644,23 +4703,41 @@ function removeList(L) {
   saveWords(); setList("mine"); renderWords();
 }
 // With words: one slim line under Add ("Word Sets ›" and the list you're on), opening a sheet.
+// v44: your decks are a table (name, words, last used; newest first). Tap a row to study it; tick rows for Study
+// together, Rename (one) or Delete. The ready-made ones follow as chips. Cancel on anything opened here comes back.
+const dayShort = d => !d ? "" : d === localDay() ? "Today" : new Date(d + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
 function openSets() {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard setsheet"), close = () => sheet.remove();
-  // v43: your own decks first (tap one to switch, ＋ New deck to name one), then the ready-made ones
-  const own = el("div", "setrow owndecks");
-  [["mine", decks.mine || "Mine"], ...decks.names.map(n => [deckKey(n), n])].forEach(([k, n]) => { const b = btn(n, "setchip", () => { close(); setList(k); renderWords(); }); b.setAttribute("aria-pressed", curList === k); own.append(b); });
-  own.append(btn("＋ New deck", "setchip", () => { close(); nameDeck("", n => { if (!decks.names.includes(n)) decks.names.push(n); saveDecks(); setList(deckKey(n)); renderWords(); }); }));
-  card.append(el("h3", "", "Word Decks"), el("span", "trl", "Yours"), own, el("span", "trl", "Ready-made"), setsGrid(close));
-  const acts = el("div", "row setacts");
-  if (curList === "mine" || isDeck(curList)) acts.append(iconBtn(PEN, `Rename ${listName()}`, "btn ghost small", () => { close(); nameDeck(curList === "mine" ? decks.mine || "Mine" : curList.slice(2), n => renameDeck(curList, n)); }));
-  if (curList !== "mine") {
-    const rm = btn(isDeck(curList) ? `Delete ${listName()}` : `Remove ${listName()}`, "btn ghost small", () => {
-      if (!rm.classList.contains("confirm")) { rm.classList.add("confirm"); rm.textContent = isDeck(curList) ? `Delete? Words go to ${decks.mine || "Mine"}` : "Remove? Studied words stay"; return; }
-      close(); isDeck(curList) ? deleteDeck(curList) : removeList(curList);
-    });
-    acts.append(rm);
+  const cur = new Set(groupKeys(curList)), picked = new Set();
+  const cut = t => t.length > DECK_MAX ? t.slice(0, DECK_MAX - 1) + "…" : t;
+  const rows = [["mine", decks.mine || "Mine"], ...decks.names.map(n => [deckKey(n), n])]
+    .map(([k, n], i) => ({ k, n, i, count: myWords.filter(w => inList(w, k)).length, used: decks.used[k] || "" }))
+    .sort((a, b) => b.used.localeCompare(a.used) || a.i - b.i);
+  const table = el("div", "decktable"), bar = el("div", "deckbar"); bar.hidden = true;
+  const paintBar = () => {
+    bar.replaceChildren(); bar.hidden = !picked.size; if (!picked.size) return;
+    const keys = rows.map(r => r.k).filter(k => picked.has(k)), own = keys.filter(k => k !== "mine");
+    bar.append(btn(keys.length > 1 ? `Study ${keys.length} together` : "Study", "btn small", () => { close(); setList(keys.length > 1 ? groupKey(keys) : keys[0]); renderWords(); }));
+    if (keys.length === 1) bar.append(iconBtn(PEN, "Rename", "btn ghost small", () => { close(); const k = keys[0]; nameDeck(k === "mine" ? decks.mine || "Mine" : k.slice(2), n => renameDeck(k, n), openSets); }));
+    if (own.length) { const rm = btn("", "btn ghost small"), say = on => rm.textContent = on ? `Delete? Words go to ${decks.mine || "Mine"}` : own.length > 1 ? `Delete ${own.length}` : "Delete";
+      say(false); rm.onclick = () => armConfirm(rm, say, () => { close(); deleteDeck(own); }); bar.append(rm); }
+  };
+  rows.forEach(r => {
+    const row = el("div", "deckrow" + (cur.has(r.k) ? " on" : "")), ck = el("button", "dcheck", '<i class="ncheck" aria-hidden="true"></i>');
+    ck.type = "button"; ck.setAttribute("role", "checkbox"); ck.setAttribute("aria-checked", "false"); ck.setAttribute("aria-label", `Select ${r.n}`);
+    ck.onclick = () => { picked.has(r.k) ? picked.delete(r.k) : picked.add(r.k); ck.setAttribute("aria-checked", picked.has(r.k)); row.classList.toggle("picked", picked.has(r.k)); paintBar(); };
+    const main = el("button", "dmain", `<span class="dname">${esc(cut(r.n))} <span class="dcount">(${num(r.count)})</span></span><span class="dused">${dayShort(r.used)}</span>`);
+    main.type = "button"; main.setAttribute("aria-pressed", cur.has(r.k)); main.onclick = () => { close(); setList(r.k); renderWords(); };
+    row.append(ck, main); table.append(row);
+  });
+  const newDeck = btn("＋ New deck", "setchip wide", () => { close(); nameDeck("", n => { if (!decks.names.includes(n)) decks.names.push(n); saveDecks(); setList(deckKey(n)); renderWords(); }, openSets); });
+  card.append(el("h3", "", "Word Decks"), el("span", "trl", "Yours"), table, bar, newDeck, el("span", "trl", "Ready-made"), setsGrid(close));
+  // The ready-made one you're on can be removed: unstudied words go, studied ones move to Mine
+  if (curList === "top" || (!isDeck(curList) && !isGroup(curList) && curList !== "mine")) {
+    const rm = btn("", "btn ghost small"), say = on => rm.textContent = on ? `Remove? Words you've studied move to ${decks.mine || "Mine"}` : `Remove the ${listName()} deck`;
+    say(false); rm.onclick = () => armConfirm(rm, say, () => { close(); removeList(curList); });
+    const acts = el("div", "row setacts"); acts.append(rm); card.append(acts);
   }
-  if (acts.childElementCount) card.append(acts);
   card.append(btn("Close", "btn ghost wide", close));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
@@ -4902,22 +4979,24 @@ let pendingSource = "";
 function showPreview(found, source) {
   pendingSource = typeof source === "string" ? source : source && source.name ? source.name : "";
   const list = dedupe(found.list);
-  const fresh = list.filter(e => !findWord(e.word)), have = list.length - fresh.length;
+  // v44: class notes keep the words you already have (shown as "in your words"): adding them puts them in the deck
+  // and gives them the teacher's English. Other lists skip them.
+  const fresh = list.filter(e => found.notes || !findWord(e.word)), have = list.filter(e => findWord(e.word)).length;
   const pv = $("preview"); pv.hidden = false; pv.innerHTML = "";
   if (!list.length) {
     pv.append(el("p", "note", `No Chinese words found${source ? " in that file" : ""}.`), btn("Close", "btn ghost small", closePreview));
     return;
   }
-  pending = fresh.map(e => ({ ...e, on: true }));
+  pending = fresh.map(e => ({ ...e, on: true, have: !!findWord(e.word) }));
   const what = found.notes ? `item${list.length === 1 ? "" : "s"} in your notes` : `word${list.length === 1 ? "" : "s"}`;
   pv.append(el("p", "note", `Found ${list.length} ${what}${found.viaAuto ? " (sorted out automatically)" : ""}${found.backup ? " in a backup file" : ""}` +
-    (have ? `, ${have} already in your list` : "") + (fresh.length ? ". Check the ones to add." : ".")));
+    (have && !found.notes ? `, ${have} already in your list` : "") + (fresh.length ? ". Check the ones to add." : ".")));
   // Notes come as a list with their meanings (and the teacher's original where it was corrected); plain lists as chips.
   const rows = !!(found.notes || found.rows), chips = el("div", rows ? "nlist" : "chips");
   pending.forEach(e => {
     // Each one has a check circle, the same as the Practice list: checked ones are added.
     const c = el("button", rows ? "nrow" + ([...e.word].length > 5 ? " long" : "") : "chip", '<i class="ncheck" aria-hidden="true"></i>' + (rows
-      ? `<span class="nbody"><b lang="zh">${esc(e.word)}</b><span class="np">${esc(e.pinyin || "")}</span><span class="nm">${esc(e.meaning || "")}${e.kind === "sentence" || e.kind === "pattern" ? ` <i>${esc(e.kind)}</i>` : ""}</span>${e.note ? `<small>Class note: ${esc(e.note)}</small>` : ""}</span>`
+      ? `<span class="nbody"><b lang="zh">${esc(e.word)}</b><span class="np">${esc(e.pinyin || "")}</span><span class="nm">${esc(e.meaning || "")}${e.kind === "sentence" || e.kind === "pattern" ? ` <i>${esc(e.kind)}</i>` : ""}${e.have ? ' <i>in your words</i>' : ""}</span>${e.note ? `<small>Class note: ${esc(e.note)}</small>` : ""}</span>`
       : `<span>${esc(e.word)}</span>`)); c.type = "button"; c.setAttribute("role", "checkbox"); c.setAttribute("aria-checked", "true");
     c.onclick = () => { e.on = !e.on; c.classList.toggle("off", !e.on); c.setAttribute("aria-checked", e.on); go_.textContent = label(); go_.disabled = !count(); };
     e._el = c; chips.append(c);
@@ -4943,12 +5022,12 @@ function showPreview(found, source) {
   // v43: which deck they go into (your decks or a new one; class notes ask for one, like "Lesson 5")
   if (!found.backup) {
     pendingDeck = isDeck(curList) ? curList.slice(2) : "";
-    const dk = el("div", "pvdeck"), sel = el("select"), nm = el("input"); nm.type = "text"; nm.placeholder = "Deck name, e.g. Lesson 5"; nm.maxLength = 30; nm.hidden = true;
+    const dk = el("div", "pvdeck"), sel = el("select"), nm = el("input"); nm.type = "text"; nm.placeholder = "Deck name, e.g. Lesson 5"; nm.maxLength = DECK_MAX; nm.hidden = true;
     sel.setAttribute("aria-label", "Add to deck"); nm.setAttribute("aria-label", "New deck name");
     sel.innerHTML = `<option value="">${esc(decks.mine || "Mine")}</option>` + decks.names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("") + `<option value="\u0001">New deck…</option>`;
     sel.value = pendingDeck;
     if (found.notes && !pendingDeck) { sel.value = "\u0001"; nm.hidden = false; }
-    const upd = () => { pendingDeck = sel.value === "\u0001" ? nm.value.trim().slice(0, 30) : sel.value; nm.hidden = sel.value !== "\u0001"; };
+    const upd = () => { pendingDeck = sel.value === "\u0001" ? nm.value.trim().slice(0, DECK_MAX) : sel.value; nm.hidden = sel.value !== "\u0001"; };
     sel.onchange = () => { upd(); if (!nm.hidden) nm.focus(); }; nm.oninput = upd; upd();
     dk.append(el("span", "trs", "Add to"), sel, nm); pv.append(dk);
   }
@@ -4962,14 +5041,22 @@ async function commitPending(isBackup) {
   await ensure(take.map(e => e.word).join(""));
   let n = 0;
   for (const e of [...take].reverse()) {
-    const { on, from_text, note, kind, notes, ...rest } = e;
+    const { on, from_text, english, note, kind, notes, have, _el, ...rest } = e;
     if (isBackup) { myWords.push(rest); n++; continue; }
+    const teacher = !!((from_text || english) && rest.meaning);  // the notes or list gave English for it
+    const old = have && findWord(rest.word);
+    if (old) {  // already yours: into the deck, and the teacher's English unless you wrote your own
+      if (pendingDeck) old.deck = pendingDeck;
+      if (teacher && !(old.mine && old.mine.meaning)) { old.mine = { ...(old.mine || {}), meaning: rest.meaning }; old.fromClass = [...new Set([...(old.fromClass || []), "meaning"])]; }
+      if (note && !old.classNote) old.classNote = note;
+      n++; continue;
+    }
     const d = lookup(rest.word);
     const entry = { added: localDay(), ...rest, ...(pendingDeck ? { deck: pendingDeck } : {}) };
     // The teacher's English (spelling fixed) is your meaning for this word, over the standard card's; her pinyin too,
     // when it differs from the dictionary (a Taiwan reading). Where her English was wrong, her original is kept.
     const mine = {}, fromClass = [];
-    if (from_text && rest.meaning) { mine.meaning = rest.meaning; fromClass.push("meaning"); }
+    if (teacher) { mine.meaning = rest.meaning; fromClass.push("meaning"); }
     const flat = x => String(x || "").normalize("NFC").replace(/[\s'’·-]+/g, "").toLowerCase();
     if (notes && rest.pinyin && (!d || ![d[1], d[2]].some(p => flat(p) === flat(rest.pinyin)))) { mine.pinyin = rest.pinyin; fromClass.push("pinyin"); }
     if (fromClass.length) { entry.mine = mine; entry.fromClass = fromClass; }
@@ -5032,7 +5119,7 @@ async function readNotes(f, say) {
   for (let i = 0; i < pages.length; i++) {
     if (pages.length > 1) say(`Sorting out page ${i + 1} of ${pages.length}…`);
     const { items: got } = await claude({ action: "notes", image: pages[i], media_type: "image/jpeg" });
-    (got || []).forEach(x => { const word = String(x.word || "").replace(/\s+/g, "").replace(/~/g, "～"); if (word) items.push({ word, pinyin: x.pinyin || "", meaning: x.meaning || "", from_text: !!x.from_text, note: x.note || "", kind: x.kind || "", notes: true }); });
+    (got || []).forEach(x => { const word = String(x.word || "").replace(/\s+/g, "").replace(/~/g, "～"); if (word) items.push({ word, pinyin: x.pinyin || "", meaning: x.meaning || "", from_text: !!x.from_text, english: String(x.english || "").trim(), note: x.note || "", kind: x.kind || "", notes: true }); });
   }
   return items;
 }
@@ -5190,7 +5277,7 @@ function prevCard() {
 $("revPrev").onclick = prevCard;
 // The bin in the card's top right corner (v42; it was under the title, which hides while typing) removes the word
 // you're on from your words, on either side of the card (asks once). The card redraws often, so it puts itself back.
-const cardBin = binBtn("revdel cardbin", "", "Remove?", () => { if (rq[0]) dropFromSession(rq[0], true); });
+const cardBin = binBtn("revdel cardbin", "", "Remove?", () => { if (rq[0]) dropFromSession(rq[0], true); }, true);
 new MutationObserver(() => {
   const box = $("revCard"), want = rq.length > 0 && !box.classList.contains("practicing");
   if (want && cardBin.parentNode !== box) box.prepend(cardBin); else if (!want && cardBin.parentNode) cardBin.remove();
@@ -5237,21 +5324,14 @@ let lastSet = null;  // the settings of the session that's running, for "Another
 async function openReviewWith(ws) {
   noListen = false; lastSet = null; curHow = revHow; rq = ws.slice(); for (let i = rq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rq[i], rq[j]] = [rq[j], rq[i]]; }
   assignModes(rq, curHow);
-  rDone = 0; revHist = []; rScore = newScore(); scoreShown = null; go("reviewScreen"); silentTip();
+  rDone = 0; revHist = []; rScore = newScore(); scoreShown = null; go("reviewScreen");
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
-}
-// v43: an iPhone on silent mutes the card sounds, and no page can tell. The first five sessions say so, briefly.
-const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-function silentTip() {
-  const n = store.get("radical-silent-tip", 0);
-  if (!soundOn || !isIOS || n >= 5) return;
-  store.set("radical-silent-tip", n + 1); setTimeout(() => toast("Card sounds play when your phone isn't on silent.", 3500, true), 600);
 }
 async function openReview(mode = "today", count = "all", again) {
   curHow = revHow; if (!again) noListen = false;
   lastSet = { mode, count }; rq = buildQueue(mode, count, curHow); rDone = 0; revHist = []; rScore = newScore(); scoreShown = null;
-  if (!again) { go("reviewScreen"); silentTip(); } else $("reviewScreen").scrollTop = 0;
+  if (!again) { go("reviewScreen"); } else $("reviewScreen").scrollTop = 0;
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
 }
@@ -6006,7 +6086,7 @@ const TOUR = [
   } },
   { line: "Hear it, translate it, explain it.", chars: "我喜歡看書解", build(stage) {
     const text = conv("我喜歡看書"), row = tourCells(text), cells = [...row.children];
-    const tools = el("div", "ttools"), spk = el("span", "ttool", SPK), en = el("span", "ttool", "EN"), ex = el("span", "ttool", '<span lang="zh">解</span>');
+    const tools = el("div", "ttools"), spk = el("span", "ttool", SPK), en = el("span", "ttool", "ENG"), ex = el("span", "ttool", '<span lang="zh">解</span>');
     tools.append(spk, en, ex);
     const eng = el("p", "ten", "I like reading.");
     const note = el("div", "tpeek", `<b lang="zh">${conv("喜歡")}</b> + verb: to like doing it`);
@@ -6014,7 +6094,7 @@ const TOUR = [
     const f = tourFinger(stage);
     const reset = () => { cells.forEach(c => c.classList.remove("hl")); [spk, en, ex].forEach(x => x.classList.remove("on")); eng.classList.remove("in"); note.classList.remove("up"); f.hide(); };
     return { still() { cells.forEach(c => c.classList.add("hl")); eng.classList.add("in"); note.classList.add("up"); },
-      run: () => tourLoop([[0, reset], [400, () => f.to(spk)], [1100, () => { f.tap(); spk.classList.add("on"); }],
+      run: () => tourLoop([[0, reset], [400, () => f.to(spk)], [1100, () => { f.tap(); spk.classList.add("on"); speak(text); }],
         ...cells.map((c, k) => [1300 + k * 330, () => c.classList.add("hl")]),
         [3100, () => { spk.classList.remove("on"); cells.forEach(c => c.classList.remove("hl")); f.to(en); }],
         [3800, () => { f.tap(); en.classList.add("on"); eng.classList.add("in"); }],
@@ -6033,7 +6113,7 @@ const TOUR = [
       if (k === "write") { const s = svgFor(word[0], false, false), ps = [...s.querySelectorAll("path")]; ps.forEach(x => x.style.opacity = 0);
         const pad = el("div", "tpad"); pad.append(s); card.append(el("p", "", "to like"), pad);
         if (!calm()) ps.forEach((x, n) => setTimeout(() => { x.style.opacity = 1; }, 250 + n * 110)); else ps.forEach(x => x.style.opacity = 1); }
-      if (k === "listen") { const sp = el("span", "tsay", SPK); card.append(sp, el("p", "", "type what you hear")); }
+      if (k === "listen") { const sp = el("span", "tsay", SPK); card.append(sp, el("p", "", "type what you hear")); sp.classList.add("on"); speak(word); setTimeout(() => sp.classList.remove("on"), 1200); }  // v44: it speaks
     };
     const flip = k => { card.classList.add("flip"); setTimeout(() => { face(k); card.classList.remove("flip"); }, 260); };
     const reset = () => { add.textContent = "+ Add"; add.classList.remove("done"); badge.textContent = ""; badge.classList.remove("on"); card.classList.remove("up"); label.textContent = ""; f.hide(); };
@@ -6051,7 +6131,7 @@ async function showTour(fromMenu) {
   await ensure(TOUR.map(p => p.chars).join("") + conv(TOUR.map(p => p.chars).join("")));
   const sheet = el("div", "sheet tour"), card = el("div", "sheetcard tourcard");
   let i = 0, stop = () => {};
-  const close = () => { stop(); sheet.remove(); store.set("radical-tour-seen", true); if (fromMenu === true) openMenu(); else if (!store.get("radical-goal-asked", false)) setTimeout(askGoal, 300); };
+  const close = () => { stop(); if ("speechSynthesis" in window) speechSynthesis.cancel(); sheet.remove(); store.set("radical-tour-seen", true); if (fromMenu === true) openMenu(); else if (!store.get("radical-goal-asked", false)) setTimeout(askGoal, 300); };
   const last = fromMenu === true ? "Back to menu" : fromMenu ? "Done" : "Start reading";
   const paint = () => {
     stop(); card.innerHTML = "";
@@ -6685,6 +6765,7 @@ document.querySelectorAll("#dailySeg [data-t]").forEach(b => {
   myWords.filter(w => !w.card).forEach(queueCard);  // cards still missing (added offline, or a request failed)
   feedCommon();  // the day's new Top words, when Top is the list you're on
   setTimeout(joinPending, 2500);  // opened a friend's link
+  setTimeout(showNotice, 3500);  // the owners' notice, once
   setTimeout(() => { friendBadge(); pingFriends(); }, 3000);  // friend requests waiting (red number on 記)
   if (session) syncNow(true).then(() => { myWords.filter(w => !w.card).forEach(queueCard); updateRing(); });  // pull what other phones changed
   if (document.fonts) document.fonts.ready.then(() => fitLegend());
