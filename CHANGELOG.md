@@ -2,6 +2,15 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v47
+
+- Added is now Basecamp: where new words land. It can't be renamed or deleted, and a word leaves it when it goes into a deck.
+- A word can be in several decks. Its progress is shared, so studying it in one deck counts in all of them.
+- New words always go to Basecamp, wherever you are. + Add has a ▾ beside it (reader, card sentences, word page) to send that one word to a deck or a new deck instead. A note says where it went.
+- The word page and the back of a card show the word's decks as a chip. Tap it to add or take out decks. Edit card uses the same chip.
+- Practice list: tick words, then Add to deck ▾. On one of your decks, Take out of it. With 10 or more words in Basecamp, Sort into decks › starts this for you.
+- Explore's On this day no longer skips politics. It picks the most uplifting events of the day (discoveries, firsts, launches, arts, science, sport) and still leaves out war, disasters and deaths.
+
 ## v46
 
 - Today always fills to your Cards a day. Your picked deck comes first; when it runs short, words due in your other lists come next, then new ones. A card from another deck shows that deck's name in its header. The 練 badge shows the same number.
