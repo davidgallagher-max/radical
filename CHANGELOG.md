@@ -12,8 +12,9 @@ What changed in each version, in plain words. Newest first.
 - Friends: Email opens your own Mail with an invitation and your link. Nothing is sent from Radical.
 - 箋 Notes from David in the menu lists every Open Message, newest first, with a red dot on ☰ until you open it. Chinese in a message reads like Read: drawn, colored, tap a word, with a speaker. A message can carry a deck with an Add button.
 - The Open Message now asks the server fresh every time, checks whenever you come back to the app (at most once a minute), and waits while a sheet or cards are open instead of giving up. Admin tools shows what this phone last heard, with Preview.
-- Explore has a Today row: the featured article and On this day from Chinese Wikipedia, skipping wars, politics and disasters.
+- Explore has an On this day row from Chinese Wikipedia (two or three events, skipping politics, states, wars and disasters). Each shows like a search hit: the year and article, its length and difficulty; tap for the event and the opening, then Read in Radical.
 - Fixed: a ready-made deck in History could stop the day's Explore chips from loading.
+- Fixed (same day): Word Decks and every other tall sheet now scroll, and Word Decks has a ✕.
 - Fixed (same day): the message posted before v46 now shows in Notes from David, and opening Notes always clears the red dot.
 
 ## v45

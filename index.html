@@ -215,7 +215,9 @@ p.busy{margin:-4px 4px 0}
 @keyframes spin{to{transform:rotate(360deg)}}
 .miniadd{margin-left:auto}
 .sheet{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,#000 55%,transparent);display:grid;align-items:end;animation:fade .2s ease}
-.sheetcard{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 18px calc(var(--bot) + 20px);display:grid;gap:10px;max-width:640px;width:100%;margin:0 auto;box-shadow:0 -12px 40px rgba(0,0,0,.4)}
+.sheetcard{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 18px calc(var(--bot) + 20px);display:grid;gap:10px;max-width:640px;width:100%;margin:0 auto;box-shadow:0 -12px 40px rgba(0,0,0,.4);max-height:88vh;max-height:88dvh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;align-content:start;box-sizing:border-box}
+/* v46: a sheet taller than the screen scrolls inside itself; a long one has a header that stays, with ✕ */
+.sheethead{position:sticky;top:-20px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-20px -18px 0;padding:16px 18px 8px;background:var(--surface)}.sheethead h3{margin:0}.sheethead .iconbtn{font-size:1.2rem;flex:none}
 .sheetcard h3{margin:0;font-family:var(--font-brand);font-size:1.2rem}
 .sheetcard p{margin:0;line-height:1.5}
 .sheetcard .row .btn{flex:1;padding:12px}
@@ -668,8 +670,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .noteitem{margin:0 0 12px}.noteitem .notebody{margin-bottom:8px}
 .noticetail{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}.noticetail p{margin:0 0 8px}
 .noticedeck{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);max-width:60%}
-.wtoday{display:grid;gap:6px;margin:0 0 6px}.wtrow{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:10px;align-items:baseline;padding:10px 12px;border-radius:12px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
-.wtrow .wty{flex:none;color:var(--accent);font-weight:700;font-size:.92rem;font-variant-numeric:tabular-nums;min-width:3.2em}.wtrow .wtt{font-size:1.05rem;line-height:1.45;min-width:0}
+.wtoday{margin:0 0 6px}.wtdate{color:var(--muted);font-weight:500;margin-left:6px}.wty{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;margin-right:2px}.wev{margin:0 0 8px;font-weight:600}
 .frrow{border-bottom:1px solid color-mix(in srgb,var(--line) 85%,var(--fg))}
 .frhead{font:inherit;width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:none;border:0;color:var(--fg);padding:10px 0;cursor:pointer}
 .frwho{flex:1;display:grid;gap:2px;min-width:0}.frchev{font-style:normal;font-size:1.4rem;line-height:1;color:var(--accent);transition:transform .2s}
@@ -1306,7 +1307,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <h3 class="sec tabsec"><span lang="zh">探</span>Explore</h3>
     <p class="note tabsub">Real Chinese Wikipedia.</p>
     <div class="excol exleft">
-    <div id="wikiToday" hidden><h3 class="sec sub">Today</h3><div class="wtoday" id="wikiTodayList"></div></div>
+    <div id="wikiToday" hidden><h3 class="sec sub">On this day <span class="wtdate" id="wikiTodayDate"></span></h3><div class="list wtoday" id="wikiTodayList"></div></div>
     <h3 class="sec sub">Pick a topic</h3>
     <div class="topics" id="wikiTopics"></div>
     </div>
@@ -5038,7 +5039,8 @@ function openSets() {
   });
   const newDeck = btn("＋ New deck", "setchip wide", () => { close(); nameDeck("", n => { if (!decks.names.includes(n)) decks.names.push(n); saveDecks(); setList(deckKey(n)); renderWords(); }, openSets); });
   const rh = el("span", "trl", 'Ready-made<span class="havekey">✓ you have it</span>');
-  card.append(el("h3", "", "Word Decks"), el("span", "trl", "Yours"), table, bar, newDeck, rh, setsGrid(close));
+  const head = el("div", "sheethead"); head.append(el("h3", "", "Word Decks"), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Close");
+  card.append(head, el("span", "trl", "Yours"), table, bar, newDeck, rh, setsGrid(close));
   card.append(btn("Close", "btn ghost wide", close));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
@@ -6890,43 +6892,52 @@ function searchHits(term) {
   return hitJobs.get(term);
 }
 function prefetchChips() { chipList().forEach(([zh]) => searchHits(conv(zh)).then(h => englishTitles(h, false)).catch(() => {})); }
-// v46: Today in Explore: two or three things from Chinese Wikipedia's own daily pages (the featured article and On this
-// day), fetched once a day. Anything about wars, politics or disasters is skipped, so it stays human interest.
-const CALM = /戰|战|軍|军|黨|党|政府|總統|总统|主席|選舉|选举|革命|獨立|独立|條約|条约|政變|政变|抗議|抗议|屠|殺|杀|恐怖|襲擊|袭击|爆炸|入侵|佔領|占领|共產|共产|國民黨|国民党|台灣|台湾|臺灣|西藏|新疆|香港|天安門|天安门|空難|空难|地震|海嘯|海啸|遇難|遇难|死亡|處決|处决|暗殺|暗杀|核/;
+// v46: On this day in Explore: two or three events from Chinese Wikipedia's On this day, fetched once a day, each shown
+// like a search hit (the article it's about, its length and difficulty; tap for the opening, then Read in Radical) with
+// the year and the event. Anything about wars, politics, states or disasters is skipped (the event and the article).
+const CALM = /戰|战|軍|军|黨|党|政府|政權|政权|總統|总统|主席|首相|總理|总理|國王|国王|皇帝|王朝|帝國|帝国|選舉|选举|革命|獨立|独立|條約|条约|決議|决议|聯合國|联合国|人民共和國|人民共和国|民國|民国|蘇聯|苏联|納粹|纳粹|國會|国会|議會|议会|憲法|宪法|政變|政变|抗議|抗议|示威|屠|殺|杀|恐怖|襲擊|袭击|爆炸|入侵|佔領|占领|共產|共产|國民黨|国民党|台灣|台湾|臺灣|西藏|新疆|香港|天安門|天安门|空難|空难|地震|海嘯|海啸|火山|颶風|飓风|遇難|遇难|死|處決|处决|暗殺|暗杀|核|宗教|教宗/;
 let todayTried = "";
 async function fetchToday() {
-  const d = localDay(), c = store.get("radical-wiki-today", null);
+  const d = localDay(), c = store.get("radical-wiki-today2", null);
   if (c && c.day === d) { paintToday(c.items); return; }
   if (todayTried === d) return; todayTried = d;  // once a day, even when Wikipedia had nothing
   const [y, m, dd] = d.split("-"), items = [];
   try {
     const r = await fetch(`https://zh.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${dd}`);
-    if (r.ok) {
-      const j = await r.json(), tfa = j.tfa;
-      if (tfa && tfa.title && !CALM.test((tfa.extract || "") + tfa.title)) { const t = (tfa.titles && tfa.titles.normalized) || tfa.title; items.push({ y: "今日", t, s: t + (tfa.description ? `：${tfa.description}` : "") }); }
-      (j.onthisday || []).filter(e => e.text && e.pages && e.pages[0] && !CALM.test(e.text)).slice(0, 8).sort(() => Math.random() - .5).slice(0, 3 - items.length)
-        .forEach(e => items.push({ y: String(e.year || ""), t: e.pages[0].title, s: e.text }));
-    }
+    if (r.ok) (((await r.json()).onthisday) || []).filter(e => e.text && e.pages && e.pages[0] && !CALM.test(e.text + e.pages[0].title + (e.pages[0].extract || "")))
+      .sort(() => Math.random() - .5).slice(0, 3).forEach(e => items.push({ y: String(e.year || ""), t: e.pages[0].title, s: e.text }));
   } catch (e) {}
-  if (items.length < 2) {  // the feed had too little: Wikipedia:歷史上的今天 for the day
+  if (!items.length) {  // the feed had nothing calm: the Wikipedia:历史上的今天 page for the day
     try {
       const j = await wget("action=parse&prop=text&disablelimitreport=1&page=" + encodeURIComponent(`Wikipedia:历史上的今天/${+m}月${+dd}日`));
       const html = j.parse && (j.parse.text || ""), dom = new DOMParser().parseFromString(typeof html === "string" ? html : html["*"] || "", "text/html");
-      [...dom.querySelectorAll("li")].map(li => ({ li, a: [...li.querySelectorAll("a[title]")].find(a => !/^\d+年$/.test(a.title) && !a.title.includes(":")), txt: li.textContent.trim() }))
-        .filter(x => x.a && x.txt.length > 8 && !CALM.test(x.txt)).slice(0, 3 - items.length)
+      [...dom.querySelectorAll("li")].map(li => ({ a: [...li.querySelectorAll("a[title]")].find(a => !/^\d+年$/.test(a.title) && !a.title.includes(":")), txt: li.textContent.trim() }))
+        .filter(x => x.a && x.txt.length > 8 && !CALM.test(x.txt + x.a.title)).slice(0, 3)
         .forEach(x => { const yr = (x.txt.match(/^(\d{1,4})年/) || [])[1] || ""; items.push({ y: yr, t: x.a.title, s: x.txt.replace(/^\d{1,4}年[：:]?\s*/, "") }); });
     } catch (e) {}
   }
-  if (items.length) store.set("radical-wiki-today", { day: d, items });
+  if (items.length) store.set("radical-wiki-today2", { day: d, items });
   paintToday(items);
 }
-function paintToday(items) {
+let todayShown = "";
+async function paintToday(items) {
   const box = $("wikiToday"), list = $("wikiTodayList"); if (!box) return;
-  box.hidden = !items || !items.length; list.replaceChildren();
-  (items || []).forEach(x => {
-    const b = el("button", "wtrow", `<span class="wty">${esc(x.y)}</span><span class="wtt" lang="zh">${esc(conv(String(x.s || x.t)).slice(0, 70))}</span>`); b.type = "button";
-    b.onclick = () => openArticle(x.t); list.append(b);
+  box.hidden = !items || !items.length; if (box.hidden) return;
+  const key = localDay() + script; if (todayShown === key && list.childElementCount) return; todayShown = key;
+  $("wikiTodayDate").textContent = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  list.replaceChildren();
+  const titles = items.map(x => x.t), ens = await englishTitles(titles).catch(() => titles.map(() => ""));
+  const rows = items.map((x, k) => {
+    const r = wikiRow(x.t, ens[k]);
+    r.querySelector(".wt").insertAdjacentHTML("afterbegin", `<span class="wty">${esc(x.y)}</span> `);
+    r.querySelector(".wbody").insertAdjacentHTML("afterbegin", `<p class="wev" lang="zh">${esc(conv(x.y ? `${x.y}年：${x.s}` : x.s))}</p>`);
+    list.append(r); return r;
   });
+  const texts = await Promise.all(titles.map(t => wget("action=query&prop=extracts&explaintext=1&exsectionformat=plain&redirects=1&titles=" + encodeURIComponent(t))
+    .then(j => ((j.query && j.query.pages || [])[0] || {}).extract || "").catch(() => "")));
+  rows.forEach((r, k) => r.fill(texts[k], rateCache[titles[k]]));
+  const levels = await rateArticles(titles.map((t, k) => ({ t, s: firstPara(texts[k]) })));
+  rows.forEach((r, k) => r.fill(texts[k], levels[k]));
 }
 function openExplore(fromReading) {
   wStat(""); wikiLabels(); setTab("wikiScreen"); $("wikiScreen").scrollTop = 0;  // chips change only here, never under your finger
@@ -6968,7 +6979,7 @@ function wikiRow(title, en) {
   const head = row.querySelector(".whead"), body = row.querySelector(".wbody");
   head.onclick = () => {
     const open = !row.classList.contains("open");
-    $("wikiList").querySelectorAll(".whit.open").forEach(x => { x.classList.remove("open"); x.querySelector(".wbody").hidden = true; });
+    (row.parentElement || $("wikiList")).querySelectorAll(".whit.open").forEach(x => { x.classList.remove("open"); x.querySelector(".wbody").hidden = true; });
     if (open) { row.classList.add("open"); body.hidden = false; }
   };
   body.querySelector(".btn").onclick = () => openArticle(title);
