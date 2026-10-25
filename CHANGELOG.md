@@ -2,6 +2,19 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v44
+
+- Friends: a username (anything you like) plus your real first and last name. Friends see your username, and your first name with your last initial when they open your row. Adding or accepting a friend needs both names, and anyone missing them is asked once.
+- Deleting asks once, and the armed button now has Cancel beside it. It also resets after 4 seconds or when you tap anywhere else (friends, words, decks, the text and card bins).
+- Class notes: the teacher's English is kept as the word's meaning, marked "from class". Words already in your list show up in the checklist ("in your words"); adding them puts them in the deck and gives them the teacher's English unless you wrote your own.
+- The silent-mode tip on flash cards is gone. The line under Settings, Sound stays.
+- Owners can post a notice from the menu (告 Notice, with an optional end date). Everyone sees it once, a moment after the splash. Take down removes it.
+- 解 explanations are shared: once anyone has asked for a sentence, the next person gets it at once, at no AI cost.
+- Sentences work the same in Read and on cards. The speaker plays at your pace every time, shows ■ to stop, and the 慢–快 slider shows while it reads. Tapping a word gives the pick strip (‹ ›, + Add, Open ›), a second tap opens it, and holding a character enlarges it. EN is now ENG, and 解 says Hide while its explanation is open.
+- Word Decks: your decks are a table with their word counts and the day you last used them, newest first. Tap a row to study it, or tick rows for Study together (several decks as one), Rename or Delete. Deck names are at most 20 characters. Green marks only the deck you're on; ready-made decks you have get a ✓. The ready-made one you're on can be removed ("Remove the Food deck").
+- Cancel on New deck, Rename or Deck from a topic goes back to Word Decks.
+- How it works: the Listen card and the read-aloud page now speak.
+
 ## v43
 
 - English in the reader uses a serif that matches the Chinese, like a printed page.
