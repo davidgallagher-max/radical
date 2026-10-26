@@ -4153,7 +4153,7 @@ function addSharedDeck(d) {
   let name = base, i = 2; const taken = x => decks.names.includes(x) || x === mineName() || THEMES.includes(x);
   while (taken(name)) name = `${base.slice(0, DECK_MAX - 3)} ${i++}`;
   if (decks.names.length >= 100) { toast("You have too many decks. Delete one first.", 3000); return false; }
-  decks.names.push(name); let added = 0, moved = 0;
+  decks.names.push(name); decks.used[deckKey(name)] = localDay(); let added = 0, moved = 0;
   (d.words || []).forEach(x => {
     const word = conv(String(x.word || "").trim()); if (!word) return;
     const have = findWord(word);
@@ -5128,14 +5128,14 @@ function deckPicker({ w, title, start, save, remove, cancel }) {
     else row(`${esc(mineName())}<small>no deck</small>`, !sel.size, () => { sel.clear(); paint(); }, " base");
     [...new Set([...decks.names, ...sel])].forEach(n => row(esc(n), sel.has(n), () => { sel.has(n) ? sel.delete(n) : sel.add(n); paint(); }));
     row("＋ New deck", false, () => { sheet.remove(); nameDeck("", n => {
-      if (!decks.names.includes(n)) { decks.names.push(n); saveDecks(); }
+      if (!decks.names.includes(n)) { decks.names.push(n); decks.used[deckKey(n)] = localDay(); saveDecks(); }
       deckPicker({ w, title, start: [...sel, n], save, remove, cancel });
     }, () => deckPicker({ w, title, start: [...sel], save, remove, cancel })); }, " dpnew");
   };
   paint();
   const head = el("div", "sheethead"); head.append(el("h3", "", esc(title)), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Cancel");
   const acts = el("div", "row dpacts");
-  acts.append(btn("Save", "btn", () => { sheet.remove(); const a = [...sel]; setLastDecks(a); save(a); }), btn("Cancel", "btn ghost", close));
+  acts.append(btn("Save", "btn", () => { sheet.remove(); const a = [...sel], d = localDay(); a.forEach(n => decks.used[deckKey(n)] = d); saveDecks(); setLastDecks(a); save(a); }), btn("Cancel", "btn ghost", close));
   card.append(head, list, acts);
   if (remove) { const rm = btn("Remove word", "btn ghost wide dprm"); rm.onclick = () => armConfirm(rm, on => rm.textContent = on ? "Remove it from your words?" : "Remove word", () => { sheet.remove(); remove(); }); card.append(rm); }
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
@@ -5204,7 +5204,7 @@ function openSets() {
     main.type = "button"; main.setAttribute("aria-pressed", cur.has(r.k)); main.onclick = () => { close(); setList(r.k); renderWords(); };
     row.append(ck, main); table.append(row);
   });
-  const newDeck = btn("＋ New deck", "setchip wide", () => { close(); nameDeck("", n => { if (!decks.names.includes(n)) decks.names.push(n); saveDecks(); setList(deckKey(n)); renderWords(); }, openSets); });
+  const newDeck = btn("＋ New deck", "setchip wide", () => { close(); nameDeck("", n => { if (!decks.names.includes(n)) { decks.names.push(n); decks.used[deckKey(n)] = localDay(); } saveDecks(); setList(deckKey(n)); renderWords(); }, openSets); });
   const rh = el("span", "trl", "Ready-made");
   const head = el("div", "sheethead"); head.append(el("h3", "", "Word Decks"), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Close");
   card.append(head, el("span", "trl", "Yours"), table, bar, newDeck, rh, setsGrid(close));

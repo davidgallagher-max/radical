@@ -11,6 +11,8 @@ What changed in each version, in plain words. Newest first.
 - The deck chip sits at the bottom of the card back and the word page, with a soft fill.
 - Settings: Sound and light is now Sound and lighting.
 
+- Fix (same day): a new deck showed an old date in Word Decks (the last review of a word in it). Making a deck or saving words into one now marks it today.
+
 ## v51
 
 - Flash cards: each row has a small label (Deck, Skill, Type, How many). The deck row always shows, with More.
