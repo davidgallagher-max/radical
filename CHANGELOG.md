@@ -7,6 +7,7 @@ What changed in each version, in plain words. Newest first.
 - Flash cards list pills: Basecamp always comes first, in gold, then the deck you're on (or the one you used last), then More. The one showing keeps its outline.
 - Friends: the Email button is gone. Share does the inviting, with a friendlier message.
 - Streaks count days you meet your goal, not just days you open the app: finish Today, or read your words for the day (Settings, Words read a day: 100, 200 or 500). Settings can ask for both instead. Goal days are solid on the calendar. Days before v48 count the old way, and the 3 rest days per 2 weeks stay.
+- Fix (same day): days before the calendar had 達標 marks now show goal met when you did your Cards a day (or read your words target) that day.
 
 ## v47
 

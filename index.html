@@ -3641,8 +3641,15 @@ const started = w => !!w.skip || ["srs", "wsrs", "lsrs"].some(k => w[k] && (w[k]
 const readGoal = () => store.get("radical-read-goal", 200), streakRule = () => store.get("radical-streak-rule", "either");
 if (!store.get("radical-streak-from", null)) store.set("radical-streak-from", localDay());
 const STREAK_FROM = store.get("radical-streak-from", "");
-const goalMet = v => !!v && (streakRule() === "both" ? !!v.q && !!v.rq : !!v.q || !!v.rq);
-const streakDay = (v, day) => day < STREAK_FROM ? dayUsed(v) : goalMet(v);
+// Days before the marks existed (q from v42, Oct 24 2026; rq from v48) are judged by their tallies: cards reviewed
+// against Cards a day, words read against the reading target.
+const Q_FROM = "2026-10-24";
+const goalMet = (v, day = "") => {
+  if (!v) return false;
+  const cards = !!v.q || day < Q_FROM && (v.c || 0) >= dailyMax(), read = !!v.rq || day < STREAK_FROM && (v.w || 0) >= readGoal();
+  return streakRule() === "both" ? cards && read : cards || read;
+};
+const streakDay = (v, day) => day < STREAK_FROM ? dayUsed(v) : goalMet(v, day);
 // ---- streak: days used in a row, with rest days. Any 14 days in a row may have up to 3 days off; a 4th day off in
 // the same 14 ends the streak. Rest days don't add to the count. Today never breaks it (the day isn't over yet).
 const REST_DAYS = 3, REST_WINDOW = 14;
@@ -3773,11 +3780,11 @@ function renderTrack() {
     picked = c; c.classList.add("picked"); dayLine.hidden = false;
     const [y, m, dd] = key.split("-").map(Number), name = new Date(y, m - 1, dd).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
     const bits = v ? [[v.c, "card"], [v.w, "word", " read"], [v.n, "word", " added"]].filter(b => b[0]).map(([n, u, t = ""]) => `${num(n)} ${u}${n === 1 ? "" : "s"}${t}`) : [];
-    dayLine.innerHTML = `<b>${name}</b> · ${bits.length ? bits.join(" · ") : "Nothing that day"}${goalMet(v) ? ` · <span class="calmark"><span lang="zh">${mark}</span> Goal met</span>` : ""}`;
+    dayLine.innerHTML = `<b>${name}</b> · ${bits.length ? bits.join(" · ") : "Nothing that day"}${goalMet(v, key) ? ` · <span class="calmark"><span lang="zh">${mark}</span> Goal met</span>` : ""}`;
   };
   for (let k = 1; k <= nDays; k++) {
     const key = `${trackMonth.y}-${String(trackMonth.m + 1).padStart(2, "0")}-${String(k).padStart(2, "0")}`, v = d[key];
-    const cls = key > today ? "future" : dayUsed(v) ? (goalMet(v) ? "hit" : "on") : firstUse && key >= firstUse && key < today ? "off" : "";
+    const cls = key > today ? "future" : dayUsed(v) ? (goalMet(v, key) ? "hit" : "on") : firstUse && key >= firstUse && key < today ? "off" : "";
     if (dayUsed(v)) usedMonth++;
     const c = el(key > today ? "span" : "button", `calday ${cls}${key === today ? " today" : ""}`, String(k)); grid.append(c);
     if (key <= today) { c.type = "button"; c.onclick = () => showDay(c, key, v); }
