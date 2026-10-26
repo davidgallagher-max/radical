@@ -781,9 +781,9 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .revhead{display:flex;align-items:center;gap:10px}
 .revpanel .revhead{justify-content:flex-start}
 /* Two faint lines split the box into its three steps: how (Read, Write, Listen, Mix), which cards, how many. */
-/* v51: each row of pills has a small label with a hairline after it (Deck, Skill, Type, How many) */
+/* v51: each row of pills has a small label (Deck, Skill, Type, How many); v52: centered, a hairline each side */
 .revsec{display:grid;gap:4px;min-width:0}
-.rowlab{display:flex;align-items:center;gap:8px;font-size:.68rem;font-weight:700;letter-spacing:.12em;color:var(--muted);margin:2px 2px 0;text-transform:uppercase}.rowlab::after{content:"";flex:1;height:1px;background:var(--line)}
+.rowlab{display:flex;align-items:center;gap:8px;font-size:.68rem;font-weight:700;letter-spacing:.12em;color:var(--muted);margin:2px 0 0;text-transform:uppercase}.rowlab::before,.rowlab::after{content:"";flex:1;height:1px;background:var(--line)}
 .revhead b{font-family:var(--font-brand);font-size:1.2rem;font-weight:800}
 .revhead span{flex:1;min-width:0;color:var(--muted);font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .revtoggle{all:unset;cursor:pointer;flex:1;min-width:0;display:flex;align-items:center;gap:10px}
@@ -924,8 +924,8 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .addsplit{display:inline-flex;align-items:stretch;flex:none}
 .addsplit.split>.btn:first-child{border-top-right-radius:0;border-bottom-right-radius:0}
 .addsplit.split>.btn:last-child{border-top-left-radius:0;border-bottom-left-radius:0;margin-left:1px;padding-left:10px;padding-right:12px;min-width:36px}
-.deckline{display:flex;justify-content:center;margin:2px 0 8px}
-.deckchip{min-height:36px;padding:0 14px;border-radius:18px;background:transparent;color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font:inherit;font-size:.92rem;cursor:pointer;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deckline{display:flex;justify-content:center;margin:14px 0 4px}
+.deckchip{min-height:36px;padding:0 14px;border-radius:18px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font:inherit;font-size:.92rem;cursor:pointer;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .eddeck{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0}
 .eddeck>span:first-child{color:var(--muted);font-size:.92rem}
 .dplist{display:grid;margin:4px -6px 10px}
@@ -934,6 +934,7 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .dprow i{font-style:normal;color:var(--accent)}
 .dprow.dpnew{color:var(--accent)}
 .dprow.fixed{opacity:.75;cursor:default}
+.dprow small{margin-left:8px;font-size:.8rem;color:var(--muted)}.dpacts{margin-top:4px}.dpacts .btn{flex:1}.dprm{margin-top:8px}
 .sortnudge{display:block;width:100%;min-height:46px;margin:4px 0 8px;border:1px dashed var(--accent);border-radius:12px;background:transparent;color:var(--accent);font:inherit;font-size:.95rem;font-weight:500;cursor:pointer}
 .selrow .btn{flex:1;white-space:nowrap;padding-left:8px;padding-right:8px}.selrow:first-child .btn{flex:none}
 .lookbtn{font-size:.95rem;padding:11px}
@@ -1429,6 +1430,8 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="panel"><p class="note" id="aiLine">Loading…</p><button type="button" class="btn ghost small" id="aiTally" hidden>By feature and person</button></div>
     <h3 class="sec">Post an Open Message</h3>
     <div class="panel" id="noticePanel"></div>
+    <h3 class="sec">Topic decks</h3>
+    <div class="panel"><p class="note" id="prebuildLine">Makes every ready-made topic deck once (each size, 國語 and 普通话), so they open instantly for everyone.</p><button type="button" class="btn ghost small" id="prebuildBtn">Pre-build topic decks</button></div>
     <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
   </div>
 </section>
@@ -1463,7 +1466,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     </div>
     <p class="note setlbl">Color vision</p>
     <div class="seg themeseg" id="cvdSeg" role="group" aria-label="Color vision"><button type="button" data-cvd="0">Standard</button><button type="button" data-cvd="1">Red-green safe</button></div></details>
-    <details class="setsec"><summary><b>Sound and light</b><span class="sum" data-sum="sound"></span></summary>
+    <details class="setsec"><summary><b>Sound and lighting</b><span class="sum" data-sum="sound"></span></summary>
     <div class="panel">
       <div class="row" style="justify-content:space-between"><span>Sounds (guzheng and woodblock)</span><button type="button" class="switch small" id="soundSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
       <p class="note">Silent mode on your phone mutes them.</p>
@@ -1571,7 +1574,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v51";
+const APP_VERSION = "v52";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2700,21 +2703,20 @@ function pickSpan(line, a, b, tok) {
   peek.querySelectorAll(".ptile.end").forEach(x => x.onclick = e => { e.stopPropagation(); const k = +x.dataset.k; pickSpan(line, k === 0 ? a + 1 : a, k === 0 ? b : b - 1, tok); });
   // + Add for the selection. v51: it names the deck (the one picked last); ▾ picks another. Tap ✓ Added to take it
   // back out: one deck, it asks Remove?; several, the deck list with ticks and Remove word.
-  const idle = () => { const have = findWord(word); add.textContent = have ? "✓ Added" : `+ Add to ${deckShort(lastDeck())}`; add.className = have ? "btn ghost small padd" : "btn small padd"; add.disabled = car.disabled = false; car.hidden = !!have; };
-  const doAdd = async n => {
-    add.disabled = car.disabled = true; const w = await addEntry(word, { context: text, ...(n ? { decks: [n] } : {}) }); play("right"); addedToast(n);
+  // v52: + Add opens the deck sheet (your last decks ticked); ✓ Added opens it again, with Remove word.
+  const idle = () => { const have = findWord(word); add.textContent = have ? "✓ Added" : "+ Add"; add.className = have ? "btn ghost small padd" : "btn small padd"; add.disabled = false; };
+  const doAdd = async a => {
+    add.disabled = true; const w = await addEntry(word, { context: text, ...(a.length ? { decks: a } : {}) }); play("right"); addedToast(a);
     idle(); updateCounts(); ensureCard(w).catch(() => {});
   };
   const add = btn("", "btn small padd", e => {
     e.stopPropagation();
     const have = findWord(word);
-    if (!have) { doAdd(lastDeck()); return; }
-    if (wDecks(have).length > 1) { deckPicker({ w: have, title: `${conv(word)} is in`, done: idle, remove: () => { dropWord(have); idle(); } }); return; }
-    armConfirm(add, on => on ? add.textContent = "Remove?" : idle(), () => { dropWord(have); idle(); }, true);
+    if (!have) { deckPicker({ title: `Add ${conv(word)} to`, save: doAdd }); return; }
+    deckPicker({ w: have, title: `${conv(word)} is in`, save: a => { setDecks(have, a); saveWords(); updateCounts(); idle(); }, remove: () => { dropWord(have); idle(); } });
   });
-  const car = btn("▾", "btn small padd pcar", e => { e.stopPropagation(); deckPicker({ title: `Add ${word} to`, pick: doAdd }); });
-  car.setAttribute("aria-label", "Add to a deck"); idle();
-  const split = el("span", "addsplit split"); split.append(add, car);
+  idle();
+  const split = el("span", "addsplit"); split.append(add);
   peek.querySelector(".pacts").insertBefore(split, peek.querySelector(".popen"));
   peek.hidden = false;
 }
@@ -4367,7 +4369,7 @@ const isDeck = L => typeof L === "string" && L.startsWith("d:"), deckKey = n => 
 // v44: several of your decks studied together: "g:" + their keys, one per line
 const isGroup = L => typeof L === "string" && L.startsWith("g:"), groupKey = ks => "g:" + ks.join("\n"), groupKeys = L => isGroup(L) ? L.slice(2).split("\n") : [L];
 function saveDecks() { decks.t = Date.now(); store.set("radical-decks", decks); if (typeof scheduleSync === "function") scheduleSync(); }
-const inList = (w, L = curList) => isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L;
+const inList = (w, L = curList) => L === "all" ? true : isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L;
 const listWords = () => myWords.filter(w => inList(w));
 const keyOf = w => wDecks(w).length ? (isDeck(curList) && inList(w, curList) ? curList : deckKey(wDecks(w)[0])) : w.set || (w.common ? "top" : "mine");  // the list a word belongs to
 const lazyCard = w => !!(w.common || w.set || w.got) && !practiced(w);  // v46: words from a shared deck too
@@ -4377,12 +4379,13 @@ function allLists() {
   if (isGroup(curList)) out.unshift([curList, groupName(curList)]);
   new Set([...decks.names, ...myWords.flatMap(wDecks)]).forEach(n => out.push([deckKey(n), cut(n)]));
   if (size) out.push(["top", `Top ${num(size)}`]);
-  [...new Set(myWords.filter(w => w.set).map(w => w.set))].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
+  [...new Set([...myWords.filter(w => w.set).map(w => w.set), ...Object.keys(setCache)])].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
+  if (myWords.length) out.push(["all", "All decks"]);  // v52: every word, each once (last, so a real deck comes first)
   return out;
 }
 // Picking a list or deck shows all of it (All), not Today: you want to see what you chose.
 let keepCat = false;
-const keyName = k => k === "mine" ? mineName() : k === "top" ? `Top ${num(commonSize())}` : isDeck(k) ? k.slice(2) : k;
+const keyName = k => k === "all" ? "All decks" : k === "mine" ? mineName() : k === "top" ? `Top ${num(commonSize())}` : isDeck(k) ? k.slice(2) : k;
 function groupName(L) { const n = groupKeys(L).map(keyName); return n.length > 2 ? `${n[0]} + ${n.length - 1} more` : n.join(" + "); }
 function setList(L) {
   stampUsed(L);
@@ -4503,7 +4506,7 @@ function wordPage() {
   py.append(addBtn());
   page.append(py);
   page.append(el("p", "wmean", esc(mean) + markHTML(saved, "meaning") + (s.tw && !markOf(saved, "pinyin") ? ` <span class="note">(Taiwan reading)</span>` : "")));
-  if (saved) page.append(deckRow(saved), ...cardExtras(saved));
+  if (saved) page.append(...cardExtras(saved), deckRow(saved));
   // One line, and it's the way forward: no separate arrow repeating the next character.
   const nav = el("div", "pnav"), go1 = el("button", "nx swipehint", `Swipe for parts and writing<i></i>`);
   go1.type = "button"; go1.onclick = () => goPage(1); nav.append(el("span"), go1);
@@ -4514,23 +4517,19 @@ function wordPage() {
 // "+ Add" for the whole word (word page) or for one character (character pages).
 function addBtn(word = wordState.word) {
   const s = wordState, b = btn("", "btn addbtn"), wrap = el("span", "addsplit");
-  // v47: ▾ adds it straight into one of your decks (+ Add puts it in Basecamp)
-  const car = btn("▾", "btn addcar", () => deckPicker({ title: `Add ${conv(word)} to`, pick: n => doAdd(n) }));
-  car.setAttribute("aria-label", "Add to a deck");
-  const idle = () => { const w = findWord(word); b.textContent = w ? "✓ In my words" : (word === s.word ? `+ Add to ${deckShort(lastDeck())}` : `+ Add ${word}`); b.className = w ? "btn ghost addbtn" : "btn addbtn"; b.disabled = false; car.hidden = !!w; wrap.classList.toggle("split", !w); };
-  idle(); wrap.append(b, car);
-  const doAdd = async n => {
+  // v52: + Add opens the deck sheet; once saved, tapping it opens the sheet again with Remove word
+  const idle = () => { const w = findWord(word); b.textContent = w ? "✓ In my words" : (word === s.word ? "+ Add" : `+ Add ${word}`); b.className = w ? "btn ghost addbtn" : "btn addbtn"; b.disabled = false; };
+  idle(); wrap.append(b);
+  const doAdd = async a => {
     b.disabled = true;
-    const w = await addEntry(word, { context: s.context && s.context !== word ? s.context : undefined, ...(n ? { decks: [n] } : {}) });
-    play("right"); addedToast(n); idle(); if (word === s.word) refreshWordPage();
+    const w = await addEntry(word, { context: s.context && s.context !== word ? s.context : undefined, ...(a.length ? { decks: a } : {}) });
+    play("right"); addedToast(a); idle(); if (word === s.word) refreshWordPage();
     ensureCard(w).then(refreshWordPage).catch(() => {});
   };
   b.onclick = async () => {
     const have = findWord(word);
-    if (have) {  // saved already: first tap asks, second tap removes
-      armConfirm(b, on => on ? b.textContent = "Remove?" : idle(), () => { myWords.splice(myWords.indexOf(have), 1); saveWords(); idle(); if (word === s.word) refreshWordPage(); }); return;
-    }
-    doAdd(lastDeck());
+    if (have) { deckPicker({ w: have, title: `${conv(word)} is in`, save: a => { setDecks(have, a); saveWords(); updateCounts(); if (word === s.word) refreshWordPage(); }, remove: () => { dropWord(have); idle(); if (word === s.word) refreshWordPage(); } }); return; }
+    deckPicker({ title: `Add ${conv(word)} to`, save: doAdd });
   };
   return wrap;
 }
@@ -4841,7 +4840,7 @@ function renderStrip(sizes) {
   const nCards = count === "all" ? n : Math.min(n, count);
   if (nCards) box.append(btn(`Start ${nCards}`, "btn wide revgo", async () => {
     store.set(RES_KEY, null);
-    if (curList === "top" && (revCat === "new" || revCat === "all")) await fillTop(nCards - pool(revCat).length);  // Top words join when first studied
+    if (isReady(curList) && (revCat === "new" || revCat === "all")) await fillList(curList, nCards - pool(revCat).length);  // ready-made words join when first studied
     openReview(revCat, count);
   }));
   else if (revCat === "today" && listWords().some(w => !w.skip)) {
@@ -4871,7 +4870,7 @@ function renderWords() {
   showBackupNote();
   if (!allLists().some(x => x[0] === curList)) { curList = "mine"; store.set("radical-list", "mine"); }  // a removed set
   const sets = {}, sizes = {}; CATS.forEach(([k]) => { sets[k] = pool(k); sizes[k] = sets[k].length; });
-  const up = curList === "top" ? topUpcoming() : [];  // Top words not studied yet: listed, joining when first studied
+  const up = upcoming(curList);  // Top's and ready-made decks' words not studied yet: listed, joining when first studied
   if (up.length) { sizes.new += up.length; sizes.all += up.length; }
   // Practice opens on Today while it has cards, and on All once it's done (so the list below isn't empty). A
   // category you tap stays until you leave the tab or finish a session.
@@ -4980,12 +4979,12 @@ async function fillTop(n) {
 // While Top is the list you're on, Today gets the day's new words from it.
 let feeding = null;
 function feedCommon() {
-  if (feeding || curList !== "top" || !commonSize()) return feeding;
+  if (feeding || !isReady(curList) || curList === "top" && !commonSize()) return feeding;
   feeding = (async () => {
     // Bring in enough new Top words to fill today's quota after what's due (v42: no separate new-word allowance)
     const k = KEYS[goal[0]], now = Date.now(), lw = listWords(), fresh = lw.filter(w => !w.skip && !w[k]).length;
     const due = lw.filter(w => goal.some(m => { const x = w[KEYS[m]]; return x && x.due && x.due <= now && (KEYS[m] === "srs" || !w.skip); })).length;
-    const n = await fillTop(Math.max(0, dailyMax() - doneToday().size - due - fresh));
+    const n = await fillList(curList, Math.max(0, dailyMax() - doneToday().size - due - fresh));
     if (n) updateCounts();
     return n;
   })().finally(() => { feeding = null; });
@@ -4996,29 +4995,55 @@ function startCommon(size, from = 1) {
   setList("top"); setTab("wordsScreen");
   feedCommon(); loadCommon().then(() => renderWords());
 }
-const hasSet = t => myWords.some(w => w.set === t);
+// v52: ready-made topic decks are always there. Their word lists are kept here (radical-setwords {theme: [words]});
+// a word joins your words only when you first study it (Start on New or All, or Today while the deck is picked),
+// like Top's. Words already joined (w.set) from before v52 stay as they are.
+let setCache = store.get("radical-setwords", {});
+const hasSet = t => !!setCache[t] || myWords.some(w => w.set === t);
+const isReady = L => L === "top" || hasSet(L);
+const setUpcoming = t => (setCache[t] || []).filter(x => !findWord(x.word) && !(deleted || {})[x.word]);
+const upcoming = L => L === "top" ? topUpcoming() : setCache[L] ? setUpcoming(L) : [];
+async function fillList(L, n) {
+  if (n <= 0) return 0;
+  if (L === "top") return fillTop(n);
+  const add = setUpcoming(L).slice(0, n); if (!add.length) return 0;
+  add.forEach(x => myWords.push({ word: x.word, pinyin: x.pinyin, meaning: x.meaning, added: localDay(), set: L }));
+  saveWords(); return add.length;
+}
 // v46: a topic deck's size (Word Decks: 12, 24 or 50); + More words asks for the next size up and adds what's new.
 const TOPIC_SIZES = [12, 24, 50], topicSize = () => TOPIC_SIZES.includes(store.get("radical-topic-size", 24)) ? store.get("radical-topic-size", 24) : 24;
-const moreSize = t => { const n = myWords.filter(w => w.set === t).length; return [24, 50, 100].find(x => x > n + 4) || 100; };
+const moreSize = t => { const n = Math.max(myWords.filter(w => w.set === t).length, (setCache[t] || []).length); return [24, 50, 100].find(x => x > n + 4) || 100; };
 // A themed set: ask for it, keep the words the dictionary knows (in your script), skip ones you have or removed.
 // Already there: just switch to it.
 async function addThemeSet(theme, more) {
-  if (hasSet(theme) && !more) { setList(theme); setTab("wordsScreen"); return; }
+  if (hasSet(theme) && !more) { setList(theme); setTab("wordsScreen"); renderWords(); return; }
   const st = $("addStatus"), n = more ? moreSize(theme) : topicSize(); st.textContent = more ? `Adding to ${theme}…` : `Making ${theme}…`;
   if (more) toast(`Adding to ${esc(theme)}…`, 2500);
   try {
     const { words } = await claude({ action: "wordset", theme, n }, `start ${theme}`);
-    const items = (words || []).map(x => ({ ...x, word: conv(String(x.word || "").trim()) })).filter(x => x.word && !findWord(x.word) && !deleted[x.word]);
+    const had = new Set((setCache[theme] || []).map(x => x.word));
+    const items = (words || []).map(x => ({ word: conv(String(x.word || "").trim()), pinyin: x.pinyin, meaning: x.meaning })).filter(x => x.word && !had.has(x.word) && !findWord(x.word) && !deleted[x.word]);
     await ensure(items.map(x => x.word).join(""));
     const take = items.filter(x => lookup(x.word) || lookup(toSimp(x.word)));
-    take.forEach(x => myWords.push({ word: x.word, pinyin: x.pinyin, meaning: x.meaning, added: localDay(), set: theme }));
-    saveWords();
+    setCache[theme] = [...(setCache[theme] || []), ...take]; store.set("radical-setwords", setCache);  // v52: kept as the deck, not added
     record({ kind: "list", title: theme, words: take.map(x => x.word) });
     st.textContent = take.length ? "" : `Nothing new in ${theme}.`;
     if (more) toast(take.length ? `+${take.length} in ${esc(theme)}` : `Nothing new in ${esc(theme)}.`, 2500);
     play("right"); if (take.length) setList(theme); setTab("wordsScreen"); renderWords();
   } catch (e) { st.textContent = e.message; }
 }
+// v52 (Admin tools): ask for every ready-made topic deck once, each size and region, so the CDN holds them all.
+$("prebuildBtn").onclick = async () => {
+  const b = $("prebuildBtn"), line = $("prebuildLine"), token = await accessToken(); if (!token) { line.textContent = "Sign in first."; return; }
+  const jobs = []; THEMES.forEach(t => TOPIC_SIZES.forEach(n => ["", "&r=cn"].forEach(r => jobs.push([t, n, r]))));
+  b.disabled = true; let ok = 0, bad = 0;
+  for (const [t, n, r] of jobs) {
+    line.textContent = `Making ${ok + bad + 1} of ${jobs.length}: ${t} (${n})…`;
+    try { const res = await fetch(`/api/claude?v=1&action=wordset&theme=${encodeURIComponent(t)}${n !== 24 ? `&n=${n}` : ""}${r}`, { headers: { Authorization: `Bearer ${token}`, "x-radical-day": localDay() } }); res.ok ? ok++ : bad++; }
+    catch (e) { bad++; }
+  }
+  line.textContent = `Done: ${ok} ready${bad ? `, ${bad} failed (try again)` : ""}.`; b.disabled = false;
+};
 // Choosing a set comes with signing in when you aren't: its cards need the account. A Top set still starts on Not now
 // (its words work without cards for now); a themed set needs the AI service, so it waits.
 function chooseSet(fn, needsAI, after, why) {
@@ -5032,13 +5057,13 @@ function setsGrid(close) {
   const pick = (fn, ai, why) => () => { if (close) close(); chooseSet(fn, ai, null, why); };
   const top = el("div", "setrow four");
   // v44: green is the one you're on; a ✓ marks the ones you have
-  COMMON_SIZES.forEach(n => { const b = btn("", "setchip top" + (size === n ? " have" : ""), size === n ? () => { if (close) close(); setList("top"); renderWords(); } : pick(() => startCommon(n), false, `start Top ${num(n)}`)); b.innerHTML = `<small>Top</small>${num(n)}`; b.setAttribute("aria-pressed", size === n && curList === "top"); top.append(b); });
+  COMMON_SIZES.forEach(n => { const b = btn("", "setchip top", size === n ? () => { if (close) close(); setList("top"); renderWords(); } : pick(() => startCommon(n), false, `start Top ${num(n)}`)); b.innerHTML = `<small>Top</small>${num(n)}`; b.setAttribute("aria-pressed", size === n && curList === "top"); top.append(b); });
   const th = el("div", "setrow three");
   // v46: how many words a new topic deck gets
   const sz = el("div", "pills topicsize"); sz.setAttribute("role", "group"); sz.append(el("span", "tslabel", "Words"));
   TOPIC_SIZES.forEach(n => { const b = el("button", "", String(n)); b.type = "button"; b.setAttribute("aria-pressed", topicSize() === n);
     b.onclick = () => { store.set("radical-topic-size", n); sz.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); }; sz.append(b); });
-  THEMES.forEach(t => { const b = btn(t, "setchip" + (hasSet(t) ? " have" : ""), hasSet(t) ? () => { if (close) close(); addThemeSet(t); } : pick(() => addThemeSet(t), true, `start ${t}`)); b.setAttribute("aria-pressed", curList === t); th.append(b); });
+  THEMES.forEach(t => { const b = btn(t, "setchip", hasSet(t) ? () => { if (close) close(); addThemeSet(t); } : pick(() => addThemeSet(t), true, `start ${t}`)); b.setAttribute("aria-pressed", curList === t); th.append(b); });
   g.append(top, sz, th, btn("＋ Deck from a topic", "setchip wide", () => { if (close) close(); makeSet(close ? openSets : null); }));
   return g;
 }
@@ -5087,34 +5112,32 @@ function deleteDeck(Ls) {
   [].concat(Ls).forEach(L => { delete decks.used[L]; Object.keys(decks.ids).forEach(i => { if (decks.ids[i] === L) delete decks.ids[i]; }); });
   myWords.forEach(w => { if (wDecks(w).some(x => old.has(x))) setDecks(w, wDecks(w).filter(x => !old.has(x))); }); saveWords(); saveDecks(); setList("mine"); renderWords();
 }
-// v47: picking decks. With a word you have (w): tick the decks it's in; Basecamp means none; changes keep at once.
-// Otherwise (▾ beside + Add, or a selection): tap one and it's done. ＋ New deck asks for a name first.
-function deckPicker({ w, title, pick, done, base = true, remove }) {
+// v52: the one deck sheet, everywhere. Tick as many decks as you like (tap again to untick), or Basecamp alone (it
+// clears the decks; a deck clears it). Nothing changes until Save; Cancel or ✕ leaves it as it was. `start` is the
+// ticked names ([] is Basecamp); `save(names)` gets the result. With `w`, a word's decks (a word in a ready-made deck
+// shows that one, fixed); `remove` adds Remove word. ＋ New deck adds a ticked row.
+function deckPicker({ w, title, start, save, remove, cancel }) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard deckpick"), list = el("div", "dplist");
-  const close = () => { sheet.remove(); if (done) done(); };
-  const row = (label, on, fn, cls = "") => { const b = btn("", "dprow" + cls + (on ? " on" : ""), fn); b.innerHTML = `<span>${esc(label)}</span><i aria-hidden="true">${on ? "✓" : ""}</i>`; if (w) { b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", on); } list.append(b); return b; };
+  const sel = new Set(start || (w ? wDecks(w) : lastDecks()));
+  const close = () => { sheet.remove(); if (cancel) cancel(); };
+  const row = (label, on, fn, cls = "") => { const b = btn("", "dprow" + cls + (on ? " on" : ""), fn); b.innerHTML = `<span>${label}</span><i aria-hidden="true">${on ? "✓" : ""}</i>`; b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", on); list.append(b); return b; };
   const paint = () => {
     list.replaceChildren();
-    const names = [...new Set([...decks.names, ...(w ? wDecks(w) : [])])];
-    if (w) {
-      const fixed = w.common || w.set ? keyName(w.set || "top") : "";
-      if (fixed) row(fixed, true, null, " fixed").disabled = true;
-      else row(mineName(), !wDecks(w).length, () => { setDecks(w, []); saveWords(); paint(); });
-      names.forEach(n => row(n, inDeck(w, n), () => { setDecks(w, inDeck(w, n) ? wDecks(w).filter(x => x !== n) : [...wDecks(w), n]); saveWords(); paint(); }));
-    } else {
-      // v51: the deck you picked last comes first
-      const last = lastDeck(), order = [...(last ? [last] : []), ...(base ? [""] : []), ...names.filter(n => n !== last)];
-      order.forEach(n => row(n || mineName(), false, () => { sheet.remove(); setLastDeck(n); pick(n); }));
-    }
+    const fixed = w && (w.common || w.set) ? keyName(w.set || "top") : "";
+    if (fixed) row(esc(fixed), true, null, " fixed").disabled = true;
+    else row(`${esc(mineName())}<small>no deck</small>`, !sel.size, () => { sel.clear(); paint(); }, " base");
+    [...new Set([...decks.names, ...sel])].forEach(n => row(esc(n), sel.has(n), () => { sel.has(n) ? sel.delete(n) : sel.add(n); paint(); }));
     row("＋ New deck", false, () => { sheet.remove(); nameDeck("", n => {
       if (!decks.names.includes(n)) { decks.names.push(n); saveDecks(); }
-      if (w) { setDecks(w, [...wDecks(w), n]); saveWords(); deckPicker({ w, title, done }); } else pick(n);
-    }, () => deckPicker({ w, title, pick, done, base })); }, " dpnew");
+      deckPicker({ w, title, start: [...sel, n], save, remove, cancel });
+    }, () => deckPicker({ w, title, start: [...sel], save, remove, cancel })); }, " dpnew");
   };
   paint();
-  const head = el("div", "sheethead"); head.append(el("h3", "", esc(title)), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Close");
-  card.append(head, list); if (w) card.append(btn("Done", "btn wide", close));
-  if (w && remove) { const rm = btn("Remove word", "btn ghost wide"); rm.onclick = () => armConfirm(rm, on => rm.textContent = on ? "Remove from all decks?" : "Remove word", () => { sheet.remove(); remove(); }); card.append(rm); }
+  const head = el("div", "sheethead"); head.append(el("h3", "", esc(title)), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Cancel");
+  const acts = el("div", "row dpacts");
+  acts.append(btn("Save", "btn", () => { sheet.remove(); const a = [...sel]; setLastDecks(a); save(a); }), btn("Cancel", "btn ghost", close));
+  card.append(head, list, acts);
+  if (remove) { const rm = btn("Remove word", "btn ghost wide dprm"); rm.onclick = () => armConfirm(rm, on => rm.textContent = on ? "Remove it from your words?" : "Remove word", () => { sheet.remove(); remove(); }); card.append(rm); }
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
 }
@@ -5123,15 +5146,16 @@ function deckChip(w, after) {
   const b = btn("", "deckchip");
   const paint = () => { const ds = wDecks(w), names = ds.length ? ds : [w.common || w.set ? keyName(w.set || "top") : mineName()];
     b.innerHTML = `<span>${esc(names[0])}${names.length > 1 ? ` +${names.length - 1}` : ""}</span> ▾`; b.setAttribute("aria-label", `Decks: ${names.join(", ")}. Change`); };
-  b.onclick = e => { e.stopPropagation(); deckPicker({ w, title: `${conv(w.word)} is in`, done: () => { paint(); updateCounts(); if (after) after(); } }); };
+  b.onclick = e => { e.stopPropagation(); deckPicker({ w, title: `${conv(w.word)} is in`, save: a => { setDecks(w, a); saveWords(); paint(); updateCounts(); if (after) after(); } }); };
   paint(); return b;
 }
 const deckRow = w => { const r = el("div", "deckline"); r.append(deckChip(w)); return r; };
-const addedToast = n => toast(`Added to <b>${esc(n || mineName())}</b>`, 2200);
+const addedToast = a => toast(`Added to <b>${esc(a && a.length ? a.join(", ") : mineName())}</b>`, 2200);
 // v51: + Add names its deck: the one you picked last ("" is Basecamp), so a word never lands somewhere you didn't see.
-const lastDeck = () => { const n = store.get("radical-last-deck", ""); return n && decks.names.includes(n) ? n : ""; };
-const setLastDeck = n => store.set("radical-last-deck", n || "");
-const deckShort = n => { n = n || mineName(); return n.length > 14 ? n.slice(0, 13) + "…" : n; };
+// v52: the decks picked last (several, or [] for Basecamp); the deck sheet opens with them ticked.
+const lastDecks = () => { let a = store.get("radical-last-decks", null); if (!a) { const n = store.get("radical-last-deck", ""); a = n ? [n] : []; } return a.filter(n => decks.names.includes(n)); };
+const setLastDecks = a => store.set("radical-last-decks", a);
+const decksLabel = a => { if (!a.length) return mineName(); const n = a[0].length > 14 ? a[0].slice(0, 13) + "…" : a[0]; return a.length > 1 ? `${n} +${a.length - 1}` : n; };
 // Take a word out of your words (the sync records it), e.g. ✓ Added tapped by mistake.
 function dropWord(w) { const i = myWords.indexOf(w); if (i < 0) return; myWords.splice(i, 1); saveWords(); updateCounts(); }
 // Removing a list: the words you haven't studied go; the ones you have stay (in Basecamp unless in a deck).
@@ -5150,14 +5174,14 @@ function openSets() {
   const cur = new Set(groupKeys(curList)), picked = new Set();
   const cut = t => t.length > DECK_MAX ? t.slice(0, DECK_MAX - 1) + "…" : t;
   // v45: every deck you have, yours and the ready-made ones you've added
-  const ready = [...(commonSize() ? ["top"] : []), ...new Set(myWords.filter(w => w.set).map(w => w.set))];
+  const ready = [...(commonSize() ? ["top"] : []), ...new Set([...myWords.filter(w => w.set).map(w => w.set), ...Object.keys(setCache)])];
   const rows = [["mine", mineName()], ...decks.names.map(n => [deckKey(n), n]), ...ready.map(k => [k, keyName(k)])]
     .map(([k, n], i) => { const s = decks.used[k] || "", l = lastStudied(k); return { k, n, i, count: myWords.filter(w => inList(w, k)).length, used: s > l ? s : l }; })
     .sort((a, b) => b.used.localeCompare(a.used) || a.i - b.i);
   const table = el("div", "decktable"), bar = el("div", "deckbar"); bar.hidden = true;
   const paintBar = () => {
     bar.replaceChildren(); bar.hidden = !picked.size; if (!picked.size) return;
-    const keys = rows.map(r => r.k).filter(k => picked.has(k)), own = keys.filter(k => isDeck(k)), made = keys.filter(k => k !== "mine" && !isDeck(k)), gone = [...own, ...made];
+    const keys = rows.map(r => r.k).filter(k => picked.has(k)), own = keys.filter(k => isDeck(k)), made = keys.filter(k => k !== "mine" && k !== "all" && !isDeck(k)), gone = own;  // v52: ready-made decks are always there (no Remove)
     bar.append(btn(keys.length > 1 ? `Study ${keys.length} together` : "Study", "btn small", () => { close(); setList(keys.length > 1 ? groupKey(keys) : keys[0]); renderWords(); }));
     if (keys.length === 1 && made.length && keys[0] !== "top" && moreSize(keys[0]) <= 100 && myWords.filter(w => w.set === keys[0]).length < 100) bar.append(btn("＋ More words", "btn ghost small", () => { close(); chooseSet(() => addThemeSet(keys[0], true), true, null, `add to ${keys[0]}`); }));
     if (keys.length === 1 && keys[0] !== "top") bar.append(btn("Share", "btn ghost small", () => { close(); shareSheet(keys[0]); }));
@@ -5167,6 +5191,11 @@ function openSets() {
       const say = on => rm.textContent = on ? (made.length ? `${word}? Studied words go to ${mine}` : `Delete? Words go to ${mine}`) : gone.length > 1 ? `${word} ${gone.length}` : word;
       say(false); rm.onclick = () => armConfirm(rm, say, () => { close(); made.forEach(removeList); if (own.length) deleteDeck(own); }); bar.append(rm); }
   };
+  {  // v52: All decks, first: every word, each once
+    const row = el("div", "deckrow allrow" + (curList === "all" ? " on" : "")), main = el("button", "dmain", `<span class="dname">All decks <span class="dcount">(${num(myWords.length)})</span></span><span class="dused"></span>`);
+    main.type = "button"; main.setAttribute("aria-pressed", curList === "all"); main.onclick = () => { close(); setList("all"); renderWords(); };
+    row.append(el("span", "dcheck"), main); table.append(row);
+  }
   rows.forEach(r => {
     const row = el("div", "deckrow" + (cur.has(r.k) ? " on" : "")), ck = el("button", "dcheck", '<i class="ncheck" aria-hidden="true"></i>');
     ck.type = "button"; ck.setAttribute("role", "checkbox"); ck.setAttribute("aria-checked", "false"); ck.setAttribute("aria-label", `Select ${r.n}`);
@@ -5176,7 +5205,7 @@ function openSets() {
     row.append(ck, main); table.append(row);
   });
   const newDeck = btn("＋ New deck", "setchip wide", () => { close(); nameDeck("", n => { if (!decks.names.includes(n)) decks.names.push(n); saveDecks(); setList(deckKey(n)); renderWords(); }, openSets); });
-  const rh = el("span", "trl", 'Ready-made<span class="havekey">✓ you have it</span>');
+  const rh = el("span", "trl", "Ready-made");
   const head = el("div", "sheethead"); head.append(el("h3", "", "Word Decks"), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Close");
   card.append(head, el("span", "trl", "Yours"), table, bar, newDeck, rh, setsGrid(close));
   card.append(btn("Close", "btn ghost wide", close));
@@ -5187,10 +5216,10 @@ function openSets() {
 // panel instead: its deck ("Into", the one picked last) and open when there are no words yet.
 function renderCommon() {
   const b = $("addInto"); if (!b) return;
-  b.innerHTML = `<span>${esc(deckShort(lastDeck()))}</span> ▾`; b.setAttribute("aria-label", `Into ${lastDeck() || mineName()}. Change`);
+  b.innerHTML = `<span>${esc(decksLabel(lastDecks()))}</span> ▾`; b.setAttribute("aria-label", `Into ${lastDecks().join(", ") || mineName()}. Change`);
   if (!myWords.length) $("wordAddPanel").open = true;
 }
-$("addInto").onclick = () => deckPicker({ title: "Add words to", pick: () => renderCommon() });
+$("addInto").onclick = () => deckPicker({ title: "Add words to", save: () => renderCommon() });
 // The Top words not studied yet, under the ones you have: a few at a time (a list of 2,000 opens at once), each
 // filled in as it scrolls into view. Tap one to open it.
 let upShown = 60;
@@ -5318,9 +5347,10 @@ function renderSelBar(shown) {
     btn("✕", "btn ghost small selx", () => { picks.clear(); sorting = false; renderWords(); }));
   const acts = el("div", "selrow selacts");
   // v47: into one of your decks (they leave Basecamp); on your own deck, out of it
-  const into = btn("Add to deck ▾", "btn", () => deckPicker({ title: `Add ${picks.size} to`, base: false, pick: n => {
-    const ws = [...picks]; ws.forEach(w => setDecks(w, [...wDecks(w), n])); picks.clear(); sorting = false; saveWords(); renderWords(); updateCounts();
-    toast(`${num(ws.length)} added to <b>${esc(n)}</b>`, 2500); } }));
+  const into = btn("Add to deck ▾", "btn", () => deckPicker({ title: `Add ${picks.size} to`, start: [], save: a => {
+    if (!a.length) return;
+    const ws = [...picks]; ws.forEach(w => setDecks(w, [...wDecks(w), ...a])); picks.clear(); sorting = false; saveWords(); renderWords(); updateCounts();
+    toast(`${num(ws.length)} added to <b>${esc(a.join(", "))}</b>`, 2500); } }));
   const own = isDeck(curList) ? curList.slice(2) : "";
   const out = own && btn(`Take out of ${own.length > 12 ? own.slice(0, 11) + "…" : own}`, "btn ghost", () => {
     [...picks].forEach(w => setDecks(w, wDecks(w).filter(x => x !== own))); picks.clear(); saveWords(); renderWords(); updateCounts(); });
@@ -5476,21 +5506,18 @@ function showPreview(found, source) {
   const acts = el("div", "row"); acts.append(go_, btn("Cancel", "btn ghost", closePreview));
   // v43: which deck they go into (your decks or a new one; class notes ask for one, like "Lesson 5")
   if (!found.backup) {
-    pendingDeck = lastDeck();  // v51: the Add words panel's deck (Basecamp until you pick one)
-    const dk = el("div", "pvdeck"), sel = el("select"), nm = el("input"); nm.type = "text"; nm.placeholder = "Deck name, e.g. Lesson 5"; nm.maxLength = DECK_MAX; nm.hidden = true;
-    sel.setAttribute("aria-label", "Add to deck"); nm.setAttribute("aria-label", "New deck name");
-    sel.innerHTML = `<option value="">${esc(mineName())}</option>` + decks.names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("") + `<option value="\u0001">New deck…</option>`;
-    sel.value = pendingDeck;
-    if (found.notes && !pendingDeck) { sel.value = "\u0001"; nm.hidden = false; }
-    const upd = () => { pendingDeck = sel.value === "\u0001" ? nm.value.trim().slice(0, DECK_MAX) : sel.value; nm.hidden = sel.value !== "\u0001"; };
-    sel.onchange = () => { upd(); if (!nm.hidden) nm.focus(); }; nm.oninput = upd; upd();
-    dk.append(el("span", "trs", "Add to"), sel, nm); pv.append(dk);
+    // v52: the same deck sheet (the Add words panel's decks to start)
+    pendingDecks = lastDecks();
+    const dk = el("div", "pvdeck addinto"), chip = btn("", "deckchip");
+    const paintChip = () => { chip.innerHTML = `<span>${esc(decksLabel(pendingDecks))}</span> ▾`; };
+    chip.onclick = () => deckPicker({ title: "Add these to", start: pendingDecks, save: a => { pendingDecks = a; paintChip(); renderCommon(); } });
+    paintChip(); dk.append(el("span", "trs", "Into"), chip); pv.append(dk);
   }
   pv.append(acts); if (kinds.childElementCount) pv.append(kinds); pv.append(chips);
   pv.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
-let pendingDeck = "";
-function closePreview() { pending = null; pendingDeck = ""; $("preview").hidden = true; $("preview").innerHTML = ""; }
+let pendingDecks = [];
+function closePreview() { pending = null; pendingDecks = []; $("preview").hidden = true; $("preview").innerHTML = ""; }
 async function commitPending(isBackup) {
   const take = (pending || []).filter(e => e.on);
   await ensure(take.map(e => e.word).join(""));
@@ -5501,13 +5528,13 @@ async function commitPending(isBackup) {
     const teacher = !!((from_text || english) && rest.meaning);  // the notes or list gave English for it
     const old = have && findWord(rest.word);
     if (old) {  // already yours: into the deck, and the teacher's English unless you wrote your own
-      if (pendingDeck) setDecks(old, [...wDecks(old), pendingDeck]);
+      if (pendingDecks.length) setDecks(old, [...wDecks(old), ...pendingDecks]);
       if (teacher && !(old.mine && old.mine.meaning)) { old.mine = { ...(old.mine || {}), meaning: rest.meaning }; old.fromClass = [...new Set([...(old.fromClass || []), "meaning"])]; }
       if (note && !old.classNote) old.classNote = note;
       n++; continue;
     }
     const d = lookup(rest.word);
-    const entry = { added: localDay(), ...rest, ...(pendingDeck ? { decks: [pendingDeck] } : {}) };
+    const entry = { added: localDay(), ...rest, ...(pendingDecks.length ? { decks: [...pendingDecks] } : {}) };
     // The teacher's English (spelling fixed) is your meaning for this word, over the standard card's; her pinyin too,
     // when it differs from the dictionary (a Taiwan reading). Where her English was wrong, her original is kept.
     const mine = {}, fromClass = [];
@@ -5522,10 +5549,10 @@ async function commitPending(isBackup) {
     myWords.unshift(entry); n++; unlearn(entry.word); logDay("n"); queueCard(entry);
   }
   if (!isBackup && n) record({ kind: "list", title: pendingSource || "Pasted list", words: take.map(e => e.word) });
-  const into = pendingDeck; if (into && !decks.names.includes(into)) { decks.names.push(into); saveDecks(); }
+  const into = pendingDecks.slice();
   saveWords(); closePreview(); $("addWord").value = ""; growAdd();
-  $("addStatus").textContent = `Added ${n} word${n === 1 ? "" : "s"} to ${esc(into || mineName())}.`; play("right");
-  if (!isBackup && n) { if (into) setList(deckKey(into)); else if (isDeck(curList)) setList("mine"); }
+  $("addStatus").textContent = `Added ${n} word${n === 1 ? "" : "s"} to ${esc(into.join(", ") || mineName())}.`; play("right");
+  if (!isBackup && n) { if (into.length) setList(into.length > 1 ? groupKey(into.map(deckKey)) : deckKey(into[0])); else if (isDeck(curList)) setList("mine"); }
   renderWords();
 }
 const growAdd = () => { const a = $("addWord"); a.style.height = "auto"; a.style.height = Math.min(a.scrollHeight + 2, 200) + "px"; };
@@ -5539,8 +5566,8 @@ $("addGo").onclick = async () => {
     st.textContent = r.hits.length ? "" : `No Chinese found for “${text}”.`;
     if (r.hits.length) pickEnglish(text, r.hits, r.best, async x => {
       if (findWord(x.word)) { st.textContent = `${x.word} is already in your list.`; return; }
-      const into = lastDeck(), entry = await addEntry(x.word, { pinyin: x.pinyin, meaning: x.meaning, ...(into ? { decks: [into] } : {}) });
-      $("addWord").value = ""; growAdd(); renderWords(); st.textContent = `Added ${entry.word} to ${into || mineName()}.`; play("right");
+      const into = lastDecks(), entry = await addEntry(x.word, { pinyin: x.pinyin, meaning: x.meaning, ...(into.length ? { decks: into } : {}) });
+      $("addWord").value = ""; growAdd(); renderWords(); st.textContent = `Added ${entry.word} to ${into.join(", ") || mineName()}.`; play("right");
       ensureCard(entry).then(() => { renderWords(); refreshWordPage(); }).catch(() => {});
     });
     return;
@@ -5551,9 +5578,9 @@ $("addGo").onclick = async () => {
   if (list.length === 1 && !found.viaAuto) {
     const w = list[0];
     if (findWord(w.word)) { st.textContent = `${w.word} is already in your list.`; return; }
-    const into = lastDeck(), entry = await addEntry(w.word, { pinyin: w.pinyin, meaning: w.meaning, skip: w.skip, ...(into ? { decks: [into] } : {}) });
+    const into = lastDecks(), entry = await addEntry(w.word, { pinyin: w.pinyin, meaning: w.meaning, skip: w.skip, ...(into.length ? { decks: into } : {}) });
     $("addWord").value = ""; growAdd(); renderWords();
-    st.textContent = `Added ${entry.word} to ${into || mineName()}.`; play("right");
+    st.textContent = `Added ${entry.word} to ${into.join(", ") || mineName()}.`; play("right");
     ensureCard(entry).then(() => { renderWords(); refreshWordPage(); }).catch(() => {});
     return;
   }
@@ -6287,7 +6314,7 @@ function showBack(w, how, st) {
   ed.setAttribute("aria-label", "Edit this card"); wpy.append(ed);
   ans.append(wpy);
   const wm = el("p", "wmean", esc(wMeaning(w)) + markHTML(w, "meaning"));
-  ans.append(wm, deckRow(w), ...cardExtras(w));
+  ans.append(wm, ...cardExtras(w), deckRow(w));  // v52: the deck chip last
   const cw = commonWordLine(w); if (cw) ans.append(cw);
   if (c) {
     (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
