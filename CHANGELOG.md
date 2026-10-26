@@ -12,6 +12,7 @@ What changed in each version, in plain words. Newest first.
 - Settings: Sound and light is now Sound and lighting.
 
 - Fix (same day): a new deck showed an old date in Word Decks (the last review of a word in it). Making a deck or saving words into one now marks it today.
+- Fix (same day): on a card's answer side, the deck chip now sits at the very bottom, under the example sentence.
 
 ## v51
 

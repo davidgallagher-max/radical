@@ -6314,7 +6314,7 @@ function showBack(w, how, st) {
   ed.setAttribute("aria-label", "Edit this card"); wpy.append(ed);
   ans.append(wpy);
   const wm = el("p", "wmean", esc(wMeaning(w)) + markHTML(w, "meaning"));
-  ans.append(wm, ...cardExtras(w), deckRow(w));  // v52: the deck chip last
+  ans.append(wm, ...cardExtras(w));
   const cw = commonWordLine(w); if (cw) ans.append(cw);
   if (c) {
     (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
@@ -6324,6 +6324,7 @@ function showBack(w, how, st) {
       ans.append(ex);
     }
   } else ans.append(cardPending(w, () => { if (ans.isConnected) { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true }); } }));
+  ans.append(deckRow(w));  // the deck chip at the very bottom, under the sentence
   const grades = el("div", "grades");
   // The rating bar ignores taps for a moment after it appears, so a tap meant for the button that was there before
   // (Check, See answer, Next character) can't rate the card by accident.
