@@ -3671,10 +3671,27 @@ const STREAK_FROM = store.get("radical-streak-from", "");
 // Days before the marks existed (q from v42, Oct 24 2026; rq from v48) are judged by their tallies: cards reviewed
 // against Cards a day, words read against the reading target.
 const Q_FROM = "2026-10-24";
-const goalMet = (v, day = "") => {
+// v51.1: a change to the goal (Cards a day, Words read a day, Either/Both) counts from the day it's made, never
+// backwards. radical-goal-rules lists { from, rule, daily, read }; the first entry (from "") stands for every day before
+// the first change, at the defaults or easier (what was set then wasn't recorded).
+function goalRules() {
+  let r = store.get("radical-goal-rules", null);
+  if (!r || !r.length) {  // today keeps what's set now
+    r = [{ from: "", rule: "either", daily: Math.min(dailyMax(), 30), read: Math.min(readGoal(), 200) }, { from: localDay(), rule: streakRule(), daily: dailyMax(), read: readGoal() }];
+    store.set("radical-goal-rules", r);
+  }
+  return r;
+}
+function noteGoal() {
+  const r = goalRules().filter(x => x.from !== localDay());
+  r.push({ from: localDay(), rule: streakRule(), daily: dailyMax(), read: readGoal() }); store.set("radical-goal-rules", r);
+}
+const rulesOn = day => { const r = goalRules(); let g = r[0]; for (const x of r) if (x.from <= day) g = x; return g; };
+const goalMet = (v, day = localDay()) => {
   if (!v) return false;
-  const cards = !!v.q || day < Q_FROM && (v.c || 0) >= dailyMax(), read = !!v.rq || day < STREAK_FROM && (v.w || 0) >= readGoal();
-  return streakRule() === "both" ? cards && read : cards || read;
+  const g = rulesOn(day);
+  const cards = !!v.q || day < Q_FROM && (v.c || 0) >= g.daily, read = !!v.rq || day < STREAK_FROM && (v.w || 0) >= g.read;
+  return g.rule === "both" ? cards && read : cards || read;
 };
 const streakDay = (v, day) => day < STREAK_FROM ? dayUsed(v) : goalMet(v, day);
 // ---- streak: days used in a row, with rest days. Any 14 days in a row may have up to 3 days off; a 4th day off in
@@ -6622,7 +6639,7 @@ document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "ch
 // ---- backup: one file with everything. Words (with progress, edits and schedules), the learned list and daily
 // tallies, what you're reading now and all of History, and your settings. A summary shows first; nothing leaves the
 // app until Save file.
-const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule",
+const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules",
   "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-tiles", "radical-common", "radical-region"];
 function backupData() {
   const settings = {}; SETTING_KEYS.forEach(k => { try { const v = localStorage.getItem(k); if (v !== null) settings[k] = v; } catch (e) {} });
@@ -7222,15 +7239,15 @@ document.querySelectorAll("#cvdSeg [data-cvd]").forEach(b => {
 });
 document.querySelectorAll("#dailySeg [data-t]").forEach(b => {
   b.setAttribute("aria-pressed", +b.dataset.t === dailyMax());
-  b.onclick = () => { store.set("radical-daily", +b.dataset.t); document.querySelectorAll("#dailySeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); updateCounts(); };
+  b.onclick = () => { goalRules(); store.set("radical-daily", +b.dataset.t); noteGoal(); document.querySelectorAll("#dailySeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); updateCounts(); };
 });
 document.querySelectorAll("#readGoalSeg [data-t]").forEach(b => {
   b.setAttribute("aria-pressed", +b.dataset.t === readGoal());
-  b.onclick = () => { store.set("radical-read-goal", +b.dataset.t); document.querySelectorAll("#readGoalSeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); };
+  b.onclick = () => { goalRules(); store.set("radical-read-goal", +b.dataset.t); noteGoal(); document.querySelectorAll("#readGoalSeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); };
 });
 document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   b.setAttribute("aria-pressed", b.dataset.r === streakRule());
-  b.onclick = () => { store.set("radical-streak-rule", b.dataset.r); document.querySelectorAll("#ruleSeg [data-r]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); };
+  b.onclick = () => { goalRules(); store.set("radical-streak-rule", b.dataset.r); noteGoal(); document.querySelectorAll("#ruleSeg [data-r]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); };
 });
 (async function start() {
   // The splash takes a tap from the very first moment: a tap hides it even while the app is still loading behind it
