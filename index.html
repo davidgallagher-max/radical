@@ -668,6 +668,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .deckpeek{font-size:1.15rem;line-height:1.6;margin:0 0 12px}
 .notebody{display:grid;gap:10px;margin:6px 0 14px}.notebody .noticetext{margin:0}.noticecard{max-height:85vh;overflow:auto}
 .noteitem{margin:0 0 12px}.noteitem .notebody{margin-bottom:8px}
+.noteitem{position:relative}.noteitem.own{padding-right:52px}.noteitem .notex{position:absolute;top:8px;right:8px;width:auto;min-width:34px;height:34px;border-radius:17px;padding:0 10px;font-size:.85rem;color:var(--muted)}.noteitem .notex.confirm{color:var(--no,#E5533D);box-shadow:inset 0 0 0 1px var(--no,#E5533D)}
 .noticetail{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}.noticetail p{margin:0 0 8px}
 .noticedeck{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);max-width:60%}
 .wtoday{margin:0 0 6px}.wtdate{color:var(--muted);font-weight:500;margin-left:6px}.wty{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;margin-right:2px}.wtoday .wev{font-weight:600;font-family:var(--font-zh)}.wtoday .wt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.wtoday .wen{color:var(--fg)}
@@ -1560,7 +1561,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v48";
+const APP_VERSION = "v49";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3136,7 +3137,18 @@ async function openNotes() {
   catch (e) { box.replaceChildren(el("p", "note", "Notes couldn't load. Are you online?")); return; }
   box.replaceChildren();
   if (!list.length) box.append(el("p", "note", "Nothing yet."));
-  [...list].reverse().forEach(n => { const it = el("div", "panel noteitem"); it.append(el("span", "trl", noticeWhen(n)), noteBody(n.text)); if (n.deck) it.append(noteDeckBtn(n.deck)); box.append(it); });
+  // v49: owners get a ✕ on each note that deletes it from the history (the server refuses anyone else)
+  const owner = store.get("radical-owner", false);
+  [...list].reverse().forEach(n => {
+    const it = el("div", "panel noteitem"); it.append(el("span", "trl", noticeWhen(n)), noteBody(n.text)); if (n.deck) it.append(noteDeckBtn(n.deck));
+    if (owner) {
+      const x = btn("✕", "iconbtn notex", () => armConfirm(x, on => x.textContent = on ? "Delete?" : "✕", async () => {
+        try { await claude({ action: "notice", op: "forget", id: n.id }); it.remove(); if (!box.querySelector(".noteitem")) box.append(el("p", "note", "Nothing yet.")); } catch (e) { toast(esc(e.message), 3000); }
+      }, true));
+      x.setAttribute("aria-label", "Delete this note"); it.classList.add("own"); it.append(x);
+    }
+    box.append(it);
+  });
   // opening Notes clears the dot, whatever came back (v46.1: an empty list left it on)
   const last = list.length ? list[list.length - 1].id : ""; if (last > store.get("radical-note-latest", "")) store.set("radical-note-latest", last);
   store.set("radical-notes-seen", store.get("radical-note-latest", ""));
@@ -3162,14 +3174,16 @@ async function noticePanel(editing) {
     const live = el("div", "noticelive"); live.append(el("span", "", `Posted ${noticeWhen(cur)}${cur.until ? ` · until ${dayShort(cur.until)}` : ""}${cur.deck ? ` · ${esc(cur.deck.name)}` : ""}`), iconBtn(PEN, "Edit", "btn ghost small", () => noticePanel(true)));
     text.readOnly = true; text.classList.add("locked");
     const down = btn("Take down", "btn ghost", () => armConfirm(down, on => down.textContent = on ? "Take down?" : "Take down", async () => { if (await send({ op: "clear" })) noticePanel(); }));
-    row.append(down); box.append(live, text, row, msg, tail); return;
+    // v49: Take down ends the pop-up but keeps it in Notes; New message posts another (this one stays in Notes)
+    row.append(btn("New message", "btn", () => noticePanel("new")), down); box.append(live, text, row, msg, tail); return;
   }
+  if (editing === "new") { text.value = ""; until.value = ""; }
   const post = btn("Post", "btn", async () => {
     if (!text.value.trim()) { msg.textContent = "Write it first."; return; }
     post.disabled = true;
     let deck = null;
     if (deckSel.value) { try { const d = await makeShared(deckSel.value); deck = d && { id: d.id }; } catch (e) { msg.textContent = e.message; post.disabled = false; return; } }
-    if (await send({ op: "set", text: text.value, until: until.value, deck, replace: editing && cur ? cur.id : "" })) { await noticePanel(); return; }
+    if (await send({ op: "set", text: text.value, until: until.value, deck, replace: editing === true && cur ? cur.id : "" })) { await noticePanel(); return; }
     post.disabled = false;
   });
   row.append(post); if (cur) row.append(btn("Cancel", "btn ghost", () => noticePanel()));

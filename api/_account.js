@@ -401,7 +401,7 @@ async function friends(user, body) {
 // ---- the owners' notice (v44): one short message everyone sees once after the splash. notice.json = { id, text, until }.
 async function notice() { if (!status().ok) return null; const n = await getJSON("notice.json").catch(() => null); return n && n.text && !(n.until && n.until < day()) ? n : null; }
 // v46: every message also goes into notes.json (newest last, at most 50): the menu's Notes from David. Editing a live
-// message replaces it there; Take down removes it from both. A message can carry a shared deck { id, name, n }.
+// message replaces it there. v49: Take down only ends the pop-up (the note stays); op forget { id } deletes a note. A message can carry a shared deck { id, name, n }.
 async function notes() {
   if (!status().ok) return [];
   const n = await getJSON("notes.json").catch(() => null), list = Array.isArray(n && n.list) ? n.list : [];
@@ -412,7 +412,14 @@ async function notes() {
 async function setNotice(user, body) {
   if (!isOwner(user)) return { error: "Owners only." };
   const cur = await getJSON("notice.json").catch(() => null), list = await notes();
-  if (body.op === "clear") { await putJSON("notice.json", {}); if (cur && cur.id) await putJSON("notes.json", { list: list.filter(x => x.id !== cur.id) }); return { notice: null }; }
+  // Take down: the pop-up ends; the note stays (written out, so one from before v46 isn't lost with notice.json)
+  if (body.op === "clear") { await putJSON("notes.json", { list }); await putJSON("notice.json", {}); return { notice: null }; }
+  if (body.op === "forget") {
+    const id = String(body.id || "");
+    await putJSON("notes.json", { list: list.filter(x => x.id !== id) });
+    if (cur && cur.id === id) await putJSON("notice.json", {});
+    return { ok: true };
+  }
   const text = String(body.text || "").replace(/[\u0000-\u0008<>]/g, "").trim().slice(0, 1200);
   if (!text) return { error: "Write the notice first." };
   const until = /^\d{4}-\d{2}-\d{2}$/.test(body.until || "") ? body.until : "";
