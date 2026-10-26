@@ -924,7 +924,8 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .addsplit{display:inline-flex;align-items:stretch;flex:none}
 .addsplit.split>.btn:first-child{border-top-right-radius:0;border-bottom-right-radius:0}
 .addsplit.split>.btn:last-child{border-top-left-radius:0;border-bottom-left-radius:0;margin-left:1px;padding-left:10px;padding-right:12px;min-width:36px}
-.deckline{display:flex;justify-content:center;margin:14px 0 4px}
+.deckline{display:flex;justify-content:center;align-items:center;gap:10px;margin:14px 0 4px}.deckline .deckchip{min-width:0}
+.decklab{flex:none;font-size:.68rem;font-weight:700;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
 .deckchip{min-height:36px;padding:0 14px;border-radius:18px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font:inherit;font-size:.92rem;cursor:pointer;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .eddeck{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0}
 .eddeck>span:first-child{color:var(--muted);font-size:.92rem}
@@ -5149,7 +5150,9 @@ function deckChip(w, after) {
   b.onclick = e => { e.stopPropagation(); deckPicker({ w, title: `${conv(w.word)} is in`, save: a => { setDecks(w, a); saveWords(); paint(); updateCounts(); if (after) after(); } }); };
   paint(); return b;
 }
-const deckRow = w => { const r = el("div", "deckline"); r.append(deckChip(w)); return r; };
+// v53: a DECK (or DECKS) label in front, so the chip reads as a control
+const deckRow = w => { const r = el("div", "deckline"), lab = el("span", "decklab"), set = () => lab.textContent = wDecks(w).length > 1 ? "Decks" : "Deck";
+  set(); r.append(lab, deckChip(w, set)); return r; };
 const addedToast = a => toast(`Added to <b>${esc(a && a.length ? a.join(", ") : mineName())}</b>`, 2200);
 // v51: + Add names its deck: the one you picked last ("" is Basecamp), so a word never lands somewhere you didn't see.
 // v52: the decks picked last (several, or [] for Basecamp); the deck sheet opens with them ticked.
