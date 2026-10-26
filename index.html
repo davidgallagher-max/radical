@@ -936,7 +936,9 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .dprow.dpnew{color:var(--accent)}
 .dprow.fixed{opacity:.75;cursor:default}
 .dprow small{margin-left:8px;font-size:.8rem;color:var(--muted)}.dpacts{margin-top:4px}.dpacts .btn{flex:1}.dprm{margin-top:8px}
-.sortnudge{display:block;width:100%;min-height:46px;margin:4px 0 8px;border:1px dashed var(--accent);border-radius:12px;background:transparent;color:var(--accent);font:inherit;font-size:.95rem;font-weight:500;cursor:pointer}
+.basecap{margin:2px 0 8px;text-align:center;font-size:.92rem;color:var(--muted)}
+.basetip{position:fixed;z-index:30;padding:8px 12px;border-radius:10px;background:var(--surface);color:var(--gold2);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold2) 60%,transparent),0 6px 20px rgba(0,0,0,.25);font-size:.92rem;opacity:0;transform:translateY(-4px);transition:opacity .2s,transform .2s;pointer-events:none}.basetip.on{opacity:1;transform:none}
+.sortnudge{display:block;width:100%;min-height:46px;margin:4px 0 8px;border:1px dashed color-mix(in srgb,var(--gold2) 60%,transparent);border-radius:12px;background:transparent;color:var(--gold2);font:inherit;font-size:.95rem;font-weight:500;cursor:pointer}
 .selrow .btn{flex:1;white-space:nowrap;padding-left:8px;padding-right:8px}.selrow:first-child .btn{flex:none}
 .lookbtn{font-size:.95rem;padding:11px}
 .lookrow{display:flex;gap:8px}.lookrow .lookbtn{flex:1;width:auto}
@@ -4819,6 +4821,17 @@ const pills = (cls, items, on, pick) => {
   });
   return row;
 };
+// v53: what Basecamp is, in one line: the caption over the word list, and a 3s bubble when you tap Basecamp while it's picked.
+const BASE_LINE = "New words camp here until you file them.";
+let baseTipEl = null;
+function baseTip(pill) {
+  if (baseTipEl) baseTipEl.remove();
+  const r = pill.getBoundingClientRect(), t = baseTipEl = el("div", "basetip", BASE_LINE); t.setAttribute("role", "status");
+  const x = Math.max(16, r.left); t.style.top = `${r.bottom + 8}px`; t.style.left = `${x}px`; t.style.maxWidth = `${innerWidth - x - 16}px`;
+  document.body.append(t); requestAnimationFrame(() => t.classList.add("on"));
+  const gone = () => { t.classList.remove("on"); setTimeout(() => t.remove(), 300); if (baseTipEl === t) baseTipEl = null; removeEventListener("scroll", gone, true); };
+  setTimeout(gone, 3000); addEventListener("scroll", gone, { capture: true, once: true });
+}
 function renderStrip(sizes) {
   const strip = $("revStrip"); strip.innerHTML = "";
   // No words yet: Word Sets takes this spot (there's nothing to practice).
@@ -4834,7 +4847,7 @@ function renderStrip(sizes) {
   {
     const has = k => lists.some(x => x[0] === k), keep = new Set(has("mine") ? ["mine"] : []);
     for (const k of [curList, ...store.get("radical-list-recent", []), ...lists.map(x => x[0])]) if (keep.size < 2 && k !== "mine" && has(k)) keep.add(k);
-    const row = pills("lists", [...[...keep].map(k => lists.find(x => x[0] === k)).filter(Boolean), ["more", "More"]], curList, k => { if (k !== "more") setList(k); });
+    const row = pills("lists", [...[...keep].map(k => lists.find(x => x[0] === k)).filter(Boolean), ["more", "More"]], curList, k => { if (k === "mine" && curList === "mine") baseTip(row.firstChild); else if (k !== "more") setList(k); });
     if (has("mine")) row.firstChild.classList.add("base");
     row.lastChild.onclick = () => openSets();
     sec("Deck", row);
@@ -4894,9 +4907,11 @@ function renderWords() {
   const ups = revCat === "new" || revCat === "all" ? up : [], nList = shown.length + ups.length;
   list.hidden = !nList;
   $("listHead").textContent = myWords.length ? `${CATS.find(c => c[0] === revCat)[1]} · ${num(nList)} word${nList === 1 ? "" : "s"}` : "";
-  // v47: Basecamp with 10+ words: one line offers to sort them into decks
-  if (curList === "mine" && !sorting && !picks.size && myWords.filter(w => inList(w, "mine")).length >= 10)
-    list.append(btn("Sort into decks ›", "sortnudge", () => { sorting = true; renderWords(); }));
+  // v47: Basecamp with 10+ words offers to file them into decks. v53: a caption says what Basecamp is (always), the button is gold.
+  if (curList === "mine" && !sorting && !picks.size) {
+    list.append(el("p", "basecap", BASE_LINE));
+    if (myWords.filter(w => inList(w, "mine")).length >= 10) list.append(btn(`File ${esc(mineName())} into decks ›`, "sortnudge", () => { sorting = true; renderWords(); }));
+  }
   shown.forEach(w => {
     const st = wStatus(w), on = picks.has(w), dot = st === "known" ? "known" : "learning";
     const r = el("div", "wrow" + (on ? " sel" : ""));
@@ -5133,7 +5148,7 @@ function deckPicker({ w, title, start, save, remove, cancel }) {
     list.replaceChildren();
     const fixed = w && (w.common || w.set) ? keyName(w.set || "top") : "";
     if (fixed) row(esc(fixed), true, null, " fixed").disabled = true;
-    else row(`${esc(mineName())}<small>no deck</small>`, !sel.size, () => { sel.clear(); paint(); }, " base");
+    else row(`${esc(mineName())}<small>new words camp here</small>`, !sel.size, () => { sel.clear(); paint(); }, " base");
     [...new Set([...decks.names, ...sel])].forEach(n => row(esc(n), sel.has(n), () => { sel.has(n) ? sel.delete(n) : sel.add(n); paint(); }));
     row("＋ New deck", false, () => { sheet.remove(); nameDeck("", n => {
       if (!decks.names.includes(n)) { decks.names.push(n); decks.made[deckKey(n)] = localDay(); saveDecks(); }
@@ -5344,7 +5359,7 @@ function renderSelBar(shown) {
   $("wordsScreen").classList.toggle("hassel", picks.size > 0 || sorting);
   if (!picks.size && sorting) {  // v47: Sort into decks: tick words, then Add to deck
     if (!bar) { bar = el("div", "selbar"); bar.id = "selbar"; $("wordsScreen").append(bar); }
-    const top = el("div", "selrow"); top.append(el("b", "", "Tick words to sort"), btn("✕", "btn ghost small selx", () => { sorting = false; renderWords(); }));
+    const top = el("div", "selrow"); top.append(el("b", "", "Tick words to file"), btn("✕", "btn ghost small selx", () => { sorting = false; renderWords(); }));
     bar.replaceChildren(top); return;
   }
   if (!picks.size) { if (bar) bar.remove(); return; }
