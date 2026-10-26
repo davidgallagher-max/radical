@@ -3276,7 +3276,7 @@ function applyMerged(m) {
   learned = m.learned || learned; store.set("radical-learned", learned);
   if (m.familiar) { familiar = m.familiar; store.set("radical-familiar", familiar); }
   if (m.days) store.set("radical-days", m.days);
-  if (m.decks && (+m.decks.t || 0) >= (+decks.t || 0)) { decks = { mine: m.decks.mine || "Mine", names: Array.isArray(m.decks.names) ? m.decks.names : [], used: m.decks.used && typeof m.decks.used === "object" ? m.decks.used : decks.used || {}, ids: m.decks.ids && typeof m.decks.ids === "object" ? m.decks.ids : decks.ids || {}, t: +m.decks.t || 0 }; store.set("radical-decks", decks); }
+  if (m.decks && (+m.decks.t || 0) >= (+decks.t || 0)) { decks = { mine: m.decks.mine || "Mine", names: Array.isArray(m.decks.names) ? m.decks.names : [], used: m.decks.used && typeof m.decks.used === "object" ? m.decks.used : decks.used || {}, made: m.decks.made && typeof m.decks.made === "object" ? m.decks.made : decks.made || {}, ids: m.decks.ids && typeof m.decks.ids === "object" ? m.decks.ids : decks.ids || {}, t: +m.decks.t || 0 }; store.set("radical-decks", decks); }
   store.set("radical-words", myWords); resetSigs(); updateCounts();
   if (!$("wordsScreen").hidden) renderWords();
 }
@@ -4154,7 +4154,7 @@ function addSharedDeck(d) {
   let name = base, i = 2; const taken = x => decks.names.includes(x) || x === mineName() || THEMES.includes(x);
   while (taken(name)) name = `${base.slice(0, DECK_MAX - 3)} ${i++}`;
   if (decks.names.length >= 100) { toast("You have too many decks. Delete one first.", 3000); return false; }
-  decks.names.push(name); decks.used[deckKey(name)] = localDay(); let added = 0, moved = 0;
+  decks.names.push(name); decks.made[deckKey(name)] = localDay(); let added = 0, moved = 0;
   (d.words || []).forEach(x => {
     const word = conv(String(x.word || "").trim()); if (!word) return;
     const have = findWord(word);
@@ -4359,7 +4359,7 @@ let curList = store.get("radical-list", "mine");
 // is Basecamp: where new words land, a fixed name that can't be renamed or deleted. Names live
 // in radical-decks { mine, names, t } and sync with your words, so a deck you just made stays even while it's empty.
 let decks = store.get("radical-decks", null) || { mine: "Mine", names: [], t: 0 };
-decks.used = decks.used || {}; decks.ids = decks.ids || {};  // v46: shared deck ids { id: the deck's key here }
+decks.used = decks.used || {}; decks.made = decks.made || {}; decks.ids = decks.ids || {};  // v53: made { key: day }  // v46: shared deck ids { id: the deck's key here }
 // v47: Mine (internal key "mine") is Basecamp, always; a name given to it before v47 is ignored.
 const MINE = "Basecamp", mineName = () => MINE;
 const wDecks = w => w.decks || (w.deck ? [w.deck] : []);
@@ -4393,6 +4393,13 @@ function setList(L) {
   curList = L; store.set("radical-list", L); store.set("radical-list-recent", [L, ...store.get("radical-list-recent", []).filter(x => x !== L)].slice(0, 8)); revCat = "all"; catPicked = keepCat = true; contOk = false; updateCounts(); }
 // When each deck was last used: stamped on picking it and on starting cards (v45: ready-made decks too).
 function stampUsed(L = curList) { const d = localDay(), ks = groupKeys(L).filter(k => decks.used[k] !== d); if (!ks.length) return; ks.forEach(k => decks.used[k] = d); saveDecks(); }
+// v53: the day a deck was made. Decks from before v53 have none: use the last change to a word in it.
+function madeOn(k) {
+  if (!isDeck(k)) return "";
+  if (decks.made[k]) return decks.made[k];
+  const t = Math.max(0, ...myWords.filter(w => inList(w, k)).map(w => +w.t || 0));
+  return t ? localDay(t) : "";
+}
 // Before v44 nothing was stamped: fall back to the last day any of its words was studied.
 function lastStudied(k) {
   let best = "";
@@ -5104,13 +5111,13 @@ function nameDeck(cur, done, back) {
 function renameDeck(L, n) {
   if (L === "mine") return;  // Basecamp keeps its name
   else { const old = L.slice(2); decks.names = decks.names.map(x => x === old ? n : x); myWords.forEach(w => { if (inDeck(w, old)) setDecks(w, wDecks(w).map(x => x === old ? n : x)); }); saveWords();
-    decks.used[deckKey(n)] = decks.used[L]; delete decks.used[L]; Object.keys(decks.ids).forEach(i => { if (decks.ids[i] === L) decks.ids[i] = deckKey(n); }); L = deckKey(n); }
+    decks.used[deckKey(n)] = decks.used[L]; delete decks.used[L]; decks.made[deckKey(n)] = decks.made[L]; delete decks.made[L]; Object.keys(decks.ids).forEach(i => { if (decks.ids[i] === L) decks.ids[i] = deckKey(n); }); L = deckKey(n); }
   saveDecks(); setList(L); renderWords();
 }
 // Deleting your decks keeps every word: they leave those decks (a word in no deck is in Basecamp).
 function deleteDeck(Ls) {
   const old = new Set([].concat(Ls).map(L => L.slice(2))); decks.names = decks.names.filter(x => !old.has(x));
-  [].concat(Ls).forEach(L => { delete decks.used[L]; Object.keys(decks.ids).forEach(i => { if (decks.ids[i] === L) delete decks.ids[i]; }); });
+  [].concat(Ls).forEach(L => { delete decks.used[L]; delete decks.made[L]; Object.keys(decks.ids).forEach(i => { if (decks.ids[i] === L) delete decks.ids[i]; }); });
   myWords.forEach(w => { if (wDecks(w).some(x => old.has(x))) setDecks(w, wDecks(w).filter(x => !old.has(x))); }); saveWords(); saveDecks(); setList("mine"); renderWords();
 }
 // v52: the one deck sheet, everywhere. Tick as many decks as you like (tap again to untick), or Basecamp alone (it
@@ -5129,14 +5136,14 @@ function deckPicker({ w, title, start, save, remove, cancel }) {
     else row(`${esc(mineName())}<small>no deck</small>`, !sel.size, () => { sel.clear(); paint(); }, " base");
     [...new Set([...decks.names, ...sel])].forEach(n => row(esc(n), sel.has(n), () => { sel.has(n) ? sel.delete(n) : sel.add(n); paint(); }));
     row("＋ New deck", false, () => { sheet.remove(); nameDeck("", n => {
-      if (!decks.names.includes(n)) { decks.names.push(n); decks.used[deckKey(n)] = localDay(); saveDecks(); }
+      if (!decks.names.includes(n)) { decks.names.push(n); decks.made[deckKey(n)] = localDay(); saveDecks(); }
       deckPicker({ w, title, start: [...sel, n], save, remove, cancel });
     }, () => deckPicker({ w, title, start: [...sel], save, remove, cancel })); }, " dpnew");
   };
   paint();
   const head = el("div", "sheethead"); head.append(el("h3", "", esc(title)), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Cancel");
   const acts = el("div", "row dpacts");
-  acts.append(btn("Save", "btn", () => { sheet.remove(); const a = [...sel], d = localDay(); a.forEach(n => decks.used[deckKey(n)] = d); saveDecks(); setLastDecks(a); save(a); }), btn("Cancel", "btn ghost", close));
+  acts.append(btn("Save", "btn", () => { sheet.remove(); const a = [...sel]; setLastDecks(a); save(a); }), btn("Cancel", "btn ghost", close));
   card.append(head, list, acts);
   if (remove) { const rm = btn("Remove word", "btn ghost wide dprm"); rm.onclick = () => armConfirm(rm, on => rm.textContent = on ? "Remove it from your words?" : "Remove word", () => { sheet.remove(); remove(); }); card.append(rm); }
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
@@ -5179,7 +5186,7 @@ function openSets() {
   // v45: every deck you have, yours and the ready-made ones you've added
   const ready = [...(commonSize() ? ["top"] : []), ...new Set([...myWords.filter(w => w.set).map(w => w.set), ...Object.keys(setCache)])];
   const rows = [["mine", mineName()], ...decks.names.map(n => [deckKey(n), n]), ...ready.map(k => [k, keyName(k)])]
-    .map(([k, n], i) => { const s = decks.used[k] || "", l = lastStudied(k); return { k, n, i, count: myWords.filter(w => inList(w, k)).length, used: s > l ? s : l }; })
+    .map(([k, n], i) => { const used = [decks.used[k] || "", madeOn(k), lastStudied(k)].sort().pop(); return { k, n, i, count: myWords.filter(w => inList(w, k)).length, used }; })
     .sort((a, b) => b.used.localeCompare(a.used) || a.i - b.i);
   const table = el("div", "decktable"), bar = el("div", "deckbar"); bar.hidden = true;
   const paintBar = () => {
@@ -5207,7 +5214,7 @@ function openSets() {
     main.type = "button"; main.setAttribute("aria-pressed", cur.has(r.k)); main.onclick = () => { close(); setList(r.k); renderWords(); };
     row.append(ck, main); table.append(row);
   });
-  const newDeck = btn("＋ New deck", "setchip wide", () => { close(); nameDeck("", n => { if (!decks.names.includes(n)) { decks.names.push(n); decks.used[deckKey(n)] = localDay(); } saveDecks(); setList(deckKey(n)); renderWords(); }, openSets); });
+  const newDeck = btn("＋ New deck", "setchip wide", () => { close(); nameDeck("", n => { if (!decks.names.includes(n)) { decks.names.push(n); decks.made[deckKey(n)] = localDay(); } saveDecks(); setList(deckKey(n)); renderWords(); }, openSets); });
   const rh = el("span", "trl", "Ready-made");
   const head = el("div", "sheethead"); head.append(el("h3", "", "Word Decks"), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Close");
   card.append(head, el("span", "trl", "Yours"), table, bar, newDeck, rh, setsGrid(close));
