@@ -2,6 +2,14 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v51
+
+- Flash cards: each row has a small label (Deck, Skill, Type, How many). The deck row always shows, with More.
+- Practice: adding words is one slim ＋ Add words row. Open it to pick the deck (Into) and type, paste or import. The Word Decks row is gone (More opens the same thing).
+- + Add says where the word goes ("+ Add to Hiking"): the deck you picked last, Basecamp at first. ▾ picks another, with your last deck on top.
+- The word strip in Read has a ✕ to close it. Its Add and Open buttons have their own row, so the meaning shows in full.
+- Tap ✓ Added to take a word back out. If it's in several decks, you pick which ones (or Remove word).
+
 ## v50
 
 - Flash cards: the deck you're on glows (green, or gold for Basecamp), so it's clear which one is picked. Basecamp is quieter when it isn't picked. Picked Read/Write and Today/New pills have a stronger fill and edge.

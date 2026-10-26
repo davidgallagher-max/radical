@@ -106,6 +106,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v50 notes: pills: picked = 14% accent fill and a 2px edge; `.pills.lists` picked adds a 12px accent glow; `.base` at rest is gold text with a 1px gold edge at 60%, picked keeps its gold halo.
 
+- v51 notes: `renderStrip` wraps each pill row in `.revsec` with a `.rowlab` (Deck, Skill, Type, How many; hairline via ::after); the deck row always shows with More (`openSets`). Practice add box is `<details id="wordAddPanel">` (＋ Add words) with `#addInto` (deck chip, `deckPicker`); `#commonLine` and the Word Decks row are gone, `renderCommon()` now paints `#addInto` and opens the panel when there are no words. `lastDeck()`/`setLastDeck()` (`radical-last-deck`, "" = Basecamp; set by any `deckPicker` pick) is where + Add goes: reader strip (`pickSpan`), word page `addBtn`, Add words single adds and `showPreview`'s default `pendingDeck`; `deckShort(n)` (14 chars). `deckPicker` lists the last deck first and takes `remove` (Remove word with `armConfirm`). Strip: `.pshut` ✕ calls `unpick()`; Add and Open sit in `.prow.pacts`; ✓ Added: one deck, `armConfirm` Remove? (noCancel); several, `deckPicker({ w, remove })`. `dropWord(w)`.
+
 ## Accounts and sync (v30, v31)
 
 - The page sends its app day (`localDay()`, 4am start) in `x-radical-day`; the server's `dayOf(req)` trusts it within a day of UTC and uses it for usage files, the daily cap and the tally's "today".
@@ -121,6 +123,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 `card` (GET, cached at Vercel's CDN for a year), `words`, `tozh` (v41: English to Chinese; `kind: "word"` returns 1 to 3 words best first, else `{zh}`; `simp` picks the script, `region` the usage; Haiku), `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips), `explain` (解, card model), `notes` (class notes page image to items, card model), `example` (a new example sentence), `sync`, `usage`, `friends` (op me/name/add/accept/decline/remove; requests need approval since v42; not AI), `feedback` (Resend email; not AI, no tester check), `wordset` (GET, CDN cached; a themed Word Set, Haiku); public: `config`, `status`. Fast jobs use the Haiku model; cards use Sonnet.
 
 ## Waiting on David (as of Oct 25, 2026)
+
+- v51 iPhone check: the labelled Flash cards box, ＋ Add words with Into, + Add to <deck> in Read and in a card sentence (the strip is one row taller now; say if it covers too much text), ✕ on the strip, ✓ Added then Remove?, a word in two decks.
 
 - v50 iPhone check: the deck pills in light and dark, with a deck picked and with Basecamp picked.
 
@@ -154,7 +158,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 ## Next batch list
 
-v51: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v50 shipped Oct 26, 2026 (the picked deck pill glows; Basecamp quieter at rest); see CHANGELOG.md.
+v52: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v51 shipped Oct 26, 2026 (Flash cards labels, ＋ Add words, + Add names its deck, strip ✕ and Remove); see CHANGELOG.md.
 
 ## Next batches (re-planned Oct 18, 2026: TestFlight first)
 
