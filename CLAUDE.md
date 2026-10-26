@@ -108,6 +108,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v51 notes: `renderStrip` wraps each pill row in `.revsec` with a `.rowlab` (Deck, Skill, Type, How many; hairline via ::after); the deck row always shows with More (`openSets`). Practice add box is `<details id="wordAddPanel">` (＋ Add words) with `#addInto` (deck chip, `deckPicker`); `#commonLine` and the Word Decks row are gone, `renderCommon()` now paints `#addInto` and opens the panel when there are no words. `lastDeck()`/`setLastDeck()` (`radical-last-deck`, "" = Basecamp; set by any `deckPicker` pick) is where + Add goes: reader strip (`pickSpan`), word page `addBtn`, Add words single adds and `showPreview`'s default `pendingDeck`; `deckShort(n)` (14 chars). `deckPicker` lists the last deck first and takes `remove` (Remove word with `armConfirm`). Strip: `.pshut` ✕ calls `unpick()`; Add and Open sit in `.prow.pacts`; ✓ Added: one deck, `armConfirm` Remove? (noCancel); several, `deckPicker({ w, remove })`. `dropWord(w)`. v51 fix: `goalMet(v, day)` uses the rules in force that day: `radical-goal-rules` [{from, rule, daily, read}] (`goalRules()` seeds "" = either with defaults or easier, plus today = current; `noteGoal()` on each change of #dailySeg/#readGoalSeg/#ruleSeg; `rulesOn(day)`).
 
+- v52 notes: `deckPicker({ w, title, start, save, remove, cancel })` is the one multi-tick sheet (Basecamp row `.base` clears the set; Save calls `save(names)` and `setLastDecks`; Cancel/✕ changes nothing; ＋ New deck reopens with it ticked). `lastDecks()`/`setLastDecks()` (`radical-last-decks`, migrates `radical-last-deck`), `decksLabel(a)`; `addedToast(a)`. + Add (strip, `addBtn`) always opens the sheet; ✓ Added/✓ In my words open it with `remove`. Import preview uses a chip and `pendingDecks` (array; several decks end on a group list). `deckRow` comes after `cardExtras`. List key `all` (All decks: `inList` true, last in `allLists`, first row of the `openSets` table). Ready-made topic decks: `setCache` (`radical-setwords` {theme: [{word,pinyin,meaning}]}), `hasSet`, `isReady(L)`, `setUpcoming`, `upcoming(L)`, `fillList(L, n)` (Top via `fillTop`); `addThemeSet` fills the cache, not `myWords`; `feedCommon` and Start fill from any ready list; no ✓/Remove for ready-made. Admin tools `#prebuildBtn` warms every THEMES x TOPIC_SIZES x region wordset GET. `.rowlab` centered (::before and ::after).
+
 ## Accounts and sync (v30, v31)
 
 - The page sends its app day (`localDay()`, 4am start) in `x-radical-day`; the server's `dayOf(req)` trusts it within a day of UTC and uses it for usage files, the daily cap and the tally's "today".
@@ -123,6 +125,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 `card` (GET, cached at Vercel's CDN for a year), `words`, `tozh` (v41: English to Chinese; `kind: "word"` returns 1 to 3 words best first, else `{zh}`; `simp` picks the script, `region` the usage; Haiku), `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips), `explain` (解, card model), `notes` (class notes page image to items, card model), `example` (a new example sentence), `sync`, `usage`, `friends` (op me/name/add/accept/decline/remove; requests need approval since v42; not AI), `feedback` (Resend email; not AI, no tester check), `wordset` (GET, CDN cached; a themed Word Set, Haiku); public: `config`, `status`. Fast jobs use the Haiku model; cards use Sonnet.
 
 ## Waiting on David (as of Oct 25, 2026)
+
+- v52 one-time step: Admin tools, Pre-build topic decks (36 small AI calls, a few cents). iPhone check: the deck sheet from + Add, ✓ Added, the chip, Add words and an import; Save vs Cancel; Basecamp clearing the decks; All decks; a topic deck from More (its words join as you study); the chip at the bottom of a card.
 
 - v51 iPhone check: the labelled Flash cards box, ＋ Add words with Into, + Add to <deck> in Read and in a card sentence (the strip is one row taller now; say if it covers too much text), ✕ on the strip, ✓ Added then Remove?, a word in two decks.
 
@@ -158,7 +162,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 ## Next batch list
 
-v52: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v51 shipped Oct 26, 2026 (Flash cards labels, ＋ Add words, + Add names its deck, strip ✕ and Remove); see CHANGELOG.md.
+v53: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v52 shipped Oct 26, 2026 (one deck sheet, All decks, ready-made decks always there); see CHANGELOG.md. The wrap will live-update the web app on launch, so tweaks keep shipping without review.
 
 ## Next batches (re-planned Oct 18, 2026: TestFlight first)
 

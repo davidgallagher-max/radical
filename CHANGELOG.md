@@ -2,6 +2,15 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v52
+
+- One deck sheet everywhere (+ Add, ✓ Added, the deck chip, Add words, imports, ticked words): tick as many decks as you like, or Basecamp alone. Nothing changes until Save; Cancel leaves it. + Add always opens it, with your last choice ticked. ✓ Added opens it too, with Remove word.
+- All decks: every word, each once. It's at the top of More.
+- Ready-made decks are always there: tap a topic to study it. Its words join yours only when you first study them, so no ✓ and no Remove. Admin tools can pre-build every topic deck so they open instantly.
+- Flash cards labels are centered, with a line each side.
+- The deck chip sits at the bottom of the card back and the word page, with a soft fill.
+- Settings: Sound and light is now Sound and lighting.
+
 ## v51
 
 - Flash cards: each row has a small label (Deck, Skill, Type, How many). The deck row always shows, with More.
