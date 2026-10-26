@@ -9,6 +9,7 @@ What changed in each version, in plain words. Newest first.
 - + Add says where the word goes ("+ Add to Hiking"): the deck you picked last, Basecamp at first. ▾ picks another, with your last deck on top.
 - The word strip in Read has a ✕ to close it. Its Add and Open buttons have their own row, so the meaning shows in full.
 - Tap ✓ Added to take a word back out. If it's in several decks, you pick which ones (or Remove word).
+- Fix (same day): changing your goal (Cards a day, Words read a day, Either or Both) now counts from that day on. Before, it re-judged every past day, so the calendar and streak lost their goal days.
 
 ## v50
 
