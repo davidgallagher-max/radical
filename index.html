@@ -1465,12 +1465,11 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <div class="row voices"><button type="button" class="btn ghost small" id="voiceTW">▶ Taiwan voice</button><button type="button" class="btn ghost small" id="voiceCN">▶ Mainland voice</button></div>
       <p class="note" id="voiceName"></p>
     </div></details>
-    <details class="setsec"><summary><b>Cards a day</b><span class="sum" data-sum="daily"></span></summary>
+    <details class="setsec"><summary><b>Daily goal</b><span class="sum" data-sum="daily"></span></summary>
     <div class="panel">
+      <p class="note">Cards a day</p>
       <div class="seg uiseg" id="dailySeg" role="group" aria-label="Cards a day"><button type="button" data-t="10">10</button><button type="button" data-t="20">20</button><button type="button" data-t="30">30</button><button type="button" data-t="50">50</button></div>
-    </div></details>
-    <details class="setsec"><summary><b>Words read a day</b><span class="sum" data-sum="readgoal"></span></summary>
-    <div class="panel">
+      <p class="note">Words read a day</p>
       <div class="seg uiseg" id="readGoalSeg" role="group" aria-label="Words read a day"><button type="button" data-t="100">100</button><button type="button" data-t="200">200</button><button type="button" data-t="500">500</button></div>
       <p class="note">A streak day needs</p>
       <div class="seg uiseg" id="ruleSeg" role="group" aria-label="A streak day needs"><button type="button" data-r="either">Cards or reading</button><button type="button" data-r="both">Both</button></div>
@@ -6575,8 +6574,7 @@ function setSums() {
     modes: goal.map(m => HOW_NAME[m]).join(", ") + (store.get("radical-badge", true) ? "" : " · no red number"),
     sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
     speech: `${PACES.find(x => x[0] === sayPace)[1]} · speed ${Math.round(rate * 100)}%`,
-    daily: `${dailyMax()} a day`,
-    readgoal: `${readGoal()} · ${streakRule() === "both" ? "both" : "cards or reading"}`,
+    daily: `${dailyMax()} cards ${streakRule() === "both" ? "and" : "or"} ${readGoal()} words`,
     tiles: trackTiles().map(k => TILES[k][0]).join(", ") };
   document.querySelectorAll("[data-sum]").forEach(x => x.textContent = S[x.dataset.sum] || "");
 }
