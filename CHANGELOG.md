@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v50
+
+- Flash cards: the deck you're on glows (green, or gold for Basecamp), so it's clear which one is picked. Basecamp is quieter when it isn't picked. Picked Read/Write and Today/New pills have a stronger fill and edge.
+
 ## v49
 
 - Admin tools: New message beside Edit. Posting it replaces the pop-up, and the old message stays in Notes from David.

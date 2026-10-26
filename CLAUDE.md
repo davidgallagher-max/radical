@@ -104,6 +104,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v49 notes: Open Messages: `noticePanel("new")` (New message beside Edit) posts without `replace`, so the old note stays in `notes.json`; `replace` only when `editing === true`. Server op `clear` (Take down) empties `notice.json` and keeps the note; op `forget` {id} deletes a note (and the live notice if it's that one), owners only. `openNotes` gives owners (`radical-owner`) a ✕ (`.notex`, `armConfirm` with noCancel, "Delete?").
 
+- v50 notes: pills: picked = 14% accent fill and a 2px edge; `.pills.lists` picked adds a 12px accent glow; `.base` at rest is gold text with a 1px gold edge at 60%, picked keeps its gold halo.
+
 ## Accounts and sync (v30, v31)
 
 - The page sends its app day (`localDay()`, 4am start) in `x-radical-day`; the server's `dayOf(req)` trusts it within a day of UTC and uses it for usage files, the daily cap and the tally's "today".
@@ -119,6 +121,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 `card` (GET, cached at Vercel's CDN for a year), `words`, `tozh` (v41: English to Chinese; `kind: "word"` returns 1 to 3 words best first, else `{zh}`; `simp` picks the script, `region` the usage; Haiku), `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips), `explain` (解, card model), `notes` (class notes page image to items, card model), `example` (a new example sentence), `sync`, `usage`, `friends` (op me/name/add/accept/decline/remove; requests need approval since v42; not AI), `feedback` (Resend email; not AI, no tester check), `wordset` (GET, CDN cached; a themed Word Set, Haiku); public: `config`, `status`. Fast jobs use the Haiku model; cards use Sonnet.
 
 ## Waiting on David (as of Oct 25, 2026)
+
+- v50 iPhone check: the deck pills in light and dark, with a deck picked and with Basecamp picked.
 
 - v49 iPhone check: New message on Admin tools (the old one should stay in Notes), Take down leaving the note in Notes, the ✕ and Delete? on a note.
 
@@ -150,7 +154,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 ## Next batch list
 
-v50: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v49 shipped Oct 26, 2026 (Open Messages: New message, Take down keeps the note, owner ✕ in Notes); see CHANGELOG.md.
+v51: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v50 shipped Oct 26, 2026 (the picked deck pill glows; Basecamp quieter at rest); see CHANGELOG.md.
 
 ## Next batches (re-planned Oct 18, 2026: TestFlight first)
 
