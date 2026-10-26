@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v53
+
+- The deck chip on the card back and the word page has a small DECK label in front (DECKS when the word is in several), so it reads as something you can change.
+- Word Decks dates: each deck shows the day it was made or the day you last studied it, whichever is later. Decks made before this guess from the last change to a word in them.
+- Basecamp explains itself: "New words camp here until you file them." over the word list, and as a bubble when you tap Basecamp while it's already picked. The button is now gold and says File Basecamp into decks. The deck sheet says "new words camp here" under Basecamp.
+
 ## v52
 
 - One deck sheet everywhere (+ Add, ✓ Added, the deck chip, Add words, imports, ticked words): tick as many decks as you like, or Basecamp alone. Nothing changes until Save; Cancel leaves it. + Add always opens it, with your last choice ticked. ✓ Added opens it too, with Remove word.

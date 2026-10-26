@@ -110,6 +110,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v52 notes: `deckPicker({ w, title, start, save, remove, cancel })` is the one multi-tick sheet (Basecamp row `.base` clears the set; Save calls `save(names)` and `setLastDecks`; Cancel/✕ changes nothing; ＋ New deck reopens with it ticked). `lastDecks()`/`setLastDecks()` (`radical-last-decks`, migrates `radical-last-deck`), `decksLabel(a)`; `addedToast(a)`. + Add (strip, `addBtn`) always opens the sheet; ✓ Added/✓ In my words open it with `remove`. Import preview uses a chip and `pendingDecks` (array; several decks end on a group list). `deckRow` comes after `cardExtras`. List key `all` (All decks: `inList` true, last in `allLists`, first row of the `openSets` table). Ready-made topic decks: `setCache` (`radical-setwords` {theme: [{word,pinyin,meaning}]}), `hasSet`, `isReady(L)`, `setUpcoming`, `upcoming(L)`, `fillList(L, n)` (Top via `fillTop`); `addThemeSet` fills the cache, not `myWords`; `feedCommon` and Start fill from any ready list; no ✓/Remove for ready-made. Admin tools `#prebuildBtn` warms every THEMES x TOPIC_SIZES x region wordset GET. `.rowlab` centered (::before and ::after).
 
+- v53 notes: `deckRow(w)` puts a `.decklab` (Deck / Decks) before the chip. `decks.made` {key: day} (synced with decks, moved on rename, dropped on delete) is set when a deck is made; `madeOn(k)` falls back to the newest word `t` in the deck; the Word Decks date is the latest of `decks.used`, `madeOn`, `lastStudied`. deckPicker Save no longer stamps `used`. Basecamp: `BASE_LINE`, `.basecap` caption over the list whenever Basecamp is picked, `baseTip(pill)` bubble (3s, `.basetip`) on tapping Basecamp while picked, `.sortnudge` gold "File Basecamp into decks ›" (10+ words), "Tick words to file".
+
 ## Accounts and sync (v30, v31)
 
 - The page sends its app day (`localDay()`, 4am start) in `x-radical-day`; the server's `dayOf(req)` trusts it within a day of UTC and uses it for usage files, the daily cap and the tally's "today".
@@ -124,7 +126,9 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 `card` (GET, cached at Vercel's CDN for a year), `words`, `tozh` (v41: English to Chinese; `kind: "word"` returns 1 to 3 words best first, else `{zh}`; `simp` picks the script, `region` the usage; Haiku), `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips), `explain` (解, card model), `notes` (class notes page image to items, card model), `example` (a new example sentence), `sync`, `usage`, `friends` (op me/name/add/accept/decline/remove; requests need approval since v42; not AI), `feedback` (Resend email; not AI, no tester check), `wordset` (GET, CDN cached; a themed Word Set, Haiku); public: `config`, `status`. Fast jobs use the Haiku model; cards use Sonnet.
 
-## Waiting on David (as of Oct 25, 2026)
+## Waiting on David (as of Oct 26, 2026)
+
+- v53 iPhone check: the DECK label on a card back and the word page, Word Decks dates on your test decks, the Basecamp caption and gold button, and tapping Basecamp again for the bubble.
 
 - v52 one-time step: Admin tools, Pre-build topic decks (36 small AI calls, a few cents). iPhone check: the deck sheet from + Add, ✓ Added, the chip, Add words and an import; Save vs Cancel; Basecamp clearing the decks; All decks; a topic deck from More (its words join as you study); the chip at the bottom of a card.
 
@@ -162,7 +166,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 ## Next batch list
 
-v53: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v52 shipped Oct 26, 2026 (one deck sheet, All decks, ready-made decks always there); see CHANGELOG.md. The wrap will live-update the web app on launch, so tweaks keep shipping without review.
+v54: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v52 shipped Oct 26, 2026 (one deck sheet, All decks, ready-made decks always there); see CHANGELOG.md. The wrap will live-update the web app on launch, so tweaks keep shipping without review.
 
 ## Next batches (re-planned Oct 18, 2026: TestFlight first)
 
