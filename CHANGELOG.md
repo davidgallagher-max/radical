@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v49
+
+- Admin tools: New message beside Edit. Posting it replaces the pop-up, and the old message stays in Notes from David.
+- Take down only ends the pop-up. The message stays in Notes.
+- Notes from David: owners get a ✕ on each note to delete it from the history. Nobody else sees it, and the server refuses anyone else.
+
 ## v48
 
 - Flash cards list pills: Basecamp always comes first, in gold, then the deck you're on (or the one you used last), then More. The one showing keeps its outline.

@@ -102,6 +102,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v48 notes: list pills: Basecamp first (`.base`, gold `--gold2`), then `curList` or the latest in `radical-list-recent`, then More. `inviteSheet` removed; Share text is the invite. Streak: `logDay("w")` sets `rq` when words read reach `readGoal()` (`radical-read-goal`, 100/200/500, `#readGoalSeg`, in the Settings group Daily goal with `#dailySeg` and `#ruleSeg`); `streakRule()` (`radical-streak-rule` either|both, `#ruleSeg`); `goalMet(v)`, `streakDay(v, day)` (days before `radical-streak-from`, `STREAK_FROM`, use `dayUsed`); calendar `.hit` and Goal met use `goalMet(v, day)`; days before `Q_FROM` (2026-10-24) count cards `c` >= `dailyMax()`, days before `STREAK_FROM` count `w` >= `readGoal()`.
 
+- v49 notes: Open Messages: `noticePanel("new")` (New message beside Edit) posts without `replace`, so the old note stays in `notes.json`; `replace` only when `editing === true`. Server op `clear` (Take down) empties `notice.json` and keeps the note; op `forget` {id} deletes a note (and the live notice if it's that one), owners only. `openNotes` gives owners (`radical-owner`) a ✕ (`.notex`, `armConfirm` with noCancel, "Delete?").
+
 ## Accounts and sync (v30, v31)
 
 - The page sends its app day (`localDay()`, 4am start) in `x-radical-day`; the server's `dayOf(req)` trusts it within a day of UTC and uses it for usage files, the daily cap and the tally's "today".
@@ -117,6 +119,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 `card` (GET, cached at Vercel's CDN for a year), `words`, `tozh` (v41: English to Chinese; `kind: "word"` returns 1 to 3 words best first, else `{zh}`; `simp` picks the script, `region` the usage; Haiku), `ocr`, `translate`, `zhquery`, `rate`, `simplify`, `judge` (takes `pattern`), `topics` (Explore's daily chips), `explain` (解, card model), `notes` (class notes page image to items, card model), `example` (a new example sentence), `sync`, `usage`, `friends` (op me/name/add/accept/decline/remove; requests need approval since v42; not AI), `feedback` (Resend email; not AI, no tester check), `wordset` (GET, CDN cached; a themed Word Set, Haiku); public: `config`, `status`. Fast jobs use the Haiku model; cards use Sonnet.
 
 ## Waiting on David (as of Oct 25, 2026)
+
+- v49 iPhone check: New message on Admin tools (the old one should stay in Notes), Take down leaving the note in Notes, the ✕ and Delete? on a note.
 
 - v48 iPhone check: the gold Basecamp pill in light and dark, Share's invite text in Messages, the calendar marking a reading-only day once you pass your words target, Settings Words read a day and Cards or reading / Both.
 
@@ -146,7 +150,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 ## Next batch list
 
-v49: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v48 shipped Oct 25, 2026 (Basecamp first on the pills, no Email invite, goal-based streaks); see CHANGELOG.md.
+v50: the App Store wrap, after Apple approves the enrollment (David, Oct 25; App Review risks: offline proof, in-app Delete account, reviewer demo login, privacy policy, Block/Report on friends; Follow the builder and shared decks are more user content to cover). v49 shipped Oct 26, 2026 (Open Messages: New message, Take down keeps the note, owner ✕ in Notes); see CHANGELOG.md.
 
 ## Next batches (re-planned Oct 18, 2026: TestFlight first)
 
