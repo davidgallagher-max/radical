@@ -11,6 +11,8 @@
 //   users/<id>/friends.json         the ids of your friends (both sides always list each other)
 //   users/<id>/public.json          what friends see: name, words by stage, this week, the chart (written at sync)
 //   codes/<code>.json               a friend code -> its owner's id
+//   users/<id>/blocked.json         people you blocked (v54): they can't send you a request
+//   reports/<day>/*.json            a person reported from Friends (v54), for the owners
 
 const env = (...names) => { for (const n of names) if (process.env[n]) return process.env[n]; return ""; };
 const SB_URL = () => env("SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL").replace(/\/+$/, "");
@@ -288,6 +290,8 @@ async function friendIds(id) { const f = await getJSON(`users/${id}/friends.json
 async function setFriendIds(id, ids) { await putJSON(`users/${id}/friends.json`, { ids: [...new Set(ids)].slice(0, 200) }); }
 async function requestIds(id) { const f = await getJSON(`users/${id}/requests.json`); return Array.isArray(f && f.ids) ? f.ids : []; }
 async function setRequestIds(id, ids) { await putJSON(`users/${id}/requests.json`, { ids: [...new Set(ids)].slice(-50) }); }
+async function blockedIds(id) { const f = await getJSON(`users/${id}/blocked.json`); return Array.isArray(f && f.ids) ? f.ids : []; }
+async function setBlocked(id, ids) { await putJSON(`users/${id}/blocked.json`, { ids: [...new Set(ids)].slice(-500) }); }
 const ADD_TRIES = 20;  // codes one account can try a day
 async function friendsView(user) {
   const p = await profileOf(user), ids = await friendIds(user.id), rids = await requestIds(user.id);
@@ -355,6 +359,8 @@ async function friends(user, body) {
     const c = await getJSON(`codes/${cleanCode(body.code)}.json`);
     if (!c || !c.id) return { error: "No one has that code. Check the letters and try again." };
     if (c.id === user.id) return { error: "That's your own code." };
+    if ((await blockedIds(c.id)).includes(user.id)) return { error: "No one has that code. Check the letters and try again." };
+    if ((await blockedIds(user.id)).includes(c.id)) await setBlocked(user.id, (await blockedIds(user.id)).filter(x => x !== c.id));  // adding them again unblocks
     await profileOf(user);
     const them = await getJSON(`users/${c.id}/profile.json`), name = callOf(them) || "your friend";
     if ((await friendIds(user.id)).includes(c.id)) return { ...(await friendsView(user)), added: name };
@@ -388,6 +394,21 @@ async function friends(user, body) {
   if (op === "inboxdone") { const id = String(body.id || ""); await putJSON(`users/${user.id}/inbox.json`, { decks: (await inboxOf(user.id)).filter(x => x.id !== id) }); }
   if (op === "follow" || op === "unfollow") await setFollow(user, op === "follow");
   if (op === "bebuilder") { if (!isOwner(user)) return { error: "Owners only." }; await profileOf(user); await putJSON("builder.json", { id: user.id }); }
+  // v54: block (they're removed and can't ask again) and report (kept for the owners to read; claude.js emails them)
+  if (op === "block" || op === "report") {
+    const c = await getJSON(`codes/${cleanCode(body.code)}.json`);
+    if (c && c.id && c.id !== user.id) {
+      if (op === "report") {
+        const them = await getJSON(`users/${c.id}/profile.json`).catch(() => null);
+        await putJSON(`reports/${day()}/${Date.now()}-${String(user.id).slice(0, 8)}.json`, { at: Date.now(), by: user.id, email: user.email, about: c.id, name: callOf(them), why: String(body.why || "").slice(0, 2000) });
+      }
+      await setBlocked(user.id, [...await blockedIds(user.id), c.id]);
+      await setFriendIds(user.id, (await friendIds(user.id)).filter(x => x !== c.id));
+      await setFriendIds(c.id, (await friendIds(c.id)).filter(x => x !== user.id));
+      await setRequestIds(user.id, (await requestIds(user.id)).filter(x => x !== c.id));
+      await setRequestIds(c.id, (await requestIds(c.id)).filter(x => x !== user.id));
+    }
+  }
   if (op === "remove") {
     const c = await getJSON(`codes/${cleanCode(body.code)}.json`);
     if (c && c.id) {
@@ -396,6 +417,52 @@ async function friends(user, body) {
     }
   }
   return friendsView(user);
+}
+
+// ---- v54: Delete account (Settings). Everything under users/<id>/, the usage logs, the friend code, the person in
+// friends' lists and the builder's followers, then the sign-in itself. Shared deck snapshots stay (others added them).
+async function removeFiles(paths) {
+  for (let i = 0; i < paths.length; i += 500) {
+    const r = await fetch(`${SB_URL()}/storage/v1/object/${BUCKET}`, { method: "DELETE", headers: { ...keyHeaders(SB_SECRET()), "content-type": "application/json" }, body: JSON.stringify({ prefixes: paths.slice(i, i + 500) }) });
+    if (!r.ok) throw new Error(`Storage delete ${r.status}`);
+  }
+}
+async function filesUnder(prefix) {
+  const out = [];
+  for (const name of await list(prefix)) {
+    const full = `${prefix}/${name}`;
+    if (/\.json$/.test(name)) out.push(full); else out.push(...await filesUnder(full));
+  }
+  return out;
+}
+async function deleteAccount(user) {
+  const id = user.id, p = await getJSON(`users/${id}/profile.json`).catch(() => null);
+  for (const f of await friendIds(id).catch(() => [])) await setFriendIds(f, (await friendIds(f)).filter(x => x !== id)).catch(() => {});
+  const fo = await getJSON("followers.json").catch(() => null);
+  if (fo && Array.isArray(fo.ids) && fo.ids.includes(id)) await putJSON("followers.json", { ids: fo.ids.filter(x => x !== id) });
+  if ((await builderId()) === id) await removeFiles(["builder.json"]);
+  const files = [...await filesUnder(`users/${id}`), ...await filesUnder(`usage/${id}`)];
+  if (p && p.code) files.push(`codes/${p.code}.json`);
+  if (files.length) await removeFiles(files);
+  const r = await fetch(`${SB_URL()}/auth/v1/admin/users/${id}`, { method: "DELETE", headers: keyHeaders(SB_SECRET()) });
+  if (!r.ok && r.status !== 404) throw new Error(`Couldn't remove the sign-in (${r.status}).`);
+  return { ok: true };
+}
+// ---- v54: App Review's demo sign-in. Apple's reviewers can't read our emailed codes, so one address (REVIEW_EMAIL)
+// takes one fixed code (REVIEW_CODE), both set only in Vercel. Unset, this does nothing.
+async function demoSignIn(email, code) {
+  const want = env("REVIEW_EMAIL").trim().toLowerCase(), key = env("REVIEW_CODE").trim();
+  const crypto = require("crypto"), same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  if (!want || !key || String(email || "").trim().toLowerCase() !== want || !same(String(code || "").trim(), key)) return null;
+  const admin = { ...keyHeaders(SB_SECRET()), "content-type": "application/json" };
+  await fetch(`${SB_URL()}/auth/v1/admin/users`, { method: "POST", headers: admin, body: JSON.stringify({ email: want, email_confirm: true }) }).catch(() => {});  // already there is fine
+  const g = await fetch(`${SB_URL()}/auth/v1/admin/generate_link`, { method: "POST", headers: admin, body: JSON.stringify({ type: "magiclink", email: want }) });
+  const gj = await g.json().catch(() => ({})), hash = gj.hashed_token || (gj.properties && gj.properties.hashed_token);
+  if (!g.ok || !hash) throw new Error(`Demo sign-in failed (${g.status}).`);
+  const v = await fetch(`${SB_URL()}/auth/v1/verify`, { method: "POST", headers: { apikey: SB_ANON(), "content-type": "application/json" }, body: JSON.stringify({ type: "magiclink", token_hash: hash }) });
+  const vj = await v.json().catch(() => ({}));
+  if (!v.ok || !vj.access_token) throw new Error(`Demo sign-in failed (${v.status}).`);
+  return vj;
 }
 
 // ---- the owners' notice (v44): one short message everyone sees once after the splash. notice.json = { id, text, until }.
@@ -429,4 +496,4 @@ async function setNotice(user, body) {
   await putJSON("notice.json", n); await putJSON("notes.json", { list: [...keep, n].slice(-50) }); return { notice: n };
 }
 
-module.exports = { notice, notes, getDeck, setNotice, anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, logFail, DAILY_CAP, capFor, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };
+module.exports = { deleteAccount, demoSignIn, notice, notes, getDeck, setNotice, anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, logFail, DAILY_CAP, capFor, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };

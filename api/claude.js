@@ -169,7 +169,16 @@ function parseItems(text, key) {
 }
 
 const ANON_ACTIONS = new Set(["explain", "translate", "words", "zhquery", "simplify", "ocr", "notes", "tozh"]);
+// v54: the iPhone app's page runs at capacitor://localhost, so it may call here across origins (only that origin).
+const APP_ORIGINS = new Set(["capacitor://localhost", "ionic://localhost"]);
 module.exports = async (req, res) => {
+  const origin = String(req.headers.origin || "");
+  if (APP_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin); res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, content-type, x-radical-day, x-radical-anon");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); res.setHeader("Access-Control-Expose-Headers", "x-vercel-cache");
+    if (req.method === "OPTIONS") return res.status(204).end();
+  }
   if (req.method !== "POST" && req.method !== "GET") return res.status(405).json({ error: "Use GET or POST." });
   const body = req.method === "GET" ? (req.query || {})
     : typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
@@ -198,6 +207,12 @@ module.exports = async (req, res) => {
     if (st.ok) { try { await account.ensureBucket(); } catch (e) { st.ok = false; st.error = e.message; } }
     return res.status(200).json(st);
   }
+  // v54: App Review's demo sign-in (one address, one fixed code, both only in Vercel's settings)
+  if (body.action === "demo" && req.method === "POST") {
+    res.setHeader("Cache-Control", "no-store");
+    try { const s = await account.demoSignIn(body.email, body.code); return s ? res.status(200).json(s) : res.status(403).json({ error: "That code didn't work." }); }
+    catch (e) { return res.status(500).json({ error: e.message }); }
+  }
   const user = await account.userOf(req);
   // Signed out (v41): only the things a newcomer taps for, and only a few (see account.anonTake).
   const anon = !user && !!req.headers["x-radical-anon"] && ANON_ACTIONS.has(body.action);
@@ -215,7 +230,20 @@ module.exports = async (req, res) => {
       if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
       res.setHeader("Cache-Control", "no-store");
       const out = await account.friends(user, body);
+      // v54: a report goes to the owners by email too
+      if (body.op === "report" && !out.error && process.env.RESEND_API_KEY && account.ownerEmails().length) await fetch("https://api.resend.com/emails", {
+        method: "POST", headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "content-type": "application/json" },
+        body: JSON.stringify({ from: "Radical feedback <feedback@upslopelabs.com>", to: account.ownerEmails(), reply_to: user.email, subject: "Radical: someone was reported",
+          text: `${user.email} reported friend code ${String(body.code || "").slice(0, 8)}.\n\n${String(body.why || "(no reason given)").slice(0, 2000)}\n\nThey're blocked for the reporter. The report is in storage under reports/${today}/.` })
+      }).catch(() => {});
       return res.status(out.error ? 400 : 200).json(out);
+    }
+    // v54: Delete account, from Settings. Gone for good: words, friends, usage, the sign-in.
+    if (body.action === "deleteaccount") {
+      if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+      if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
+      res.setHeader("Cache-Control", "no-store");
+      return res.status(200).json(await account.deleteAccount(user));
     }
     // v44: owners post or take down the notice (not AI)
     if (body.action === "notice") {

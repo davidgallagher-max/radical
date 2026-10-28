@@ -631,6 +631,8 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revdel:focus-visible{outline:2px solid var(--accent)}
 .sugword{color:var(--accent);font-weight:600}.sugword.again{color:var(--sound)}
 .revcard{position:relative}
+.btn.danger{background:var(--no,#E5533D);color:#fff;border-color:transparent;box-shadow:none;text-shadow:none}
+.acctdel{margin-top:14px;color:var(--muted)}
 .resmark{position:absolute;top:-10px;left:-8px;z-index:2;pointer-events:none;font-family:var(--font-zh);font-weight:700;font-size:2rem;line-height:1;color:var(--on);text-shadow:0 0 14px currentColor;animation:resglow 2.6s ease-in-out infinite}
 .resmark.part{color:var(--part,#E2B33C)}.resmark.no{color:var(--no,#E5533D)}
 .resmark.late{opacity:0;animation:resin .6s 1.7s ease-out forwards,resglow 2.6s 2.3s ease-in-out infinite}
@@ -1527,6 +1529,9 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 // ================= basics
 const NS = "http://www.w3.org/2000/svg", SHARDS = 64;
 const $ = id => document.getElementById(id);
+// v54: in the iPhone app the page is local (capacitor://localhost); the server and shared links stay on the web.
+const NATIVE = !/^https?:$/.test(location.protocol) || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const WEB = NATIVE ? "https://radical-tawny.vercel.app" : location.origin, API = NATIVE ? WEB : "";
 const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -3044,9 +3049,9 @@ async function claude(payload, why) {
   // v44: explanations too, so the second person to tap 解 on a sentence gets it at once.
   const get = ["card", "wordset", "explain"].includes(payload.action), rp = region === "cn" ? "&r=cn" : "";
   payload = { region, ...payload };
-  const url = payload.action === "card" ? `/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}${rp}`
-    : payload.action === "explain" ? `/api/claude?v=1&action=explain&sentence=${encodeURIComponent(payload.sentence)}&trad=${payload.trad === false ? 0 : 1}${rp}`
-    : get ? `/api/claude?v=1&action=wordset&theme=${encodeURIComponent(payload.theme)}${payload.n && payload.n !== 24 ? `&n=${payload.n}` : ""}${rp}` : "/api/claude";
+  const url = payload.action === "card" ? `${API}/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}${rp}`
+    : payload.action === "explain" ? `${API}/api/claude?v=1&action=explain&sentence=${encodeURIComponent(payload.sentence)}&trad=${payload.trad === false ? 0 : 1}${rp}`
+    : get ? `${API}/api/claude?v=1&action=wordset&theme=${encodeURIComponent(payload.theme)}${payload.n && payload.n !== 24 ? `&n=${payload.n}` : ""}${rp}` : API + "/api/claude";
   let r;
   try {
     r = await fetch(url, get ? { headers: auth }
@@ -3066,7 +3071,7 @@ function online() { return !!session; }
 // v43: tell the server an AI call failed on this side (it notes the reason for the owners; no AI, no cost)
 async function reportFail(what, reason) {
   try { const token = await accessToken(); if (!token) return;
-    fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}`, "x-radical-day": localDay() }, body: JSON.stringify({ action: "fail", what, reason: String(reason).slice(0, 60) }) }).catch(() => {}); } catch (e) {}
+    fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}`, "x-radical-day": localDay() }, body: JSON.stringify({ action: "fail", what, reason: String(reason).slice(0, 60) }) }).catch(() => {}); } catch (e) {}
 }
 try { localStorage.removeItem("radical-pw"); } catch (e) {}  // the old app password (gone since accounts)
 function setSession(j) {
@@ -3076,7 +3081,7 @@ function setSession(j) {
 }
 async function sbConfig() {
   if (sbCfg && sbCfg.url && sbCfg.anon) return sbCfg;
-  try { const r = await fetch("/api/claude?action=config"); const j = await r.json(); if (j.url && j.anon) { sbCfg = j; store.set("radical-sb", j); } } catch (e) {}
+  try { const r = await fetch(API + "/api/claude?action=config"); const j = await r.json(); if (j.url && j.anon) { sbCfg = j; store.set("radical-sb", j); } } catch (e) {}
   if (!sbCfg || !sbCfg.url) throw new Error("The account service isn't set up yet.");
   return sbCfg;
 }
@@ -3102,7 +3107,13 @@ async function accessToken() {
 async function signIn(email, code) {
   let j;
   try { j = await sbAuth("verify", { type: "email", email, token: code }); }
-  catch (e) { j = await sbAuth("verify", { type: "signup", email, token: code }).catch(() => { throw e; }); }  // a brand-new account's first code
+  catch (e) {
+    j = await sbAuth("verify", { type: "signup", email, token: code }).catch(() => null);  // a brand-new account's first code
+    // v54: App Review's demo address takes a fixed code, checked by the server
+    if (!j) j = await fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "demo", email, code }) })
+      .then(r => r.ok ? r.json() : null).catch(() => null);
+    if (!j || !j.access_token) throw e;
+  }
   // Before your words meet the account for the first time, a copy stays on this phone, just in case.
   store.set("radical-presync", { at: Date.now(), words: myWords, learned, days: store.get("radical-days", {}) });
   setSession(j); store.set("radical-owner", null);
@@ -3117,7 +3128,7 @@ function signOut() { setSession(null); store.set("radical-synced", 0); store.set
 async function fetchUsage() {
   const token = session && await accessToken(); if (!token) return null;
   try {
-    const r = await fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}`, "x-radical-day": localDay() }, body: JSON.stringify({ action: "usage" }) });
+    const r = await fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}`, "x-radical-day": localDay() }, body: JSON.stringify({ action: "usage" }) });
     if (!r.ok) return null;
     const j = await r.json(); store.set("radical-owner", !!j.owner); store.set("radical-owner-at", Date.now()); if (j.all) store.set("radical-ai-tally", j.all);
     if (!$("adminScreen").hidden) buildLab();
@@ -3146,7 +3157,7 @@ function openAdmin() { paintTally(store.get("radical-ai-tally", null)); noticePa
 let noticeBusy = false;
 const noticeWhen = n => { const at = n && parseInt(n.id, 36); return at ? new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""; };
 async function fetchNotice() {
-  const r = await fetch(`/api/claude?action=notice&m=${Math.floor(Date.now() / 6e4)}`, { cache: "no-store" });
+  const r = await fetch(`${API}/api/claude?action=notice&m=${Math.floor(Date.now() / 6e4)}`, { cache: "no-store" });
   const n = (await r.json()).notice || null;
   store.set("radical-notice-last", { at: Date.now(), id: (n && n.id) || "" });
   if (n && n.id) { store.set("radical-note-latest", n.id); menuDot(); }
@@ -3199,7 +3210,7 @@ function menuDot() {
 async function openNotes() {
   const box = $("notesList"); box.replaceChildren(el("p", "note", "Loading…")); go("notesScreen");
   let list = [];
-  try { list = (await (await fetch(`/api/claude?action=notelist&m=${Math.floor(Date.now() / 6e4)}`, { cache: "no-store" })).json()).notes || []; }
+  try { list = (await (await fetch(`${API}/api/claude?action=notelist&m=${Math.floor(Date.now() / 6e4)}`, { cache: "no-store" })).json()).notes || []; }
   catch (e) { box.replaceChildren(el("p", "note", "Notes couldn't load. Are you online?")); return; }
   box.replaceChildren();
   if (!list.length) box.append(el("p", "note", "Nothing yet."));
@@ -3225,7 +3236,7 @@ async function openNotes() {
 // this phone last heard, Preview, and the builder (who followers follow).
 async function noticePanel(editing) {
   const box = $("noticePanel");
-  let cur = null; try { cur = (await (await fetch("/api/claude?action=notice&fresh=" + Date.now(), { cache: "no-store" })).json()).notice; } catch (e) {}
+  let cur = null; try { cur = (await (await fetch(API + "/api/claude?action=notice&fresh=" + Date.now(), { cache: "no-store" })).json()).notice; } catch (e) {}
   box.replaceChildren();
   const text = el("textarea", "noticeedit"), until = el("input"), msg = el("p", "note"), deckSel = el("select", "noticedeck");
   text.rows = 5; text.maxLength = 1200; text.placeholder = "Everyone sees it once. Chinese lines read like Read."; text.value = cur ? cur.text : ""; text.setAttribute("aria-label", "Message");
@@ -3306,7 +3317,7 @@ async function syncNow(quietErrors) {
   if (syncing) return syncing;
   syncing = (async () => {
     const token = await accessToken(); if (!token) return null;
-    const r = await fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
+    const r = await fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, familiar, decks, days: store.get("radical-days", {}), summary: store.get("radical-friends", null) ? friendSummary() : undefined } }) });
     const m = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(m.error || `Sync failed (${r.status}).`);
@@ -3333,6 +3344,27 @@ addEventListener("visibilitychange", () => { if (document.visibilityState === "h
 // Settings → Account: sign in, or who you're signed in as with Sync now and Sign out. One line says whether the
 // account service is set up on the server.
 let acctEmail = "", acctSent = false;
+// v54: Delete account. The account copy, friends, shared progress and usage go for good; the words on this phone stay.
+function deleteAccountSheet() {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard");
+  card.append(el("h3", "", "Delete your account?"),
+    el("p", "", "Your account copy, friends and AI history are erased for good. Words on this phone stay unless you remove the app."));
+  const msg = el("p", "note");
+  const close = () => sheet.remove();
+  const go = btn("Delete account", "btn danger", async () => {
+    go.disabled = true; msg.textContent = "Deleting…";
+    try {
+      const token = await accessToken();
+      const r = await fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}`, "x-radical-day": localDay() }, body: JSON.stringify({ action: "deleteaccount" }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || `Couldn't delete (${r.status}).`);
+      signOut(); store.set("radical-friends", null); close(); renderAccount(); toast("Account deleted.", 3000);
+    } catch (e) { msg.textContent = e.message; go.disabled = false; }
+  });
+  const row = el("div", "row"); row.append(go, btn("Cancel", "btn ghost", close)); card.append(row, msg);
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
+  document.body.append(sheet);
+}
 function renderAccount() {
   const box = $("acctPanel"); if (!box) return; box.innerHTML = "";
   const msg = el("p", "note acctmsg");
@@ -3344,6 +3376,7 @@ function renderAccount() {
     const now = btn("Sync now", "btn ghost small", async () => { now.disabled = true; msg.textContent = "Syncing…"; try { await syncNow(); store.set("radical-sync-error", ""); } catch (e) { msg.textContent = e.message; } now.disabled = false; });
     row.append(now, btn("Sign out", "btn ghost small", () => { signOut(); renderAccount(); }));
     const ai = el("p", "note acctai"); box.append(ai, row, msg);
+    const del = btn("Delete account", "btn ghost small acctdel", deleteAccountSheet); box.append(del);
     fetchUsage().then(j => { if (!j || !ai.isConnected) return;
       if (j.ai === false) { ai.textContent = "The AI features aren't turned on for this account yet."; return; }
       // The month follows the app's day: it turns at 4am on the 1st (v43 shows when)
@@ -3376,7 +3409,7 @@ function renderAccount() {
   }
   msg.id = "acctMsg"; box.append(msg);
   const st = el("p", "note acctstat"); box.append(st);
-  fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "status" }) })
+  fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "status" }) })
     .then(r => r.json()).then(j => { st.textContent = j.ok ? "Account service: connected ✓" : `Account service: ${j.missing && j.missing.length ? "missing " + j.missing.join(", ") : esc(j.error || "not reachable")}`; })
     .catch(() => { st.textContent = ""; });
 }
@@ -3969,7 +4002,7 @@ function friendSummary() {
   return { words: { seen: st.seen.size, familiar: st.familiar.size, learned: st.learned.size }, week: { days: w.n, cards: w.cards, read: w.read }, streak: streakStats().now,
     series: series.map(x => ({ day: x.day, f: x.v, l: x.v2 })), decks: sharedProgress() };
 }
-const friendLink = code => `${location.origin}/?friend=${code}`;
+const friendLink = code => `${WEB}/?friend=${code}`;
 let friendsBusy = null;
 async function friendsCall(body = {}) {
   const r = await claude({ action: "friends", ...body, summary: friendSummary() });
@@ -4012,7 +4045,9 @@ function paintFriends(b) {
       acts.append(btn("Undo", "linkbtn", () => { undone = true; paintFriends(b); }));
       setTimeout(() => { if (!undone) settle("decline").then(() => { if (b.isConnected) paintFriends(b); }); }, 5000);
     });
-    acts.append(accept, decline); b.append(r);
+    // v54: Block: declined, and they can't ask again
+    const block = btn("Block", "btn ghost small", () => armConfirm(block, on => block.textContent = on ? "Block?" : "Block", async () => { await settle("block"); paintFriends(b); }));
+    acts.append(accept, decline, block); b.append(r);
   });
   // v46: decks friends sent you: Add (it becomes your own deck) or No thanks
   (f.inbox || []).forEach(x => {
@@ -4139,8 +4174,27 @@ function friendDetail(x, removed) {
   const rm = btn("Remove friend", "btn ghost small", () => armConfirm(rm, on => rm.textContent = on ? "Remove" : "Remove friend", async () => {
     rm.disabled = true; try { await friendsCall({ op: "remove", code: x.code }); } catch (e) {} removed();
   }));
-  const row = el("div", "row"); row.append(rm); card.append(row);
+  // v54: Block removes them and stops new requests; Report also tells us (with an optional note)
+  const bl = btn("Block", "btn ghost small", () => armConfirm(bl, on => bl.textContent = on ? "Block?" : "Block", async () => {
+    bl.disabled = true; try { await friendsCall({ op: "block", code: x.code }); } catch (e) {} removed();
+  }));
+  const rp = btn("Report", "btn ghost small", () => reportSheet(x, removed));
+  const row = el("div", "row"); row.append(rm, bl, rp); card.append(row);
   return card;
+}
+function reportSheet(x, done) {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard"), close = () => sheet.remove();
+  const ta = el("textarea"); ta.rows = 4; ta.placeholder = "What happened? (optional)";
+  const msg = el("p", "note");
+  const send = btn("Report and block", "btn", async () => {
+    send.disabled = true; msg.textContent = "Sending…";
+    try { await friendsCall({ op: "report", code: x.code, why: ta.value.trim() }); close(); toast("Reported. They're blocked.", 3000); if (done) done(); }
+    catch (e) { msg.textContent = e.message; send.disabled = false; }
+  });
+  card.append(el("h3", "", `Report ${esc(x.name || x.real || "this person")}?`), el("p", "note", "We read every report. They're blocked right away."), ta);
+  const row = el("div", "row"); row.append(send, btn("Cancel", "btn ghost", close)); card.append(row, msg);
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
+  document.body.append(sheet);
 }
 let qrLib = null;
 function showQR(code) {
@@ -4169,7 +4223,7 @@ async function joinPending() {
 // adds it as your own deck with fresh schedules; your notes and schedule never go. decks.ids remembers which shared id
 // is which of your decks, so friend rows can show how far each of you is in it.
 const deckWords = k => myWords.filter(w => inList(w, k)).map(w => ({ word: w.word, pinyin: wPinyin(w), meaning: wMeaning(w) }));
-const deckLink = id => `${location.origin}/?deck=${id}`;
+const deckLink = id => `${WEB}/?deck=${id}`;
 async function makeShared(k, to = [], followers = false) {
   const r = await friendsCall({ op: "senddeck", deck: { name: keyName(k).slice(0, 20), words: deckWords(k) }, to, followers });
   if (r && r.deck) { decks.ids[r.deck.id] = k; saveDecks(); }
@@ -4218,7 +4272,7 @@ function addSharedDeck(d) {
   return true;
 }
 async function getShared(id) {
-  const r = await fetch(`/api/claude?action=deck&id=${encodeURIComponent(id)}`); const j = await r.json().catch(() => ({}));
+  const r = await fetch(`${API}/api/claude?action=deck&id=${encodeURIComponent(id)}`); const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.deck) throw new Error(j.error || "That deck couldn't load."); return j.deck;
 }
 const haveShared = id => !!(decks.ids[id] && myWords.some(w => inList(w, decks.ids[id])));
@@ -5109,7 +5163,7 @@ $("prebuildBtn").onclick = async () => {
   b.disabled = true; let ok = 0, bad = 0;
   for (const [t, n, r] of jobs) {
     line.textContent = `Making ${ok + bad + 1} of ${jobs.length}: ${t} (${n})…`;
-    try { const res = await fetch(`/api/claude?v=1&action=wordset&theme=${encodeURIComponent(t)}${n !== 24 ? `&n=${n}` : ""}${r}`, { headers: { Authorization: `Bearer ${token}`, "x-radical-day": localDay() } }); res.ok ? ok++ : bad++; }
+    try { const res = await fetch(`${API}/api/claude?v=1&action=wordset&theme=${encodeURIComponent(t)}${n !== 24 ? `&n=${n}` : ""}${r}`, { headers: { Authorization: `Bearer ${token}`, "x-radical-day": localDay() } }); res.ok ? ok++ : bad++; }
     catch (e) { bad++; }
   }
   line.textContent = `Done: ${ok} ready${bad ? `, ${bad} failed (try again)` : ""}.`; b.disabled = false;
