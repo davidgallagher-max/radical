@@ -747,7 +747,10 @@ button.calday{font:inherit;font-size:.92rem;padding:0;cursor:pointer;background:
 button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}button.calday.hit{background:var(--accent)}
 .calday.picked{outline:2px solid var(--accent2,var(--accent));outline-offset:1px}
 .calline{margin:8px 0 0;color:var(--fg)}.calline [lang=zh]{font-family:var(--font-zh);font-weight:600}
-.kd{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 8px}.trs .kd:first-child{margin-left:0}.kd.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}.kd.hit{background:var(--accent)}.kd.off{border:1px dashed var(--muted)}
+.calday.half{background:linear-gradient(135deg,var(--accent) 0 50%,color-mix(in srgb,var(--accent) 30%,transparent) 50%);color:var(--fg)}button.calday.half{background:linear-gradient(135deg,var(--accent) 0 50%,color-mix(in srgb,var(--accent) 30%,transparent) 50%)}
+.kd.half{background:linear-gradient(135deg,var(--accent) 0 50%,color-mix(in srgb,var(--accent) 30%,transparent) 50%)}
+.kdi{white-space:nowrap}.trs .kdi:first-child .kd{margin-left:0}
+.kd{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 8px}.trs > .kd:first-child{margin-left:0}.kd.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}.kd.hit{background:var(--accent)}.kd.off{border:1px dashed var(--muted)}
 .tchart{width:100%;height:auto;display:block;overflow:visible}
 .tgrid{stroke:var(--line);stroke-width:1}
 .tline{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}.tline2{stroke:var(--st-active);stroke-width:1.8;stroke-dasharray:4 3}
@@ -772,6 +775,14 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .toast.top{bottom:auto;top:calc(96px + env(safe-area-inset-top))}
 .toast svg{width:22px;height:22px;flex:none;color:var(--accent)}
 #tabbar .tz{position:relative}
+/* v55: the reading ring around 讀 fills toward Words read a day and turns gold when it's met */
+.readring{position:absolute;left:50%;top:50%;width:1.32em;height:1.32em;transform:translate(-50%,-50%) rotate(-90deg);pointer-events:none;overflow:visible}
+.readring circle{fill:none;stroke-width:2.2;transition:stroke-dasharray .6s ease,stroke .4s}
+.readring .rr0{stroke:color-mix(in srgb,var(--muted) 28%,transparent)}.readring .rr1{stroke:var(--accent);stroke-linecap:round}
+.readring.met .rr1{stroke:var(--gold2)}.readring.met .rr0{stroke:transparent}
+.togo{font-size:.92rem;font-weight:400;color:var(--muted);white-space:nowrap}
+h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-size:.92rem}
+.minihead .togo{flex:1;text-align:center;font-size:.85rem}
 #splash .splerr{color:var(--muted);font-size:.92rem;max-width:280px;text-align:center;margin:8px 0 0}
 #splash .spstat{opacity:0;animation:fadein .9s ease .5s forwards;color:var(--accent);font-size:.85rem;letter-spacing:.04em;margin:4px 0 0}
 .pvctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 8px}
@@ -1225,12 +1236,12 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 <!-- READ -->
 <section class="screen" id="readScreen">
   <div class="inner">
-    <div class="minihead" aria-hidden="true"><button type="button" class="topbrand" tabindex="-1" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><button type="button" class="iconbtn menubtn" tabindex="-1" aria-label="Menu" aria-haspopup="true"></button></div>
+    <div class="minihead" aria-hidden="true"><button type="button" class="topbrand" tabindex="-1" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="togo" hidden></span><button type="button" class="iconbtn menubtn" tabindex="-1" aria-label="Menu" aria-haspopup="true"></button></div>
     <header class="readhead">
       <div class="brand"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></div>
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
-    <h3 class="sec tabsec"><span lang="zh">讀</span>Read</h3>
+    <h3 class="sec tabsec"><span lang="zh">讀</span>Read<span class="togo" hidden></span></h3>
     <details class="tpanel addbox" id="addPanel">
       <summary class="addsum"><span class="plus" aria-hidden="true">＋</span>New text</summary>
       <div class="addbody">
@@ -1540,7 +1551,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 
 <nav class="tabbar" id="tabbar" aria-label="Main">
   <button type="button" class="railx railbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg></button>
-  <button type="button" data-tab="readScreen" aria-current="page"><span class="tz">讀</span><span class="tl">Read</span></button>
+  <button type="button" data-tab="readScreen" aria-current="page"><span class="tz">讀<svg class="readring" id="readRing" viewBox="0 0 40 40" aria-hidden="true"><circle class="rr0" cx="20" cy="20" r="19" pathLength="100"/><circle class="rr1" cx="20" cy="20" r="19" pathLength="100" stroke-dasharray="0 100"/></svg></span><span class="tl">Read</span></button>
   <button type="button" data-tab="wikiScreen"><span class="tz">探</span><span class="tl">Explore</span></button>
   <button type="button" data-tab="wordsScreen"><span class="tz">練</span><span class="tl">Practice</span><span class="badge" id="dueBadge"></span></button>
   <button type="button" data-tab="trackScreen"><span class="tz">記</span><span class="tl">Track</span><span class="badge" id="trackBadge"></span></button>
@@ -1654,7 +1665,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v54";
+const APP_VERSION = "v55";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3799,6 +3810,7 @@ function logDay(field, n = 1) {
   const keys = Object.keys(d).sort(); while (keys.length > 400) delete d[keys.shift()];
   store.set("radical-days", d);
   if (field === "c" && typeof updateRing === "function") updateRing();
+  if (field === "w" && typeof paintReadGoal === "function") paintReadGoal();
 }
 // ---- this week, from the progress record: the last 7 days of the app's own calendar (today included).
 // A day counts as used when anything happened: cards, reading or words added.
@@ -3838,12 +3850,30 @@ function noteGoal() {
   r.push({ from: localDay(), rule: streakRule(), daily: dailyMax(), read: readGoal() }); store.set("radical-goal-rules", r);
 }
 const rulesOn = day => { const r = goalRules(); let g = r[0]; for (const x of r) if (x.from <= day) g = x; return g; };
-const goalMet = (v, day = localDay()) => {
-  if (!v) return false;
+// v55: the two halves of a day's goal, so the calendar can show a Both day with one half done
+const goalParts = (v, day = localDay()) => {
   const g = rulesOn(day);
-  const cards = !!v.q || day < Q_FROM && (v.c || 0) >= g.daily, read = !!v.rq || day < STREAK_FROM && (v.w || 0) >= g.read;
-  return g.rule === "both" ? cards && read : cards || read;
+  if (!v) return { cards: false, read: false, both: g.rule === "both" };
+  return { cards: !!v.q || day < Q_FROM && (v.c || 0) >= g.daily, read: !!v.rq || day < STREAK_FROM && (v.w || 0) >= g.read, both: g.rule === "both" };
 };
+const goalMet = (v, day = localDay()) => { if (!v) return false; const p = goalParts(v, day); return p.both ? p.cards && p.read : p.cards || p.read; };
+const goalHalf = (v, day) => { if (!v || day < STREAK_FROM) return ""; const p = goalParts(v, day); return p.both && p.cards !== p.read ? (p.cards ? "cards" : "reading") : ""; };
+// v55: today's marks are checked again whenever Today or the targets may have changed (a lower Cards a day or Words read
+// a day, or the last card removed from a session), not only when a card is rated or a line is read.
+function checkGoalToday() {
+  const d = store.get("radical-days", {}), k = localDay(), t = d[k] || {};
+  if (!t.rq && (t.w || 0) > 0 && t.w >= readGoal()) { d[k] = { ...t, rq: 1 }; store.set("radical-days", d); }
+  const done = doneToday();
+  if (!t.q && done.size && (done.size >= dailyMax() || !todayList(goal).length)) logDay("q");
+}
+// v55: the ring around 讀 and "N words to go" on Read (under the heading, and in the strip while scrolling)
+function paintReadGoal() {
+  const ring = $("readRing"); if (!ring) return;
+  const w = (store.get("radical-days", {})[localDay()] || {}).w || 0, g = readGoal(), left = Math.max(0, g - w), p = Math.min(100, Math.round(w / g * 100));
+  ring.querySelector(".rr1").setAttribute("stroke-dasharray", `${p} 100`); ring.classList.toggle("met", !left);
+  ring.closest("button").setAttribute("aria-label", `Read: ${left ? `${num(left)} words to go today` : "reading goal met"}`);
+  document.querySelectorAll("#readScreen .togo").forEach(x => { x.hidden = !left; x.textContent = `${num(left)} word${left === 1 ? "" : "s"} to go`; });
+}
 const streakDay = (v, day) => day < STREAK_FROM ? dayUsed(v) : goalMet(v, day);
 // ---- streak: days used in a row, with rest days. Any 14 days in a row may have up to 3 days off; a 4th day off in
 // the same 14 ends the streak. Rest days don't add to the count. Today never breaks it (the day isn't over yet).
@@ -3945,6 +3975,7 @@ function paintTileSel() {
 // ---- Track: the record of your work. Streak, today, a month calendar, two charts, totals, words by stage, years.
 let trackMonth = null;
 function renderTrack() {
+  checkGoalToday();
   const box = $("trackBody"); if (!box) return;
   const d = store.get("radical-days", {}), s = streakStats(), w = weekStats();
   const all = Object.keys(d).sort(), firstUse = all.find(k => dayUsed(d[k]));
@@ -3975,16 +4006,16 @@ function renderTrack() {
     picked = c; c.classList.add("picked"); dayLine.hidden = false;
     const [y, m, dd] = key.split("-").map(Number), name = new Date(y, m - 1, dd).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
     const bits = v ? [[v.c, "card"], [v.w, "word", " read"], [v.n, "word", " added"]].filter(b => b[0]).map(([n, u, t = ""]) => `${num(n)} ${u}${n === 1 ? "" : "s"}${t}`) : [];
-    dayLine.innerHTML = `<b>${name}</b> · ${bits.length ? bits.join(" · ") : "Nothing that day"}${goalMet(v, key) ? ` · <span class="calmark"><span lang="zh">${mark}</span> Goal met</span>` : ""}`;
+    dayLine.innerHTML = `<b>${name}</b> · ${bits.length ? bits.join(" · ") : "Nothing that day"}${goalMet(v, key) ? ` · <span class="calmark"><span lang="zh">${mark}</span> Goal met</span>` : goalHalf(v, key) ? ` · ${goalHalf(v, key) === "cards" ? "Cards done, reading not yet" : "Reading done, cards not yet"}` : ""}`;
   };
   for (let k = 1; k <= nDays; k++) {
     const key = `${trackMonth.y}-${String(trackMonth.m + 1).padStart(2, "0")}-${String(k).padStart(2, "0")}`, v = d[key];
-    const cls = key > today ? "future" : dayUsed(v) ? (goalMet(v, key) ? "hit" : "on") : firstUse && key >= firstUse && key < today ? "off" : "";
+    const cls = key > today ? "future" : dayUsed(v) ? (goalMet(v, key) ? "hit" : goalHalf(v, key) ? "half" : "on") : firstUse && key >= firstUse && key < today ? "off" : "";
     if (dayUsed(v)) usedMonth++;
     const c = el(key > today ? "span" : "button", `calday ${cls}${key === today ? " today" : ""}`, String(k)); grid.append(c);
     if (key <= today) { c.type = "button"; c.onclick = () => showDay(c, key, v); }
   }
-  cal.append(head, grid, dayLine, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<i class="kd hit"></i> <span lang="zh">${mark}</span> goal met <i class="kd on"></i> studied <i class="kd off"></i> rest day`));
+  cal.append(head, grid, dayLine, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<span class="kdi"><i class="kd hit"></i> <span lang="zh">${mark}</span> goal met</span> ${streakRule() === "both" ? '<span class="kdi"><i class="kd half"></i> half</span> ' : ""}<span class="kdi"><i class="kd on"></i> studied</span> <span class="kdi"><i class="kd off"></i> rest day</span>`));
   box.append(cal);
   // your three boxes (tap: what's in it; touch and hold: change it): a number and one word each, under "Words" when all
   // three count words
@@ -4590,6 +4621,7 @@ function dueText(w) {
   return `Next review ${localDay(w.srs.due)} (every ${w.srs.ivl <= 1 ? "day" : ivlText(w.srs.ivl)}).`;
 }
 function updateCounts() {
+  checkGoalToday(); paintReadGoal();
   const n = dueCount();
   $("dueBadge").textContent = n && store.get("radical-badge", true) ? n : "";
   if (!$("wordsScreen").hidden) renderWords();
@@ -5906,7 +5938,7 @@ let rq = [], rDone = 0, revHist = [];
 function dropFromSession(w, remove) {
   if (remove) { const i = myWords.indexOf(w); if (i >= 0) myWords.splice(i, 1); } else setStatus(w, "known");
   saveWords();
-  rq = rq.filter(x => x !== w); revHist = revHist.filter(h => h.w !== w); revOutcome.delete(w);
+  rq = rq.filter(x => x !== w); revHist = revHist.filter(h => h.w !== w); revOutcome.delete(w); checkGoalToday();
   document.querySelectorAll(".bloom").forEach(x => x.remove());
   play(remove ? "tap" : "right"); showFront(); $("reviewScreen").scrollTop = 0;
 }
@@ -7470,11 +7502,11 @@ document.querySelectorAll("#dailySeg [data-t]").forEach(b => {
 });
 document.querySelectorAll("#readGoalSeg [data-t]").forEach(b => {
   b.setAttribute("aria-pressed", +b.dataset.t === readGoal());
-  b.onclick = () => { goalRules(); store.set("radical-read-goal", +b.dataset.t); noteGoal(); document.querySelectorAll("#readGoalSeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); };
+  b.onclick = () => { goalRules(); store.set("radical-read-goal", +b.dataset.t); noteGoal(); checkGoalToday(); paintReadGoal(); document.querySelectorAll("#readGoalSeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); };
 });
 document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   b.setAttribute("aria-pressed", b.dataset.r === streakRule());
-  b.onclick = () => { goalRules(); store.set("radical-streak-rule", b.dataset.r); noteGoal(); document.querySelectorAll("#ruleSeg [data-r]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); };
+  b.onclick = () => { goalRules(); store.set("radical-streak-rule", b.dataset.r); noteGoal(); checkGoalToday(); document.querySelectorAll("#ruleSeg [data-r]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); };
 });
 (async function start() {
   // The splash takes a tap from the very first moment: a tap hides it even while the app is still loading behind it
