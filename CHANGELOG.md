@@ -2,6 +2,13 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v55
+
+- A ring around 讀 on the tab bar fills as you read toward your Words read a day target and turns gold when you reach it.
+- Read shows "N words to go" next to the heading, and in the top strip while you scroll. It drops as lines count (each line counts after a few seconds on screen at reading pace).
+- Track calendar: on the Both setting, a day with only cards or only reading done shows half filled; tap it to see which half.
+- Fix: lowering Cards a day or Words read a day now marks today as met right away if you're already past the new target, and removing the last card of Today (Remove or I know this) still finishes the day.
+
 ## v54
 
 - Read: slide your finger sideways along a line to pick several characters; slide back to drop them. The word strip has ⌫, which takes back the last character you added.
