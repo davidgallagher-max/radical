@@ -780,6 +780,14 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .readring circle{fill:none;stroke-width:2.2;transition:stroke-dasharray .6s ease,stroke .4s}
 .readring .rr0{stroke:color-mix(in srgb,var(--muted) 28%,transparent)}.readring .rr1{stroke:var(--accent);stroke-linecap:round}
 .readring.met .rr1{stroke:var(--gold2)}.readring.met .rr0{stroke:transparent}
+/* v57: crossing the reading target: the ring swells and settles while sparks leave its rim (2s) */
+.readring.burst{animation:ringburst 2s cubic-bezier(.2,.8,.3,1)}
+@keyframes ringburst{0%{scale:1}18%{scale:1.38}42%{scale:.92}62%{scale:1.06}80%{scale:.98}100%{scale:1}}
+.readring.burst .rr1{filter:drop-shadow(0 0 3px var(--gold1))}
+.rspark{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:var(--gold1);box-shadow:0 0 6px var(--gold2);pointer-events:none;opacity:0;
+  transform:rotate(var(--a)) translateY(-.66em);animation:rspark var(--t,1.4s) ease-out var(--d,.12s) forwards}
+@keyframes rspark{0%{opacity:1;transform:rotate(var(--a)) translateY(-.66em) scale(1)}100%{opacity:0;transform:rotate(calc(var(--a) + var(--s,0deg))) translateY(calc(-.66em - var(--r,18px))) scale(.3)}}
+@media (prefers-reduced-motion:reduce){.readring.burst{animation:none}.rspark{display:none}}
 .togo{font-size:.92rem;font-weight:400;color:var(--muted);white-space:nowrap}
 h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-size:.92rem}
 .minihead .togo{flex:1;text-align:center;font-size:.85rem}
@@ -1665,7 +1673,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v56";
+const APP_VERSION = "v57";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3902,10 +3910,23 @@ function checkGoalToday() {
 function paintReadGoal() {
   const ring = $("readRing"); if (!ring) return;
   const w = (store.get("radical-days", {})[localDay()] || {}).w || 0, g = readGoal(), left = Math.max(0, g - w), p = Math.min(100, Math.round(w / g * 100));
-  ring.querySelector(".rr1").setAttribute("stroke-dasharray", `${p} 100`); ring.classList.toggle("met", !left);
+  ring.querySelector(".rr1").setAttribute("stroke-dasharray", `${p} 100`);
+  if (!left && ring._painted && !ring.classList.contains("met")) ringBurst(ring);  // v57: only at the moment the target is crossed
+  ring.classList.toggle("met", !left); ring._painted = true;
   ring.closest("button").setAttribute("aria-label", `Read: ${left ? `${num(left)} words to go today` : "reading goal met"}`);
   const shown = Math.ceil(left / 5) * 5;  // in steps of 5, so it ticks down calmly
   document.querySelectorAll("#readScreen .togo").forEach(x => { x.hidden = !left; x.textContent = `${num(shown)} words to go`; });
+}
+// v57: the ring swells and settles, and a dozen gold sparks fly off its rim (about 2 seconds)
+function ringBurst(ring) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const tz = ring.parentNode; ring.classList.remove("burst"); void ring.getBoundingClientRect(); ring.classList.add("burst");
+  for (let i = 0; i < 14; i++) {
+    const sp = document.createElement("i"); sp.className = "rspark";
+    sp.style.cssText = `--a:${Math.round(i * 360 / 14 + Math.random() * 14)}deg;--r:${10 + Math.random() * 14}px;--s:${Math.round(Math.random() * 30 - 15)}deg;--t:${(1.1 + Math.random() * .7).toFixed(2)}s;--d:${(.08 + Math.random() * .2).toFixed(2)}s`;
+    tz.append(sp);
+  }
+  setTimeout(() => { ring.classList.remove("burst"); tz.querySelectorAll(".rspark").forEach(x => x.remove()); }, 2200);
 }
 const streakDay = (v, day) => day < STREAK_FROM ? dayUsed(v) : goalMet(v, day);
 // ---- streak: days used in a row, with rest days. Any 14 days in a row may have up to 3 days off; a 4th day off in
