@@ -2,6 +2,17 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v54
+
+- Read: slide your finger sideways along a line to pick several characters; slide back to drop them. The word strip has ⌫, which takes back the last character you added.
+- Foreign names spelled out by sound (阿姆斯特爾河) now stay together as one word instead of falling apart.
+- Practice: filing Basecamp and ticked words have a Cancel button (it was a small ✕).
+- Flash cards: after the big 對 / 半 / 錯, a small glowing one stays in the card's corner until the next card.
+- Settings, Account: Delete account. It erases your account copy, friends and AI history, and the sign-in.
+- Friends: Block (also on a request) and Report. Blocked people can't send you a request; a report reaches us by email.
+- Privacy policy at upslopelabs.com/radical/privacy, linked from About.
+- The iPhone app (in progress for TestFlight): the same app in a native shell, with everything it needs inside so it opens and reads with no signal. It picks up new versions of the page from the web by itself, so tweaks keep shipping without a store update. The icon shows the 練 number. Flash cards and the word page stay upright. Built on GitHub's Macs.
+
 ## v53
 
 - The deck chip on the card back and the word page has a small DECK label in front (DECKS when the word is in several), so it reads as something you can change.
