@@ -349,6 +349,8 @@ p.busy{margin:-4px 4px 0}
 .peek .ptile{all:unset;cursor:default;font-family:var(--font-zh);font-size:1.35rem;font-weight:600;line-height:1;padding:5px 3px;border-radius:7px;flex:none}
 .peek .ptile.end{cursor:pointer;box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--accent) 55%,transparent)}
 .peek .ptile.end:active{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.peek .pback{all:unset;cursor:pointer;flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:9px;font-size:1.05rem;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.reader .cell,.mini .cell{touch-action:pan-y}
 .peek .pgrow{all:unset;cursor:pointer;flex:none;width:30px;height:34px;display:grid;place-items:center;border-radius:9px;font-size:1.3rem;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .peek .pgrow:disabled{opacity:.25;cursor:default}
 .peek .prow .saybtn{margin-left:auto}
@@ -629,6 +631,12 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revdel:focus-visible{outline:2px solid var(--accent)}
 .sugword{color:var(--accent);font-weight:600}.sugword.again{color:var(--sound)}
 .revcard{position:relative}
+.resmark{position:absolute;top:-10px;left:-8px;z-index:2;pointer-events:none;font-family:var(--font-zh);font-weight:700;font-size:2rem;line-height:1;color:var(--on);text-shadow:0 0 14px currentColor;animation:resglow 2.6s ease-in-out infinite}
+.resmark.part{color:var(--part,#E2B33C)}.resmark.no{color:var(--no,#E5533D)}
+.resmark.late{opacity:0;animation:resin .6s 1.7s ease-out forwards,resglow 2.6s 2.3s ease-in-out infinite}
+@keyframes resin{from{opacity:0;transform:scale(1.8)}to{opacity:1;transform:scale(1)}}
+@keyframes resglow{0%,100%{opacity:1;text-shadow:0 0 10px currentColor}50%{opacity:.85;text-shadow:0 0 22px currentColor}}
+@media (prefers-reduced-motion:reduce){.resmark,.resmark.late{animation:none;opacity:1}}
 .cardbin{position:absolute;top:-4px;right:-6px;z-index:2;background:color-mix(in srgb,var(--bg) 70%,transparent)}
 .revcard:has(>.cardbin)>.revchars{padding:0 34px}
 .revcard:has(>.cardbin)>:nth-child(2):not(.revchars){padding-right:34px}
@@ -2076,6 +2084,24 @@ function token(entry, chars) {
   const syl = (tw ? entry[2] : entry[1]).split(" ");
   return { chars, syl: syl.length === chars.length ? syl : null, mean: entry[3], tw };
 }
+// v54: foreign names spelled out by sound (阿姆斯特爾河) aren't in the dictionary, so they fall apart into single
+// characters. A run of 3+ characters that are all sound-spelling characters, made of single characters or words of
+// only such characters, joins into one word, with a place ending (河, 島, 州...) if one follows.
+const SOUNDCH = new Set([..."阿埃艾奧奥巴拜班貝贝彼畢毕波伯博布查達达戴丹德迪蒂杜敦俄厄恩菲費费芬弗蓋盖戈格哈赫亨胡霍基吉賈贾傑杰喀卡凱凯坎柯科克肯庫库拉萊莱蘭兰朗勞劳勒雷黎里莉列琳盧卢魯鲁倫伦羅罗洛呂吕馬马麥麦曼梅蒙米密莫墨默姆穆納纳奈尼紐纽諾诺歐欧帕潘佩彭皮珀普奇齊齐契恰喬乔欽钦薩萨塞瑟森莎斯絲丝索塔泰坦湯汤特提圖图托瓦威維维韋韦溫温沃烏乌伍希錫锡謝谢辛休雅亞亚耶伊尤約约贊赞扎詹茲兹佐澤泽爾尔茨蘇苏蕾娜妮婭娅薇蓮莲"]);
+const PLACE_END = new Set([..."河湖島岛州市灣湾港城江堡省峰海鎮镇山"]);
+function joinNames(toks) {
+  const out = [];
+  for (let i = 0; i < toks.length;) {
+    let j = i, n = 0, singles = 0;
+    while (j < toks.length && toks[j].chars.every(c => SOUNDCH.has(c))) { n += toks[j].chars.length; singles += toks[j].chars.length === 1; j++; }
+    if (n >= 3 && singles >= 2) {
+      if (j < toks.length && toks[j].chars.length === 1 && PLACE_END.has(toks[j].chars[0])) j++;
+      const t = token(null, toks.slice(i, j).flatMap(x => x.chars)); t.mean = "Likely a name, spelled by sound"; t.name = true;
+      out.push(t); i = j;
+    } else { out.push(toks[i]); i++; }
+  }
+  return out;
+}
 // Split a line into words both ways (longest match from the front and from the back); keep the one with fewer stray single characters.
 function segment(line) {
   const chars = [...line], n = chars.length, MAX = 8;
@@ -2092,7 +2118,7 @@ function segment(line) {
     if (hit) { bwd.unshift(token(hit[0], chars.slice(j - hit[1], j))); j -= hit[1]; } else { bwd.unshift(token(null, [chars[j - 1]])); j--; }
   }
   const singles = s => s.filter(t => t.chars.length === 1 && isHan(t.chars[0])).length;
-  const out = (fwd.length < bwd.length || (fwd.length === bwd.length && singles(fwd) < singles(bwd))) ? fwd : bwd;
+  const out = joinNames(fwd.length < bwd.length || (fwd.length === bwd.length && singles(fwd) < singles(bwd)) ? fwd : bwd);
   // Taiwan keeps full tones where mainland dictionaries mark a neutral tone (眼睛 yǎnjīng), except on particles.
   const NEUTRAL = new Set([..."子們们的了著着過过嗎吗呢吧啊啦麼么"]);
   out.forEach(t => {
@@ -2529,8 +2555,25 @@ function holdToPick(b) {
     t = 0; b._held = true; const line = b.closest(".line"), cells = [...line.querySelectorAll(".cell")], i = cells.indexOf(b);
     enlarge(b._ch, [["Select just this", () => pickSpan(line, i, i)], ["Open", () => openWord(b._ch, { context: line._text })]]);
   }, 450); });
-  b.addEventListener("pointermove", e => { if (t && Math.hypot(e.clientX - x0, e.clientY - y0) > 8) stop(); });
-  ["pointerup", "pointercancel", "pointerleave"].forEach(ev => b.addEventListener(ev, stop));
+  // v54: slide sideways along a line to pick every character you pass; sliding back drops them again.
+  let drag = null;
+  b.addEventListener("pointermove", e => {
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    if (!drag && !b._held && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      stop(); const line = b.closest(".line"); drag = { line, cells: [...line.querySelectorAll(".cell")], from: -1, to: -1 };
+      drag.from = drag.cells.indexOf(b); try { b.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+    if (drag) {
+      e.preventDefault();
+      const hit = document.elementFromPoint(e.clientX, e.clientY), c = hit && hit.closest(".cell"), i = c ? drag.cells.indexOf(c) : -1;
+      if (i >= 0 && i !== drag.to) { drag.to = i; pickSpan(drag.line, Math.min(drag.from, i), Math.max(drag.from, i)); }
+      return;
+    }
+    if (t && Math.hypot(dx, dy) > 8) stop();
+  });
+  const end = () => { stop(); if (drag) { if (drag.to >= 0) b._held = true; drag = null; } };  // _held: the click that follows isn't a tap
+  ["pointerup", "pointercancel"].forEach(ev => b.addEventListener(ev, end));
+  b.addEventListener("pointerleave", () => { if (!drag) stop(); });
   b.addEventListener("contextmenu", e => e.preventDefault());
 }
 let renderLimit = 1500;
@@ -2679,7 +2722,7 @@ function miniReader(text, mark, en, opts = {}) {
 // the next character on that side, and tapping the first or last character drops it. Any run can be opened or added.
 let picked = null;
 const peekFor = line => (line.closest(".mini") && line.closest(".mini").querySelector(".peek")) || $("peek");
-function pickSpan(line, a, b, tok) {
+function pickSpan(line, a, b, tok, hist = []) {
   unpick();
   const cells = [...line.querySelectorAll(".cell")], text = line._text;
   cells.slice(a, b + 1).forEach(x => x.setAttribute("aria-pressed", "true"));
@@ -2697,13 +2740,17 @@ function pickSpan(line, a, b, tok) {
   }
   const open = () => openWord(word, isTok ? { context: text, syl: tok.syl, mean: tok.mean, tw: tok.tw } : { context: text, syl });
   const peek = peekFor(line);
-  picked = { line, a, b, open, tok, peek };
+  picked = { line, a, b, open, tok, peek, hist };
   const tiles = span.map((c, k) => `<button type="button" class="ptile${span.length > 1 && (k === 0 || k === span.length - 1) ? " end" : ""}" data-k="${k}" lang="zh"${span.length > 1 && (k === 0 || k === span.length - 1) ? ` aria-label="Drop ${esc(c._ch)}"` : ' tabindex="-1"'}>${esc(c._ch)}</button>`).join("");
-  peek.innerHTML = `<div class="prow"><button type="button" class="pgrow" data-d="-1" aria-label="Take in the character before"${a === 0 ? " disabled" : ""}>‹</button><span class="ptiles">${tiles}</span><button type="button" class="pgrow" data-d="1" aria-label="Take in the character after"${b === cells.length - 1 ? " disabled" : ""}>›</button>${sayHTML(word, true)}<button type="button" class="pshut" aria-label="Close">✕</button></div>`
+  peek.innerHTML = `<div class="prow"><button type="button" class="pgrow" data-d="-1" aria-label="Take in the character before"${a === 0 ? " disabled" : ""}>‹</button><span class="ptiles">${tiles}</span><button type="button" class="pgrow" data-d="1" aria-label="Take in the character after"${b === cells.length - 1 ? " disabled" : ""}>›</button>${span.length > 1 ? '<button type="button" class="pback" aria-label="Take back the last character">⌫</button>' : ""}${sayHTML(word, true)}<button type="button" class="pshut" aria-label="Close">✕</button></div>`
     + `<div class="prow"><span class="pt"><span class="pp">${esc(g.py)}</span><span class="pm">${esc(g.mean || "Tap again for details")}</span></span></div><div class="prow pacts"><span class="popen">Open ›</span></div>`;
   peek.querySelector(".pshut").onclick = e => { e.stopPropagation(); unpick(); };
-  peek.querySelectorAll(".pgrow").forEach(x => x.onclick = e => { e.stopPropagation(); const d = +x.dataset.d; pickSpan(line, d < 0 ? a - 1 : a, d > 0 ? b + 1 : b, tok); });
-  peek.querySelectorAll(".ptile.end").forEach(x => x.onclick = e => { e.stopPropagation(); const k = +x.dataset.k; pickSpan(line, k === 0 ? a + 1 : a, k === 0 ? b : b - 1, tok); });
+  const more = [...hist, [a, b]];
+  peek.querySelectorAll(".pgrow").forEach(x => x.onclick = e => { e.stopPropagation(); const d = +x.dataset.d; pickSpan(line, d < 0 ? a - 1 : a, d > 0 ? b + 1 : b, tok, more); });
+  peek.querySelectorAll(".ptile.end").forEach(x => x.onclick = e => { e.stopPropagation(); const k = +x.dataset.k; pickSpan(line, k === 0 ? a + 1 : a, k === 0 ? b : b - 1, tok, more); });
+  // v54: ⌫ takes back the last character added (‹ or ›); with nothing added, it drops the last character.
+  const back = peek.querySelector(".pback");
+  if (back) back.onclick = e => { e.stopPropagation(); const h = hist.slice(), p = h.pop(); if (p) pickSpan(line, p[0], p[1], tok, h); else pickSpan(line, a, b - 1, tok); };
   // + Add for the selection. v51: it names the deck (the one picked last); ▾ picks another. Tap ✓ Added to take it
   // back out: one deck, it asks Remove?; several, the deck list with ticks and Remove word.
   // v52: + Add opens the deck sheet (your last decks ticked); ✓ Added opens it again, with Remove word.
@@ -5359,7 +5406,7 @@ function renderSelBar(shown) {
   $("wordsScreen").classList.toggle("hassel", picks.size > 0 || sorting);
   if (!picks.size && sorting) {  // v47: Sort into decks: tick words, then Add to deck
     if (!bar) { bar = el("div", "selbar"); bar.id = "selbar"; $("wordsScreen").append(bar); }
-    const top = el("div", "selrow"); top.append(el("b", "", "Tick words to file"), btn("✕", "btn ghost small selx", () => { sorting = false; renderWords(); }));
+    const top = el("div", "selrow"); top.append(el("b", "", "Tick words to file"), btn("Cancel", "btn outl small selx", () => { sorting = false; renderWords(); }));
     bar.replaceChildren(top); return;
   }
   if (!picks.size) { if (bar) bar.remove(); return; }
@@ -5369,7 +5416,7 @@ function renderSelBar(shown) {
   const top = el("div", "selrow");
   top.append(el("b", "", `${picks.size} selected`),
     btn(all ? "Select none" : `Select all ${shown.length}`, "btn ghost small", () => { if (all) shown.forEach(w => picks.delete(w)); else shown.forEach(w => picks.add(w)); renderWords(); }),
-    btn("✕", "btn ghost small selx", () => { picks.clear(); sorting = false; renderWords(); }));
+    btn("Cancel", "btn outl small selx", () => { picks.clear(); sorting = false; renderWords(); }));
   const acts = el("div", "selrow selacts");
   // v47: into one of your decks (they leave Basecamp); on your own deck, out of it
   const into = btn("Add to deck ▾", "btn", () => deckPicker({ title: `Add ${picks.size} to`, start: [], save: a => {
@@ -6330,6 +6377,13 @@ function showBack(w, how, st) {
   if (hinted && suggest === "good") suggest = "hard";  // needed a hint: it comes back sooner
   if (fanfare && !asking && ["check", "write", "know"].includes(how) && revOutcome.get(w)) bloom(revOutcome.get(w));
   if (!asking && revOutcome.get(w)) scoreTakes(revOutcome.get(w));
+  // v54: after the bloom, a small 對 半 錯 stays glowing in the card's corner until the next card.
+  box.querySelectorAll(".resmark").forEach(x => x.remove());
+  if (!asking && ["check", "write", "know"].includes(how) && revOutcome.get(w)) {
+    const [ch, cls] = { right: ["對", "ok"], shaky: ["半", "part"], missed: ["錯", "no"] }[revOutcome.get(w)];
+    const m = el("div", `resmark ${cls}${fanfare ? " late" : ""}`, conv(ch)); m.lang = "zh"; m.setAttribute("aria-label", { ok: "Right", part: "Partly right", no: "Missed" }[cls]);
+    box.append(m);
+  }
   // The colors used on this side (the big word and the example sentence), right under the big characters.
   const ex1 = exNow(w), leg = legendLine(conv(w.word) + (ex1 ? conv(ex1.example) : "")), bw = box.querySelector(".revchars");
   if (leg && bw) { box.querySelectorAll(".legline").forEach(x => x.remove()); bw.after(leg); }
