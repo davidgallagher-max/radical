@@ -12,6 +12,10 @@
       "continue": true
     },
     {
+      "src": "/(radical/)?privacy/?",
+      "dest": "/upslope/radical-privacy.html"
+    },
+    {
       "src": "/(.*)",
       "has": [
         {
