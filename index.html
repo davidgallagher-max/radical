@@ -1665,7 +1665,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v55";
+const APP_VERSION = "v56";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1757,30 +1757,62 @@ const READ_PACE = 2.5;
 const lineKey = t => { let h = 0; for (const c of String(t)) h = (h * 31 + c.codePointAt(0)) | 0; return h.toString(36) + "." + String(t).length; };
 function readToday() { const r = store.get("radical-read-lines", null); return r && r.day === localDay() && Array.isArray(r.h) ? r : { day: localDay(), h: [] }; }
 const readBefore = line => readToday().h.includes(lineKey(line._text || ""));
-function countLine(line) {
-  if (!line || line._counted || !line.isConnected) return; line._counted = true;
-  const r = readToday(), k = lineKey(line._text || ""); if (r.h.includes(k)) return;
-  r.h.push(k); if (r.h.length > 5000) r.h.shift(); store.set("radical-read-lines", r);
-  logDay("r", hanIn(line._text));
-  const t = line._text || ""; logDay("w", (line._spans || []).filter(x => hanIn(t.slice(x.start, x.end))).length);  // w: words read (v41)
+// v56: a long paragraph is one line, so credit is paid into a line bit by bit (in reading order) and each word is
+// logged as the credit passes it: the count moves smoothly instead of waiting for a whole paragraph. A line is "in
+// view" when most of it is on screen, or when it fills a good part of the screen (a paragraph taller than the screen).
+const partRead = new Map();  // lineKey -> { got, wi, ci, day }: a part-read line keeps its place when the page redraws
+function partOf(line) {
+  if (line._got != null) return;
+  const p = partRead.get(lineKey(line._text || ""));
+  if (p && p.day === localDay()) { line._got = p.got; line._wi = p.wi; line._ci = p.ci; } else line._got = 0;
+}
+function payLine(line, upTo) {
+  partOf(line);
+  const t = line._text || "", n = hanIn(t); line._got = Math.min(n, upTo);
+  const spans = line._spans || []; let i = line._wi || 0, at = line._ci || 0, words = 0, chars = 0;
+  while (i < spans.length) {
+    const x = spans[i], c = hanIn(t.slice(x.start, x.end));
+    if (at + c > line._got) break;
+    at += c; chars += c; if (c) words++; i++;
+  }
+  line._wi = i; line._ci = at;
+  partRead.set(lineKey(t), { got: line._got, wi: i, ci: at, day: localDay() });
+  if (chars) logDay("r", chars);
+  if (words) logDay("w", words);
+  if (line._got >= n) {
+    line._counted = true;
+    const r = readToday(), k = lineKey(t);
+    if (!r.h.includes(k)) { r.h.push(k); if (r.h.length > 5000) r.h.shift(); store.set("radical-read-lines", r); }
+  }
+}
+function countLine(line) {  // read aloud: the whole line at once
+  if (!line || line._counted || !line.isConnected) return;
+  if (readBefore(line)) { line._counted = true; return; }
+  payLine(line, Infinity);
 }
 let lineSeen = null, readBank = 0;
 setInterval(() => {
   if (document.hidden || $("readScreen").hidden) { readBank = 0; return; }
   const lines = [...document.querySelectorAll("#reader .line")].filter(l => !l._counted);
   lines.filter(l => l._ready && readBefore(l)).forEach(l => { l._counted = true; });  // read already today: no credit used
-  const open = lines.filter(l => !l._counted), cap = open.filter(l => l._vis).reduce((a, l) => a + hanIn(l._text), 0);
+  const open = lines.filter(l => !l._counted && l._ready && l._vis); open.forEach(partOf);
+  const cap = open.reduce((a, l) => a + hanIn(l._text) - (l._got || 0), 0);
   readBank = Math.min(readBank + READ_PACE, cap);
-  for (const l of open) { if (!l._ready) continue; const n = hanIn(l._text); if (n > readBank) break; readBank -= n; countLine(l); }
+  for (const l of open) {
+    if (readBank <= 0) break;
+    const need = hanIn(l._text) - (l._got || 0), give = Math.min(need, readBank);
+    readBank -= give; payLine(l, (l._got || 0) + give);
+  }
 }, 1000);
 function watchLines(reader) {
   if (!("IntersectionObserver" in window)) return;
   if (lineSeen) lineSeen.disconnect();
   lineSeen = new IntersectionObserver(entries => entries.forEach(en => {
-    const line = en.target; line._vis = en.isIntersecting && en.intersectionRatio > .6;
+    const line = en.target, room = en.rootBounds ? en.rootBounds.height : innerHeight;
+    line._vis = en.isIntersecting && (en.intersectionRatio > .6 || en.intersectionRect.height > room * .4);
     if (line._vis) { if (!line._t && !line._ready) line._t = setTimeout(() => { line._ready = true; }, 4000); }
     else if (line._t) { clearTimeout(line._t); line._t = null; }
-  }), { root: $("readScreen"), threshold: [0, .6, 1] });
+  }), { root: $("readScreen"), threshold: [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1] });
   reader.querySelectorAll(".line").forEach(l => lineSeen.observe(l));
 }  // reading: a read-along is running
 // listenAll: Listen is reading the whole text (it turns pages and shows more by itself). Leaving the screen, tapping
@@ -3872,7 +3904,8 @@ function paintReadGoal() {
   const w = (store.get("radical-days", {})[localDay()] || {}).w || 0, g = readGoal(), left = Math.max(0, g - w), p = Math.min(100, Math.round(w / g * 100));
   ring.querySelector(".rr1").setAttribute("stroke-dasharray", `${p} 100`); ring.classList.toggle("met", !left);
   ring.closest("button").setAttribute("aria-label", `Read: ${left ? `${num(left)} words to go today` : "reading goal met"}`);
-  document.querySelectorAll("#readScreen .togo").forEach(x => { x.hidden = !left; x.textContent = `${num(left)} word${left === 1 ? "" : "s"} to go`; });
+  const shown = Math.ceil(left / 5) * 5;  // in steps of 5, so it ticks down calmly
+  document.querySelectorAll("#readScreen .togo").forEach(x => { x.hidden = !left; x.textContent = `${num(shown)} words to go`; });
 }
 const streakDay = (v, day) => day < STREAK_FROM ? dayUsed(v) : goalMet(v, day);
 // ---- streak: days used in a row, with rest days. Any 14 days in a row may have up to 3 days off; a 4th day off in
