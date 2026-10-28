@@ -2,6 +2,11 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v56
+
+- Fix: reading a long paragraph now counts. A paragraph taller than about half the screen never counted as "on screen", so slow scrolling through an article gave almost nothing. Words now count one by one as you read, at the same pace as before (about 1.5 words a second), and a paragraph you scroll past halfway keeps the words you read.
+- "N words to go" ticks down in steps of 5.
+
 ## v55
 
 - A ring around 讀 on the tab bar fills as you read toward your Words read a day target and turns gold when you reach it.
