@@ -24,6 +24,9 @@ jobs:
   build:
     runs-on: macos-15
     timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash   # -eo pipefail: a failed xcodebuild piped into tail still fails the step
     steps:
       - uses: actions/checkout@v4
 
@@ -84,10 +87,12 @@ jobs:
           [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8" ] && [ -n "$TEAM" ] || { echo "Add the App Store Connect secrets first."; exit 1; }
           KEY="$RUNNER_TEMP/AuthKey.p8"; printf '%s' "$ASC_KEY_P8" > "$KEY"
           AUTH="-allowProvisioningUpdates -authenticationKeyPath $KEY -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID"
+          # Archive unsigned (signing an archive asks for a development profile, which needs a registered device);
+          # the export below signs it for the App Store with the API key.
           xcodebuild -project app/ios/App/App.xcodeproj -scheme App -configuration Release \
             -destination 'generic/platform=iOS' -archivePath build/Radical.xcarchive \
-            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION=${{ github.run_number }} \
-            $AUTH archive | tail -40
+            DEVELOPMENT_TEAM="$TEAM" CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO archive | tail -40
           cat > "$RUNNER_TEMP/export.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
