@@ -119,6 +119,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v56 notes: reading credit is paid into lines bit by bit (`payLine(line, upTo)`: `_got` chars credited, `_wi`/`_ci` span index and chars, each word logged to `w` as the credit passes its end; `partRead` Map keeps a part-read line's place across redraws for the day, `partOf`). The tick gives `READ_PACE` to ready, in-view lines in DOM order. In view (`watchLines`): ratio > .6 or the visible part taller than 40% of the screen (long paragraphs). `countLine` (read aloud) pays the whole line. `.togo` shows words to go rounded up to 5.
 
+- v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
+
 ## Accounts and sync (v30, v31)
 
 - The page sends its app day (`localDay()`, 4am start) in `x-radical-day`; the server's `dayOf(req)` trusts it within a day of UTC and uses it for usage files, the daily cap and the tally's "today".
@@ -135,6 +137,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 ## Waiting on David (as of Oct 28, 2026)
 
+- v57 iPhone check: cross your reading target and watch the ring swell with sparks.
 - v56 iPhone check: scroll slowly through a long Wikipedia article; words to go should drop about 5 every few seconds.
 - v55 iPhone check: the ring around 讀 filling and turning gold, "N words to go" under the heading and in the top strip while scrolling, a half day on the calendar (Both setting).
 

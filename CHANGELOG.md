@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v57
+
+- When the reading ring around 讀 turns gold, it swells and settles back while gold sparks fly off its rim (about 2 seconds). It plays once, at the moment you reach your target. Off with Reduce Motion.
+
 ## v56
 
 - Fix: reading a long paragraph now counts. A paragraph taller than about half the screen never counted as "on screen", so slow scrolling through an article gave almost nothing. Words now count one by one as you read, at the same pace as before (about 1.5 words a second), and a paragraph you scroll past halfway keeps the words you read.
