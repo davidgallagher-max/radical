@@ -12,3 +12,7 @@ __pycache__/
 .env
 .env.*
 .vercel/
+
+# The iPhone app: installed packages and the web folder built by scripts/build_app.sh
+app/node_modules/
+app/www/

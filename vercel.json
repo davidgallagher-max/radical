@@ -12,6 +12,13 @@
       "continue": true
     },
     {
+      "src": "/(index\\.html)?",
+      "headers": {
+        "Access-Control-Allow-Origin": "*"
+      },
+      "continue": true
+    },
+    {
       "src": "/(radical/)?privacy/?",
       "dest": "/upslope/radical-privacy.html"
     },

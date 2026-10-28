@@ -1,0 +1,17 @@
+{
+  "name": "radical-app",
+  "private": true,
+  "description": "Radical for iPhone: the web app in a Capacitor shell, bundled for offline use.",
+  "scripts": {
+    "build": "bash ../scripts/build_app.sh"
+  },
+  "dependencies": {
+    "@capacitor/cli": "8.5.3",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/screen-orientation": "8.0.2",
+    "@capawesome/capacitor-badge": "8.0.4",
+    "hanzi-writer": "3.7.3",
+    "opencc-js": "1.4.2"
+  }
+}

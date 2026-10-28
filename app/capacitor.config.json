@@ -1,0 +1,11 @@
+{
+  "appId": "com.upslopelabs.radical",
+  "appName": "Radical",
+  "webDir": "www",
+  "backgroundColor": "#0E0A09",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0E0A09",
+    "limitsNavigationsToAppBoundDomains": false
+  }
+}

@@ -1,6 +1,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Radical</title>
+<script>/* v54, iPhone app only: a newer page fetched from the web (see liveUpdate) runs instead of the one in the app. */
+(function () {
+  if (/^https?:$/.test(location.protocol) || window.__radicalLive) return;
+  var BUNDLED = /*BUNDLED*/"", SHELL = 1, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
+  try { ls.setItem("radical-shell", SHELL); var v = ls.getItem("radical-live-v"); } catch (e) { return; }
+  if (!v || num(v) <= num(BUNDLED) || v === ls.getItem("radical-live-bad")) return;
+  if (ls.getItem("radical-live-tried") === v && ls.getItem("radical-live-ok") !== v) { ls.setItem("radical-live-bad", v); return; }  // it never started last time
+  ls.setItem("radical-live-tried", v); ls.removeItem("radical-live-ok");  // the live page says ok once it starts
+  document.write('<plaintext style="display:none">');  // the rest of this page is never run
+  var fail = function () { ls.setItem("radical-live-bad", v); location.reload(); };
+  var r = indexedDB.open("radical-live", 1);
+  r.onupgradeneeded = function () { r.result.createObjectStore("f"); };
+  r.onerror = fail;
+  r.onsuccess = function () {
+    var g = r.result.transaction("f").objectStore("f").get("index.html");
+    g.onerror = fail;
+    g.onsuccess = function () {
+      var h = g.result; if (!h) return fail();
+      var swap = function () { window.__radicalLive = v; document.open(); document.write(h); document.close(); };
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", swap); else swap();
+    };
+  };
+})();</script>
 <script>try{var t=JSON.parse(localStorage.getItem("radical-theme"));}catch(e){}if(t!=="system")document.documentElement.dataset.theme=t==="light"?"light":"dark";</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
@@ -631,7 +654,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .revdel:focus-visible{outline:2px solid var(--accent)}
 .sugword{color:var(--accent);font-weight:600}.sugword.again{color:var(--sound)}
 .revcard{position:relative}
-.btn.danger{background:var(--no,#E5533D);color:#fff;border-color:transparent;box-shadow:none;text-shadow:none}
+.btn.danger{background:var(--no,#E5533D)!important;color:#fff!important;border-color:transparent!important;box-shadow:none!important;text-shadow:none!important}
 .acctdel{margin-top:14px;color:var(--muted)}
 .resmark{position:absolute;top:-10px;left:-8px;z-index:2;pointer-events:none;font-family:var(--font-zh);font-weight:700;font-size:2rem;line-height:1;color:var(--on);text-shadow:0 0 14px currentColor;animation:resglow 2.6s ease-in-out infinite}
 .resmark.part{color:var(--part,#E2B33C)}.resmark.no{color:var(--no,#E5533D)}
@@ -1537,6 +1560,46 @@ const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 };
+// v54: the iPhone app's native parts (Capacitor plugins), or null on the web.
+const plug = n => { const C = NATIVE && window.Capacitor; if (!C) return null; try { return (C.Plugins && C.Plugins[n]) || (C.registerPlugin ? C.registerPlugin(n) : null); } catch (e) { return null; } };
+// Flash cards and the word page stay upright; reading can turn sideways.
+function nativeOrient(id) {
+  const o = plug("ScreenOrientation"); if (!o) return;
+  (id === "reviewScreen" || id === "wordScreen" ? o.lock({ orientation: "portrait" }) : o.unlock()).catch(() => {});
+}
+// The Home Screen icon shows the 練 number (the Red number switch turns it off). Set when the app goes to the back.
+function nativeBadge() {
+  const b = plug("Badge"); if (!b || typeof dueCount !== "function") return;
+  const n = store.get("radical-badge", true) ? dueCount() : 0;
+  (n ? b.set({ count: n }) : b.clear()).catch(() => {});
+}
+function askBadge() {
+  const b = plug("Badge"); if (!b || store.get("radical-badge-asked", false) || !store.get("radical-badge", true)) return;
+  store.set("radical-badge-asked", true); b.requestPermissions().catch(() => {});
+}
+// Live updates: the app checks the web for a newer page (at most every 6 hours) and keeps it for the next launch.
+// A page that needs more of the app than this one has (NEEDS_SHELL) waits for the App Store update.
+const NEEDS_SHELL = 1;
+async function liveUpdate() {
+  if (!NATIVE || Date.now() - store.get("radical-live-check", 0) < 6 * 36e5) return;
+  store.set("radical-live-check", Date.now());
+  try {
+    const r = await fetch(`${WEB}/index.html?live=${Date.now()}`, { cache: "no-store" }); if (!r.ok) return;
+    let h = await r.text();
+    const v = (h.match(/const APP_VERSION = "(v\d+)"/) || [])[1], need = +((h.match(/const NEEDS_SHELL = (\d+)/) || [])[1] || 1), num = x => parseInt(String(x).slice(1), 10) || 0;
+    if (!v || num(v) <= num(APP_VERSION) || need > +(localStorage.getItem("radical-shell") || 0) || v === localStorage.getItem("radical-live-bad")) return;
+    h = h.replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/(opencc-js|hanzi-writer)@[^"]*?\/([\w.-]+\.js)"/g, 'vendor/$2"');  // the libraries in the app
+    await new Promise((ok, no) => {
+      const q = indexedDB.open("radical-live", 1);
+      q.onupgradeneeded = () => q.result.createObjectStore("f");
+      q.onerror = no;
+      q.onsuccess = () => { const tx = q.result.transaction("f", "readwrite"); tx.objectStore("f").put(h, "index.html"); tx.oncomplete = ok; tx.onerror = no; };
+    });
+    localStorage.setItem("radical-live-v", v);
+  } catch (e) {}
+}
+if (NATIVE) document.addEventListener("visibilitychange", () => { if (document.hidden) nativeBadge(); else liveUpdate(); });
+if (window.__radicalLive) try { localStorage.setItem("radical-live-ok", window.__radicalLive); } catch (e) {}  // this live page started
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const btn = (label, cls, fn) => { const b = el("button", cls); b.type = "button"; b.textContent = label; if (fn) b.onclick = fn; return b; };
@@ -1591,7 +1654,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v53";
+const APP_VERSION = "v54";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2344,6 +2407,7 @@ function drawn(text, size = 34, mark) {
 // ================= navigation: four tabs, plus pages that open on top with Back
 const stack = [];
 function showOnly(id) {
+  nativeOrient(id);
   document.querySelectorAll(".screen").forEach(s => s.hidden = s.id !== id);
   // v42: flash cards keep the tab bar, so you can step to another tab and 練 brings you back to the card you were on.
   const cards = id === "reviewScreen", tabbed = cards || id === "readScreen" || id === "wordsScreen" || id === "wikiScreen" || id === "trackScreen";
@@ -2355,6 +2419,7 @@ function showOnly(id) {
 let tab = "readScreen", revSide = null;
 function setTab(id) {
   if (id === "wikiScreen") fetchToday();  // v46: Explore's Today (once a day)
+  if (id === "wordsScreen") askBadge();  // v54: the app asks once to show the number on its icon
   if (id === "wordsScreen") contOk = true, catPicked = keepCat; if (reading) stopReading(); if ($("wikiBack")) $("wikiBack").hidden = true;
   // A session you stepped away from (another tab) is where 練 takes you, until you Quit it or the day ends.
   if (id === "wordsScreen" && !keepCat && savedSession()) {
@@ -7415,6 +7480,7 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   // The splash takes a tap from the very first moment: a tap hides it even while the app is still loading behind it
   // (the reader shows "Drawing…" until the characters arrive), so a slow connection never looks like a frozen app.
   window.__radicalStarted = true;
+  setTimeout(liveUpdate, 8000);
   const sp0 = $("splash");
   let harped = false, done = false;
   const harp = () => { if (harped || !soundOn) return; harped = true; for (let k = 0; k < 6; k++) zheng(k * .08, pen(4 + k), .38, 1, 2.4); };

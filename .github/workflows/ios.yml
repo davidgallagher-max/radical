@@ -1,0 +1,103 @@
+# The iPhone app, built on GitHub's Macs (no Xcode needed on David's side).
+# - Every run: a Simulator build, launched on an iPhone Simulator, with screenshots saved to the run (Artifacts).
+# - Run it by hand with "Upload to TestFlight" ticked: a signed build goes to App Store Connect. Needs the repo secrets
+#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (an App Store Connect API key, Admin role) and APPLE_TEAM_ID.
+# Changes to index.html don't need a new build: the app picks up the web page itself (live updates).
+name: iPhone app
+
+on:
+  workflow_dispatch:
+    inputs:
+      testflight:
+        description: "Upload to TestFlight"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths: ["app/**", ".github/workflows/ios.yml", "scripts/build_app.sh"]
+
+concurrency:
+  group: ios
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick the newest Xcode
+        run: |
+          X=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install the app's packages
+        working-directory: app
+        run: npm ci
+
+      - name: Build the character and word data
+        run: bash scripts/get_data.sh
+
+      - name: Build the app's web folder
+        run: bash scripts/build_app.sh
+
+      - name: Build for the Simulator
+        run: |
+          xcodebuild -project app/ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -40
+
+      - name: Launch on an iPhone Simulator and take screenshots
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k in sorted(d, reverse=True) if 'iOS' in k for x in d[k] if 'iPhone' in x['name'] and 'Pro' in x['name']))")
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/App.app
+          mkdir -p shots
+          xcrun simctl launch "$UDID" com.upslopelabs.radical
+          sleep 6;  xcrun simctl io "$UDID" screenshot shots/1-splash.png
+          sleep 20; xcrun simctl io "$UDID" screenshot shots/2-after-20s.png
+          # Relaunch: the app opens from its own files
+          xcrun simctl terminate "$UDID" com.upslopelabs.radical || true
+          xcrun simctl launch "$UDID" com.upslopelabs.radical
+          sleep 15; xcrun simctl io "$UDID" screenshot shots/3-relaunch.png
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: simulator-screenshots
+          path: shots/
+
+      - name: Signed build to TestFlight
+        if: ${{ inputs.testflight }}
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8" ] && [ -n "$TEAM" ] || { echo "Add the App Store Connect secrets first."; exit 1; }
+          KEY="$RUNNER_TEMP/AuthKey.p8"; printf '%s' "$ASC_KEY_P8" > "$KEY"
+          AUTH="-allowProvisioningUpdates -authenticationKeyPath $KEY -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID"
+          xcodebuild -project app/ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/Radical.xcarchive \
+            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            $AUTH archive | tail -40
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath build/Radical.xcarchive -exportOptionsPlist "$RUNNER_TEMP/export.plist" \
+            -exportPath build/export $AUTH | tail -40
+          rm -f "$KEY"
