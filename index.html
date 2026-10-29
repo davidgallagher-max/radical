@@ -935,8 +935,8 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .wdot .settag{color:var(--accent);opacity:.85}
 .wdot .newtag{font-size:.83rem;font-weight:600;color:var(--muted);margin-right:6px;letter-spacing:.02em}
 .goalpills{margin:10px 0 4px}.goalpills button{padding:10px 12px;font-size:1rem}
+.goalcard h3{margin-bottom:2px}.exportrow{display:flex;justify-content:center;margin:14px 0 4px}.goalhint{margin:0}
 .goalcard .btn.wide{margin-top:12px}
-.backupnote{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.92rem;color:var(--muted);padding:8px 12px;border:1px dashed color-mix(in srgb,var(--sound) 55%,var(--line));border-radius:12px}
 .wordlist{display:grid;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
 .wrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-top:1px solid var(--line)}
 .wrow:first-child{border-top:0}
@@ -1323,7 +1323,6 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
     <h3 class="sec tabsec"><span lang="zh">練</span>Practice</h3>
-    <p class="backupnote" id="backupNote" hidden></p>
     <div id="revStrip"></div>
     <details class="tpanel addbox" id="wordAddPanel">
       <summary class="addsum"><span class="plus" aria-hidden="true">＋</span>Add words</summary>
@@ -1343,6 +1342,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <h3 class="sec sub listhead" id="listHead"></h3>
     <div class="lookrow"><button type="button" class="btn ghost wide lookbtn" id="lookBtn" hidden></button></div>
     <div class="wordlist" id="wordList"></div>
+    <div class="exportrow"><button type="button" class="btn ghost small" id="exportBtn" hidden>Export these words</button></div>
   </div>
 </section>
 
@@ -1446,7 +1446,6 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="menuhead"><span class="brand"><b>Radical</b></span><button type="button" class="iconbtn" data-close aria-label="Close menu">✕</button></div>
     <button type="button" data-go="settings"><span class="mi">設</span>Settings</button>
     <button type="button" data-go="tour"><span class="mi">導</span>How it works</button>
-    <button type="button" data-go="backup"><span class="mi">存</span>Backup</button>
     <hr>
     <button type="button" data-go="notes" id="notesBtn"><span class="mi">箋</span>Notes from David</button>
     <button type="button" data-go="about"><span class="mi">部</span>About</button>
@@ -1462,18 +1461,6 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <h3 class="sec tabsec"><span lang="zh">歷</span>History</h3>
     <p class="note">Everything you've read or imported, newest first.</p>
     <div class="list" id="histList"></div>
-  </div>
-</section>
-
-<!-- BACKUP (from the menu) -->
-<section class="screen sub" id="backupScreen" hidden>
-  <div class="inner">
-    <div class="topbar"><button type="button" class="back" data-back>Back</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
-    <h3 class="sec tabsec"><span lang="zh">存</span>Backup</h3>
-    <div class="panel">
-      <p class="note" id="wordsWhere"></p>
-      <div class="row"><button type="button" class="btn ghost" id="backupBtn">Save a backup</button><label class="btn ghost" id="restoreLbl">Restore from a backup<input type="file" id="restoreFile" accept=".json,application/json" hidden></label></div>
-    </div>
   </div>
 </section>
 
@@ -1575,10 +1562,12 @@ const $ = id => document.getElementById(id);
 // v54: in the iPhone app the page is local (capacitor://localhost); the server and shared links stay on the web.
 const NATIVE = !/^https?:$/.test(location.protocol) || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const WEB = NATIVE ? "https://radical-tawny.vercel.app" : location.origin, API = NATIVE ? WEB : "";
+let storeHook = null;  // v58: settings and the open text note when they change, so they sync (see syncLive)
 const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} if (storeHook) try { storeHook(k); } catch (e) {} }
 };
+const rawSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 // v54: the iPhone app's native parts (Capacitor plugins), or null on the web.
 const plug = n => { const C = NATIVE && window.Capacitor; if (!C) return null; try { return (C.Plugins && C.Plugins[n]) || (C.registerPlugin ? C.registerPlugin(n) : null); } catch (e) { return null; } };
 // Flash cards and the word page stay upright; reading can turn sideways.
@@ -1666,14 +1655,13 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
   if (g === "history") $("histBtn").click();
   else if (g === "settings") openSettings(false);
   else if (g === "about") go("aboutScreen");
-  else if (g === "backup") { wordsWhere(); go("backupScreen"); }
   else if (g === "admin") openAdmin();
   else if (g === "notes") openNotes();
   else if (g === "tour") showTour(true);
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v57";
+const APP_VERSION = "v58";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2481,7 +2469,7 @@ function setTab(id) {
   tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); if (id === "trackScreen") renderTrack();
 }
 // Pages that can be opened from the menu: their Back says "‹ Menu" then (and reopens it), "‹ Back" otherwise.
-const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen", "backupScreen", "adminScreen", "notesScreen"];
+const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen", "adminScreen", "notesScreen"];
 function go(id) {
   if (MENU_PAGES.includes(id)) { $(id).dataset.via = viaMenu ? "menu" : ""; const bk = $(id).querySelector(".topbar .back"); if (bk) bk.textContent = viaMenu ? "Menu" : "Back";
     const mb = $(id).querySelector(".topbar .menubtn"); if (mb) mb.style.visibility = viaMenu ? "hidden" : ""; }  // ‹ Menu already goes back to it
@@ -3075,6 +3063,10 @@ if (store.get("radical-py", false)) { $("pyBtn").setAttribute("aria-checked", "t
 // articles) and word lists imported into Practice. Newest first, the last 100. A document comes back whole, on the
 // page you were on; a word list opens its words in Review.
 let textHistory = (store.get("radical-history", []) || []).map((h, i) => h.kind ? h : { id: "h" + i + Date.now().toString(36), kind: "typed", at: h.at, text: h.text });
+textHistory.forEach((h, i) => { if (!h.t) h.t = (Date.parse(h.at) || 0) + textHistory.length - i; });  // v58: when each last changed (syncs by it)
+let histDel = store.get("radical-hist-del", {});  // v58: History entries deleted here ({ id: when }), so other devices drop them too
+for (const [id, t] of Object.entries(histDel)) if (t < Date.now() - 180 * 864e5) delete histDel[id];
+function histGone(ids) { const now = Date.now(); ids.forEach(id => { if (id) histDel[id] = now; }); store.set("radical-hist-del", histDel); }
 const HKINDS = { typed: "Typed or pasted", wiki: "Wikipedia", photo: "Photo", pdf: "PDF", file: "File", list: "Word list" };
 const HFILTERS = [["all", "All"], ["typed", "Typed"], ["wiki", "Wikipedia"], ["photo", "Photos"], ["file", "Files"], ["list", "Lists"]];
 let histFilter = "all", histTimer = 0;
@@ -3088,10 +3080,11 @@ function saveHistory() {
 }
 const histKey = h => h.kind + ":" + (h.doc ? (h.doc.url || h.title || "") : h.words ? (h.title || "") + h.words.join("") : (h.text || "").slice(0, 200));
 function record(entry) {
-  const h = { id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: localDay(), ...entry };
+  const h = { id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: localDay(), ...entry, t: Date.now() };
   if (h.doc) h.doc = JSON.parse(JSON.stringify({ ...h.doc, simp: undefined }));
-  const key = histKey(h); textHistory = [h, ...textHistory.filter(x => histKey(x) !== key)].slice(0, 100);
-  saveHistory(); return h.id;
+  const key = histKey(h); histGone(textHistory.filter(x => histKey(x) === key).map(x => x.id));
+  textHistory = [h, ...textHistory.filter(x => histKey(x) !== key)].slice(0, 100);
+  saveHistory(); scheduleSync(); return h.id;
 }
 // The text on screen before this version kept no History record; keep it once, as typed text.
 function remember(text) {
@@ -3118,7 +3111,7 @@ function openHistory(h) {
   if (h.doc) {
     if (doc) closeDoc();
     doc = JSON.parse(JSON.stringify(h.doc)); doc._hid = h.id; pdfFile = null;
-    textHistory = [h, ...textHistory.filter(x => x !== h)]; saveHistory();
+    h.t = Date.now(); textHistory = [h, ...textHistory.filter(x => x !== h)]; saveHistory(); scheduleSync();
     stack.length = 0; setTab("readScreen"); showDocPage(doc.i || 0); return;
   }
   setText(h.text, false, h.kind, h.title || "");
@@ -3140,7 +3133,7 @@ function renderHistory() {
     const size = h.doc ? `${h.doc.pages.length} page${h.doc.pages.length === 1 ? "" : "s"}${h.doc.pages.length > 1 && h.doc.i ? `, on ${h.doc.i + 1}` : ""}` : h.kind === "list" ? `${(h.words || []).length} words` : `${[...(h.text || "")].length} characters`;
     const load = el("button", "load", `<span class="hk">${HKINDS[h.kind] || "Text"}</span><span class="ht" lang="zh">${esc(first)}</span><span class="note">${esc(h.at)} · ${size}</span>`);
     load.type = "button"; load.onclick = () => openHistory(h);
-    const del = btn("Delete", "btn ghost small", () => { textHistory = textHistory.filter(x => x !== h); saveHistory(); renderHistory(); });
+    const del = btn("Delete", "btn ghost small", () => { histGone([h.id]); textHistory = textHistory.filter(x => x !== h); saveHistory(); renderHistory(); scheduleSync(); });
     row.append(load, del); list.append(row);
   });
 }
@@ -3238,7 +3231,11 @@ async function signIn(email, code) {
   setTimeout(joinPending, 800);  // opened a friend's link before signing in
   return m ? m.words.length - n : 0;
 }
-function signOut() { setSession(null); store.set("radical-synced", 0); store.set("radical-owner", null); }
+function signOut() {
+  setSession(null); store.set("radical-synced", 0); store.set("radical-owner", null);
+  // v58: another account's first sync takes its own settings, History and text
+  ["radical-settings-synced", "radical-settings-sent", "radical-cur-sent", "radical-hist-sent", "radical-hist-v"].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+}
 
 // ---- AI use, as estimates. Everyone sees their own month in Settings → Account; owners (OWNER_EMAILS on the
 // server) also get a tally of everyone's use at the bottom of the menu, with a breakdown by feature and by person.
@@ -3429,17 +3426,94 @@ function stampWords() {
   if (gone) store.set("radical-deleted", deleted);
 }
 function scheduleSync() { if (!session) return; clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(), 4000); }
+// v58: settings, History and what you're reading sync too. Settings and the open text carry the time they last
+// changed (the newer copy wins); History goes up an entry at a time, only the ones that changed, and comes down whole
+// only when another device changed it. Writes made while the app starts (defaults, migrations) don't count as
+// changes: only those after your first touch. A device's first sync takes the account's settings if it has some.
+let syncLive = false;
+["pointerdown", "keydown"].forEach(ev => addEventListener(ev, () => { syncLive = true; }, { capture: true, once: true }));
+storeHook = k => {
+  if (!syncLive) return;
+  if (k === "radical-text") { rawSet("radical-cur-t", Date.now()); scheduleSync(); }
+  else if (SYNC_SETTINGS.includes(k)) { rawSet("radical-settings-t", Date.now()); scheduleSync(); }
+};
+function settingsOut() {
+  const synced = store.get("radical-settings-synced", false), t = store.get("radical-settings-t", 0);
+  if (synced && t <= store.get("radical-settings-sent", 0)) return undefined;
+  const v = {}; SYNC_SETTINGS.forEach(k => { try { const x = localStorage.getItem(k); if (x !== null) v[k] = x; } catch (e) {} });
+  return { t, v, ...(synced ? {} : { first: true }) };
+}
+function curOut() {
+  const t = store.get("radical-cur-t", 0); if (!t || t <= store.get("radical-cur-sent", 0)) return undefined;
+  return doc && doc._hid ? { t, hid: doc._hid, i: doc.i || 0 } : { t, text: $("src").value };
+}
+function histOut() {
+  const sent = store.get("radical-hist-sent", {}), put = []; let size = 0;
+  for (const h of textHistory) {
+    if ((sent[h.id] || 0) >= (h.t || 0)) continue;
+    const n = JSON.stringify(h).length; if (put.length && size + n > 1e6) break;  // the rest go next time
+    put.push(h); size += n;
+  }
+  return { v: store.get("radical-hist-v", -1), put, del: histDel };
+}
+function applyHist(h) {
+  if (!h) return;
+  if (typeof h.v === "number") rawSet("radical-hist-v", h.v);
+  if (!Array.isArray(h.items)) return;  // nothing new from other devices
+  const sent = store.get("radical-hist-sent", {}), del = h.del || {};
+  const byId = new Map(h.items.map(x => [x.id, x]));
+  // Entries changed here and not sent yet stay (they go up next time); everything else follows the account.
+  textHistory.forEach(x => { if ((sent[x.id] || 0) < (x.t || 0) && !(del[x.id] >= x.t)) { const r = byId.get(x.id); if (!r || (r.t || 0) < x.t) byId.set(x.id, x); } });
+  textHistory = [...byId.values()].sort((a, b) => (b.t || 0) - (a.t || 0)).slice(0, 100);
+  const got = new Map(h.items.map(x => [x.id, x.t || 0])), keep = {};
+  textHistory.forEach(x => { keep[x.id] = Math.max(sent[x.id] || 0, got.get(x.id) || 0); });
+  store.set("radical-hist-sent", keep); saveHistory();
+  if (!$("historyScreen").hidden) renderHistory();
+}
+// What you were reading on your other device opens here if it's newer: a History document on its page, or the text.
+async function applyCur(c) {
+  if (!c || !((+c.t || 0) > store.get("radical-cur-t", 0))) return;
+  const h = c.hid ? textHistory.find(x => x.id === c.hid && x.doc) : null;
+  if (c.hid && !h) return;
+  const done = () => { rawSet("radical-cur-t", +c.t); rawSet("radical-cur-sent", +c.t); };
+  if (h) {
+    if (doc && doc._hid === h.id && (doc.i || 0) === (c.i || 0)) { done(); return; }
+    if (doc) closeDoc();
+    doc = JSON.parse(JSON.stringify(h.doc)); doc._hid = h.id; pdfFile = null;
+    await showDocPage(c.i || 0); done(); return;
+  }
+  if ((c.text || "") === $("src").value) { done(); return; }
+  if (doc) closeDoc();
+  $("src").value = c.text || ""; rawSet("radical-text", $("src").value); done();
+  $("addPanel").open = !$("src").value.trim(); onNewText(); render();
+}
+function applySettings(st) {
+  if (!st || !st.v) return;
+  const first = !store.get("radical-settings-synced", false);
+  rawSet("radical-settings-synced", true);
+  if (!first && !((+st.t || 0) > store.get("radical-settings-t", 0))) return;
+  let changed = false;
+  for (const [k, v] of Object.entries(st.v)) if (SYNC_SETTINGS.includes(k) && typeof v === "string") { try { if (localStorage.getItem(k) !== v) { localStorage.setItem(k, v); changed = true; } } catch (e) {} }
+  rawSet("radical-settings-t", +st.t || 0); rawSet("radical-settings-sent", +st.t || 0);
+  // The settings are read when the app starts, so it starts again (not in the middle of a flash card session).
+  if (changed && $("reviewScreen").hidden) { toast("Settings updated from your account.", 1500); setTimeout(() => location.reload(), 1200); }
+}
 async function syncNow(quietErrors) {
   if (!session) return null;
   if (syncing) return syncing;
   syncing = (async () => {
     const token = await accessToken(); if (!token) return null;
+    const settings = settingsOut(), hist = histOut(), cur = curOut();
     const r = await fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, familiar, decks, days: store.get("radical-days", {}), summary: store.get("radical-friends", null) ? friendSummary() : undefined } }) });
+      body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, familiar, decks, days: store.get("radical-days", {}), summary: store.get("radical-friends", null) ? friendSummary() : undefined, settings, hist, cur } }) });
     const m = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(m.error || `Sync failed (${r.status}).`);
     if (!Array.isArray(m.words)) throw new Error("Sync failed: nothing came back.");  // never let an empty answer wipe your words
+    if (settings) rawSet("radical-settings-sent", settings.t);
+    if (cur) rawSet("radical-cur-sent", cur.t);
+    if (hist.put.length) { const sent = store.get("radical-hist-sent", {}); hist.put.forEach(h => { sent[h.id] = Math.max(sent[h.id] || 0, h.t || 0); }); store.set("radical-hist-sent", sent); }
     applyMerged(m); store.set("radical-synced", Date.now());
+    if (hist.put.length && textHistory.some(h => (store.get("radical-hist-sent", {})[h.id] || 0) < (h.t || 0))) scheduleSync();  // more History to send
     return m;
   })().catch(e => { store.set("radical-sync-error", e.message); if (!quietErrors) throw e; return null; }).finally(() => { syncing = null; if (!$("settingsScreen").hidden) renderAccount(); });
   return syncing;
@@ -3456,6 +3530,7 @@ function applyMerged(m) {
   if (m.decks && (+m.decks.t || 0) >= (+decks.t || 0)) { decks = { mine: m.decks.mine || "Mine", names: Array.isArray(m.decks.names) ? m.decks.names : [], used: m.decks.used && typeof m.decks.used === "object" ? m.decks.used : decks.used || {}, made: m.decks.made && typeof m.decks.made === "object" ? m.decks.made : decks.made || {}, ids: m.decks.ids && typeof m.decks.ids === "object" ? m.decks.ids : decks.ids || {}, t: +m.decks.t || 0 }; store.set("radical-decks", decks); }
   store.set("radical-words", myWords); resetSigs(); updateCounts();
   if (!$("wordsScreen").hidden) renderWords();
+  applyHist(m.hist); applyCur(m.cur).catch(() => {}); applySettings(m.settings);
 }
 addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && syncTimer) { clearTimeout(syncTimer); syncTimer = 0; syncNow(true); } });
 // Settings → Account: sign in, or who you're signed in as with Sync now and Sign out. One line says whether the
@@ -3609,7 +3684,7 @@ async function translateLine(text, line, b) {
 // ================= my words store
 let myWords = store.get("radical-words", []);
 resetSigs();  // what each word looked like at load, so only real changes get a new time stamp
-const saveWords = () => { stampWords(); store.set("radical-words", myWords); updateCounts(); scheduleSync(); };
+const saveWords = () => { stampWords(); store.set("radical-words", myWords); updateCounts(); scheduleSync(); clearTimeout(nudgeSignIn.t); nudgeSignIn.t = setTimeout(nudgeSignIn, 1500); };
 // Your own edits (w.mine: meaning, pinyin, example, example_pinyin, example_en, notes) sit on top of the shared card,
 // which everyone gets and nobody's edits change. fromClass lists the fields that came from imported class notes.
 const wPinyin = w => (w.mine && w.mine.pinyin) || (w.card && w.card.pinyin) || w.pinyin || "";
@@ -4526,7 +4601,7 @@ function grade(w, g, k = "srs", q = {}) {
   if (!w[k]) { w[k] = freshSrs(); countNew(k); }
   const s = w[k], ivl = nextIvl(s, g, q.slip), wasKnown = k === "srs" && !!w.skip;
   if (wasKnown && (g === "again" || g === "hard")) { w.skip = false; unlearn(w.word); }  // a known word you missed (or found hard) is Learning again
-  logDay("c"); markDone(w, k); store.set("radical-rev-since-backup", store.get("radical-rev-since-backup", 0) + 1);
+  logDay("c"); markDone(w, k);
   if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); unlearn(w.word); delete w.ok2; }
   else { s.ivl = wasKnown ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
   if (g !== "again") gotRight(w);
@@ -5129,19 +5204,35 @@ function renderStrip(sizes) {
   if (NOTES[revHow] && !seen[revHow]) { box.append(el("p", "note", NOTES[revHow])); seen[revHow] = true; store.set("radical-hownote", seen); }
   strip.append(box); todayNum();
 }
+// v58: Export words: the words in the list (or the ticked ones) as a spreadsheet file (.csv) through the share
+// sheet. Words only, never texts or articles: those aren't Radical's to hand out.
+const csvCell = x => { x = String(x ?? ""); return /[",\r\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x; };
+async function exportWords(ws) {
+  const rows = [["Word", "Pinyin", "Meaning", "Deck", "Status"],
+    ...ws.map(w => [w.word, wPinyin(w), wMeaning(w), wDecks(w).length ? wDecks(w).join("; ") : keyName(keyOf(w)), STATUS_NAME[wStatus(w)] || ""])];
+  const name = `radical-words-${localDay()}.csv`;
+  const blob = new Blob(["\ufeff" + rows.map(r => r.map(csvCell).join(",")).join("\r\n")], { type: "text/csv" });  // the mark tells Excel it's UTF-8
+  const file = new File([blob], name, { type: "text/csv" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e.name === "AbortError") return; }
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
 const HOW_NAME = { read: "Read", write: "Write", listen: "Listen", mix: "Mix" };
-// Backup reminder: your words live only on this phone, so after a week or 100 reviews without a backup, say so.
-function showBackupNote() {
-  const box = $("backupNote"), at = store.get("radical-backup-at", 0), revs = store.get("radical-rev-since-backup", 0);
-  const since = Date.now() - (at || store.get("radical-first-use", Date.now())), days = Math.floor(since / DAY);
-  box.hidden = !myWords.length || !!session || (days < 7 && revs < 100);  // signed in: the account is the backup
-  if (box.hidden) return;
-  box.innerHTML = `${at ? `Last backup: ${days} day${days === 1 ? "" : "s"} ago` : "No backup yet"}${revs ? ` · ${revs} review${revs === 1 ? "" : "s"} since` : ""}. Your words are only on this phone. `;
-  box.append(btn("Save now", "btn ghost small", () => $("backupBtn").click()));
+// v58: signed out, after the first 5 words you save (then 25, then 100), Radical asks you to sign in once each, so
+// your words are kept on the account. Ready-made deck words (Top, topics, shared) don't count. Replaces the backup note.
+const SIGN_AT = [5, 25, 100];
+function nudgeSignIn() {
+  if (session) return;
+  const n = myWords.filter(w => !w.common && !w.set && !w.got).length, asked = store.get("radical-signin-nudge", 0);
+  const at = SIGN_AT.filter(x => x <= n).pop(); if (!at || at <= asked) return;
+  if (!$("reviewScreen").hidden || document.querySelector(".sheet")) { clearTimeout(nudgeSignIn.t); nudgeSignIn.t = setTimeout(nudgeSignIn, 20000); return; }
+  store.set("radical-signin-nudge", at);
+  signInSheet({ why: "keep your words" });
 }
 let sorting = false;
 function renderWords() {
-  showBackupNote();
   if (!allLists().some(x => x[0] === curList)) { curList = "mine"; store.set("radical-list", "mine"); }  // a removed set
   const sets = {}, sizes = {}; CATS.forEach(([k]) => { sets[k] = pool(k); sizes[k] = sets[k].length; });
   const up = upcoming(curList);  // Top's and ready-made decks' words not studied yet: listed, joining when first studied
@@ -5182,6 +5273,7 @@ function renderWords() {
   const lb = $("lookBtn"), sel = shown.filter(w => picks.has(w)), set = picks.size ? (sel.length ? sel : [...picks]) : shown;
   lb.hidden = !set.length; lb.textContent = picks.size ? `Review selection (${set.length})` : `Review ${set.length === 1 ? "this word" : `these ${set.length}`}`;
   lb.onclick = () => openLook(set);
+  const xb = $("exportBtn"); xb.hidden = !set.length; xb.textContent = picks.size ? `Export selection (${set.length})` : "Export these words"; xb.onclick = () => exportWords(set);
   renderSelBar(shown);
 }
 
@@ -5888,6 +5980,10 @@ $("importFile").onchange = async e => {
   if (!files.length) return;
   const st = $("addStatus"); st.textContent = "Reading…";
   const all = { list: [] };
+  if (files.length === 1 && /\.json$/i.test(files[0].name)) {  // v58: a Radical backup restores in full (History and settings too)
+    let j = null; try { j = JSON.parse(await files[0].text()); } catch (err) {}
+    if (isBackup(j)) { st.textContent = ""; await restoreBackup(j); return; }
+  }
   try {
     for (const f of files) {
       if (isNotesFile(f)) { all.list.push(...await readNotes(f, m => st.textContent = m)); all.notes = true; continue; }
@@ -6794,7 +6890,7 @@ async function openSettings(welcome) {
   $("startBtn").hidden = !welcome; $("setBack").style.visibility = welcome ? "hidden" : "";
   $("rate").value = rate; pickVoice();
   acctSent = false; renderAccount();
-  buildLab(); setSums(); wordsWhere(); if (!session && !welcome) $("secAcct").open = true;  // not signed in: Account starts open
+  buildLab(); setSums(); if (!session && !welcome) $("secAcct").open = true;  // not signed in: Account starts open
   if (!$("paceHost").childElementCount) $("paceHost").append(paceSeg(() => sayPaced("我們在登山口附近搭帳篷。")));
   go("settingsScreen");
 }
@@ -6947,46 +7043,17 @@ function setSums() {
     tiles: trackTiles().map(k => TILES[k][0]).join(", ") };
   document.querySelectorAll("[data-sum]").forEach(x => x.textContent = S[x.dataset.sum] || "");
 }
-function wordsWhere() { const p = $("wordsWhere"); if (p) p.textContent = session ? "Saved to your account and synced to every device you sign in on. A backup is an extra copy." : "Only on this phone. Sign in to keep them safe."; }
 document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "change"].forEach(ev => x.addEventListener(ev, () => setTimeout(setSums, 50))));
-// ---- backup: one file with everything. Words (with progress, edits and schedules), the learned list and daily
-// tallies, what you're reading now and all of History, and your settings. A summary shows first; nothing leaves the
-// app until Save file.
+// ---- settings that go in a backup file and (v58) sync with the account.
 const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules",
   "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-tiles", "radical-common", "radical-region"];
-function backupData() {
-  const settings = {}; SETTING_KEYS.forEach(k => { try { const v = localStorage.getItem(k); if (v !== null) settings[k] = v; } catch (e) {} });
-  return { app: "Radical", version: APP_VERSION, saved: new Date().toISOString(), words: myWords, learned, familiar, days: store.get("radical-days", {}),
-    text: $("src").value, doc: doc ? { ...doc, simp: undefined } : null, history: textHistory, settings };
-}
-$("backupBtn").onclick = () => {
-  const d = backupData(), days = Object.keys(d.days).filter(k => dayUsed(d.days[k])).length;
-  const sheet = el("div", "sheet"), card = el("div", "sheetcard");
-  card.append(el("h3", "", "Save a backup"),
-    el("p", "", `${num(myWords.length)} words with progress · ${num(Object.keys(learned).length)} mastered · ${num(days)} days of activity · ${num(textHistory.length)} item${textHistory.length === 1 ? "" : "s"} in History · what you're reading now · settings`),
-    el("p", "note", "Your words, progress, history and settings, in one file."));
-  const row = el("div", "row");
-  row.append(btn("Cancel", "btn ghost", () => sheet.remove()), btn("Save file", "btn", async () => {
-    sheet.remove();
-    store.set("radical-backup-at", Date.now()); store.set("radical-rev-since-backup", 0); setTimeout(showBackupNote, 0);
-    const name = `radical-backup-${localDay()}.json`;
-    const blob = new Blob([JSON.stringify(backupData())], { type: "application/json" });
-    const file = new File([blob], name, { type: "application/json" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e.name === "AbortError") return; }
-    }
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
-    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  }));
-  card.append(row); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
-  document.body.append(sheet);
-};
-// Restore: words and History merge with what's here (nothing added since is lost; a word's newer copy wins); the
-// learned list and tallies merge; the text you were reading goes into History. Settings ask first.
-$("restoreFile").onchange = async e => {
-  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
-  let j; try { j = JSON.parse(await f.text()); } catch (err) { alertSheet("That file isn't a Radical backup."); return; }
-  const list = Array.isArray(j) ? j : j.words; if (!Array.isArray(list)) { alertSheet("That file isn't a Radical backup."); return; }
+const SYNC_SETTINGS = SETTING_KEYS.filter(k => k !== "radical-decks");  // v58: decks sync on their own
+// Restore a backup file (v58: the Backup page is gone; a backup chosen with the add box's file icon comes here):
+// words and History merge with what's here (nothing added since is lost; a word's newer copy wins); the learned list
+// and tallies merge; the text you were reading goes into History. Settings ask first.
+const isBackup = j => !!j && !Array.isArray(j) && j.app === "Radical" && Array.isArray(j.words);
+async function restoreBackup(j) {
+  const list = j.words;
   await ensure(list.map(w => w.word).join(""));
   let added = 0, updated = 0;
   list.forEach(e2 => { if (!e2 || !e2.word) return; const have = findWord(e2.word);
@@ -7003,10 +7070,10 @@ $("restoreFile").onchange = async e => {
     const sheet = el("div", "sheet"), card = el("div", "sheetcard");
     card.append(el("h3", "", "Use the settings from this backup?"), el("p", "", done), el("p", "note", "Theme, light, speech, writing pad and color lab."));
     const row = el("div", "row");
-    row.append(btn("No, keep mine", "btn ghost", () => sheet.remove()), btn("Yes, use them", "btn", () => { Object.entries(j.settings).forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch (e) {} }); location.reload(); }));
+    row.append(btn("No, keep mine", "btn ghost", () => sheet.remove()), btn("Yes, use them", "btn", () => { Object.entries(j.settings).forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch (e) {} }); rawSet("radical-settings-t", Date.now()); rawSet("radical-settings-synced", true); location.reload(); }));
     card.append(row); sheet.append(card); document.body.append(sheet);
   } else alertSheet(done);
-};
+}
 function alertSheet(msg) { const sheet = el("div", "sheet"), card = el("div", "sheetcard"); card.append(el("p", "", esc(msg)), btn("OK", "btn wide", () => sheet.remove())); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); }; document.body.append(sheet); }
 
 // ================= documents: PDFs and Wikipedia articles, read a page (or section) at a time
@@ -7538,7 +7605,7 @@ function askGoal() {
   if (document.querySelector(".sheet")) { setTimeout(askGoal, 1500); return; }
   store.set("radical-goal-asked", true);
   const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard");
-  card.append(el("h3", "", "What do you want to practice?"));
+  card.append(el("h3", "", "What do you want to practice?"), el("p", "note goalhint", "Pick one, two or all three."));
   const row = el("div", "pills goalpills"); row.setAttribute("role", "group");
   MODES.forEach(m => { const b = el("button", "", HOW_NAME[m]); b.type = "button"; b.dataset.m = m; b.onclick = () => { setGoal(m, !inGoal(m)); paintGoal(row); }; row.append(b); });
   paintGoal(row);

@@ -6,6 +6,7 @@
 // key, so no database tables or access rules have to be set up:
 //   users/<id>/data.json            the words, learned list and daily tallies (merged on every sync)
 //   users/<id>/backups/<day>.json   the previous version, one per day
+//   users/<id>/history.json         v58: History (texts and articles) and what you're reading now
 //   usage/<id>/<day>.json           every AI call that day: action, model, tokens, estimated cost
 //   users/<id>/profile.json         your friend code and the name friends see
 //   users/<id>/friends.json         the ids of your friends (both sides always list each other)
@@ -123,18 +124,59 @@ function merge(a, b) {
   const used = u => Object.fromEntries(Object.entries(u && typeof u === "object" ? u : {}).filter(([k, v]) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)).slice(0, 200).map(([k, v]) => [String(k).slice(0, 40), v]));
   // v46: which shared deck ids are which of your decks ({ id: key })
   const ids = u => Object.fromEntries(Object.entries(u && typeof u === "object" ? u : {}).filter(([k, v]) => /^[a-z0-9]{8,16}$/.test(k) && typeof v === "string").slice(0, 100).map(([k, v]) => [k, v.slice(0, 60)]));
-  const clean = d => d && typeof d === "object" ? { mine: String(d.mine || "Mine").slice(0, 30), names: (Array.isArray(d.names) ? d.names : []).map(n => String(n).slice(0, 30)).filter(Boolean).slice(0, 100), used: used(d.used), ids: ids(d.ids), t: +d.t || 0 } : null;
+  const clean = d => d && typeof d === "object" ? { mine: String(d.mine || "Mine").slice(0, 30), names: (Array.isArray(d.names) ? d.names : []).map(n => String(n).slice(0, 30)).filter(Boolean).slice(0, 100), used: used(d.used), made: used(d.made), ids: ids(d.ids), t: +d.t || 0 } : null;
   const decks = clean((+((b.decks || {}).t) || 0) > (+((a.decks || {}).t) || 0) ? b.decks : a.decks);
-  return { words, deleted, learned, familiar, days, ...(decks ? { decks } : {}) };
+  // v58: settings ({ t, v: { key: stored string } }): the newer copy wins. A device's first sync never overrides the
+  // account's copy (its t is from first-run choices, not a change you made on purpose).
+  const st = x => x && typeof x === "object" && x.v && typeof x.v === "object" ? { t: +x.t || 0, first: !!x.first,
+    v: Object.fromEntries(Object.entries(x.v).filter(([k, y]) => /^radical-[a-z0-9-]{1,30}$/.test(k) && typeof y === "string" && y.length < 50000).slice(0, 60)) } : null;
+  const sa = st(a.settings), sb = st(b.settings);
+  const pick = !sa ? sb : sb && !sb.first && sb.t > sa.t ? sb : sa;
+  const settings = pick ? { t: pick.t, v: pick.v } : null;
+  return { words, deleted, learned, familiar, days, ...(decks ? { decks } : {}), ...(settings ? { settings } : {}) };
 }
 async function sync(user, incoming) {
   const path = `users/${user.id}/data.json`;
   if (incoming && incoming.summary) await writePublic(user, incoming.summary).catch(() => {});
-  const remote = await getJSON(path);
-  const merged = { ...merge(remote, incoming), email: user.email, updated: Date.now() };
+  const { hist, cur, ...rest } = incoming || {};
+  const [remote, h] = await Promise.all([getJSON(path), hist || cur ? syncHistory(user, hist, cur) : null]);
+  const merged = { ...merge(remote, rest), email: user.email, updated: Date.now() };
   if (remote && remote.updated && day(remote.updated) !== day()) await putJSON(`users/${user.id}/backups/${day(remote.updated)}.json`, remote).catch(() => {});
   await putJSON(path, merged);
-  return merged;
+  return h ? { ...merged, ...h } : merged;
+}
+// v58: History syncs an entry at a time. Each entry has an id and t (when it last changed); the page sends only the
+// entries it changed, plus the ids it deleted. v counts changes here: a page that already had the latest v gets back
+// only the new v; any other page gets the whole History. cur is what you're reading now ({ t, text } or a History
+// entry and page, { t, hid, i }); the newer one wins, and it always comes back.
+async function syncHistory(user, hist, cur) {
+  const path = `users/${user.id}/history.json`;
+  const r = (await getJSON(path).catch(() => null)) || { v: 0, items: [], del: {} };
+  const del = { ...(r.del || {}) }, cutoff = Date.now() - 180 * 864e5;
+  let changed = false;
+  hist = hist && typeof hist === "object" ? hist : {};
+  for (const [id, t] of Object.entries(hist.del || {}).slice(0, 500)) if (typeof id === "string" && id.length < 40 && (+t || 0) > (del[id] || 0)) { del[id] = +t; changed = true; }
+  for (const id of Object.keys(del)) if (del[id] < cutoff) delete del[id];
+  const byId = new Map((r.items || []).map(x => [x.id, x]));
+  for (const x of (Array.isArray(hist.put) ? hist.put : []).slice(0, 100)) {
+    if (!x || typeof x.id !== "string" || x.id.length > 40 || typeof x.kind !== "string") continue;
+    const have = byId.get(x.id);
+    if (!have || (+x.t || 0) > (+have.t || 0)) { byId.set(x.id, x); changed = true; }
+  }
+  for (const [id, t] of Object.entries(del)) { const x = byId.get(id); if (x && t >= (+x.t || 0)) { byId.delete(id); changed = true; } }
+  const items = [...byId.values()].sort((x, y) => (+y.t || 0) - (+x.t || 0)).slice(0, 100);
+  // Kept under about 2.5 MB (a response can't pass 4.5 MB): the oldest long documents keep only their first page.
+  let size = JSON.stringify(items).length;
+  for (let i = items.length - 1; i >= 0 && size > 2.5e6; i--) {
+    const x = items[i]; if (!x.doc || !Array.isArray(x.doc.pages) || x.doc.pages.length < 2) continue;
+    const before = JSON.stringify(x).length; x.doc = { ...x.doc, pages: x.doc.pages.slice(0, 1), i: 0 }; x.cut = true; size -= before - JSON.stringify(x).length; changed = true;
+  }
+  let c = r.cur || null;
+  if (cur && typeof cur === "object" && (+cur.t || 0) > (+(c && c.t) || 0))
+    { c = { t: +cur.t, ...(cur.hid ? { hid: String(cur.hid).slice(0, 40), i: Math.max(0, +cur.i || 0) } : { text: String(cur.text || "").slice(0, 200000) }) }; changed = true; }
+  const v = changed ? (+r.v || 0) + 1 : +r.v || 0, upToDate = +hist.v === (+r.v || 0);
+  if (changed) await putJSON(path, { v, items, del, ...(c ? { cur: c } : {}) });
+  return { hist: upToDate ? { v } : { v, items, del }, ...(c ? { cur: c } : {}) };
 }
 
 // ---- AI cost: tokens from each response, priced per million tokens (estimates; set the env vars to correct them).
