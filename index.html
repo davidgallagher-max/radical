@@ -747,8 +747,12 @@ button.calday{font:inherit;font-size:.92rem;padding:0;cursor:pointer;background:
 button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}button.calday.hit{background:var(--accent)}
 .calday.picked{outline:2px solid var(--accent2,var(--accent));outline-offset:1px}
 .calline{margin:8px 0 0;color:var(--fg)}.calline [lang=zh]{font-family:var(--font-zh);font-weight:600}
-.calday.half{background:linear-gradient(135deg,var(--accent) 0 50%,color-mix(in srgb,var(--accent) 30%,transparent) 50%);color:var(--fg)}button.calday.half{background:linear-gradient(135deg,var(--accent) 0 50%,color-mix(in srgb,var(--accent) 30%,transparent) 50%)}
-.kd.half{background:linear-gradient(135deg,var(--accent) 0 50%,color-mix(in srgb,var(--accent) 30%,transparent) 50%)}
+/* v58: a half day is split on the diagonal: reading fills the top-left, cards the bottom-right; the date splits too */
+.calday.half,button.calday.half{--hf:var(--accent);--he:color-mix(in srgb,var(--accent) 30%,transparent);background:linear-gradient(135deg,var(--hf) 0 50%,var(--he) 50%);padding:0}
+.calday.half.cards,button.calday.half.cards{background:linear-gradient(135deg,var(--he) 0 50%,var(--hf) 50%)}
+.calday.half .hd{width:100%;height:100%;display:grid;place-items:center;font-weight:700;color:transparent;-webkit-background-clip:text;background-clip:text;background-image:linear-gradient(135deg,var(--bg) 0 50%,var(--fg) 50%)}
+.calday.half.cards .hd{background-image:linear-gradient(135deg,var(--fg) 0 50%,var(--bg) 50%)}
+.kd.half{background:linear-gradient(135deg,var(--accent) 0 50%,color-mix(in srgb,var(--accent) 30%,transparent) 50%)}.kd.half.cards{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 30%,transparent) 0 50%,var(--accent) 50%)}
 .kdi{white-space:nowrap}.trs .kdi:first-child .kd{margin-left:0}
 .kd{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 8px}.trs > .kd:first-child{margin-left:0}.kd.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}.kd.hit{background:var(--accent)}.kd.off{border:1px dashed var(--muted)}
 .tchart{width:100%;height:auto;display:block;overflow:visible}
@@ -4146,12 +4150,12 @@ function renderTrack() {
   };
   for (let k = 1; k <= nDays; k++) {
     const key = `${trackMonth.y}-${String(trackMonth.m + 1).padStart(2, "0")}-${String(k).padStart(2, "0")}`, v = d[key];
-    const cls = key > today ? "future" : dayUsed(v) ? (goalMet(v, key) ? "hit" : goalHalf(v, key) ? "half" : "on") : firstUse && key >= firstUse && key < today ? "off" : "";
+    const cls = key > today ? "future" : dayUsed(v) ? (goalMet(v, key) ? "hit" : goalHalf(v, key) ? `half ${goalHalf(v, key) === "cards" ? "cards" : "read"}` : "on") : firstUse && key >= firstUse && key < today ? "off" : "";
     if (dayUsed(v)) usedMonth++;
-    const c = el(key > today ? "span" : "button", `calday ${cls}${key === today ? " today" : ""}`, String(k)); grid.append(c);
+    const c = el(key > today ? "span" : "button", `calday ${cls}${key === today ? " today" : ""}`, cls.startsWith("half") ? `<span class="hd">${k}</span>` : String(k)); grid.append(c);
     if (key <= today) { c.type = "button"; c.onclick = () => showDay(c, key, v); }
   }
-  cal.append(head, grid, dayLine, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<span class="kdi"><i class="kd hit"></i> <span lang="zh">${mark}</span> goal met</span> ${streakRule() === "both" ? '<span class="kdi"><i class="kd half"></i> half</span> ' : ""}<span class="kdi"><i class="kd on"></i> studied</span> <span class="kdi"><i class="kd off"></i> rest day</span>`));
+  cal.append(head, grid, dayLine, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<span class="kdi"><i class="kd hit"></i> <span lang="zh">${mark}</span> goal met</span> ${streakRule() === "both" ? '<span class="kdi"><i class="kd half"></i> read</span> <span class="kdi"><i class="kd half cards"></i> cards</span> ' : ""}<span class="kdi"><i class="kd on"></i> studied</span> <span class="kdi"><i class="kd off"></i> rest day</span>`));
   box.append(cal);
   // your three boxes (tap: what's in it; touch and hold: change it): a number and one word each, under "Words" when all
   // three count words
