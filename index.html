@@ -1199,6 +1199,12 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .acctmsg:empty,.acctstat:empty{display:none}
 .acctstat{font-size:.84rem}
 .about a{color:var(--accent)}
+.ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 6px);z-index:30;width:38px;height:38px;margin-left:-19px;border-radius:50%;display:grid;place-items:center;
+  background:var(--surface,var(--bg));box-shadow:0 2px 10px rgba(0,0,0,.25);transform:translateY(calc(var(--d,0px) - 50px)) rotate(var(--r,0deg));opacity:0;pointer-events:none;transition:opacity .15s}
+.ptr.on{opacity:1}.ptr .ptrmark{width:24px;height:24px;opacity:.55;transition:opacity .15s}.ptr.armed .ptrmark,.ptr.spin .ptrmark{opacity:1}
+.ptr.spin{animation:ptrspin 1s linear infinite}
+@keyframes ptrspin{from{transform:translateY(calc(var(--d,0px) - 50px)) rotate(0)}to{transform:translateY(calc(var(--d,0px) - 50px)) rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.ptr.spin{animation:none}}
 .daydial{max-width:280px;margin:2px auto 0}.daydial svg{width:100%;display:block;touch-action:none;cursor:pointer;outline:none}
 .daydial .ddarc{fill:none;stroke:color-mix(in srgb,var(--muted) 40%,transparent);stroke-width:2}
 .daydial .ddtick{fill:var(--muted)}.daydial .ddlab{font-size:12px;font-family:inherit;fill:var(--muted);text-anchor:middle}.daydial .ddlab.on{fill:var(--fg);font-weight:700}
@@ -3167,6 +3173,14 @@ const FREE_AI = 10, FREE_OK = new Set(["explain", "translate", "words", "zhquery
 const AI_WHY = { explain: "use Explain", translate: "see the English", words: "find words", zhquery: "search Explore", simplify: "make it easier", ocr: "read photos",
   notes: "read class notes", tozh: "read it in Chinese", card: "make cards", wordset: "start a Word Deck", example: "get new sentences", judge: "check meanings", friends: "add friends" };
 function deviceId() { let id = store.get("radical-device", ""); if (!id) { id = Math.random().toString(36).slice(2) + Date.now().toString(36); store.set("radical-device", id); } return id; }
+// v58: how long each AI action normally takes; a call running over twice that counts as stuck
+const aiLive = new Set(), AI_NORMAL = { card: 2e4, notes: 4e4, ocr: 25e3, wordset: 2e4, words: 15e3, explain: 12e3, topics: 15e3, simplify: 2e4, example: 12e3 };
+const aiStuck = j => Date.now() - j.t0 > 2 * (AI_NORMAL[j.action] || 1e4);
+function aiRestart() { let n = 0; aiLive.forEach(j => { if (aiStuck(j) && j.ctrl) { j.again = true; j.ctrl.abort(); n++; } }); return n; }
+// Failures shown on screen can leave a way to try again: a pull to refresh runs it while the message is still showing
+const aiFails = new Set();
+function failRetry(node, fn) { aiFails.add({ node, fn }); }
+function retryFailed() { let n = 0; aiFails.forEach(f => { aiFails.delete(f); if (f.node.isConnected && f.node.offsetParent !== null) { n++; try { f.fn(); } catch (e) {} } }); return n; }
 async function claude(payload, why) {
   const token = await accessToken();
   why = why || AI_WHY[payload.action] || "use the AI service";
@@ -3181,12 +3195,21 @@ async function claude(payload, why) {
   const url = payload.action === "card" ? `${API}/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}${rp}`
     : payload.action === "explain" ? `${API}/api/claude?v=1&action=explain&sentence=${encodeURIComponent(payload.sentence)}&trad=${payload.trad === false ? 0 : 1}${rp}`
     : get ? `${API}/api/claude?v=1&action=wordset&theme=${encodeURIComponent(payload.theme)}${payload.n && payload.n !== 24 ? `&n=${payload.n}` : ""}${rp}` : API + "/api/claude";
-  let r;
+  // v58: each call is listed in aiLive while it runs, so a pull to refresh can restart one that's stuck (aiRestart)
+  let r, data;
+  const job = { action: payload.action, t0: Date.now(), ctrl: null, again: false };
+  aiLive.add(job);
   try {
-    r = await fetch(url, get ? { headers: auth }
-      : { method: "POST", headers: { "content-type": "application/json", ...auth }, body: JSON.stringify(payload) });
-  } catch (e) { throw new Error("Can't reach the server. Are you online?"); }
-  const data = await r.json().catch(() => ({}));
+    for (;;) {
+      job.ctrl = new AbortController(); job.again = false;
+      try {
+        r = await fetch(url, { ...(get ? { headers: auth }
+          : { method: "POST", headers: { "content-type": "application/json", ...auth }, body: JSON.stringify(payload) }), signal: job.ctrl.signal });
+        data = await r.json().catch(e => { if (job.again) throw e; return {}; });
+        break;
+      } catch (e) { if (job.again) { job.t0 = Date.now(); continue; } throw new Error("Can't reach the server. Are you online?"); }
+    }
+  } finally { aiLive.delete(job); }
   if (r.status === 404) throw new Error("Online features only work on the live site, not the Mac test server.");
   if (r.status === 401 && token) { setSession(null); if (!$("settingsScreen").hidden) renderAccount(); throw new Error("Your sign-in has expired. Sign in again (Settings, Account)."); }
   if (free && (r.status === 401 || data.signin)) { store.set("radical-free-ai", FREE_AI); signInSheet({ why }); throw new Error("Sign in first."); }
@@ -3679,7 +3702,7 @@ async function explainLine(text, line, b) {
     const keys = Object.keys(explainCache); while (keys.length > 300) delete explainCache[keys.shift()];
     store.set("radical-explain", explainCache);
     box.innerHTML = explainHTML(explainCache[text]);
-  } catch (e) { box.innerHTML = `<p class="exs">${esc(e.message)}</p>`; box.classList.add("err"); }
+  } catch (e) { box.innerHTML = `<p class="exs">${esc(e.message)}</p>`; box.classList.add("err"); failRetry(box, () => explainLine(text, line, b)); }
   b.disabled = false;
 }
 const transCache = store.get("radical-trans", {});
@@ -3882,7 +3905,7 @@ function cardPending(w, onReady) {
     box.innerHTML = '<span class="shimmer"></span><span>The full card is being made…</span>';
     ensureCard(w).then(onReady).catch(e => {
       box.innerHTML = `<span class="err">${esc(e.message)}</span>`;
-      if (online()) box.append(btn("Try again", "btn ghost small", start));
+      if (online()) { box.append(btn("Try again", "btn ghost small", start)); failRetry(box, start); }
     });
   };
   start();
@@ -5440,7 +5463,7 @@ async function addThemeSet(theme, more) {
     st.textContent = take.length ? "" : `Nothing new in ${theme}.`;
     if (more) toast(take.length ? `+${take.length} in ${esc(theme)}` : `Nothing new in ${esc(theme)}.`, 2500);
     play("right"); if (take.length) setList(theme); setTab("wordsScreen"); renderWords();
-  } catch (e) { st.textContent = e.message; }
+  } catch (e) { st.textContent = e.message; failRetry(st, () => addThemeSet(theme, more)); }
 }
 // v52 (Admin tools): ask for every ready-made topic deck once, each size and region, so the CDN holds them all.
 $("prebuildBtn").onclick = async () => {
@@ -6031,7 +6054,7 @@ $("importFile").onchange = async e => {
       if (isNotesFile(f)) { all.list.push(...await readNotes(f, m => st.textContent = m)); all.notes = true; continue; }
       const r = await findWords(await f.text()); all.list.push(...r.list); all.backup ||= r.backup; all.viaAuto ||= r.viaAuto; if (r.extra) all.extra = r.extra;
     }
-  } catch (err) { st.textContent = err.message; return; }
+  } catch (err) { st.textContent = err.message; failRetry(st, () => $("importFile").onchange({ target: { files, value: "" } })); return; }
   if (all.notes) await ensure(all.list.map(x => x.word).join(""));
   st.textContent = "";
   if (all.backup) { restoreProgress(all.list); restoreRecord(all.extra); }
@@ -7616,7 +7639,7 @@ async function wikiSearch(q, knownEn) {
       noteTopic(q, en);
     }
     await showHits(hits);
-  } catch (err) { if (token === wikiSearch.n) { wStat(esc(err.message)); $("wikiList").innerHTML = ""; } }
+  } catch (err) { if (token === wikiSearch.n) { wStat(esc(err.message)); $("wikiList").innerHTML = ""; failRetry($("wikiStatus"), () => wikiSearch(q, knownEn)); } }
 }
 wikiSearch.n = 0;
 $("wikiForm").onsubmit = e => { e.preventDefault(); markChip(null); wikiSearch($("wikiQ").value); };
@@ -7671,6 +7694,48 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   b.setAttribute("aria-pressed", b.dataset.r === streakRule());
   b.onclick = () => { goalRules(); store.set("radical-streak-rule", b.dataset.r); noteGoal(); checkGoalToday(); document.querySelectorAll("#ruleSeg [data-r]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); };
 });
+// v58: pull down to refresh, at the top of any tab (the iPhone app has no reload). A straight pull past the line
+// syncs, recounts Today, the badge and the ring, looks for a newer version and a new Open Message, restarts AI calls
+// that are stuck (over twice their usual time) and retries failures still on screen. Calls that are only slow keep going.
+(function pullToRefresh() {
+  const TABS = ["readScreen", "wikiScreen", "wordsScreen", "trackScreen"], PULL = 70;
+  const ptr = el("div", "ptr"); ptr.setAttribute("aria-hidden", "true");
+  document.body.append(ptr);
+  const markUp = () => { if (ptr.firstChild) return; try { const m = goldMark(); m.classList.add("ptrmark"); ptr.append(m); } catch (e) { ptr.append(el("b", "ptrmark", "部")); } };
+  let sc = null, y0 = 0, x0 = 0, dy = 0, live = false, busy = false;
+  const show = d => { ptr.style.setProperty("--d", `${Math.min(d, PULL * 1.4)}px`); ptr.style.setProperty("--r", `${Math.round(d * 4)}deg`); ptr.classList.toggle("armed", d >= PULL); };
+  const reset = () => { live = false; dy = 0; ptr.classList.remove("on", "armed"); show(0); };
+  TABS.forEach(id => {
+    const s = $(id); if (!s) return;
+    s.addEventListener("touchstart", e => { if (busy || e.touches.length !== 1 || s.scrollTop > 0 || document.querySelector(".sheet")) return; sc = s; y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; live = true; }, { passive: true });
+    s.addEventListener("touchmove", e => {
+      if (!live || sc !== s) return;
+      const ddy = e.touches[0].clientY - y0, ddx = Math.abs(e.touches[0].clientX - x0);
+      if (s.scrollTop > 0 || ddy < 0 || ddx > Math.max(16, ddy)) { reset(); return; }  // scrolling, or a sideways swipe (reader picks)
+      dy = ddy * .5; markUp(); ptr.classList.add("on"); show(dy);
+    }, { passive: true });
+    s.addEventListener("touchend", () => { if (!live || sc !== s) return; const go = dy >= PULL; reset(); if (go) refresh(); }, { passive: true });
+    s.addEventListener("touchcancel", reset, { passive: true });
+  });
+  async function refresh() {
+    busy = true; ptr.classList.add("on", "spin"); show(PULL);
+    const restarted = aiRestart(), retried = retryFailed();
+    try {
+      myWords.filter(w => !w.card).forEach(queueCard); pumpCards();
+      if (online()) await Promise.race([syncNow(true), new Promise(ok => setTimeout(ok, 8000))]).catch(() => {});
+      updateCounts(); paintReadGoal(); checkGoalToday(); if (!$("trackScreen").hidden) renderTrack();
+      showNotice();
+      if (await newerVersion()) { location.reload(); return; }
+    } catch (e) {}
+    setTimeout(() => { busy = false; ptr.classList.remove("on", "spin"); show(0); if (restarted + retried) toast(`Trying ${restarted + retried === 1 ? "it" : "those"} again…`, 1800); }, 500);
+  }
+  // A newer version: the app takes it through the live update; the website just reloads
+  async function newerVersion() {
+    const n = x => parseInt(String(x).slice(1), 10) || 0;
+    if (NATIVE) { const was = localStorage.getItem("radical-live-v"); store.set("radical-live-check", 0); await liveUpdate(); const now = localStorage.getItem("radical-live-v"); return !!now && now !== was && n(now) > n(APP_VERSION); }
+    try { const h = await (await fetch(`${location.pathname}?v=${Date.now()}`, { cache: "no-store" })).text(); const v = (h.match(/const APP_VERSION = "(v\d+)"/) || [])[1]; return !!v && n(v) > n(APP_VERSION); } catch (e) { return false; }
+  }
+})();
 // v58: "Day ends at": a half dial, 9 pm on the left to 4 am on the right. Drag the gold knob or tap an hour.
 (function dayDial() {
   const box = $("dayDial"); if (!box) return;
