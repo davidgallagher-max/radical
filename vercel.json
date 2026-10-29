@@ -42,5 +42,11 @@
       ],
       "dest": "/upslope/index.html"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "*": false
+    }
+  }
 }
