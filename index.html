@@ -1199,6 +1199,16 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .acctmsg:empty,.acctstat:empty{display:none}
 .acctstat{font-size:.84rem}
 .about a{color:var(--accent)}
+.setchip.tagged{display:grid;line-height:1.1;padding:5px 4px}.setchip .chiptag{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.setchip .chiptag.new{color:var(--gold2)}
+.topicadmin .tanew{display:flex;gap:8px}.topicadmin .tanew input{flex:1;min-width:0}
+.tarow{border-top:1px solid var(--line)}.tarow:first-of-type{border-top:0}
+.tahead{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 2px;cursor:pointer}
+.tastate{font-size:.85rem;color:var(--muted)}.tastate.on{color:var(--accent)}.tadate{font-size:.85rem;color:var(--muted);min-width:48px;text-align:right}
+.tadetail{padding:0 0 12px}.tabar{display:flex;flex-wrap:wrap;gap:8px}.taretire{display:flex;gap:8px;align-items:center;margin-top:8px}
+.tareg{margin:8px 0 4px}.tawords{margin:4px 0 0;padding-left:28px;font-size:.92rem}.tawords li{padding:3px 0;position:relative}
+.tawords .tapy{color:var(--muted)}.tawords .tamean{color:var(--muted);font-size:.85rem}.tawords .tax{width:28px;height:28px;font-size:.8rem;float:right}
+.tawords .tacut{list-style:none;margin-left:-28px;font-size:.72rem;color:var(--gold2);border-top:1px dashed var(--gold2);padding-top:0;text-align:right}
+.taswap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}.taswap input{width:110px}
 .ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 6px);z-index:30;width:38px;height:38px;margin-left:-19px;border-radius:50%;display:grid;place-items:center;
   background:var(--surface,var(--bg));box-shadow:0 2px 10px rgba(0,0,0,.25);transform:translateY(calc(var(--d,0px) - 50px)) rotate(var(--r,0deg));opacity:0;pointer-events:none;transition:opacity .15s}
 .ptr.on{opacity:1}.ptr .ptrmark{width:24px;height:24px;opacity:.55;transition:opacity .15s}.ptr.armed .ptrmark,.ptr.spin .ptrmark{opacity:1}
@@ -1497,7 +1507,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <h3 class="sec">Post an Open Message</h3>
     <div class="panel" id="noticePanel"></div>
     <h3 class="sec">Topic decks</h3>
-    <div class="panel"><p class="note" id="prebuildLine">Makes every ready-made topic deck once (each size, 國語 and 普通话), so they open instantly for everyone.</p><button type="button" class="btn ghost small" id="prebuildBtn">Pre-build topic decks</button></div>
+    <div class="panel topicadmin" id="topicPanel"></div>
     <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
   </div>
 </section>
@@ -3305,7 +3315,7 @@ function aiTally() {
   if (store.get("radical-owner", false)) { b.hidden = false; paintTally(last); }
   fetchUsage().then(j => { b.hidden = !(j && j.owner); if (j && j.owner) paintTally(j.all); });
 }
-function openAdmin() { paintTally(store.get("radical-ai-tally", null)); noticePanel(); buildLab(); go("adminScreen"); aiTally(); }
+function openAdmin() { paintTally(store.get("radical-ai-tally", null)); noticePanel(); topicPanel(true); buildLab(); go("adminScreen"); aiTally(); }
 // v44: the owners' notice: everyone sees it once (per notice), a moment after the splash. Owners write it here.
 // v46: asked fresh every time (never a stored answer; the minute in the address lets the CDN share it for a minute),
 // on start and on every return to the app (at most once a minute), and it waits for as long as a sheet, cards or
@@ -4545,7 +4555,7 @@ function shareSheet(k) {
 // join it too (v47: a word can be in several decks). Cards for its new words are made when first studied.
 function addSharedDeck(d) {
   const base = String(d.name || "Shared deck").slice(0, DECK_MAX);
-  let name = base, i = 2; const taken = x => decks.names.includes(x) || x === mineName() || THEMES.includes(x);
+  let name = base, i = 2; const taken = x => decks.names.includes(x) || x === mineName() || themesNow().includes(x);
   while (taken(name)) name = `${base.slice(0, DECK_MAX - 3)} ${i++}`;
   if (decks.names.length >= 100) { toast("You have too many decks. Delete one first.", 3000); return false; }
   decks.names.push(name); decks.made[deckKey(name)] = localDay(); let added = 0, moved = 0;
@@ -5351,7 +5361,7 @@ function renderWords() {
 // words from before v41 stay. Themed sets (and ＋, any theme you type) come from the wordset action: about 24 words,
 // kept only if the dictionary knows them, added at once (w.set = the theme); their cards are made when first studied.
 const COMMON_SIZES = [100, 500, 1000, 2000];
-const THEMES = ["Food", "Travel", "Family", "Work", "Feelings", "Time"];
+const THEMES = ["Food", "Travel", "Family", "Work", "Feelings", "Time"];  // before the catalog arrives (v59: catThemes)
 // v42: Top N is the N most common WORDS (lists/topwords.txt), so Top 1,000 is 1,000 words. Before v42 it was the most
 // common characters, each with a word, and words two characters shared came once (Top 1,000 gave about 880).
 let commonList = null, commonRows = null;
@@ -5453,7 +5463,9 @@ async function addThemeSet(theme, more) {
   const st = $("addStatus"), n = more ? moreSize(theme) : topicSize(); st.textContent = more ? `Adding to ${theme}…` : `Making ${theme}…`;
   if (more) toast(`Adding to ${esc(theme)}…`, 2500);
   try {
-    const { words } = await claude({ action: "wordset", theme, n }, `start ${theme}`);
+    // v59: a built deck comes from the catalog (its top n words); a deck not built yet, or + More past 50, asks the AI
+    const cat = catOf(theme), stored = cat && cat.built ? await builtWords(theme).catch(() => null) : null;
+    const { words } = stored && n <= stored.length ? { words: stored.slice(0, n) } : await claude({ action: "wordset", theme, n }, `start ${theme}`);
     const had = new Set((setCache[theme] || []).map(x => x.word));
     const items = (words || []).map(x => ({ word: conv(String(x.word || "").trim()), pinyin: x.pinyin, meaning: x.meaning })).filter(x => x.word && !had.has(x.word) && !findWord(x.word) && !deleted[x.word]);
     await ensure(items.map(x => x.word).join(""));
@@ -5465,18 +5477,119 @@ async function addThemeSet(theme, more) {
     play("right"); if (take.length) setList(theme); setTab("wordsScreen"); renderWords();
   } catch (e) { st.textContent = e.message; failRetry(st, () => addThemeSet(theme, more)); }
 }
-// v52 (Admin tools): ask for every ready-made topic deck once, each size and region, so the CDN holds them all.
-$("prebuildBtn").onclick = async () => {
-  const b = $("prebuildBtn"), line = $("prebuildLine"), token = await accessToken(); if (!token) { line.textContent = "Sign in first."; return; }
-  const jobs = []; THEMES.forEach(t => TOPIC_SIZES.forEach(n => ["", "&r=cn"].forEach(r => jobs.push([t, n, r]))));
-  b.disabled = true; let ok = 0, bad = 0;
-  for (const [t, n, r] of jobs) {
-    line.textContent = `Making ${ok + bad + 1} of ${jobs.length}: ${t} (${n})…`;
-    try { const res = await fetch(`${API}/api/claude?v=1&action=wordset&theme=${encodeURIComponent(t)}${n !== 24 ? `&n=${n}` : ""}${r}`, { headers: { Authorization: `Bearer ${token}`, "x-radical-day": localDay() } }); res.ok ? ok++ : bad++; }
-    catch (e) { bad++; }
+// v59: the topic deck catalog. Everyone reads the live decks (GET topics, cached here in radical-topics); a deck the
+// owners have built comes as one 50-word list per region (GET topic) and a size is its top. A deck not built yet is
+// asked of the AI as before (wordset). New for 14 days after it's published; "Until <day>" once it's being retired.
+// Anyone who opened a deck keeps it (its words are in setCache), whatever happens to it in the catalog.
+let topicCat = store.get("radical-topics", null);
+const catThemes = () => topicCat && Array.isArray(topicCat.list) ? topicCat.list : THEMES.map(theme => ({ theme }));
+const themesNow = () => catThemes().map(x => x.theme);
+const catOf = t => catThemes().find(x => x.theme === t) || null;
+async function fetchTopics() {
+  try {
+    const r = await fetch(`${API}/api/claude?action=topics&m=${Math.floor(Date.now() / 6e4)}`, { cache: "no-store" }); if (!r.ok) return;
+    const j = await r.json(); if (!Array.isArray(j.topics)) return;
+    topicCat = { at: Date.now(), list: j.topics }; store.set("radical-topics", topicCat);
+  } catch (e) {}
+}
+const topicIsNew = x => x && x.pub && Date.now() - x.pub < 14 * DAY && !hasSet(x.theme);
+const untilName = d => { const [y, m, dd] = d.split("-").map(Number); return new Date(y, m - 1, dd).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
+async function builtWords(theme) {
+  const r = await fetch(`${API}/api/claude?action=topic&theme=${encodeURIComponent(theme)}${region === "cn" ? "&r=cn" : ""}&m=${Math.floor(Date.now() / 6e4)}`, { cache: "no-store" });
+  const j = await r.json().catch(() => ({})); if (!r.ok || !Array.isArray(j.words)) throw new Error(j.error || "That deck didn't load. Try again.");
+  return j.words;
+}
+// Admin tools: the decks with their dates and state; build a new one, look over its words (✕ swaps one for your own
+// or the AI's pick), publish, retire on a date, or delete now.
+let topicAdmin = { list: null, open: "", words: null, r: "tw", msg: "" };
+async function topicCall(body) {
+  const j = await claude({ action: "topics", ...body });
+  if (j.list) topicAdmin.list = j.list;
+  return j;
+}
+async function topicPanel(reload) {
+  const box = $("topicPanel"); if (!box) return;
+  if (reload || !topicAdmin.list) { box.innerHTML = '<p class="note">Loading…</p>'; try { await topicCall({ op: "list" }); } catch (e) { box.innerHTML = `<p class="note">${esc(e.message)}</p>`; return; } }
+  box.innerHTML = "";
+  const form = el("form", "row tanew"), inp = el("input"); inp.type = "text"; inp.placeholder = "New topic: Weather, Night market…"; inp.maxLength = 60;
+  const make = el("button", "btn small", "Build"); make.type = "submit";
+  form.append(inp, make);
+  const msg = el("p", "note tamsg", esc(topicAdmin.msg)); topicAdmin.msg = "";
+  form.onsubmit = async e => {
+    e.preventDefault(); const t = inp.value.trim(); if (!t) return;
+    make.disabled = true; msg.textContent = `Building ${t} (both regions, about 20 seconds)…`;
+    try { const j = await topicCall({ op: "build", theme: t }); if (j.error) throw new Error(j.error); topicAdmin.open = j.theme; topicAdmin.words = { tw: j.tw, cn: j.cn }; topicPanel(); }
+    catch (err) { msg.textContent = err.message; make.disabled = false; }
+  };
+  box.append(form, msg);
+  const day = localDay();
+  (topicAdmin.list || []).forEach(x => {
+    const state = !x.built ? (x.live ? "Live · AI" : "Not built") : !x.live ? "Draft" : x.until ? (x.until < day ? "Retired" : `Until ${untilName(x.until)}`) : "Live";
+    const row = el("div", "tarow" + (topicAdmin.open === x.theme ? " open" : ""));
+    const head = el("button", "tahead", `<b>${esc(x.theme)}</b><span class="tastate ${state === "Live" ? "on" : ""}">${state}</span><span class="tadate">${x.made ? untilName(x.made) : ""}</span>`); head.type = "button";
+    head.onclick = async () => {
+      if (topicAdmin.open === x.theme) { topicAdmin.open = ""; return topicPanel(); }
+      topicAdmin.open = x.theme; topicAdmin.words = null; topicPanel();
+      if (x.built) { try { const j = await topicCall({ op: "get", theme: x.theme }); if (topicAdmin.open === x.theme) { topicAdmin.words = { tw: j.tw || [], cn: j.cn || [] }; topicPanel(); } } catch (e) { topicAdmin.msg = e.message; topicPanel(); } }
+    };
+    row.append(head);
+    if (topicAdmin.open === x.theme) row.append(topicDetail(x, day));
+    box.append(row);
+  });
+}
+function topicDetail(x, day) {
+  const d = el("div", "tadetail"), act = el("div", "row tabar"), say = el("p", "note tamsg");
+  const run = async (body, done) => { say.textContent = "…"; try { const j = await topicCall({ theme: x.theme, ...body }); if (j.error) throw new Error(j.error); if (done) done(j); topicPanel(); } catch (e) { say.textContent = e.message; } };
+  if (!x.built) act.append(btn("Build its words", "btn small", e => { e.target.disabled = true; say.textContent = "Building (about 20 seconds)…"; run({ op: "build" }, j => { topicAdmin.words = { tw: j.tw, cn: j.cn }; }); }));
+  else {
+    if (!x.live || x.until) act.append(btn(x.live ? "Keep it" : "Publish", "btn small", () => run({ op: "publish" })));
+    else act.append(btn("Back to draft", "btn ghost small", () => run({ op: "draft" })));
+    if (x.live && !x.until) act.append(btn("Retire…", "btn ghost small", () => {
+      const f = el("div", "row taretire"), dt = el("input"); dt.type = "date"; dt.min = day;
+      const t = new Date(Date.now() + 30 * DAY); dt.value = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+      f.append(el("span", "note", "Last day"), dt, btn("Retire", "btn small", () => run({ op: "retire", until: dt.value })));
+      act.after(f);
+    }));
+    act.append(btn("Rebuild", "btn ghost small", e => { e.target.disabled = true; say.textContent = "Rebuilding (about 20 seconds)…"; run({ op: "build" }, j => { topicAdmin.words = { tw: j.tw, cn: j.cn }; }); }));
   }
-  line.textContent = `Done: ${ok} ready${bad ? `, ${bad} failed (try again)` : ""}.`; b.disabled = false;
-};
+  const del = btn("Delete now", "btn ghost small", () => armConfirm(del, on => del.textContent = on ? "Delete?" : "Delete now", () => { topicAdmin.open = ""; run({ op: "delete" }); }));
+  act.append(del);
+  d.append(act, say);
+  if (x.built) {
+    const seg = el("div", "seg uiseg tareg"); seg.setAttribute("role", "group");
+    [["tw", "國語"], ["cn", "普通话"]].forEach(([r, name]) => { const b = el("button", "", name); b.type = "button"; b.lang = "zh"; b.setAttribute("aria-pressed", topicAdmin.r === r); b.onclick = () => { topicAdmin.r = r; topicPanel(); }; seg.append(b); });
+    d.append(seg);
+    const words = topicAdmin.words && topicAdmin.words[topicAdmin.r];
+    if (!words) d.append(el("p", "note", "Loading words…"));
+    else {
+      d.append(el("p", "note", `${words.length} words. 12 and 24 are the top of the list.`));
+      const ul = el("ol", "tawords");
+      words.forEach((w, k) => {
+        const li = el("li", "", `<span lang="zh">${esc(w.word)}</span> <span class="tapy">${esc(w.pinyin)}</span> <span class="tamean">${esc(w.meaning)}</span>`);
+        const x2 = btn("✕", "iconbtn tax", () => swapSheet(x, w, li)); x2.setAttribute("aria-label", `Swap ${w.word}`);
+        li.append(x2); ul.append(li);
+        if (k === 11 || k === 23) ul.append(el("li", "tacut", k === 11 ? "12" : "24"));
+      });
+      d.append(ul);
+    }
+  }
+  return d;
+}
+// ✕ on a word: your own word in its place (pinyin and meaning from the dictionary) or the AI's pick
+function swapSheet(x, w, li) {
+  const old = li.querySelector(".taswap"); if (old) { old.remove(); return; }
+  const f = el("form", "row taswap"), inp = el("input"), say = el("span", "note"); inp.type = "text"; inp.placeholder = "Your word"; inp.lang = "zh"; inp.maxLength = 12;
+  const r = topicAdmin.r, done = j => { topicAdmin.words[r] = j.words; topicPanel(); };
+  const call = async body => { say.textContent = "…"; try { const j = await topicCall({ op: "swap", theme: x.theme, r, word: w.word, ...body }); if (j.error) throw new Error(j.error); done(j); } catch (e) { say.textContent = e.message; } };
+  const mine = el("button", "btn small", "Use mine"); mine.type = "submit";
+  f.onsubmit = async e => {
+    e.preventDefault(); const word = toTrad(inp.value.replace(/\s+/g, "")); if (!word) return;
+    await ensure(word); const d = lookup(word) || lookup(toSimp(word));
+    call({ own: { word, pinyin: d ? (r === "tw" && d[2] || d[1]) : "", meaning: d ? d[3] : "" } });
+  };
+  f.append(inp, mine, btn("AI pick", "btn ghost small", () => call({})), say);
+  li.append(f); inp.focus();
+}
 // Choosing a set comes with signing in when you aren't: its cards need the account. A Top set still starts on Not now
 // (its words work without cards for now); a themed set needs the AI service, so it waits.
 function chooseSet(fn, needsAI, after, why) {
@@ -5496,7 +5609,11 @@ function setsGrid(close) {
   const sz = el("div", "pills topicsize"); sz.setAttribute("role", "group"); sz.append(el("span", "tslabel", "Words"));
   TOPIC_SIZES.forEach(n => { const b = el("button", "", String(n)); b.type = "button"; b.setAttribute("aria-pressed", topicSize() === n);
     b.onclick = () => { store.set("radical-topic-size", n); sz.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); }; sz.append(b); });
-  THEMES.forEach(t => { const b = btn(t, "setchip", hasSet(t) ? () => { if (close) close(); addThemeSet(t); } : pick(() => addThemeSet(t), true, `start ${t}`)); b.setAttribute("aria-pressed", curList === t); th.append(b); });
+  catThemes().forEach(x => { const t = x.theme, b = btn(t, "setchip", hasSet(t) ? () => { if (close) close(); addThemeSet(t); } : pick(() => addThemeSet(t), true, `start ${t}`)); b.setAttribute("aria-pressed", curList === t);
+    // v59: NEW for 14 days after it's published; Until <day> while it's being retired (only for decks you haven't opened)
+    const tag = x.until && !hasSet(t) ? `Until ${untilName(x.until)}` : topicIsNew(x) ? "New" : "";
+    if (tag) { b.classList.add("tagged"); b.innerHTML = `<small class="chiptag${tag === "New" ? " new" : ""}">${esc(tag)}</small>${esc(t)}`; }
+    th.append(b); });
   g.append(top, sz, th, btn("＋ Deck from a topic", "setchip wide", () => { if (close) close(); makeSet(close ? openSets : null); }));
   return g;
 }
@@ -5524,7 +5641,7 @@ function nameDeck(cur, done, back) {
   const go = btn("Save", "btn wide", () => {
     const n = inp.value.trim().replace(/\s+/g, " ");
     if (!n) { msg.textContent = "Type a name first."; return; }
-    if (n !== cur && (decks.names.includes(n) || n === (mineName()) || THEMES.includes(n))) { msg.textContent = "You have a deck with that name."; return; }
+    if (n !== cur && (decks.names.includes(n) || n === (mineName()) || themesNow().includes(n))) { msg.textContent = "You have a deck with that name."; return; }
     sheet.remove(); if (n !== cur) done(n);
   });
   inp.addEventListener("keydown", e => { if (e.key === "Enter") go.click(); });
@@ -7765,7 +7882,7 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   // The splash takes a tap from the very first moment: a tap hides it even while the app is still loading behind it
   // (the reader shows "Drawing…" until the characters arrive), so a slow connection never looks like a frozen app.
   window.__radicalStarted = true;
-  setTimeout(liveUpdate, 8000);
+  setTimeout(liveUpdate, 8000); fetchTopics();
   const sp0 = $("splash");
   let harped = false, done = false;
   const harp = () => { if (harped || !soundOn) return; harped = true; for (let k = 0; k < 6; k++) zheng(k * .08, pen(4 + k), .38, 1, 2.4); };

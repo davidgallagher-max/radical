@@ -6,6 +6,7 @@
 // works while it's set in Vercel; delete it there to retire it completely.
 // Accounts, sync and the AI cost log live in _account.js.
 const account = require("./_account.js");
+const topics = require("./_topics.js")(account.storage);
 
 const API = "https://api.anthropic.com/v1/messages";
 const CARD_MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-5-5";
@@ -202,6 +203,16 @@ module.exports = async (req, res) => {
     res.setHeader("Vercel-CDN-Cache-Control", "max-age=31536000"); res.setHeader("Cache-Control", "public, max-age=86400");
     return res.status(200).json({ deck: { id: d.id, name: d.name, by: d.by, words: d.words } });
   }
+  // v59: the live topic decks and their words, the same for everyone; the CDN keeps them a minute
+  if ((body.action === "topics" || body.action === "topic") && req.method === "GET") {
+    res.setHeader("Vercel-CDN-Cache-Control", "max-age=60"); res.setHeader("Cache-Control", "public, max-age=0");
+    if (!account.status().ok) return res.status(200).json(body.action === "topics" ? { topics: null } : { words: null });
+    try {
+      if (body.action === "topics") return res.status(200).json({ topics: await topics.live() });
+      const words = await topics.topic(body.theme, body.r);
+      return words ? res.status(200).json({ words }) : res.status(404).json({ error: "That deck isn't ready." });
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  }
   if (body.action === "status") {
     const st = account.status();
     if (st.ok) { try { await account.ensureBucket(); } catch (e) { st.ok = false; st.error = e.message; } }
@@ -322,6 +333,17 @@ module.exports = async (req, res) => {
         res.setHeader("Cache-Control", "public, max-age=0");
       }
       return res.status(200).json({ card });
+    }
+    // v59: owners build and edit the topic decks (Admin tools); building asks the AI, so it's logged like any call
+    if (body.action === "topics") {
+      if (!account.isOwner(user)) return res.status(403).json({ error: "Owners only." });
+      res.setHeader("Cache-Control", "no-store");
+      const ask = async (theme, isCn, n, avoid) => {
+        const extra = avoid && avoid.length ? `\nDon't use any of these: ${avoid.slice(0, 80).join(", ")}.` : "";
+        return parseItems(await askClaude(FAST_MODEL, WORDSET_PROMPT(theme, isCn, n) + extra, n > 24 ? 6000 : 1500), "words") || [];
+      };
+      const out = await topics.admin(body, ask);
+      return res.status(out.error ? 400 : 200).json(out);
     }
     if (body.action === "wordset") {
       const theme = String(body.theme || "").trim().replace(/\s+/g, " ").slice(0, 60);
