@@ -2,6 +2,14 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v58
+
+- Signed in, everything now follows you between devices: your settings (look, goal, cards a day, words target, streak rule, speech, region and the rest), your History of texts and articles, and what you're reading now (a document opens on the same page). The newest change wins. A device signing in for the first time takes the account's settings. History goes up one entry at a time, only when it changes.
+- Signed out, Radical asks you to sign in once you've saved 5 words (and again at 25 and 100), so your words are kept on your account.
+- The Backup page and its reminder are gone (the account keeps everything). An old backup file still restores in full through the file icon in Add words.
+- Export words: a button under the list on Practice saves the words shown (or the ones you ticked) as a spreadsheet file: word, pinyin, meaning, deck, status. Words only, never texts or articles.
+- "What do you want to practice?" now says "Pick one, two or all three."
+
 ## v57
 
 - When the reading ring around 讀 turns gold, it swells and settles back while gold sparks fly off its rim (about 2 seconds). It plays once, at the moment you reach your target. Off with Reduce Motion.
