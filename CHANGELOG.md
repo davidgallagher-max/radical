@@ -2,6 +2,16 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v59
+
+- About is rewritten: "Static flashcards? Bogus. Get radical." What Radical does, why it counts words, who builds it (Upslope Labs, your polyglot friends in the Mile High City), one line of credits, and the privacy policy and email.
+- Once you reach your words target, "N words to go" doesn't disappear: it turns gold and counts up, "250 words read", right away and while you keep reading.
+- Track calendar, Both setting: a half day is split on the diagonal. Reading fills the top-left triangle, cards the bottom-right, and the date splits along the same line. The key shows which is which.
+- New day: Settings, Daily goal has a "Day ends at" dial, any hour from 9 pm to 4 am. The default is now 2 am (it was 4 am). A change counts from then on; past days keep their dates. It syncs with your other settings.
+- Pull down to refresh at the top of any tab: it syncs, recounts Today, the badge and the ring, checks for a newer version and a new Open Message, restarts AI calls that are stuck (over twice their usual time) and retries failures still on screen. Calls that are just slow keep going.
+- Admin tools: Topic decks replaces Pre-build. A list of the decks with their state and build date; type a topic to build it (50 words for 國語 and for 普通话; 12 and 24 are the top of the list), look over the words and swap any one for your own or the AI's pick, then Publish, Retire on a last day you choose, or Delete now. Published decks reach everyone's Word Decks with a NEW tag for 14 days; a retiring deck shows "Until <day>". Anyone who opened a deck keeps it.
+- Hosting: only main deploys on Vercel now (branch previews were filling the deployment storage).
+
 ## v58
 
 - Signed in, everything now follows you between devices: your settings (look, goal, cards a day, words target, streak rule, speech, region and the rest), your History of texts and articles, and what you're reading now (a document opens on the same page). The newest change wins. A device signing in for the first time takes the account's settings. History goes up one entry at a time, only when it changes.
