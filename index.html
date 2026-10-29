@@ -1194,6 +1194,9 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .acctmsg:empty,.acctstat:empty{display:none}
 .acctstat{font-size:.84rem}
 .about a{color:var(--accent)}
+.about .abouthead{margin:0;font-size:1.25rem;line-height:1.3;color:var(--fg)}
+.about p b{color:var(--fg)}
+.about .aboutcred{font-size:.92rem;text-align:center}
 /* ---- a phone on its side: the tab bar becomes a column on the right (部, the three tabs, ☰) and each tab's header
    steps aside, so the text gets the height. Reading puts the color key and controls in one row; Explore and the
    flash card panel go two columns. Pages that open on top (cards, word page) keep their own layout. */
@@ -1431,10 +1434,12 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <p class="note" id="aboutVer" style="text-align:center;margin-top:-6px"></p>
     
     <div class="panel about">
-      <p>Radical draws every character from stroke data and colors its components by job: the component that carries the meaning, the component that hints at the sound, two ideas combined, a picture, or a component whose origin isn't recorded. Sound components are hints, rated by how close they still sound, since many pronunciations have drifted.</p>
-      <p>Text is read word by word with the CC-CEDICT dictionary, so pinyin follows the word. A dotted underline marks a lone character with more than one reading. Word lists are mainland-based, so a few Taiwan readings (訊息 xùnxí) may show the mainland form.</p>
-      <p>Credits: stroke and component data from Make Me a Hanzi (Arphic Public License and LGPL); word list from CC-CEDICT (CC BY-SA 4.0); Traditional/Simplified conversion by OpenCC; writing practice by Hanzi Writer (MIT). Sound uses your phone's own voice. Translations, word cards and photo reading use an AI model. Full credits and licenses are in the project's CREDITS.md.</p>
-      <p><a href="https://upslopelabs.com/radical/privacy" target="_blank" rel="noopener">Privacy policy</a></p>
+      <h3 class="abouthead">Static flashcards? Bogus. Get radical.</h3>
+      <p>Every character is drawn stroke by stroke and colored by what each part does: meaning, sound, or picture. Read real Chinese, tap any word, and it becomes a card that brings it to life in real sentences.</p>
+      <p><b>Words, not characters.</b> A character alone rarely means much. Radical counts the words you know, because words are what you read.</p>
+      <p>Designed, built and shipped by Upslope Labs, your polyglot friends in the Mile High City.</p>
+      <p class="note aboutcred">Make Me a Hanzi · CC-CEDICT · OpenCC · Hanzi Writer · Wikipedia (CC BY-SA)</p>
+      <p class="note aboutcred"><a href="https://upslopelabs.com/radical/privacy" target="_blank" rel="noopener">Privacy policy</a> · <a href="mailto:privacy@upslopelabs.com">privacy@upslopelabs.com</a></p>
     </div>
   </div>
 </section>
