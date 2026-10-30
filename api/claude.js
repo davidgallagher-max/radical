@@ -7,6 +7,7 @@
 // Accounts, sync and the AI cost log live in _account.js.
 const account = require("./_account.js");
 const topics = require("./_topics.js")(account.storage);
+const pay = require("./_pay.js")({ ...account.storage, isOwner: account.isOwner });
 
 const API = "https://api.anthropic.com/v1/messages";
 const CARD_MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-5-5";
@@ -185,7 +186,13 @@ module.exports = async (req, res) => {
     : typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
   // Public: the account service's address and publishable key (both are meant to be in the page), and whether the
   // keys are set up (names only, never values).
-  if (body.action === "config") { res.setHeader("Cache-Control", "no-store"); return res.status(200).json(account.config()); }
+  if (body.action === "config") { res.setHeader("Cache-Control", "no-store"); return res.status(200).json({ ...account.config(), pay: pay.config() }); }
+  // v61: RevenueCat's webhook (its own Authorization value; see api/_pay.js)
+  if ((req.query || {}).action === "rcwebhook" && req.method === "POST") {
+    res.setHeader("Cache-Control", "no-store");
+    if (!account.status().ok) return res.status(500).json({ error: "Storage isn't set up." });
+    try { const r = await pay.webhook(req, body); return res.status(r.status).json(r.out); } catch (e) { return res.status(500).json({ error: e.message }); }
+  }
   // v44: the owners' notice, the same for everyone; the CDN keeps it a minute
   if (body.action === "notice" && req.method === "GET") {
     res.setHeader("Vercel-CDN-Cache-Control", "max-age=60"); res.setHeader("Cache-Control", "public, max-age=0");
@@ -247,6 +254,14 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ from: "Radical feedback <feedback@upslopelabs.com>", to: account.ownerEmails(), reply_to: user.email, subject: "Radical: someone was reported",
           text: `${user.email} reported friend code ${String(body.code || "").slice(0, 8)}.\n\n${String(body.why || "(no reason given)").slice(0, 2000)}\n\nThey're blocked for the reporter. The report is in storage under reports/${today}/.` })
       }).catch(() => {});
+      return res.status(out.error ? 400 : 200).json(out);
+    }
+    // v61: the unlock and the trial (get, trial {from}, check with RevenueCat, owners' gift/ungift {code})
+    if (body.action === "entitle") {
+      if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+      if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
+      res.setHeader("Cache-Control", "no-store");
+      const out = await pay.act(user, body, today);
       return res.status(out.error ? 400 : 200).json(out);
     }
     // v54: Delete account, from Settings. Gone for good: words, friends, usage, the sign-in.

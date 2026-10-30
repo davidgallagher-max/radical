@@ -238,6 +238,9 @@ p.busy{margin:-4px 4px 0}
 @keyframes spin{to{transform:rotate(360deg)}}
 .miniadd{margin-left:auto}
 .sheet{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,#000 55%,transparent);display:grid;align-items:end;animation:fade .2s ease}
+.paycard .sheetcard{text-align:center;justify-items:center}.paycard .row{justify-content:center}
+.paymark{font:700 2.4rem/1 var(--zh,serif);color:var(--gold2);margin-bottom:2px}
+.note.trpay{text-align:center;color:var(--gold2);cursor:pointer}
 .sheetcard{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 18px calc(var(--bot) + 20px);display:grid;gap:10px;max-width:640px;width:100%;margin:0 auto;box-shadow:0 -12px 40px rgba(0,0,0,.4);max-height:88vh;max-height:88dvh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;align-content:start;box-sizing:border-box}
 /* v46: a sheet taller than the screen scrolls inside itself; a long one has a header that stays, with ✕ */
 .sheethead{position:sticky;top:-20px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-20px -18px 0;padding:16px 18px 8px;background:var(--surface)}.sheethead h3{margin:0}.sheethead .iconbtn{font-size:1.2rem;flex:none}
@@ -1509,6 +1512,8 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="panel" id="noticePanel"></div>
     <h3 class="sec">Topic decks</h3>
     <div class="panel topicadmin" id="topicPanel"></div>
+    <h3 class="sec">Gift unlock</h3>
+    <div class="panel" id="giftPanel"></div>
     <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
   </div>
 </section>
@@ -2524,6 +2529,7 @@ function showOnly(id) {
 }
 let tab = "readScreen", revSide = null;
 function setTab(id) {
+  if ((id === "readScreen" && !payOk("read")) || (id === "wikiScreen" && !payOk("explore"))) return;  // v61
   if (id === "wikiScreen") fetchToday();  // v46: Explore's Today (once a day)
   if (id === "wordsScreen") askBadge();  // v54: the app asks once to show the number on its icon
   if (id === "wordsScreen") contOk = true, catPicked = keepCat; if (reading) stopReading(); if ($("wikiBack")) $("wikiBack").hidden = true;
@@ -3228,6 +3234,7 @@ async function claude(payload, why) {
   why = why || AI_WHY[payload.action] || "use the AI service";
   const free = !token && FREE_OK.has(payload.action) && store.get("radical-free-ai", 0) < FREE_AI;
   if (!token && !free) { signInSheet({ why }); throw new Error("Sign in first."); }
+  if (!payOk("ai", ["card", "topics", "rate", "wordset", "example"].includes(payload.action))) throw new Error("Unlock Radical to use this.");  // v61
   const auth = { ...(token ? { Authorization: `Bearer ${token}` } : { "x-radical-anon": deviceId() }), "x-radical-day": localDay() };
   // Cards and Word Sets are the same for everyone: asked with GET, so Vercel's CDN can answer them.
   // Mainland cards and Word Sets are cached apart (r=cn); Taiwan keeps the URLs it always had.
@@ -3269,9 +3276,11 @@ async function reportFail(what, reason) {
 }
 try { localStorage.removeItem("radical-pw"); } catch (e) {}  // the old app password (gone since accounts)
 function setSession(j) {
+  const prevId = session && session.id;
   session = j && j.access_token ? { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: j.expires_at || Math.floor(Date.now() / 1000) + (j.expires_in || 3600),
     email: (j.user && j.user.email) || (session && session.email) || "", id: (j.user && j.user.id) || (session && session.id) || "" } : null;
   store.set("radical-session", session);
+  if (typeof rcAccount === "function" && (session && session.id) !== (prevId || undefined)) rcAccount(session && session.id);  // v61: purchases follow the account
 }
 async function sbConfig() {
   if (sbCfg && sbCfg.url && sbCfg.anon) return sbCfg;
@@ -3315,6 +3324,130 @@ async function signIn(email, code) {
   setTimeout(joinPending, 800);  // opened a friend's link before signing in
   return m ? m.words.length - n : 0;
 }
+// ---- v61: payments (see api/_pay.js). A 14-day trial, then $9.99 once, bought in the app through RevenueCat
+// (Apple now, Google Play when the Android app exists). The account keeps our own record (bought, gifted, trial
+// start), so the web app follows it. Nothing here does anything until the server's config says pay.on.
+// PAY_RULE picks what a non-buyer keeps after the trial: "reading" (Read and Explore free; cards, AI and adding
+// words locked), "teaser" (only Track and your saved words), "words" (no time limit, PAY_WORDS own words). Empty:
+// nothing is locked yet.
+const PAY_RULE = "", PAY_WORDS = 50;
+const PAY_LOCKS = { reading: ["cards", "ai", "add"], teaser: ["read", "explore", "cards", "ai", "add"], words: [] };
+let payCfg = store.get("radical-pay", null), ent = store.get("radical-ent", null) || { unlock: null, trialFrom: "" }, rcReady = null;
+const rcAvail = () => NATIVE && !!(window.Capacitor && Capacitor.isPluginAvailable && Capacitor.isPluginAvailable("Purchases"));
+const payOn = () => !!(payCfg && payCfg.on && PAY_RULE);
+const earlierDay = (a, b) => !a ? b || "" : !b ? a : a < b ? a : b;
+function setEnt(e) {
+  ent = { unlock: e.unlock || ent.unlock || null, trialFrom: earlierDay(ent.trialFrom, e.trialFrom) };
+  store.set("radical-ent", ent); paintPay();
+}
+const unlocked = () => !!ent.unlock || !!store.get("radical-owner", null);
+const trialLeft = () => ent.trialFrom ? Math.max(0, (payCfg && payCfg.days || 14) - dayGap(ent.trialFrom, localDay())) : null;
+const ownWords = () => myWords.filter(w => !w.common && !w.set && !w.got).length;
+// Is this part of the app open to you now? A trial that hasn't started counts as open on the web (it starts on its
+// own) and closed in the app, where Apple wants it started on purpose (the $0 "14-day Trial" item).
+function payFree(what) {
+  if (!payOn() || unlocked()) return true;
+  if (PAY_RULE === "words") return what !== "add" || ownWords() < PAY_WORDS;
+  if (!(PAY_LOCKS[PAY_RULE] || []).includes(what)) return true;
+  const left = trialLeft();
+  return left == null ? !rcAvail() : left > 0;
+}
+// The gate: true goes ahead; false shows the unlock card (or nothing, for things the app does on its own)
+function payOk(what, quiet) { if (payFree(what)) return true; if (!quiet) payCard(); return false; }
+function readCI(ci) {
+  if (!ci || !payCfg) return;
+  const on = ci.entitlements && ci.entitlements.active && ci.entitlements.active[payCfg.entitlement];
+  const tr = (ci.nonSubscriptionTransactions || []).filter(t => t.productIdentifier === payCfg.trial).map(t => String(t.purchaseDate || "").slice(0, 10)).sort()[0];
+  setEnt({ unlock: on ? { src: "store" } : null, trialFrom: tr || "" });
+}
+async function entitleCall(body) {
+  const token = await accessToken(); if (!token) return null;
+  const r = await fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}`, "x-radical-day": localDay() }, body: JSON.stringify({ action: "entitle", ...body }) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || `Couldn't reach the account (${r.status}).`);
+  return j;
+}
+async function payRefresh(op = "get") {
+  const P = rcReady && await rcReady;
+  if (P) try { readCI((await P.getCustomerInfo()).customerInfo); } catch (e) {}
+  if (session) try {
+    if (ent.trialFrom) await entitleCall({ op: "trial", from: ent.trialFrom });
+    const j = await entitleCall({ op }); if (j) { if (!j.unlock && ent.unlock && ent.unlock.src === "gift") ent.unlock = null; setEnt(j); }
+  } catch (e) {}
+  if (payOn() && !ent.trialFrom && !rcAvail()) setEnt({ trialFrom: localDay() });  // the web: the trial starts on its own
+  paintPay();
+}
+async function payInit() {
+  try { const j = await (await fetch(API + "/api/claude?action=config", { cache: "no-store" })).json(); if (j && j.pay) { payCfg = j.pay; store.set("radical-pay", j.pay); } } catch (e) {}
+  if (!payCfg || !payCfg.on) return;
+  if (rcAvail() && payCfg.ios) rcReady = (async () => { const P = plug("Purchases"); await P.configure({ apiKey: payCfg.ios, appUserID: (session && session.id) || undefined }); return P; })().catch(() => null);
+  await payRefresh();
+  payHeadsUp();
+}
+function rcAccount(id) { if (rcReady) rcReady.then(P => P && (id ? P.logIn({ appUserID: id }) : P.logOut()).then(() => payRefresh("check"))).catch(() => {}); }
+async function rcProduct(id) {
+  const P = rcReady && await rcReady; if (!P) throw new Error("Purchases aren't available here.");
+  const { products } = await P.getProducts({ productIdentifiers: [id], type: "NON_SUBSCRIPTION" });
+  if (!products || !products[0]) throw new Error("The store didn't answer. Try again in a minute.");
+  return { P, product: products[0] };
+}
+async function payBuy(id) {
+  const { P, product } = await rcProduct(id);
+  try { readCI((await P.purchaseStoreProduct({ product })).customerInfo); }
+  catch (e) { if (e && (e.userCancelled || (e.code && /cancel/i.test(String(e.code))))) return false; throw e; }
+  if (session) await entitleCall({ op: "check" }).then(j => j && setEnt(j)).catch(() => {});
+  return true;
+}
+async function payRestore() {
+  const P = rcReady && await rcReady;
+  if (P) readCI((await P.restorePurchases()).customerInfo);
+  if (session) { const j = await entitleCall({ op: "check" }); if (j) setEnt(j); }
+  return unlocked();
+}
+// The unlock card: from any locked button, and once on day 15. Before the trial starts (in the app), it starts it.
+function payCard() {
+  if (document.querySelector(".sheet.paycard")) return;
+  const sheet = el("div", "sheet paycard"), card = el("div", "sheetcard"), msg = el("p", "note");
+  const close = () => sheet.remove(), price = (payCfg && payCfg.price) || "$9.99", days = (payCfg && payCfg.days) || 14;
+  const startTrial = rcAvail() && !ent.trialFrom;
+  const keeps = PAY_RULE === "reading" ? "Reading stays free." : PAY_RULE === "teaser" ? "Your words and Track stay." : "";
+  card.append(el("div", "paymark", "部"), el("h3", "", startTrial ? `${days} days free` : "Unlock Radical"),
+    el("p", "", startTrial ? `Free for ${days} days. Then ${price}, once. Not a subscription. ${keeps}` : `${price}, once. Not a subscription. Yours for good. ${keeps}`));
+  const row = el("div", "row");
+  const busy = (b, f) => async () => { b.disabled = true; msg.textContent = ""; try { if (await f()) close(); } catch (e) { msg.textContent = e.message || "That didn't work."; } b.disabled = false; };
+  if (rcAvail()) {
+    const go = btn(startTrial ? "Start free trial" : `Unlock · ${price}`, "btn");
+    go.onclick = busy(go, () => payBuy(startTrial ? payCfg.trial : payCfg.product).then(ok => { if (ok) toast(startTrial ? "Trial started." : "Unlocked. Thank you.", 3000); return ok; }));
+    row.append(go);
+  } else card.append(el("p", "note", "Unlock in the Radical app. Signed in, it unlocks here too."));
+  row.append(btn("Not now", "btn ghost", close)); card.append(row);
+  const rs = btn("Restore purchase", "linkbtn"); rs.onclick = busy(rs, async () => { const ok = await payRestore(); if (!ok) msg.textContent = session ? "No purchase found for this account." : "No purchase found. Sign in if you bought it on another device."; return ok; });
+  card.append(rs, msg); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
+  document.body.append(sheet);
+}
+// Day 12: a heads-up; day 15 on: the card once a day when you open the app
+function payHeadsUp() {
+  if (!payOn() || unlocked() || PAY_RULE === "words") return;
+  const left = trialLeft(), d = localDay();
+  if (left == null) { if (rcAvail() && store.get("radical-pay-asked", "") !== d) { store.set("radical-pay-asked", d); payCard(); } return; }
+  if (left > 0 && left <= 2 && !store.get("radical-pay-warned", "")) { store.set("radical-pay-warned", d); toast(`${left} day${left > 1 ? "s" : ""} left in your free trial. Then ${(payCfg && payCfg.price) || "$9.99"}, once.`, 4500); }
+  if (left === 0 && store.get("radical-pay-asked", "") !== d) { store.set("radical-pay-asked", d); payCard(); }
+}
+// "N days left" (Settings, Account and Track) and the Admin gift box
+function payText() {
+  if (!payOn() || PAY_RULE === "words") return "";
+  if (unlocked()) return ent.unlock && ent.unlock.src === "gift" ? "Unlocked (a gift)." : "Unlocked.";
+  const left = trialLeft();
+  return left == null ? "Free trial not started." : left > 0 ? `Free trial: ${left} day${left > 1 ? "s" : ""} left.` : "Free trial over.";
+}
+function paintPay() { document.querySelectorAll(".payline").forEach(p => { p.textContent = payText(); p.hidden = !p.textContent; }); }
+function giftPanel() {
+  const box = $("giftPanel"); if (!box) return; box.innerHTML = "";
+  const code = el("input"); code.placeholder = "Friend code"; code.autocapitalize = "characters"; code.maxLength = 12;
+  const msg = el("p", "note");
+  const send = op => async () => { msg.textContent = "…"; try { const j = await entitleCall({ op, code: code.value }); msg.textContent = j.already ? "They already have it." : op === "gift" ? "Unlocked for them." : "Gift taken back."; } catch (e) { msg.textContent = e.message; } };
+  const row = el("div", "row"); row.append(btn("Gift unlock", "btn small", send("gift")), btn("Take back", "btn ghost small", send("ungift")));
+  box.append(el("p", "note", "Free unlock for a friend, by their friend code."), code, row, msg);
+}
 function signOut() {
   setSession(null); store.set("radical-synced", 0); store.set("radical-owner", null);
   // v58: another account's first sync takes its own settings, History and text
@@ -3347,7 +3480,7 @@ function aiTally() {
   if (store.get("radical-owner", false)) { b.hidden = false; paintTally(last); }
   fetchUsage().then(j => { b.hidden = !(j && j.owner); if (j && j.owner) paintTally(j.all); });
 }
-function openAdmin() { paintTally(store.get("radical-ai-tally", null)); noticePanel(); topicPanel(true); buildLab(); go("adminScreen"); aiTally(); }
+function openAdmin() { paintTally(store.get("radical-ai-tally", null)); noticePanel(); topicPanel(true); giftPanel(); buildLab(); go("adminScreen"); aiTally(); }
 // v44: the owners' notice: everyone sees it once (per notice), a moment after the splash. Owners write it here.
 // v46: asked fresh every time (never a stored answer; the minute in the address lets the CDN share it for a minute),
 // on start and on every return to the app (at most once a minute), and it waits for as long as a sheet, cards or
@@ -3652,7 +3785,7 @@ function renderAccount() {
     const row = el("div", "row");
     const now = btn("Sync now", "btn ghost small", async () => { now.disabled = true; msg.textContent = "Syncing…"; try { await syncNow(); store.set("radical-sync-error", ""); } catch (e) { msg.textContent = e.message; } now.disabled = false; });
     row.append(now, btn("Sign out", "btn ghost small", () => { signOut(); renderAccount(); }));
-    const ai = el("p", "note acctai"); box.append(ai, row, msg);
+    const ai = el("p", "note acctai"); box.append(el("p", "note payline"), ai, row, msg); paintPay();
     const del = btn("Delete account", "btn ghost small acctdel", deleteAccountSheet); box.append(del);
     fetchUsage().then(j => { if (!j || !ai.isConnected) return;
       if (j.ai === false) { ai.textContent = "The AI features aren't turned on for this account yet."; return; }
@@ -3900,6 +4033,7 @@ function sentenceOf(text, word) {
   return out;
 }
 async function addEntry(word, extra = {}) {
+  if (!payOk("add")) throw new Error("Unlock Radical to add words.");
   await ensure(word);
   if (extra.context) extra = { ...extra, context: sentenceOf(extra.context, word) };
   const d = lookup(word);
@@ -4220,6 +4354,7 @@ function renderTrack() {
   const all = Object.keys(d).sort(), firstUse = all.find(k => dayUsed(d[k]));
   const tot = (keys, f) => keys.reduce((a, k) => a + ((d[k] || {})[f] || 0), 0);
   box.innerHTML = "";
+  if (payText()) { const pl = el("p", "note payline trpay"); pl.onclick = () => !unlocked() && payCard(); box.append(pl); paintPay(); }
   // streak and today
   const top = el("div", "trk trktop");
   top.innerHTML = `<div><span class="trl">Streak</span><b class="trbig">${num(s.now)} day${s.now === 1 ? "" : "s"}</b><span class="trs">Best ${num(s.best)} · ${s.rest} rest day${s.rest === 1 ? "" : "s"} left</span></div>`
@@ -6395,6 +6530,7 @@ async function resumeSession() {
 // Flash cards for a hand-picked set of words (from the selection bar), shuffled, schedule ignored for choosing.
 let lastSet = null;  // the settings of the session that's running, for "Another N" (null: a hand-picked set)
 async function openReviewWith(ws) {
+  if (!payOk("cards")) return;
   noListen = false; lastSet = null; curHow = revHow; rq = ws.slice(); for (let i = rq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rq[i], rq[j]] = [rq[j], rq[i]]; }
   assignModes(rq, curHow);
   rDone = 0; revHist = []; rScore = newScore(); scoreShown = null; go("reviewScreen");
@@ -6402,6 +6538,7 @@ async function openReviewWith(ws) {
   showFront();
 }
 async function openReview(mode = "today", count = "all", again) {
+  if (!payOk("cards")) return;
   curHow = revHow; if (!again) noListen = false;
   lastSet = { mode, count }; stampUsed(); rq = buildQueue(mode, count, curHow); rDone = 0; revHist = []; rScore = newScore(); scoreShown = null;
   if (!again) { go("reviewScreen"); } else $("reviewScreen").scrollTop = 0;
@@ -7920,6 +8057,7 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   // (the reader shows "Drawing…" until the characters arrive), so a slow connection never looks like a frozen app.
   window.__radicalStarted = true;
   setTimeout(liveUpdate, 8000); fetchTopics();
+  payInit().then(() => { if ((tab === "readScreen" && !payFree("read")) || (tab === "wikiScreen" && !payFree("explore"))) setTab("trackScreen"); }).catch(() => {});  // v61
   const sp0 = $("splash");
   let harped = false, done = false;
   const harp = () => { if (harped || !soundOn) return; harped = true; for (let k = 0; k < 6; k++) zheng(k * .08, pen(4 + k), .38, 1, 2.4); };

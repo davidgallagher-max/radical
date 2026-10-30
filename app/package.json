@@ -11,6 +11,7 @@
     "@capacitor/ios": "8.5.3",
     "@capacitor/screen-orientation": "8.0.2",
     "@capawesome/capacitor-badge": "8.0.4",
+    "@revenuecat/purchases-capacitor": "13.7.4",
     "hanzi-writer": "3.7.3",
     "opencc-js": "1.4.2"
   }
