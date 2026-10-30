@@ -1717,7 +1717,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v61";
+const APP_VERSION = "v62";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3453,7 +3453,7 @@ function payCard() {
   const m = meterBox(DEMO_AI, true); m.classList.add("paymeter");
   card.append(m, el("div", "paymark", "部"), el("h3", "", startTrial ? `${days} days free` : "Unlock Radical"),
     el("p", "paylead", startTrial ? `Everything, free for ${days} days. Then ${price}, once. Not a subscription.` : `${price}, once. Not a subscription. Yours for good.`),
-    el("p", "note", "Includes a light daily dose of AI, free." + (payCfg && payCfg.plans && payCfg.plans.length ? ` Need more? Optional AI plans with no markup, from ${payCfg.plans[0].price} a month.` : "")));
+    el("p", "note", "Includes a light daily dose of AI, free." + (payCfg && payCfg.plans && payCfg.plans.length ? ` Need more? Optional AI plans from ${payCfg.plans[0].price} a month.` : "")));
   if (founder) card.append(el("p", "payfound", `Founding member: double the daily AI, for good, if you unlock by ${founder}.`));
   if (keeps) card.append(el("p", "note paykeeps", keeps));
   const row = el("div", "row");
@@ -3468,8 +3468,7 @@ function payCard() {
   card.append(rs, msg); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
 }
-// v61: the day's free AI is used up. Buyers can add a monthly plan (no markup: the pot is what we keep after the
-// store's cut); everyone else just waits for tomorrow. Shown once a day for things the app does on its own.
+// v61: the day's free AI is used up. Buyers can add a monthly plan (v62: the pot equals the price); everyone else just waits for tomorrow. Shown once a day for things the app does on its own.
 function aiOutSheet(auto) {
   if (document.querySelector(".sheet.aiout") || (auto && store.get("radical-aiout-day", "") === localDay())) return;
   store.set("radical-aiout-day", localDay());
@@ -3477,10 +3476,10 @@ function aiOutSheet(auto) {
   const plans = (payCfg && payCfg.plans) || [], can = payOn() && unlocked() && rcAvail() && plans.length && !(ent.plan);
   card.append(el("h3", "", "Today's free AI is used up."), el("p", "", "It comes back tomorrow. Reading, your words and flash cards keep working."));
   if (can) {
-    card.append(el("p", "note", "Need more? AI plans with no markup:"));
+    card.append(el("p", "note", "Need more? Add an AI plan:"));
     const row = el("div", "row");
     plans.forEach(p => { const b = btn(`${p.price} a month`, "btn small"); b.onclick = async () => { b.disabled = true; msg.textContent = ""; try { if (await payBuy(p.id)) { toast("More AI is on.", 2500); close(); } } catch (e) { msg.textContent = e.message; } b.disabled = false; }; row.append(b); });
-    card.append(row, el("p", "note planterms", `About ${plans.map(p => `$${p.pot.toFixed(2)}`).join(" or ")} of AI a month, used after the free daily amount. Renews monthly until you cancel in your Apple account. <a href="${EULA_URL}" target="_blank" rel="noopener">Terms</a> · <a href="${WEB}/privacy" target="_blank" rel="noopener">Privacy</a>`));
+    card.append(row, el("p", "note planterms", `Every dollar is AI: ${plans.map(p => `$${p.pot.toFixed(2)}`).join(" or ")} of AI a month, used after the free daily amount. Renews monthly until you cancel in your Apple account. <a href="${EULA_URL}" target="_blank" rel="noopener">Terms</a> · <a href="${WEB}/privacy" target="_blank" rel="noopener">Privacy</a>`));
   } else if (payOn() && unlocked() && plans.length && !rcAvail() && !ent.plan) card.append(el("p", "note", "AI plans are in the Radical app."));
   card.append(btn("OK", "btn ghost", close), msg); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }

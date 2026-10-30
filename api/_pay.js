@@ -12,9 +12,9 @@
 //   RADICAL_BUYER_CAP          the daily AI that comes with the unlock, in dollars (default 0.05)
 //   RADICAL_FOUNDING_UNTIL     last day (YYYY-MM-DD) to buy as a Founding member: double the daily AI, for good
 const UNLOCK = "radical_unlock", TRIAL = "radical_trial", ENTITLEMENT = "unlock", TRIAL_DAYS = 14;
-// AI plans (monthly subscriptions, for people who unlocked): "no markup", so each month's AI pot is about what we keep
-// after the store's 15%. The pot is used only after the day's free AI, and refills on the 1st (the app's day).
-const PLANS = { radical_ai_2: { price: "$2", pot: 1.70 }, radical_ai_4: { price: "$4", pot: 3.40 } };
+// AI plans (monthly subscriptions, for people who unlocked): each month's AI pot equals the price (v62; we absorb
+// the store's 15%). The pot is used only after the day's free AI, and refills on the 1st (the app's day).
+const PLANS = { radical_ai_2: { price: "$1.99", pot: 1.99 }, radical_ai_4: { price: "$3.99", pot: 3.99 } };
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const USER_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
