@@ -263,6 +263,10 @@ async function usage(user, today = day()) {
   };
   const mine = await monthOf(user.id);
   const out = { month, me: { month: +mine.reduce((a, f) => a + (f.u.total || 0), 0).toFixed(4), calls: mine.reduce((a, f) => a + (f.u.calls || []).length, 0) } };
+  // v61: the Track meter: today's spend against your daily stop, and the month by feature
+  const cap = capFor(user, user.id), by = {};
+  for (const f of mine) for (const c of f.u.calls || []) by[c[1]] = +((by[c[1]] || 0) + (+c[5] || 0)).toFixed(4);
+  Object.assign(out.me, { today: +((mine.find(f => f.day === today) || { u: {} }).u.total || 0).toFixed(4), cap: Number.isFinite(cap) ? cap : null, by });
   if (!isOwner(user)) return out;
   const all = { today: { calls: 0, cost: 0 }, month: { calls: 0, cost: 0 }, byAction: {}, byPerson: [], fails: {} };
   for (const id of await list("usage")) {

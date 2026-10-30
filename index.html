@@ -240,6 +240,12 @@ p.busy{margin:-4px 4px 0}
 .sheet{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,#000 55%,transparent);display:grid;align-items:end;animation:fade .2s ease}
 .paycard .sheetcard{text-align:center;justify-items:center}.paycard .row{justify-content:center}
 .paymark{font:700 2.4rem/1 var(--zh,serif);color:var(--gold2);margin-bottom:2px}
+.aimeter{border:1px solid var(--line);border-radius:14px;padding:10px 14px;display:grid;gap:6px;background:var(--surface);cursor:pointer;margin-bottom:12px}
+.aimeter.demo{cursor:default;margin:0}
+.amhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:.92rem}.amhead span{color:var(--muted)}
+.amrow{display:flex;align-items:center;gap:10px;font-size:.92rem;color:var(--muted)}.amlab{width:3.2em}
+.ambar{flex:1;height:5px;border-radius:3px;background:color-mix(in srgb,var(--fg) 10%,transparent);overflow:hidden}.ambar i{display:block;height:100%;background:var(--gold2);border-radius:3px}
+.ambreak{display:grid;gap:6px}.ambreak div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:4px 0}
 .note.trpay{text-align:center;color:var(--gold2);cursor:pointer}
 .sheetcard{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 18px calc(var(--bot) + 20px);display:grid;gap:10px;max-width:640px;width:100%;margin:0 auto;box-shadow:0 -12px 40px rgba(0,0,0,.4);max-height:88vh;max-height:88dvh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;align-content:start;box-sizing:border-box}
 /* v46: a sheet taller than the screen scrolls inside itself; a long one has a header that stays, with ✕ */
@@ -3467,6 +3473,32 @@ async function fetchUsage() {
   } catch (e) { return null; }
 }
 const money = x => x >= .01 ? `$${x.toFixed(2)}` : x > 0 ? "under 1¢" : "$0";
+// v61: the AI meter on Track (and still, with example numbers, on the tour and the unlock card): today against your
+// daily stop, the month, and tap for the month by feature. Pennies, in plain view.
+const cents = x => x >= 1 ? `$${x.toFixed(2)}` : x >= .095 ? `${Math.round(x * 100)}¢` : x > 0 ? `${(x * 100).toFixed(1).replace(/\.0$/, "")}¢` : "0¢";
+function meterBox(me, demo) {
+  const box = el("div", "aimeter" + (demo ? " demo" : "")), m = new Date(Date.now() - dayEndNow() * 36e5).toLocaleDateString("en-US", { month: "long" });
+  const bar = (f, lab) => { const r = el("div", "amrow"); r.innerHTML = `<span class="amlab">${lab}</span><span class="ambar"><i style="width:${Math.max(2, Math.min(100, f * 100)).toFixed(1)}%"></i></span>`; return r; };
+  box.append(el("div", "amhead", `<b>AI use</b><span>${cents(me.today || 0)} today · ${cents(me.month || 0)} in ${m}</span>`));
+  if (me.cap) box.append(bar((me.today || 0) / me.cap, "Today"));
+  return box;
+}
+function aiMeter(holder) {
+  if (!session) return;
+  const paint = me => { holder.innerHTML = ""; if (!me) return; const b = meterBox(me); b.onclick = () => aiBreakdown(me); holder.append(b); };
+  paint(store.get("radical-ai-me", null));
+  fetchUsage().then(j => { if (j && j.me && holder.isConnected) { store.set("radical-ai-me", j.me); paint(j.me); } });
+}
+function aiBreakdown(me) {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard"), close = () => sheet.remove();
+  card.append(el("h3", "", "AI use this month"));
+  const rows = Object.entries(me.by || {}).sort((a, b) => b[1] - a[1]);
+  const t = el("div", "ambreak");
+  rows.forEach(([k, v]) => t.append(el("div", "", `<span>${esc(AI_NAMES[k] || k)}</span><b>${cents(v)}</b>`)));
+  if (!rows.length) t.append(el("p", "note", "Nothing yet this month."));
+  card.append(t, el("p", "note", me.cap ? `Your daily AI stops at ${cents(me.cap)} and starts again tomorrow.` : "No daily stop on this account."), btn("Close", "btn ghost", close));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
+}
 const AI_NAMES = { wordset: "Word Decks", card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
   zhquery: "Explore search", tozh: "English to Chinese", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
 function tallyText(a) { return `AI today: ${a.today.calls} call${a.today.calls === 1 ? "" : "s"} · ${money(a.today.cost)} · this month ${money(a.month.cost)} (all users)`; }
@@ -4430,6 +4462,7 @@ function renderTrack() {
     + `<tr><th>Words recognized</th><td>${num(fYear(y))}</td><td>${cell(fYear(y - 1))}</td><td>${num(Object.keys(familiar).length)}</td></tr>`
     + `<tr><th>Words mastered</th><td>${num(lYear(y))}</td><td>${cell(lYear(y - 1))}</td><td>${num(Object.keys(learned).length)}</td></tr></tbody></table>`;
   box.append(yt);
+  if (session) { const am = el("div", "amwrap"); box.append(am); aiMeter(am); }  // v61: the AI meter
   if (session) box.append(friendsBox());  // signed out: no Friends box (it needs an account)
   checkMilestones();
 }
