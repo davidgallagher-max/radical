@@ -785,12 +785,12 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .readring .rr0{stroke:color-mix(in srgb,var(--muted) 28%,transparent)}.readring .rr1{stroke:var(--accent);stroke-linecap:round}
 .readring.met .rr1{stroke:var(--gold2)}.readring.met .rr0{stroke:transparent}
 /* v57: crossing the reading target: the ring swells and settles while sparks leave its rim (2s) */
-.readring.burst{animation:ringburst 2s cubic-bezier(.2,.8,.3,1)}
+.readring.burst{animation:ringburst 5s cubic-bezier(.2,.8,.3,1)}
 @keyframes ringburst{0%{scale:1}18%{scale:1.38}42%{scale:.92}62%{scale:1.06}80%{scale:.98}100%{scale:1}}
 .readring.burst .rr1{filter:drop-shadow(0 0 3px var(--gold1))}
 .rspark{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:var(--gold1);box-shadow:0 0 6px var(--gold2);pointer-events:none;opacity:0;
-  transform:rotate(var(--a)) translateY(-.66em);animation:rspark var(--t,1.4s) ease-out var(--d,.12s) forwards}
-@keyframes rspark{0%{opacity:1;transform:rotate(var(--a)) translateY(-.66em) scale(1)}100%{opacity:0;transform:rotate(calc(var(--a) + var(--s,0deg))) translateY(calc(-.66em - var(--r,18px))) scale(.3)}}
+  transform:rotate(var(--a)) translateY(-.66em);animation:rspark var(--t,3.5s) cubic-bezier(.25,.6,.35,1) var(--d,.3s) forwards}
+@keyframes rspark{0%{opacity:1;transform:rotate(var(--a)) translateY(-.66em) scale(1)}45%{opacity:.85}100%{opacity:0;transform:rotate(calc(var(--a) + var(--s,0deg))) translateY(calc(-.66em - var(--r,18px))) scale(.3)}}
 @media (prefers-reduced-motion:reduce){.readring.burst{animation:none}.rspark{display:none}}
 .togo{font-size:.92rem;font-weight:400;color:var(--muted);white-space:nowrap}
 h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-size:.92rem}
@@ -2018,6 +2018,8 @@ const KIT = {
   half: [() => zheng(0, pen(3), .42, 1, 1.3), () => zheng(0, pen(4), .4, 1, 1.3)],
   // v43: a word mastered (掌握): a slow sweep up the strings that rings out
   master: [0, 1, 2].map(o => () => { for (let k = 0; k < 8; k++) zheng(k * .09, pen(o + 2 + k), .4 + k * .03, 1, 2.2); zheng(.85, pen(o + 12), .7, 1, 3.4); zheng(.85, pen(o + 10), .45, 1, 3.4); }),
+  // v60: the reading target reached: three soft notes rising, spread over the ring's 5 seconds
+  ring: [0, 1].map(o => () => { zheng(0, pen(o + 5), .3, 1, 2.6); zheng(.9, pen(o + 7), .32, 1, 2.6); zheng(1.8, pen(o + 9), .36, 1, 3.2); }),
   reward: [0, 1, 2].map(o => () => { for (let k = 0; k < 6; k++) zheng(k * .075, pen(o + 3 + k), .45, 1, 2); zheng(.5, pen(o + 10), .7, 1, 2.8); })
 };
 // Rating tick: one short woodblock knock, low for Again, middle for Hard, bright for Good and Easy.
@@ -4067,16 +4069,18 @@ function paintReadGoal() {
   // v58: once the target is met the line stays and counts up: today's words read
   document.querySelectorAll("#readScreen .togo").forEach(x => { x.hidden = false; x.classList.toggle("met", !left); x.textContent = left ? `${num(shown)} words to go` : `${num(w)} words read`; });
 }
-// v57: the ring swells and settles, and a dozen gold sparks fly off its rim (about 2 seconds)
+// v57: the ring swells and settles, and a dozen gold sparks fly off its rim. v60: slower (about 5 seconds), with
+// three soft rising notes (quieter than Mastered's sweep).
 function ringBurst(ring) {
+  play("ring");
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const tz = ring.parentNode; ring.classList.remove("burst"); void ring.getBoundingClientRect(); ring.classList.add("burst");
   for (let i = 0; i < 14; i++) {
     const sp = document.createElement("i"); sp.className = "rspark";
-    sp.style.cssText = `--a:${Math.round(i * 360 / 14 + Math.random() * 14)}deg;--r:${10 + Math.random() * 14}px;--s:${Math.round(Math.random() * 30 - 15)}deg;--t:${(1.1 + Math.random() * .7).toFixed(2)}s;--d:${(.08 + Math.random() * .2).toFixed(2)}s`;
+    sp.style.cssText = `--a:${Math.round(i * 360 / 14 + Math.random() * 14)}deg;--r:${10 + Math.random() * 14}px;--s:${Math.round(Math.random() * 30 - 15)}deg;--t:${(2.8 + Math.random() * 1.6).toFixed(2)}s;--d:${(.2 + Math.random() * .6).toFixed(2)}s`;
     tz.append(sp);
   }
-  setTimeout(() => { ring.classList.remove("burst"); tz.querySelectorAll(".rspark").forEach(x => x.remove()); }, 2200);
+  setTimeout(() => { ring.classList.remove("burst"); tz.querySelectorAll(".rspark").forEach(x => x.remove()); }, 5400);
 }
 const streakDay = (v, day) => day < STREAK_FROM ? dayUsed(v) : goalMet(v, day);
 // ---- streak: days used in a row, with rest days. Any 14 days in a row may have up to 3 days off; a 4th day off in
