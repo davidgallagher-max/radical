@@ -2,6 +2,20 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v61
+
+Payments, built and switched off until launch (Vercel `RADICAL_PAYWALL=on` turns them on).
+
+- 14 days free, then $9.99 once to unlock. Not a subscription. In the app the trial starts with a $0 "14-day Trial" item (Apple's rule); on the web it starts on its own. The account remembers the earliest start, so a reinstall can't restart it.
+- After the trial without the unlock: 100 words of reading a day (unread lines blur behind "100 free words read today"), your words and Track. No AI, no flash cards, no adding words. Locked buttons open the unlock card.
+- The unlock card: "$9.99, once. Not a subscription. Yours for good." A light daily dose of AI is included; optional AI plans with no markup, $2 and $4 a month, add about $1.70 or $3.40 of AI a month on top. A still AI meter sits in its corner. Founding members (unlock by the date in `RADICAL_FOUNDING_UNTIL`) get double the daily AI for good.
+- When the day's free AI runs out: "Today's free AI is used up." with the plans for people who unlocked.
+- Track has an AI meter: today against your daily amount, the month, and a tap for the month by feature. The tour gets a fifth page showing where it lives (only once payments are on).
+- Settings and Track say how many trial days are left, Unlocked, or Founding member; a heads-up 2 days before the end. Restore purchase on the unlock card; Manage AI plan in Settings.
+- Admin tools: Gift unlock by friend code (and Take back).
+- Our own record of every purchase: RevenueCat's webhook writes it to the account, refunds take it back, and the server checks RevenueCat itself when the app asks.
+- The iPhone app gets the RevenueCat purchases plugin (needs the next TestFlight build).
+
 ## v60
 
 - Crossing your reading target: the gold ring's swell and sparks are slower and softer (about 5 seconds), and three quiet rising guzheng notes play with it (when Sound is on).
