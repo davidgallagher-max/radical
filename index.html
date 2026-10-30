@@ -1083,6 +1083,11 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .fontmode .lit3d{filter:none!important}
 .drawn .dg{font-family:var(--font-zh);font-size:calc(var(--ds) * .82);line-height:var(--ds);color:var(--muted);width:calc(var(--ds) * .55);text-align:center}
 .drawn .dim{opacity:.55}
+/* v62: Chinese drawn in color in lists, titles and chips (inkify) */
+.ink{position:relative;display:inline;white-space:nowrap}
+.ink>svg{width:1.12em;height:1.12em;vertical-align:-.2em;margin:0 -.01em}
+.ink .inkc{font-family:var(--font-zh)}
+.ink.drawn1 .inkt{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .ex{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .revctx b{color:var(--fg);font-weight:600}
 .wslots{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
@@ -2231,7 +2236,7 @@ function buildPalettes() {
     ROLES.forEach((r, i) => prev.style.setProperty(`--${r}`, noColor(key) ? "var(--fg)" : roleColor(key, i)));
     sample().forEach(c => { if (cache[c]) prev.append(glyphFor(c, false, key)); });
     b.append(prev, el("span", "plabel", `<b>${p.name}${key === "scholar" ? " · default" : ""}</b><span>${p.blurb}</span>`), el("span", "ptick", "✓"));
-    b.onclick = () => { palette = key; store.set("radical-palette", key); applyPalette(); if (!$("labWrap").hidden) buildLab(); };
+    b.onclick = () => { palette = key; store.set("radical-palette", key); applyPalette(); if (key === "font") unink(); else inkify(document.body); if (!$("labWrap").hidden) buildLab(); };
     grid.append(b);
   });
   applyPalette();
@@ -2530,6 +2535,54 @@ function drawn(text, size = 34, mark) {
   if ([...text].some(ch => isHan(ch) && !cache[ch])) ensure(text).then(paint);
   return box;
 }
+// v62: Chinese everywhere in the app (lists, titles, chips, History, Notes, deck names) is drawn in color like the
+// reader. Each run of characters in a text node becomes an `.ink` span: the strokes at 1em, with the text kept
+// hidden inside so copying, searching and textContent still work. Drawn lazily as it nears the screen. Controls
+// stay plain: one-character buttons (解 拼 繁 简), heading and menu marks, the tab bar and the brand. The Original
+// look keeps the font.
+const INK_SKIP = "#tabbar,#splash,#menu,.about,.ti,.uizh,.noink,.ink,svg,textarea,input,select,option,script,style,[contenteditable],.mi,.tz,.minihead,.topbrand,.railbrand,#reader,.line,.cell,.drawn,.revchars,.bigview,.tpchars,.tlcell,.tc,.fontglyph,.sizepop,#sizePop";
+const INK_RUN = /\p{Script=Han}+/gu;
+const inkIO = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return; inkIO.unobserve(e.target);
+  const sp = e.target, t = sp.dataset.ink;
+  const paint = () => { if (!sp.isConnected || palette === "font") return; const keep = sp.querySelector(".inkt"); [...t].forEach(c => sp.insertBefore(cache[c] ? svgFor(c, false, false) : el("span", "inkc", esc(c)), keep)); sp.classList.add("drawn1"); };
+  [...t].every(c => c in cache) ? paint() : ensure(t).then(paint);
+}), { rootMargin: "300px" });
+function inkPlain(n) {  // a mark, or a one-character button: leave it as text
+  const t = n.data.trim(), host = n.parentElement;
+  if ([...t].length > 2 || !/^\p{Script=Han}+$/u.test(t)) return false;
+  if (host.closest("h1,h2,h3,h4,h5,h6")) return [...t].length === 1;
+  const b = host.closest("button,[role=button],a,label,.seg,.seg2,.pills");
+  if (!b) return false;
+  if ([...t].length === 1 && !host.closest(".wz")) return true;  // a mark on a button (解 Explain, 探 Explore); a word in the list still draws
+  return [...(b.textContent || "").trim()].length <= 2;  // 字字
+}
+function inkify(root) {
+  if (palette === "font" || !root) return;
+  if (root.nodeType === 3) { if (root.parentElement && !root.parentElement.closest(INK_SKIP)) inkText(root); return; }
+  if (root.nodeType !== 1 || root.closest(INK_SKIP)) return;
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, { acceptNode: n => n.nodeType === 1 ? (n.matches(INK_SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_SKIP) : (INK_RUN.test(n.data) ? (INK_RUN.lastIndex = 0, NodeFilter.FILTER_ACCEPT) : NodeFilter.FILTER_SKIP) });
+  const hits = []; while (walk.nextNode()) hits.push(walk.currentNode);
+  hits.forEach(inkText);
+}
+function inkText(n) {
+  INK_RUN.lastIndex = 0;
+  if (!INK_RUN.test(n.data) || inkPlain(n)) return;
+  INK_RUN.lastIndex = 0;
+  const f = document.createDocumentFragment(), s = n.data; let at = 0, m;
+  while ((m = INK_RUN.exec(s))) {
+    if (m.index > at) f.append(s.slice(at, m.index));
+    const sp = el("span", "ink"); sp.lang = "zh"; sp.dataset.ink = m[0];
+    const t = el("span", "inkt"); t.textContent = m[0]; sp.append(t);
+    f.append(sp); inkIO.observe(sp); at = m.index + m[0].length;
+  }
+  if (at < s.length) f.append(s.slice(at));
+  n.replaceWith(f);
+}
+// Back to plain text (the Original look)
+function unink() { document.querySelectorAll(".ink").forEach(sp => sp.replaceWith(sp.dataset.ink)); }
+new MutationObserver(ms => { if (palette === "font") return; ms.forEach(m => m.type === "characterData" ? inkify(m.target) : m.addedNodes.forEach(inkify)); })
+  .observe(document.body, { childList: true, subtree: true, characterData: true });
 // ================= navigation: four tabs, plus pages that open on top with Back
 const stack = [];
 function showOnly(id) {
