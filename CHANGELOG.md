@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v62
+
+- Chinese is drawn in color across the app, like the reader: Explore's topics, search results, On this day and Random article, History, the Practice word list, deck names, sheets and the rest. Controls stay plain: one-character buttons (解 拼 繁 简 字字), heading and menu marks, the tab bar and the gold 部. The Original look keeps the font.
+- Paragraphs with English in them keep the Chinese tight after you change the text size (they kept the old spacing until the page was redrawn).
+- AI plans are $1.99 and $3.99 a month, and each gives its full price in AI. The "no markup" line is gone.
+
 ## v61
 
 Payments, built and switched off until launch (Vercel `RADICAL_PAYWALL=on` turns them on).
