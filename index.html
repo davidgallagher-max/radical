@@ -495,7 +495,7 @@ h3.sec.sub{margin-top:0;font-size:.84rem;text-transform:none;letter-spacing:.02e
 .reader{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 10px;display:grid;gap:10px;min-width:0}
 /* Reading text sits on an even grid, like a printed Chinese page: every character gets the same square, leftover
    width is shared out evenly, words may break across lines, and punctuation takes a full square. */
-.line{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cell,38px),1fr));align-items:end;row-gap:6px}
+.line{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cell,38px),1fr));align-items:end;row-gap:6px}
 .word{display:contents}
 .cell{background:none;border:0;border-radius:6px;padding:0;cursor:pointer;display:grid;justify-items:center;color:var(--fg);min-width:0}
 g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
@@ -514,6 +514,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .glue>*{min-width:0}
 .glue .glyph:not(.latin){text-align:left}
 .glue .latin{text-align:left}
+.line.counted::before{content:"";position:absolute;left:-8px;top:calc(var(--cell,38px) * .4);width:3px;height:7px;border:solid var(--gold2);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);opacity:.45;pointer-events:none}
 .line.flow{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-start;--colw:var(--cell,38px)}
 .line.flow .cell{width:var(--colw);flex:none}
 .line.flow .glue{display:inline-flex;align-items:flex-end;flex:none}
@@ -1563,6 +1564,8 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <div class="seg uiseg" id="readGoalSeg" role="group" aria-label="Words read a day"><button type="button" data-t="100">100</button><button type="button" data-t="200">200</button><button type="button" data-t="500">500</button></div>
       <p class="note">A streak day needs</p>
       <div class="seg uiseg" id="ruleSeg" role="group" aria-label="A streak day needs"><button type="button" data-r="either">Cards or reading</button><button type="button" data-r="both">Both</button></div>
+      <div class="row" style="justify-content:space-between"><span>Count rereading</span><button type="button" class="switch small" id="rereadSw" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span></button></div>
+      <p class="note">Lines read again within a month count toward your target.</p>
       <p class="note">Day ends at</p>
       <div class="daydial" id="dayDial"></div>
     </div></details>
@@ -1696,7 +1699,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v59";
+const APP_VERSION = "v60";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1786,8 +1789,31 @@ let readToken = 0, reading = false;
 const hanIn = t => (String(t || "").match(/\p{Script=Han}/gu) || []).length;
 const READ_PACE = 2.5;
 const lineKey = t => { let h = 0; for (const c of String(t)) h = (h * 31 + c.codePointAt(0)) | 0; return h.toString(36) + "." + String(t).length; };
-function readToday() { const r = store.get("radical-read-lines", null); return r && r.day === localDay() && Array.isArray(r.h) ? r : { day: localDay(), h: [] }; }
-const readBefore = line => readToday().h.includes(lineKey(line._text || ""));
+// v60: a line counts once a month, not once a day: "radical-read-lines" is { lineKey: day it was last counted },
+// kept 30 days and synced with the account so the phone and the web don't count the same line twice. With Count
+// rereading on (Settings, Daily goal), a line counts again the next day, as before v60.
+const READ_DAYS = 30, READ_MAX = 8000;
+const dayGap = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+function readLines() {
+  const r = store.get("radical-read-lines", null);
+  if (r && Array.isArray(r.h)) { const m = {}; r.h.forEach(k => { m[k] = r.day; }); store.set("radical-read-lines", m); return m; }  // before v60: { day, h }
+  return r && typeof r === "object" ? r : {};
+}
+function markRead(k) {
+  const m = readLines(), today = localDay(); m[k] = today;
+  const keys = Object.keys(m);
+  for (const x of keys) if (dayGap(m[x], today) >= READ_DAYS) delete m[x];
+  const left = Object.keys(m); if (left.length > READ_MAX) left.sort((a, b) => m[a] < m[b] ? -1 : 1).slice(0, left.length - READ_MAX).forEach(x => delete m[x]);
+  store.set("radical-read-lines", m);
+  if (session && !readSync) readSync = setTimeout(() => { readSync = 0; syncNow(true); }, 30000);  // goes up within half a minute, not per line
+}
+let readSync = 0;
+const readBefore = line => {
+  const d = readLines()[lineKey(line._text || "")]; if (!d) return false;
+  return store.get("radical-reread", false) ? d === localDay() : dayGap(d, localDay()) < READ_DAYS;
+};
+// a faint gold tick in the margin shows a line has counted (now or earlier this month)
+const markCounted = line => { line._counted = true; line.classList.add("counted"); };
 // v56: a long paragraph is one line, so credit is paid into a line bit by bit (in reading order) and each word is
 // logged as the credit passes it: the count moves smoothly instead of waiting for a whole paragraph. A line is "in
 // view" when most of it is on screen, or when it fills a good part of the screen (a paragraph taller than the screen).
@@ -1811,21 +1837,19 @@ function payLine(line, upTo) {
   if (chars) logDay("r", chars);
   if (words) logDay("w", words);
   if (line._got >= n) {
-    line._counted = true;
-    const r = readToday(), k = lineKey(t);
-    if (!r.h.includes(k)) { r.h.push(k); if (r.h.length > 5000) r.h.shift(); store.set("radical-read-lines", r); }
+    markCounted(line); markRead(lineKey(t));
   }
 }
 function countLine(line) {  // read aloud: the whole line at once
   if (!line || line._counted || !line.isConnected) return;
-  if (readBefore(line)) { line._counted = true; return; }
+  if (readBefore(line)) { markCounted(line); return; }
   payLine(line, Infinity);
 }
 let lineSeen = null, readBank = 0;
 setInterval(() => {
   if (document.hidden || $("readScreen").hidden) { readBank = 0; return; }
   const lines = [...document.querySelectorAll("#reader .line")].filter(l => !l._counted);
-  lines.filter(l => l._ready && readBefore(l)).forEach(l => { l._counted = true; });  // read already today: no credit used
+  lines.filter(l => l._ready && readBefore(l)).forEach(markCounted);  // read already this month: no credit used
   const open = lines.filter(l => !l._counted && l._ready && l._vis); open.forEach(partOf);
   const cap = open.reduce((a, l) => a + hanIn(l._text) - (l._got || 0), 0);
   readBank = Math.min(readBank + READ_PACE, cap);
@@ -3559,7 +3583,7 @@ async function syncNow(quietErrors) {
     const token = await accessToken(); if (!token) return null;
     const settings = settingsOut(), hist = histOut(), cur = curOut();
     const r = await fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, familiar, decks, days: store.get("radical-days", {}), summary: store.get("radical-friends", null) ? friendSummary() : undefined, settings, hist, cur } }) });
+      body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, familiar, decks, days: store.get("radical-days", {}), reads: readLines(), summary: store.get("radical-friends", null) ? friendSummary() : undefined, settings, hist, cur } }) });
     const m = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(m.error || `Sync failed (${r.status}).`);
     if (!Array.isArray(m.words)) throw new Error("Sync failed: nothing came back.");  // never let an empty answer wipe your words
@@ -3581,12 +3605,13 @@ function applyMerged(m) {
   learned = m.learned || learned; store.set("radical-learned", learned);
   if (m.familiar) { familiar = m.familiar; store.set("radical-familiar", familiar); }
   if (m.days) store.set("radical-days", m.days);
+  if (m.reads && typeof m.reads === "object") { const r = readLines(); for (const [k, d] of Object.entries(m.reads)) if (!r[k] || r[k] < d) r[k] = d; store.set("radical-read-lines", r); }
   if (m.decks && (+m.decks.t || 0) >= (+decks.t || 0)) { decks = { mine: m.decks.mine || "Mine", names: Array.isArray(m.decks.names) ? m.decks.names : [], used: m.decks.used && typeof m.decks.used === "object" ? m.decks.used : decks.used || {}, made: m.decks.made && typeof m.decks.made === "object" ? m.decks.made : decks.made || {}, ids: m.decks.ids && typeof m.decks.ids === "object" ? m.decks.ids : decks.ids || {}, t: +m.decks.t || 0 }; store.set("radical-decks", decks); }
   store.set("radical-words", myWords); resetSigs(); updateCounts();
   if (!$("wordsScreen").hidden) renderWords();
   applyHist(m.hist); applyCur(m.cur).catch(() => {}); applySettings(m.settings);
 }
-addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && syncTimer) { clearTimeout(syncTimer); syncTimer = 0; syncNow(true); } });
+addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && (syncTimer || readSync)) { clearTimeout(syncTimer); clearTimeout(readSync); syncTimer = readSync = 0; syncNow(true); } });
 // Settings → Account: sign in, or who you're signed in as with Sync now and Sign out. One line says whether the
 // account service is set up on the server.
 let acctEmail = "", acctSent = false;
@@ -7232,7 +7257,7 @@ function setSums() {
 document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "change"].forEach(ev => x.addEventListener(ev, () => setTimeout(setSums, 50))));
 // ---- settings that go in a backup file and (v58) sync with the account.
 const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules", "radical-day-ends",
-  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-tiles", "radical-common", "radical-region"];
+  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-tiles", "radical-common", "radical-region"];
 const SYNC_SETTINGS = SETTING_KEYS.filter(k => k !== "radical-decks");  // v58: decks sync on their own
 // Restore a backup file (v58: the Backup page is gone; a backup chosen with the add box's file icon comes here):
 // words and History merge with what's here (nothing added since is lost; a word's newer copy wins); the learned list
@@ -7785,6 +7810,8 @@ paintGoal($("modesSeg"));
 paintTileSel();
 // The red number on 練 can be turned off (Settings, Learning focus). Today still counts the same.
 $("badgeSw").setAttribute("aria-checked", store.get("radical-badge", true));
+$("rereadSw").setAttribute("aria-checked", store.get("radical-reread", false));
+$("rereadSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-reread", on); e.currentTarget.setAttribute("aria-checked", on); setSums(); };
 $("badgeSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-badge", on); e.currentTarget.setAttribute("aria-checked", on); updateCounts(); setSums(); };
 // Asked once: on a first launch after the walkthrough, and once to everyone who had the app before goals.
 function askGoal() {

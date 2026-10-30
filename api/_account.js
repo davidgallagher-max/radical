@@ -133,7 +133,12 @@ function merge(a, b) {
   const sa = st(a.settings), sb = st(b.settings);
   const pick = !sa ? sb : sb && !sb.first && sb.t > sa.t ? sb : sa;
   const settings = pick ? { t: pick.t, v: pick.v } : null;
-  return { words, deleted, learned, familiar, days, ...(decks ? { decks } : {}), ...(settings ? { settings } : {}) };
+  // v60: reader lines already counted ({ lineKey: day }): the later day wins; kept 31 days, at most 8,000
+  const reads = {}, since = new Date(Date.now() - 31 * 864e5).toISOString().slice(0, 10);
+  for (const src of [a.reads, b.reads]) if (src && typeof src === "object") for (const [k, d] of Object.entries(src))
+    if (/^-?[0-9a-z]{1,8}\.\d{1,6}$/.test(k) && typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= since && (!reads[k] || reads[k] < d)) reads[k] = d;
+  const rk = Object.keys(reads); if (rk.length > 8000) rk.sort((x, y) => reads[x] < reads[y] ? -1 : 1).slice(0, rk.length - 8000).forEach(k => delete reads[k]);
+  return { words, deleted, learned, familiar, days, reads, ...(decks ? { decks } : {}), ...(settings ? { settings } : {}) };
 }
 async function sync(user, incoming) {
   const path = `users/${user.id}/data.json`;
