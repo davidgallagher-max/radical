@@ -3085,7 +3085,13 @@ $("pyBtn").onclick = e => {
   b.setAttribute("aria-checked", on); $("reader").classList.toggle("nopy", !on); store.set("radical-py", on);
 };
 // Reader text size: a slider beside Pinyin, remembered between visits.
-function setCell(px) { document.documentElement.style.setProperty("--cell", px + "px"); }
+// v62: a size change refits mixed-English lines too (their column width was kept from the old size, so the
+// Chinese spread out after making text smaller).
+let refitting = 0;
+function setCell(px) {
+  document.documentElement.style.setProperty("--cell", px + "px");
+  cancelAnimationFrame(refitting); refitting = requestAnimationFrame(() => fitLatin(document));
+}
 { const v = store.get("radical-size", 38); $("sizeIn").value = v; setCell(v); }
 $("sizeIn").addEventListener("input", e => { setCell(e.target.value); store.set("radical-size", +e.target.value); });
 // Size: the 字字 button opens the slider just under the controls; a second tap, or a tap anywhere else, closes it.
