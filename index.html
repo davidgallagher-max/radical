@@ -4,7 +4,7 @@
 <script>/* v54, iPhone app only: a newer page fetched from the web (see liveUpdate) runs instead of the one in the app. */
 (function () {
   if (/^https?:$/.test(location.protocol) || window.__radicalLive) return;
-  var BUNDLED = /*BUNDLED*/"", SHELL = 1, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
+  var BUNDLED = /*BUNDLED*/"", SHELL = 2, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
   try { ls.setItem("radical-shell", SHELL); var v = ls.getItem("radical-live-v"); } catch (e) { return; }
   if (!v || num(v) <= num(BUNDLED) || v === ls.getItem("radical-live-bad")) return;
   if (ls.getItem("radical-live-tried") === v && ls.getItem("radical-live-ok") !== v) { ls.setItem("radical-live-bad", v); return; }  // it never started last time
@@ -238,13 +238,20 @@ p.busy{margin:-4px 4px 0}
 @keyframes spin{to{transform:rotate(360deg)}}
 .miniadd{margin-left:auto}
 .sheet{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,#000 55%,transparent);display:grid;align-items:end;animation:fade .2s ease}
-.paycard .sheetcard{text-align:center;justify-items:center}.paycard .row{justify-content:center}
+.paycard .sheetcard{text-align:center;justify-items:center;position:relative}
+.paycard .sheetcard{padding-top:78px}
+.paymeter{position:absolute;top:10px;right:12px;width:11em;padding:5px 9px;gap:2px;opacity:.85}.paymeter .amhead,.paymeter .amrow{font-size:.72rem}.paymeter .amhead{flex-direction:column;align-items:flex-start;gap:0}.paymeter .amhead span{font-size:.72rem}.paymeter .amlab{display:none}
+.paylead{font-size:1.05rem;margin:0}.payfound{color:var(--gold2);margin:0}.paykeeps{margin:0}
+#reader.capped .line:not(.counted){filter:blur(5px);opacity:.45;pointer-events:none;user-select:none}
+.capnote{display:grid;gap:4px;justify-items:center;text-align:center;padding:14px;border:1px solid var(--gold2);border-radius:12px;color:var(--fg)}.capnote span{color:var(--muted)}
+.tmeter{position:absolute;left:50%;top:42%;opacity:0;transform:translate(-50%,-40%);transition:opacity .6s,transform .6s;width:min(280px,86%);box-sizing:border-box}.tmeter.on{opacity:1;transform:translate(-50%,-50%)}.paycard .row{justify-content:center}
 .paymark{font:700 2.4rem/1 var(--zh,serif);color:var(--gold2);margin-bottom:2px}
 .aimeter{border:1px solid var(--line);border-radius:14px;padding:10px 14px;display:grid;gap:6px;background:var(--surface);cursor:pointer;margin-bottom:12px}
 .aimeter.demo{cursor:default;margin:0}
 .amhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:.92rem}.amhead span{color:var(--muted)}
 .amrow{display:flex;align-items:center;gap:10px;font-size:.92rem;color:var(--muted)}.amlab{width:3.2em}
 .ambar{flex:1;height:5px;border-radius:3px;background:color-mix(in srgb,var(--fg) 10%,transparent);overflow:hidden}.ambar i{display:block;height:100%;background:var(--gold2);border-radius:3px}
+.amnote{margin:0;font-size:.85rem;color:var(--muted)}.planterms{font-size:.85rem}
 .ambreak{display:grid;gap:6px}.ambreak div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:4px 0}
 .note.trpay{text-align:center;color:var(--gold2);cursor:pointer}
 .sheetcard{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 18px calc(var(--bot) + 20px);display:grid;gap:10px;max-width:640px;width:100%;margin:0 auto;box-shadow:0 -12px 40px rgba(0,0,0,.4);max-height:88vh;max-height:88dvh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;align-content:start;box-sizing:border-box}
@@ -1710,7 +1717,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v60";
+const APP_VERSION = "v61";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1854,6 +1861,7 @@ function payLine(line, upTo) {
 }
 function countLine(line) {  // read aloud: the whole line at once
   if (!line || line._counted || !line.isConnected) return;
+  if (capReader()) { if (reading) stopReading(); return; }
   if (readBefore(line)) { markCounted(line); return; }
   payLine(line, Infinity);
 }
@@ -1862,6 +1870,7 @@ const readNoted = new Set();
 setInterval(() => {
   if (document.hidden || $("readScreen").hidden) { readBank = 0; return; }
   const lines = [...document.querySelectorAll("#reader .line")].filter(l => !l._counted);
+  if (capReader()) { readBank = 0; return; }  // v61: today's free reading is used up
   const again = lines.filter(l => l._ready && readBefore(l)); again.forEach(markCounted);  // read already this month: no credit used
   if (again.length && !store.get("radical-reread", false)) {  // say so once per text this visit
     const k = lineKey((document.querySelector("#reader .line") || {})._text || "");
@@ -3240,7 +3249,7 @@ async function claude(payload, why) {
   why = why || AI_WHY[payload.action] || "use the AI service";
   const free = !token && FREE_OK.has(payload.action) && store.get("radical-free-ai", 0) < FREE_AI;
   if (!token && !free) { signInSheet({ why }); throw new Error("Sign in first."); }
-  if (!payOk("ai", ["card", "topics", "rate", "wordset", "example"].includes(payload.action))) throw new Error("Unlock Radical to use this.");  // v61
+  if (!payOk("ai", AUTO_AI.includes(payload.action))) throw new Error("Unlock Radical to use this.");  // v61
   const auth = { ...(token ? { Authorization: `Bearer ${token}` } : { "x-radical-anon": deviceId() }), "x-radical-day": localDay() };
   // Cards and Word Sets are the same for everyone: asked with GET, so Vercel's CDN can answer them.
   // Mainland cards and Word Sets are cached apart (r=cn); Taiwan keeps the URLs it always had.
@@ -3268,6 +3277,8 @@ async function claude(payload, why) {
   if (r.status === 404) throw new Error("Online features only work on the live site, not the Mac test server.");
   if (r.status === 401 && token) { setSession(null); if (!$("settingsScreen").hidden) renderAccount(); throw new Error("Your sign-in has expired. Sign in again (Settings, Account)."); }
   if (free && (r.status === 401 || data.signin)) { store.set("radical-free-ai", FREE_AI); signInSheet({ why }); throw new Error("Sign in first."); }
+  if (r.status === 402 && data.pay) { payCard(); throw new Error(data.error); }  // v61: the trial is over
+  if (r.status === 429 && data.aiout) aiOutSheet(AUTO_AI.includes(payload.action));
   if (!r.ok) throw new Error(data.error || `Something went wrong (${r.status}).`);
   if (free && r.headers.get("x-vercel-cache") !== "HIT") store.set("radical-free-ai", store.get("radical-free-ai", 0) + 1);  // a shared answer costs nothing
   return data;
@@ -3336,14 +3347,35 @@ async function signIn(email, code) {
 // PAY_RULE picks what a non-buyer keeps after the trial: "reading" (Read and Explore free; cards, AI and adding
 // words locked), "teaser" (only Track and your saved words), "words" (no time limit, PAY_WORDS own words). Empty:
 // nothing is locked yet.
-const PAY_RULE = "", PAY_WORDS = 50;
-const PAY_LOCKS = { reading: ["cards", "ai", "add"], teaser: ["read", "explore", "cards", "ai", "add"], words: [] };
+// v61 decision (David, Oct 30): "daily": after the trial, no AI, no flash cards, no adding words, and FREE_READ words of
+// reading a day; Track and your words stay. The others are kept for reference.
+const PAY_RULE = "daily", PAY_WORDS = 50, FREE_READ = 100;
+const PAY_LOCKS = { daily: ["cards", "ai", "add"], reading: ["cards", "ai", "add"], teaser: ["read", "explore", "cards", "ai", "add"], words: [] };
+const DEMO_AI = { today: .02, month: .38, cap: .05 };
+const AUTO_AI = ["card", "topics", "rate", "wordset", "example"];  // calls the app makes on its own: no card or sheet for them
+const SUBS_URL = "https://apps.apple.com/account/subscriptions", EULA_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";  // the still meter on the tour and the unlock card
 let payCfg = store.get("radical-pay", null), ent = store.get("radical-ent", null) || { unlock: null, trialFrom: "" }, rcReady = null;
 const rcAvail = () => NATIVE && !!(window.Capacitor && Capacitor.isPluginAvailable && Capacitor.isPluginAvailable("Purchases"));
 const payOn = () => !!(payCfg && payCfg.on && PAY_RULE);
+const trialOver = () => { const l = trialLeft(); return l == null ? rcAvail() : l <= 0; };
+// The daily rule's reading allowance: past the trial, once today's words read reach FREE_READ, unread lines veil
+const readCapped = () => PAY_RULE === "daily" && payOn() && !unlocked() && trialOver() && ((store.get("radical-days", {})[localDay()] || {}).w || 0) >= FREE_READ;
+function capReader() {
+  const r = $("reader"); if (!r) return false;
+  const on = readCapped(); r.classList.toggle("capped", on);
+  const old = r.querySelector(".capnote");
+  if (!on) { if (old) old.remove(); return false; }
+  const first = r.querySelector(".line:not(.counted)");
+  if (first && (!old || old.nextElementSibling !== first)) {
+    if (old) old.remove();
+    const n = el("div", "capnote", `<b>${FREE_READ} free words read today.</b><span>More tomorrow, or unlock Radical.</span>`);
+    n.append(btn("Unlock", "btn small", payCard)); first.before(n);
+  }
+  return true;
+}
 const earlierDay = (a, b) => !a ? b || "" : !b ? a : a < b ? a : b;
 function setEnt(e) {
-  ent = { unlock: e.unlock || ent.unlock || null, trialFrom: earlierDay(ent.trialFrom, e.trialFrom) };
+  ent = { unlock: e.unlock || ent.unlock || null, trialFrom: earlierDay(ent.trialFrom, e.trialFrom), plan: "plan" in e ? e.plan : ent.plan || null };
   store.set("radical-ent", ent); paintPay();
 }
 const unlocked = () => !!ent.unlock || !!store.get("radical-owner", null);
@@ -3364,7 +3396,8 @@ function readCI(ci) {
   if (!ci || !payCfg) return;
   const on = ci.entitlements && ci.entitlements.active && ci.entitlements.active[payCfg.entitlement];
   const tr = (ci.nonSubscriptionTransactions || []).filter(t => t.productIdentifier === payCfg.trial).map(t => String(t.purchaseDate || "").slice(0, 10)).sort()[0];
-  setEnt({ unlock: on ? { src: "store" } : null, trialFrom: tr || "" });
+  const sub = (ci.activeSubscriptions || []).find(x => /^radical_ai_/.test(x));
+  setEnt({ unlock: on ? { src: "store" } : null, trialFrom: tr || "", ...(sub ? { plan: { product: sub } } : {}) });
 }
 async function entitleCall(body) {
   const token = await accessToken(); if (!token) return null;
@@ -3392,7 +3425,7 @@ async function payInit() {
 function rcAccount(id) { if (rcReady) rcReady.then(P => P && (id ? P.logIn({ appUserID: id }) : P.logOut()).then(() => payRefresh("check"))).catch(() => {}); }
 async function rcProduct(id) {
   const P = rcReady && await rcReady; if (!P) throw new Error("Purchases aren't available here.");
-  const { products } = await P.getProducts({ productIdentifiers: [id], type: "NON_SUBSCRIPTION" });
+  const { products } = await P.getProducts({ productIdentifiers: [id], type: /^radical_ai_/.test(id) ? "SUBSCRIPTION" : "NON_SUBSCRIPTION" });
   if (!products || !products[0]) throw new Error("The store didn't answer. Try again in a minute.");
   return { P, product: products[0] };
 }
@@ -3415,9 +3448,14 @@ function payCard() {
   const sheet = el("div", "sheet paycard"), card = el("div", "sheetcard"), msg = el("p", "note");
   const close = () => sheet.remove(), price = (payCfg && payCfg.price) || "$9.99", days = (payCfg && payCfg.days) || 14;
   const startTrial = rcAvail() && !ent.trialFrom;
-  const keeps = PAY_RULE === "reading" ? "Reading stays free." : PAY_RULE === "teaser" ? "Your words and Track stay." : "";
-  card.append(el("div", "paymark", "部"), el("h3", "", startTrial ? `${days} days free` : "Unlock Radical"),
-    el("p", "", startTrial ? `Free for ${days} days. Then ${price}, once. Not a subscription. ${keeps}` : `${price}, once. Not a subscription. Yours for good. ${keeps}`));
+  const keeps = PAY_RULE === "daily" ? `Without it: ${FREE_READ} words of reading a day, plus your words and Track.` : PAY_RULE === "reading" ? "Reading stays free." : PAY_RULE === "teaser" ? "Your words and Track stay." : "";
+  const fu = payCfg && payCfg.founding, founder = fu && fu >= localDay() ? new Date(fu + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+  const m = meterBox(DEMO_AI, true); m.classList.add("paymeter");
+  card.append(m, el("div", "paymark", "部"), el("h3", "", startTrial ? `${days} days free` : "Unlock Radical"),
+    el("p", "paylead", startTrial ? `Everything, free for ${days} days. Then ${price}, once. Not a subscription.` : `${price}, once. Not a subscription. Yours for good.`),
+    el("p", "note", "Includes a light daily dose of AI, free." + (payCfg && payCfg.plans && payCfg.plans.length ? ` Need more? Optional AI plans with no markup, from ${payCfg.plans[0].price} a month.` : "")));
+  if (founder) card.append(el("p", "payfound", `Founding member: double the daily AI, for good, if you unlock by ${founder}.`));
+  if (keeps) card.append(el("p", "note paykeeps", keeps));
   const row = el("div", "row");
   const busy = (b, f) => async () => { b.disabled = true; msg.textContent = ""; try { if (await f()) close(); } catch (e) { msg.textContent = e.message || "That didn't work."; } b.disabled = false; };
   if (rcAvail()) {
@@ -3430,6 +3468,22 @@ function payCard() {
   card.append(rs, msg); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
 }
+// v61: the day's free AI is used up. Buyers can add a monthly plan (no markup: the pot is what we keep after the
+// store's cut); everyone else just waits for tomorrow. Shown once a day for things the app does on its own.
+function aiOutSheet(auto) {
+  if (document.querySelector(".sheet.aiout") || (auto && store.get("radical-aiout-day", "") === localDay())) return;
+  store.set("radical-aiout-day", localDay());
+  const sheet = el("div", "sheet aiout"), card = el("div", "sheetcard"), msg = el("p", "note"), close = () => sheet.remove();
+  const plans = (payCfg && payCfg.plans) || [], can = payOn() && unlocked() && rcAvail() && plans.length && !(ent.plan);
+  card.append(el("h3", "", "Today's free AI is used up."), el("p", "", "It comes back tomorrow. Reading, your words and flash cards keep working."));
+  if (can) {
+    card.append(el("p", "note", "Need more? AI plans with no markup:"));
+    const row = el("div", "row");
+    plans.forEach(p => { const b = btn(`${p.price} a month`, "btn small"); b.onclick = async () => { b.disabled = true; msg.textContent = ""; try { if (await payBuy(p.id)) { toast("More AI is on.", 2500); close(); } } catch (e) { msg.textContent = e.message; } b.disabled = false; }; row.append(b); });
+    card.append(row, el("p", "note planterms", `About ${plans.map(p => `$${p.pot.toFixed(2)}`).join(" or ")} of AI a month, used after the free daily amount. Renews monthly until you cancel in your Apple account. <a href="${EULA_URL}" target="_blank" rel="noopener">Terms</a> · <a href="${WEB}/privacy" target="_blank" rel="noopener">Privacy</a>`));
+  } else if (payOn() && unlocked() && plans.length && !rcAvail() && !ent.plan) card.append(el("p", "note", "AI plans are in the Radical app."));
+  card.append(btn("OK", "btn ghost", close), msg); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
+}
 // Day 12: a heads-up; day 15 on: the card once a day when you open the app
 function payHeadsUp() {
   if (!payOn() || unlocked() || PAY_RULE === "words") return;
@@ -3441,7 +3495,7 @@ function payHeadsUp() {
 // "N days left" (Settings, Account and Track) and the Admin gift box
 function payText() {
   if (!payOn() || PAY_RULE === "words") return "";
-  if (unlocked()) return ent.unlock && ent.unlock.src === "gift" ? "Unlocked (a gift)." : "Unlocked.";
+  if (unlocked()) return (ent.unlock && ent.unlock.src === "gift" ? "Unlocked (a gift)." : ent.unlock && ent.unlock.founding ? "Unlocked · Founding member" : "Unlocked.") + (ent.plan ? " AI plan on." : "");
   const left = trialLeft();
   return left == null ? "Free trial not started." : left > 0 ? `Free trial: ${left} day${left > 1 ? "s" : ""} left.` : "Free trial over.";
 }
@@ -3477,17 +3531,18 @@ const money = x => x >= .01 ? `$${x.toFixed(2)}` : x > 0 ? "under 1¢" : "$0";
 // daily stop, the month, and tap for the month by feature. Pennies, in plain view.
 const cents = x => x >= 1 ? `$${x.toFixed(2)}` : x >= .095 ? `${Math.round(x * 100)}¢` : x > 0 ? `${(x * 100).toFixed(1).replace(/\.0$/, "")}¢` : "0¢";
 function meterBox(me, demo) {
-  const box = el("div", "aimeter" + (demo ? " demo" : "")), m = new Date(Date.now() - dayEndNow() * 36e5).toLocaleDateString("en-US", { month: "long" });
+  const box = el("div", "aimeter" + (demo ? " demo" : "")), m = new Date(Date.now() - dayEndNow() * 36e5).toLocaleDateString("en-US", { month: demo ? "short" : "long" });
   const bar = (f, lab) => { const r = el("div", "amrow"); r.innerHTML = `<span class="amlab">${lab}</span><span class="ambar"><i style="width:${Math.max(2, Math.min(100, f * 100)).toFixed(1)}%"></i></span>`; return r; };
   box.append(el("div", "amhead", `<b>AI use</b><span>${cents(me.today || 0)} today · ${cents(me.month || 0)} in ${m}</span>`));
   if (me.cap) box.append(bar((me.today || 0) / me.cap, "Today"));
+  if (me.plan) { box.append(bar(me.plan.used / me.plan.pot, "Plan")); box.append(el("p", "amnote", `${cents(Math.max(0, me.plan.pot - me.plan.used))} of ${cents(me.plan.pot)} plan AI left this month`)); }
   return box;
 }
 function aiMeter(holder) {
   if (!session) return;
   const paint = me => { holder.innerHTML = ""; if (!me) return; const b = meterBox(me); b.onclick = () => aiBreakdown(me); holder.append(b); };
   paint(store.get("radical-ai-me", null));
-  fetchUsage().then(j => { if (j && j.me && holder.isConnected) { store.set("radical-ai-me", j.me); paint(j.me); } });
+  fetchUsage().then(j => { if (j && j.me && holder.isConnected) { const me = { ...j.me, plan: j.plan || null }; store.set("radical-ai-me", me); paint(me); } });
 }
 function aiBreakdown(me) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard"), close = () => sheet.remove();
@@ -3818,6 +3873,7 @@ function renderAccount() {
     const now = btn("Sync now", "btn ghost small", async () => { now.disabled = true; msg.textContent = "Syncing…"; try { await syncNow(); store.set("radical-sync-error", ""); } catch (e) { msg.textContent = e.message; } now.disabled = false; });
     row.append(now, btn("Sign out", "btn ghost small", () => { signOut(); renderAccount(); }));
     const ai = el("p", "note acctai"); box.append(el("p", "note payline"), ai, row, msg); paintPay();
+    if (payOn() && ent.plan && rcAvail()) { const mg = el("a", "linkbtn", "Manage AI plan"); mg.href = SUBS_URL; mg.target = "_blank"; mg.rel = "noopener"; box.insertBefore(mg, ai); }
     const del = btn("Delete account", "btn ghost small acctdel", deleteAccountSheet); box.append(del);
     fetchUsage().then(j => { if (!j || !ai.isConnected) return;
       if (j.ai === false) { ai.textContent = "The AI features aren't turned on for this account yet."; return; }
@@ -4264,7 +4320,7 @@ function paintReadGoal() {
   ring.closest("button").setAttribute("aria-label", `Read: ${left ? `${num(left)} words to go today` : "reading goal met"}`);
   const shown = Math.ceil(left / 5) * 5;  // in steps of 5, so it ticks down calmly
   // v58: once the target is met the line stays and counts up: today's words read
-  document.querySelectorAll("#readScreen .togo").forEach(x => { x.hidden = false; x.classList.toggle("met", !left); x.textContent = left ? `${num(shown)} words to go` : `${num(w)} words read`; });
+  document.querySelectorAll("#readScreen .togo").forEach(x => { x.hidden = false; x.classList.toggle("met", !left); x.textContent = typeof readCapped === "function" && readCapped() ? `${FREE_READ} free words read` : left ? `${num(shown)} words to go` : `${num(w)} words read`; });
 }
 // v57: the ring swells and settles, and a dozen gold sparks fly off its rim. v60: slower (about 5 seconds), with
 // three soft rising notes (quieter than Mastered's sweep).
@@ -7376,21 +7432,31 @@ const TOUR = [
           setTimeout(() => fly.remove(), 800); }],
         [2050, () => { badge.textContent = "1"; badge.classList.add("on"); }],
         [2600, () => { face("read"); card.classList.add("up"); }], [4300, () => flip("write")], [6400, () => flip("listen")]]) };
+  } },
+  // v61: where your AI use lives (a still meter with everyday numbers; the finger only shows where to look)
+  { line: "Your AI use, always in view.", note: "Pennies a day, on 記 Track.", chars: "記", pay: true, build(stage) {
+    const tab = el("span", "ttab", `<span lang="zh">${conv("記")}</span>`), m = meterBox(DEMO_AI, true);
+    m.classList.add("tmeter"); stage.append(tab, m);
+    const f = tourFinger(stage);
+    const reset = () => { m.classList.remove("on"); f.hide(); };
+    return { still() { m.classList.add("on"); },
+      run: () => tourLoop([[0, reset], [500, () => f.to(tab)], [1200, () => f.tap()], [1450, () => { f.hide(); m.classList.add("on"); }], [6000, () => {}]]) };
   } }
 ];
 async function showTour(fromMenu) {
-  await ensure(TOUR.map(p => p.chars).join("") + conv(TOUR.map(p => p.chars).join("")));
+  const TOURS = TOUR.filter(p => !p.pay || payOn());  // v61: the AI meter page only once payments are on
+  await ensure(TOURS.map(p => p.chars).join("") + conv(TOURS.map(p => p.chars).join("")));
   const sheet = el("div", "sheet tour"), card = el("div", "sheetcard tourcard");
   let i = 0, stop = () => {};
   const close = () => { stop(); if ("speechSynthesis" in window) speechSynthesis.cancel(); sheet.remove(); store.set("radical-tour-seen", true); if (fromMenu === true) openMenu(); else if (!store.get("radical-goal-asked", false)) setTimeout(askGoal, 300); };
   const last = fromMenu === true ? "Back to menu" : fromMenu ? "Done" : "Start reading";
   const paint = () => {
     stop(); card.innerHTML = "";
-    const p = TOUR[i], page = el("div", "tourpage"), stage = el("div", "tstage");
+    const p = TOURS[i], page = el("div", "tourpage"), stage = el("div", "tstage");
     page.append(el("h3", "", p.line), stage, el("p", "note", p.note || ""));
-    const dots = el("div", "tourdots", TOUR.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join(""));
+    const dots = el("div", "tourdots", TOURS.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join(""));
     const row = el("div", "row");
-    row.append(btn(i ? "‹ Back" : fromMenu ? "Close" : "Skip", "btn ghost", () => { if (i) { i--; paint(); } else close(); }), btn(i < TOUR.length - 1 ? "Next ›" : last, "btn", () => { if (i < TOUR.length - 1) { i++; paint(); } else close(); }));
+    row.append(btn(i ? "‹ Back" : fromMenu ? "Close" : "Skip", "btn ghost", () => { if (i) { i--; paint(); } else close(); }), btn(i < TOURS.length - 1 ? "Next ›" : last, "btn", () => { if (i < TOURS.length - 1) { i++; paint(); } else close(); }));
     card.append(page, dots, row);
     const demo = p.build(stage);
     if (calm()) { demo.still(); stop = () => {}; return; }

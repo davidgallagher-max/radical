@@ -288,7 +288,9 @@ module.exports = async (req, res) => {
       if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
       if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
       res.setHeader("Cache-Control", "no-store");
-      return res.status(200).json({ ...(await account.usage(user, today)), owner: account.isOwner(user), ai: account.mayUseAI(user) });
+      const u = await account.usage(user, today), pc = await pay.aiCap(user, today).catch(() => null), plan = await pay.planInfo(user, today).catch(() => null);
+      if (pc && pc.cap != null) u.me.cap = pc.cap;  // the unlock's daily amount once payments are on
+      return res.status(200).json({ ...u, plan, owner: account.isOwner(user), ai: account.mayUseAI(user) });
     }
     // Feedback from the app's menu: emailed to the owners through Resend (from feedback@upslopelabs.com, replies go to
     // the sender) and kept in storage. An optional screenshot comes as a JPEG.
@@ -328,8 +330,16 @@ module.exports = async (req, res) => {
   }
   if (anon && !(await account.anonTake(req, today))) return res.status(429).json({ error: "Sign in to keep going.", signin: true });
   // A daily safety stop per person (owners none, signed-out use shares one pool); every AI call is logged with its estimated cost.
-  if ((await account.spentToday(who, today)) >= account.capFor(user, who)) return res.status(429).json({ error: "Today's AI limit is reached. It resets tomorrow; reading, saving and flash cards still work." });
-  const askClaude = async (model, prompt, maxTokens) => { const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage, user && user.email, today); return r.text; };
+  // v61: after the trial, AI needs the unlock; the unlock brings its own daily amount (double for Founding members)
+  const pc = await pay.aiCap(user, today).catch(() => null);
+  if (pc && pc.locked) return res.status(402).json({ error: "Unlock Radical to use the AI features.", pay: true });
+  const spent = await account.spentToday(who, today), overDay = spent >= (pc ? pc.cap : account.capFor(user, who));
+  if (overDay && !(pc && pc.pot > 0)) return res.status(429).json({ error: "Today's free AI is used up. It comes back tomorrow; reading, saving and flash cards still work.", aiout: true, plan: !!(pc && pc.pot != null) });
+  const askClaude = async (model, prompt, maxTokens) => {
+    const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage, user && user.email, today);
+    if (overDay && pc && pc.pot > 0) await pay.draw(user, account.costOf(model, r.usage), today).catch(() => {});  // past the free AI: the plan pays
+    return r.text;
+  };
   const cn = body.region === "cn" || body.r === "cn";  // mainland (cards and Word Sets carry it in the URL as r=cn)
   try {
     if (body.action === "card") {

@@ -9,13 +9,23 @@
 //   REVENUECAT_ANDROID_KEY     RevenueCat's public Google key (goog_...), for the Android app
 //   REVENUECAT_SECRET          RevenueCat secret API key (sk_...), Secret type: lets the server check a purchase itself
 //   REVENUECAT_WEBHOOK_AUTH    the Authorization value set on RevenueCat's webhook, Secret type
+//   RADICAL_BUYER_CAP          the daily AI that comes with the unlock, in dollars (default 0.05)
+//   RADICAL_FOUNDING_UNTIL     last day (YYYY-MM-DD) to buy as a Founding member: double the daily AI, for good
 const UNLOCK = "radical_unlock", TRIAL = "radical_trial", ENTITLEMENT = "unlock", TRIAL_DAYS = 14;
+// AI plans (monthly subscriptions, for people who unlocked): "no markup", so each month's AI pot is about what we keep
+// after the store's 15%. The pot is used only after the day's free AI, and refills on the 1st (the app's day).
+const PLANS = { radical_ai_2: { price: "$2", pot: 1.70 }, radical_ai_4: { price: "$4", pot: 3.40 } };
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const USER_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 module.exports = ({ getJSON, putJSON, isOwner }) => {
   const config = () => ({ on: process.env.RADICAL_PAYWALL === "on", ios: process.env.REVENUECAT_IOS_KEY || "", android: process.env.REVENUECAT_ANDROID_KEY || "",
-    days: TRIAL_DAYS, product: UNLOCK, trial: TRIAL, entitlement: ENTITLEMENT });
+    days: TRIAL_DAYS, product: UNLOCK, trial: TRIAL, entitlement: ENTITLEMENT, founding: process.env.RADICAL_FOUNDING_UNTIL || "", daily: buyerCap(),
+    plans: Object.entries(PLANS).map(([id, p]) => ({ id, ...p })) });
+  const planOn = e => !!(e.plan && PLANS[e.plan.product] && +e.plan.until > Date.now());
+  const buyerCap = () => +process.env.RADICAL_BUYER_CAP || .05;
+  // Bought on or before the Founding day: kept on the record, so changing the setting later never takes it away
+  const founding = at => { const u = process.env.RADICAL_FOUNDING_UNTIL; return !!u && DAY.test(u) && String(at || "").slice(0, 10) <= u; };
   const path = id => `users/${id}/entitlement.json`;
   const read = async id => (await getJSON(path(id)).catch(() => null)) || { unlock: null, trialFrom: "" };
   const earlier = (a, b) => !a ? b : !b ? a : a < b ? a : b;
@@ -23,7 +33,7 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
   // What the page needs: unlocked or not, and when the trial began (owners are always unlocked)
   async function get(user) {
     const e = await read(user.id);
-    return { unlock: isOwner(user) ? { src: "owner" } : e.unlock || null, trialFrom: e.trialFrom || "" };
+    return { unlock: isOwner(user) ? { src: "owner" } : e.unlock || null, trialFrom: e.trialFrom || "", plan: planOn(e) ? e.plan : null };
   }
   // Ask RevenueCat directly (needs the secret key): the purchase and the $0 trial item, whichever device bought them
   async function check(user) {
@@ -34,8 +44,11 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
     const e = await read(user.id); let changed = false;
     const ent = (s.entitlements || {})[ENTITLEMENT];
     if (ent && (!ent.expires_date || Date.parse(ent.expires_date) > Date.now()) && !(e.unlock && e.unlock.src === "store")) {
-      e.unlock = { at: ent.purchase_date || new Date().toISOString(), src: "store", product: ent.product_identifier || UNLOCK }; changed = true;
+      const at = ent.purchase_date || new Date().toISOString();
+      e.unlock = { at, src: "store", product: ent.product_identifier || UNLOCK, ...(founding(at) ? { founding: true } : {}) }; changed = true;
     }
+    for (const [pid, sub] of Object.entries(s.subscriptions || {})) if (PLANS[pid] && sub.expires_date && Date.parse(sub.expires_date) > Date.now() && !sub.refunded_at
+      && (!e.plan || +e.plan.until < Date.parse(sub.expires_date))) { e.plan = { product: pid, until: Date.parse(sub.expires_date) }; changed = true; }
     const tr = ((s.non_subscriptions || {})[TRIAL] || [])[0];
     if (tr && tr.purchase_date) { const d = tr.purchase_date.slice(0, 10), t = earlier(e.trialFrom, d); if (t !== e.trialFrom) { e.trialFrom = t; changed = true; } }
     if (changed) await putJSON(path(user.id), e);
@@ -88,12 +101,42 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
       const day = new Date(+ev.purchased_at_ms || Date.now()).toISOString().slice(0, 10);
       if (ev.product_id === TRIAL && ["INITIAL_PURCHASE", "NON_RENEWING_PURCHASE"].includes(ev.type)) e.trialFrom = earlier(e.trialFrom, day);
       else if (ev.product_id === UNLOCK && ["INITIAL_PURCHASE", "NON_RENEWING_PURCHASE", "TRANSFER"].includes(ev.type) && (!ev.transferred_from || !(ev.transferred_from || []).includes(id)))
-        e.unlock = { at: new Date(+ev.purchased_at_ms || Date.now()).toISOString(), src: "store", product: UNLOCK, store: ev.store };
+      { const at = new Date(+ev.purchased_at_ms || Date.now()).toISOString(); e.unlock = { at, src: "store", product: UNLOCK, store: ev.store, ...(founding(at) ? { founding: true } : {}) }; }
       else if (ev.product_id === UNLOCK && ev.type === "CANCELLATION" && e.unlock && e.unlock.src === "store") e.unlock = null;  // a refund
+      else if (PLANS[ev.new_product_id || ev.product_id] && ["INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION"].includes(ev.type) && ev.expiration_at_ms)
+        e.plan = { product: PLANS[ev.new_product_id] ? ev.new_product_id : ev.product_id, until: +ev.expiration_at_ms };
+      else if (PLANS[ev.product_id] && (ev.type === "EXPIRATION" || (ev.type === "CANCELLATION" && ev.cancel_reason === "CUSTOMER_SUPPORT"))) e.plan = null;  // ended or refunded
+      // a plain CANCELLATION (auto-renew off) keeps the plan until it runs out
       else continue;
       await putJSON(path(id), e);
     }
     return { status: 200, out: { ok: true } };
   }
-  return { config, act, webhook, get, UNLOCK, TRIAL, TRIAL_DAYS };
+  // The server's side of the lock (only with RADICAL_PAYWALL on; owners never): the day's AI for this person, or
+  // { locked } once the trial is over without the unlock. null = the usual daily stop.
+  async function aiCap(user, today) {
+    if (!config().on || !user || isOwner(user)) return null;
+    const e = await read(user.id);
+    if (e.unlock) {
+      const out = { cap: buyerCap() * (e.unlock.founding ? 2 : 1) };
+      if (planOn(e)) { const u = await planUse(user, today); out.pot = +(PLANS[e.plan.product].pot - u.used).toFixed(4); }
+      return out;
+    }
+    if (e.trialFrom && Math.round((Date.parse(today) - Date.parse(e.trialFrom)) / 864e5) >= TRIAL_DAYS) return { locked: true };
+    return null;
+  }
+  // What a plan has used this month ({ month, used } in users/<id>/plan.json), and drawing on it after a call made
+  // past the day's free AI
+  const planUse = async (user, today) => { const u = await getJSON(`users/${user.id}/plan.json`).catch(() => null); const m = String(today).slice(0, 7); return u && u.month === m ? u : { month: m, used: 0 }; };
+  async function draw(user, cost, today) {
+    if (!(cost > 0)) return;
+    const u = await planUse(user, today); u.used = +(u.used + cost).toFixed(6);
+    await putJSON(`users/${user.id}/plan.json`, u);
+  }
+  async function planInfo(user, today) {
+    const e = await read(user.id); if (!planOn(e)) return null;
+    const u = await planUse(user, today);
+    return { product: e.plan.product, price: PLANS[e.plan.product].price, pot: PLANS[e.plan.product].pot, used: +u.used.toFixed(4) };
+  }
+  return { config, act, webhook, get, aiCap, draw, planInfo, PLANS, UNLOCK, TRIAL, TRIAL_DAYS };
 };
