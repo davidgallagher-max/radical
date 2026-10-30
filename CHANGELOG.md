@@ -6,7 +6,7 @@ What changed in each version, in plain words. Newest first.
 
 - Crossing your reading target: the gold ring's swell and sparks are slower and softer (about 5 seconds), and three quiet rising guzheng notes play with it (when Sound is on).
 - A line you've read counts toward your words target once a month, not once a day. Reading the same page two days running no longer counts twice. After 30 days it counts again. Signed in, phone and web share the record, so a line read on one doesn't count again on the other.
-- A faint gold tick in the margin marks lines that have already counted, today or earlier this month.
+- A faint gold tick in the margin marks lines that have already counted, today or earlier this month. Opening a text you read earlier says so once: "Read before. Ticked lines don't count again this month."
 - Settings, Daily goal: Count rereading (off by default). On, lines read again within a month count toward your target, as before.
 
 ## v59

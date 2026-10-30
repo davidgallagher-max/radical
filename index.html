@@ -1838,6 +1838,7 @@ function payLine(line, upTo) {
   if (words) logDay("w", words);
   if (line._got >= n) {
     markCounted(line); markRead(lineKey(t));
+    readNoted.add(lineKey((document.querySelector("#reader .line") || {})._text || ""));  // read here just now: no "read before" note on a redraw
   }
 }
 function countLine(line) {  // read aloud: the whole line at once
@@ -1846,10 +1847,15 @@ function countLine(line) {  // read aloud: the whole line at once
   payLine(line, Infinity);
 }
 let lineSeen = null, readBank = 0;
+const readNoted = new Set();
 setInterval(() => {
   if (document.hidden || $("readScreen").hidden) { readBank = 0; return; }
   const lines = [...document.querySelectorAll("#reader .line")].filter(l => !l._counted);
-  lines.filter(l => l._ready && readBefore(l)).forEach(markCounted);  // read already this month: no credit used
+  const again = lines.filter(l => l._ready && readBefore(l)); again.forEach(markCounted);  // read already this month: no credit used
+  if (again.length && !store.get("radical-reread", false)) {  // say so once per text this visit
+    const k = lineKey((document.querySelector("#reader .line") || {})._text || "");
+    if (!readNoted.has(k)) { readNoted.add(k); toast("Read before. Ticked lines don't count again this month.", 3500); }
+  }
   const open = lines.filter(l => !l._counted && l._ready && l._vis); open.forEach(partOf);
   const cap = open.reduce((a, l) => a + hanIn(l._text) - (l._got || 0), 0);
   readBank = Math.min(readBank + READ_PACE, cap);
