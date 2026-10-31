@@ -1,0 +1,57 @@
+# Deletes old Vercel deployments (all previews, production except the live one and the newest 2).
+# Run by hand. Needs the repo secret VERCEL_TOKEN.
+name: Vercel cleanup
+
+on:
+  workflow_dispatch:
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old deployments
+        env:
+          TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          cat > clean.mjs <<'EOF'
+          const T = process.env.TOKEN;
+          if (!T) { console.log("VERCEL_TOKEN secret is missing"); process.exit(1); }
+          const H = { Authorization: `Bearer ${T}` };
+          const api = async (path, opt = {}) => {
+            const r = await fetch("https://api.vercel.com" + path, { headers: H, ...opt });
+            const j = await r.json().catch(() => ({}));
+            return { ok: r.ok, status: r.status, j };
+          };
+          // Find the project, with or without a team.
+          const teams = (await api("/v2/teams")).j.teams || [];
+          let q = "", proj = null;
+          for (const t of [null, ...teams]) {
+            const qq = t ? `teamId=${t.id}` : "";
+            const r = await api(`/v9/projects/radical${qq ? "?" + qq : ""}`);
+            if (r.ok) { q = qq; proj = r.j; break; }
+          }
+          if (!proj) { console.log("Project 'radical' not found"); process.exit(1); }
+          const live = proj.targets?.production?.id;
+          console.log("Project", proj.id, "live deployment", live);
+          let all = [], until = "";
+          for (;;) {
+            const r = await api(`/v6/deployments?projectId=${proj.id}&limit=100${q ? "&" + q : ""}${until ? "&until=" + until : ""}`);
+            if (!r.ok) { console.log("List failed", r.status, JSON.stringify(r.j)); process.exit(1); }
+            all.push(...r.j.deployments);
+            until = r.j.pagination?.next;
+            if (!until) break;
+          }
+          all.sort((a, b) => b.created - a.created);
+          const prod = all.filter(d => d.target === "production");
+          const keep = new Set([live, ...prod.slice(0, 2).map(d => d.uid)].filter(Boolean));
+          console.log(`Found ${all.length} deployments; keeping ${[...keep].join(", ")}`);
+          let n = 0;
+          for (const d of all) {
+            if (keep.has(d.uid)) continue;
+            const r = await api(`/v13/deployments/${d.uid}${q ? "?" + q : ""}`, { method: "DELETE" });
+            console.log(r.ok ? "deleted" : "FAILED " + r.status, d.uid, d.target || "preview", new Date(d.created).toISOString());
+            if (r.ok) n++;
+          }
+          console.log(`Deleted ${n}.`);
+          EOF
+          node clean.mjs
