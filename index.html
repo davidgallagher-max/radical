@@ -241,7 +241,7 @@ p.busy{margin:-4px 4px 0}
 .paycard .sheetcard{text-align:center;justify-items:center;position:relative}
 .paycard .sheetcard{padding-top:78px}
 .paymeter{position:absolute;top:10px;right:12px;width:11em;padding:5px 9px;gap:2px;opacity:.85}.paymeter .amhead,.paymeter .amrow{font-size:.72rem}.paymeter .amhead{flex-direction:column;align-items:flex-start;gap:0}.paymeter .amhead span{font-size:.72rem}.paymeter .amlab{display:none}
-.paylead{font-size:1.05rem;margin:0}.payfound{color:var(--gold2);margin:0}.paykeeps{margin:0}
+.paylead{font-size:1.05rem;margin:0}.payplans{display:grid;gap:8px;width:100%}.payopt{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:2px 10px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--fg);font:inherit;cursor:pointer;position:relative}.payopt b{font-weight:600}.payopt .pp{font-weight:600;color:var(--fg)}.payopt small{grid-column:1/-1;color:var(--muted);font-size:.85rem}.payopt.best{border:2px solid var(--gold2);box-shadow:0 0 12px color-mix(in srgb,var(--gold2) 30%,transparent)}.payopt.best::after{content:"Best value";position:absolute;top:-9px;right:12px;background:var(--surface);color:var(--gold2);font-size:.72rem;padding:0 6px}.payopt:disabled{opacity:.6}.payfound{color:var(--gold2);margin:0}.paykeeps{margin:0}
 #reader.capped .line:not(.counted){filter:blur(5px);opacity:.45;pointer-events:none;user-select:none}
 .capnote{display:grid;gap:4px;justify-items:center;text-align:center;padding:14px;border:1px solid var(--gold2);border-radius:12px;color:var(--fg)}.capnote span{color:var(--muted)}
 .tmeter{position:absolute;left:50%;top:42%;opacity:0;transform:translate(-50%,-40%);transition:opacity .6s,transform .6s;width:min(280px,86%);box-sizing:border-box}.tmeter.on{opacity:1;transform:translate(-50%,-50%)}.paycard .row{justify-content:center}
@@ -250,7 +250,7 @@ p.busy{margin:-4px 4px 0}
 .aimeter.demo{cursor:default;margin:0}
 .amhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:.92rem}.amhead span{color:var(--muted)}
 .amrow{display:flex;align-items:center;gap:10px;font-size:.92rem;color:var(--muted)}.amlab{width:3.2em}
-.ambar{flex:1;height:5px;border-radius:3px;background:color-mix(in srgb,var(--fg) 10%,transparent);overflow:hidden}.ambar i{display:block;height:100%;background:var(--gold2);border-radius:3px}
+.ambar{flex:1;height:5px;border-radius:3px;background:color-mix(in srgb,var(--fg) 10%,transparent);overflow:hidden;display:flex;position:relative}.ambar i{display:block;height:100%;background:var(--accent);border-radius:3px}.ambar i.bx{background:var(--gold2);border-radius:0 3px 3px 0}.ambar s{position:absolute;top:-1px;bottom:-1px;width:1px;background:var(--muted)}.amnote.ambonus{color:var(--gold2)}
 .amnote{margin:0;font-size:.85rem;color:var(--muted)}.planterms{font-size:.85rem}
 .ambreak{display:grid;gap:6px}.ambreak div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:4px 0}
 .note.trpay{text-align:center;color:var(--gold2);cursor:pointer}
@@ -1223,7 +1223,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .about a{color:var(--accent)}
 .setchip.tagged{display:grid;line-height:1.1;padding:5px 4px}.setchip .chiptag{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.setchip .chiptag.new{color:var(--gold2)}
 .topicadmin .tanew{display:flex;gap:8px}.topicadmin .tanew input{flex:1;min-width:0}
-.tarow{border-top:1px solid var(--line)}.tarow:first-of-type{border-top:0}
+.tarow{border-top:1px solid var(--line)}#hitsPanel .tarow,.judgerow{display:grid;gap:4px;padding:8px 0}#hitsPanel .tarow small,.judgerow small{display:block;color:var(--muted)}.tarow:first-of-type{border-top:0}
 .tahead{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 2px;cursor:pointer}
 .tastate{font-size:.85rem;color:var(--muted)}.tastate.on{color:var(--accent)}.tadate{font-size:.85rem;color:var(--muted);min-width:48px;text-align:right}
 .tadetail{padding:0 0 12px}.tabar{display:flex;flex-wrap:wrap;gap:8px}.taretire{display:flex;gap:8px;align-items:center;margin-top:8px}
@@ -1530,8 +1530,14 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="panel" id="noticePanel"></div>
     <h3 class="sec">Topic decks</h3>
     <div class="panel topicadmin" id="topicPanel"></div>
-    <h3 class="sec">Gift unlock</h3>
+    <h3 class="sec">Gift Lifetime</h3>
     <div class="panel" id="giftPanel"></div>
+    <h3 class="sec">Used up their AI</h3>
+    <div class="panel" id="hitsPanel"></div>
+    <h3 class="sec">Meaning checks to review</h3>
+    <div class="panel" id="judgePanel"></div>
+    <h3 class="sec">Pre-built cards</h3>
+    <div class="panel" id="prebuildPanel"></div>
     <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
   </div>
 </section>
@@ -1568,8 +1574,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="seg themeseg" id="cvdSeg" role="group" aria-label="Color vision"><button type="button" data-cvd="0">Standard</button><button type="button" data-cvd="1">Red-green safe</button></div></details>
     <details class="setsec"><summary><b>Sound and lighting</b><span class="sum" data-sum="sound"></span></summary>
     <div class="panel">
-      <div class="row" style="justify-content:space-between"><span>Sounds (guzheng and woodblock)</span><button type="button" class="switch small" id="soundSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
-      <p class="note">Silent mode on your phone mutes them.</p>
+      <div class="row" style="justify-content:space-between"><span>Sounds</span><button type="button" class="switch small" id="soundSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
       <div class="row" style="justify-content:space-between"><span>3D lacquer lighting</span><button type="button" class="switch small" id="lightSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
     </div></details>
     <details class="setsec"><summary><b>Speech</b><span class="sum" data-sum="speech"></span></summary>
@@ -1586,7 +1591,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <p class="note">Words read a day</p>
       <div class="seg uiseg" id="readGoalSeg" role="group" aria-label="Words read a day"><button type="button" data-t="100">100</button><button type="button" data-t="200">200</button><button type="button" data-t="500">500</button></div>
       <p class="note">A streak day needs</p>
-      <div class="seg uiseg" id="ruleSeg" role="group" aria-label="A streak day needs"><button type="button" data-r="either">Cards or reading</button><button type="button" data-r="both">Both</button></div>
+      <div class="seg uiseg" id="ruleSeg" role="group" aria-label="A streak day needs"><button type="button" data-r="cards">Cards</button><button type="button" data-r="read">Reading</button><button type="button" data-r="either">Either</button><button type="button" data-r="both">Both</button></div>
       <div class="row" style="justify-content:space-between"><span>Count rereading</span><button type="button" class="switch small" id="rereadSw" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span></button></div>
       <p class="note">Lines read again within a month count toward your target.</p>
       <p class="note">Day ends at</p>
@@ -1667,7 +1672,15 @@ async function liveUpdate() {
     localStorage.setItem("radical-live-v", v);
   } catch (e) {}
 }
-if (NATIVE) document.addEventListener("visibilitychange", () => { if (document.hidden) nativeBadge(); else liveUpdate(); });
+// v63: iOS rarely starts the app fresh, so a page fetched earlier could wait days. Back in the app (or the moment a
+// check finds one), a newer page is taken by reloading, unless you're mid-card, typing, listening or in a sheet.
+function takeLive() {
+  const v = localStorage.getItem("radical-live-v"), num = x => parseInt(String(x || "").slice(1), 10) || 0;
+  if (!v || num(v) <= num(APP_VERSION) || v === localStorage.getItem("radical-live-bad") || document.hidden) return;
+  const a = document.activeElement, busy = !$("reviewScreen").hidden || document.querySelector(".sheet") || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || (window.speechSynthesis && speechSynthesis.speaking);
+  if (!busy) location.reload();
+}
+if (NATIVE) document.addEventListener("visibilitychange", () => { if (document.hidden) nativeBadge(); else { takeLive(); liveUpdate().then(takeLive); } });
 if (window.__radicalLive) try { localStorage.setItem("radical-live-ok", window.__radicalLive); } catch (e) {}  // this live page started
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -1722,7 +1735,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v62";
+const APP_VERSION = "v63";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3308,7 +3321,7 @@ async function claude(payload, why) {
   why = why || AI_WHY[payload.action] || "use the AI service";
   const free = !token && FREE_OK.has(payload.action) && store.get("radical-free-ai", 0) < FREE_AI;
   if (!token && !free) { signInSheet({ why }); throw new Error("Sign in first."); }
-  if (!payOk("ai", AUTO_AI.includes(payload.action))) throw new Error("Unlock Radical to use this.");  // v61
+  if (!payOk("ai", AUTO_AI.includes(payload.action))) throw new Error("Get Radical to use this.");  // v61
   const auth = { ...(token ? { Authorization: `Bearer ${token}` } : { "x-radical-anon": deviceId() }), "x-radical-day": localDay() };
   // Cards and Word Sets are the same for everyone: asked with GET, so Vercel's CDN can answer them.
   // Mainland cards and Word Sets are cached apart (r=cn); Taiwan keeps the URLs it always had.
@@ -3316,7 +3329,7 @@ async function claude(payload, why) {
   const get = ["card", "wordset", "explain"].includes(payload.action), rp = region === "cn" ? "&r=cn" : "";
   payload = { region, ...payload };
   const url = payload.action === "card" ? `${API}/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}${rp}`
-    : payload.action === "explain" ? `${API}/api/claude?v=1&action=explain&sentence=${encodeURIComponent(payload.sentence)}&trad=${payload.trad === false ? 0 : 1}${rp}`
+    : payload.action === "explain" ? `${API}/api/claude?v=1&action=explain&sentence=${encodeURIComponent(payload.sentence)}&trad=${payload.trad === false ? 0 : 1}${payload.cw ? `&cw=${encodeURIComponent(payload.cw)}` : ""}${rp}`
     : get ? `${API}/api/claude?v=1&action=wordset&theme=${encodeURIComponent(payload.theme)}${payload.n && payload.n !== 24 ? `&n=${payload.n}` : ""}${rp}` : API + "/api/claude";
   // v58: each call is listed in aiLive while it runs, so a pull to refresh can restart one that's stuck (aiRestart)
   let r, data;
@@ -3337,9 +3350,9 @@ async function claude(payload, why) {
   if (r.status === 401 && token) { setSession(null); if (!$("settingsScreen").hidden) renderAccount(); throw new Error("Your sign-in has expired. Sign in again (Settings, Account)."); }
   if (free && (r.status === 401 || data.signin)) { store.set("radical-free-ai", FREE_AI); signInSheet({ why }); throw new Error("Sign in first."); }
   if (r.status === 402 && data.pay) { payCard(); throw new Error(data.error); }  // v61: the trial is over
-  if (r.status === 429 && data.aiout) aiOutSheet(AUTO_AI.includes(payload.action));
+  if (r.status === 429 && data.aiout) aiOutSheet(AUTO_AI.includes(payload.action), data.aiout);
   if (!r.ok) throw new Error(data.error || `Something went wrong (${r.status}).`);
-  if (free && r.headers.get("x-vercel-cache") !== "HIT") store.set("radical-free-ai", store.get("radical-free-ai", 0) + 1);  // a shared answer costs nothing
+  if (free && r.headers.get("x-vercel-cache") !== "HIT" && !r.headers.get("x-radical-stored")) store.set("radical-free-ai", store.get("radical-free-ai", 0) + 1);  // a shared answer costs nothing
   return data;
 }
 // ================= account: sign in with your email and a 6-digit code (Supabase), then your words sync
@@ -3400,20 +3413,20 @@ async function signIn(email, code) {
   setTimeout(joinPending, 800);  // opened a friend's link before signing in
   return m ? m.words.length - n : 0;
 }
-// ---- v61: payments (see api/_pay.js). A 14-day trial, then $9.99 once, bought in the app through RevenueCat
-// (Apple now, Google Play when the Android app exists). The account keeps our own record (bought, gifted, trial
-// start), so the web app follows it. Nothing here does anything until the server's config says pay.on.
-// PAY_RULE picks what a non-buyer keeps after the trial: "reading" (Read and Explore free; cards, AI and adding
-// words locked), "teaser" (only Track and your saved words), "words" (no time limit, PAY_WORDS own words). Empty:
-// nothing is locked yet.
-// v61 decision (David, Oct 30): "daily": after the trial, no AI, no flash cards, no adding words, and FREE_READ words of
-// reading a day; Track and your words stay. The others are kept for reference.
+// ---- v61, reworked in v63: payments (see api/_pay.js). $4.99 a month or $39.99 a year, each starting with Apple's
+// 14-day free trial, or $79.99 once for Lifetime; bought in the app through RevenueCat (Apple now, Google Play when the
+// Android app exists). AI comes with it as a monthly allowance. The account keeps our own record (bought, gifted, the
+// web's trial start), so the web app follows it. Nothing here does anything until the server's config says pay.on.
+// PAY_RULE picks what you keep without it: "daily" (David, Oct 30): no AI, no flash cards, no adding words, and
+// FREE_READ words of reading a day; Track and your words stay. On the web the trial starts on its own; in the app it's
+// Apple's free trial on a subscription. (The other rules are kept for reference.)
 const PAY_RULE = "daily", PAY_WORDS = 50, FREE_READ = 100;
 const PAY_LOCKS = { daily: ["cards", "ai", "add"], reading: ["cards", "ai", "add"], teaser: ["read", "explore", "cards", "ai", "add"], words: [] };
-const DEMO_AI = { today: .02, month: .38, cap: .05 };
+const DEMO_AI = { allow: { kind: "paid", base: 2.5, day: .5 }, meter: { chg: .38, dchg: .02 } };  // the still meter on the tour and the card
 const AUTO_AI = ["card", "topics", "rate", "wordset", "example"];  // calls the app makes on its own: no card or sheet for them
-const SUBS_URL = "https://apps.apple.com/account/subscriptions", EULA_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";  // the still meter on the tour and the unlock card
-let payCfg = store.get("radical-pay", null), ent = store.get("radical-ent", null) || { unlock: null, trialFrom: "" }, rcReady = null;
+const SUBS_URL = "https://apps.apple.com/account/subscriptions", EULA_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+const LIFE = "radical_unlock";  // Lifetime ($79.99); the product id is from before v63
+let payCfg = store.get("radical-pay", null), ent = store.get("radical-ent", null) || { unlock: null, sub: null, trialFrom: "" }, rcReady = null;
 const rcAvail = () => NATIVE && !!(window.Capacitor && Capacitor.isPluginAvailable && Capacitor.isPluginAvailable("Purchases"));
 const payOn = () => !!(payCfg && payCfg.on && PAY_RULE);
 const trialOver = () => { const l = trialLeft(); return l == null ? rcAvail() : l <= 0; };
@@ -3427,21 +3440,24 @@ function capReader() {
   const first = r.querySelector(".line:not(.counted)");
   if (first && (!old || old.nextElementSibling !== first)) {
     if (old) old.remove();
-    const n = el("div", "capnote", `<b>${FREE_READ} free words read today.</b><span>More tomorrow, or unlock Radical.</span>`);
-    n.append(btn("Unlock", "btn small", payCard)); first.before(n);
+    const n = el("div", "capnote", `<b>${FREE_READ} free words read today.</b><span>More tomorrow, or get Radical.</span>`);
+    n.append(btn("Get Radical", "btn small", payCard)); first.before(n);
   }
   return true;
 }
 const earlierDay = (a, b) => !a ? b || "" : !b ? a : a < b ? a : b;
+const subLive = s => !!(s && s.product && (!s.until || +s.until > Date.now()));
 function setEnt(e) {
-  ent = { unlock: e.unlock || ent.unlock || null, trialFrom: earlierDay(ent.trialFrom, e.trialFrom), plan: "plan" in e ? e.plan : ent.plan || null };
+  ent = { unlock: "unlock" in e ? e.unlock || null : ent.unlock || null, sub: "sub" in e ? e.sub || null : ent.sub || null, trialFrom: earlierDay(ent.trialFrom, e.trialFrom) };
   store.set("radical-ent", ent); paintPay();
 }
-const unlocked = () => !!ent.unlock || !!store.get("radical-owner", null);
+const unlocked = () => !!ent.unlock || subLive(ent.sub) || !!store.get("radical-owner", null);
 const trialLeft = () => ent.trialFrom ? Math.max(0, (payCfg && payCfg.days || 14) - dayGap(ent.trialFrom, localDay())) : null;
 const ownWords = () => myWords.filter(w => !w.common && !w.set && !w.got).length;
-// Is this part of the app open to you now? A trial that hasn't started counts as open on the web (it starts on its
-// own) and closed in the app, where Apple wants it started on purpose (the $0 "14-day Trial" item).
+const subOf = id => ((payCfg && payCfg.subs) || []).find(x => x.id === id) || { price: id === "radical_year" ? "$39.99" : "$4.99", per: id === "radical_year" ? "year" : "month" };
+const shortDay = t => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+// Is this part of the app open to you now? On the web a trial that hasn't started counts as open (it starts on its
+// own); in the app the trial is Apple's, on a subscription.
 function payFree(what) {
   if (!payOn() || unlocked()) return true;
   if (PAY_RULE === "words") return what !== "add" || ownWords() < PAY_WORDS;
@@ -3449,14 +3465,15 @@ function payFree(what) {
   const left = trialLeft();
   return left == null ? !rcAvail() : left > 0;
 }
-// The gate: true goes ahead; false shows the unlock card (or nothing, for things the app does on its own)
+// The gate: true goes ahead; false shows the card (or nothing, for things the app does on its own)
 function payOk(what, quiet) { if (payFree(what)) return true; if (!quiet) payCard(); return false; }
+// What the store says: Lifetime, or a live subscription (and whether it's still Apple's free trial)
 function readCI(ci) {
   if (!ci || !payCfg) return;
-  const on = ci.entitlements && ci.entitlements.active && ci.entitlements.active[payCfg.entitlement];
-  const tr = (ci.nonSubscriptionTransactions || []).filter(t => t.productIdentifier === payCfg.trial).map(t => String(t.purchaseDate || "").slice(0, 10)).sort()[0];
-  const sub = (ci.activeSubscriptions || []).find(x => /^radical_ai_/.test(x));
-  setEnt({ unlock: on ? { src: "store" } : null, trialFrom: tr || "", ...(sub ? { plan: { product: sub } } : {}) });
+  const a = ci.entitlements && ci.entitlements.active && ci.entitlements.active[payCfg.entitlement];
+  if (!a) { setEnt({ unlock: ent.unlock && ent.unlock.src === "gift" ? ent.unlock : null, sub: null }); return; }
+  if (a.productIdentifier === LIFE) setEnt({ unlock: { src: "store", product: LIFE } });
+  else setEnt({ sub: { product: a.productIdentifier, until: a.expirationDate ? Date.parse(a.expirationDate) : 0, ...(a.periodType === "TRIAL" ? { trial: true } : {}) } });
 }
 async function entitleCall(body) {
   const token = await accessToken(); if (!token) return null;
@@ -3469,7 +3486,7 @@ async function payRefresh(op = "get") {
   if (P) try { readCI((await P.getCustomerInfo()).customerInfo); } catch (e) {}
   if (session) try {
     if (ent.trialFrom) await entitleCall({ op: "trial", from: ent.trialFrom });
-    const j = await entitleCall({ op }); if (j) { if (!j.unlock && ent.unlock && ent.unlock.src === "gift") ent.unlock = null; setEnt(j); }
+    const j = await entitleCall({ op }); if (j) setEnt({ unlock: j.unlock || (P ? ent.unlock : null), sub: j.sub || (P ? ent.sub : null), trialFrom: j.trialFrom });
   } catch (e) {}
   if (payOn() && !ent.trialFrom && !rcAvail()) setEnt({ trialFrom: localDay() });  // the web: the trial starts on its own
   paintPay();
@@ -3482,14 +3499,19 @@ async function payInit() {
   payHeadsUp();
 }
 function rcAccount(id) { if (rcReady) rcReady.then(P => P && (id ? P.logIn({ appUserID: id }) : P.logOut()).then(() => payRefresh("check"))).catch(() => {}); }
-async function rcProduct(id) {
+// The three products as the store sells them (local prices), and whether this Apple ID still gets the free trial
+async function rcProducts() {
   const P = rcReady && await rcReady; if (!P) throw new Error("Purchases aren't available here.");
-  const { products } = await P.getProducts({ productIdentifiers: [id], type: /^radical_ai_/.test(id) ? "SUBSCRIPTION" : "NON_SUBSCRIPTION" });
-  if (!products || !products[0]) throw new Error("The store didn't answer. Try again in a minute.");
-  return { P, product: products[0] };
+  const subs = (payCfg.subs || []).map(x => x.id);
+  const [a, b] = await Promise.all([P.getProducts({ productIdentifiers: subs, type: "SUBSCRIPTION" }), P.getProducts({ productIdentifiers: [LIFE], type: "NON_SUBSCRIPTION" })]);
+  const list = [...(a.products || []), ...(b.products || [])];
+  let trial = null;
+  try { const el = await P.checkTrialOrIntroductoryPriceEligibility({ productIdentifiers: subs }); trial = subs.some(id => el[id] && el[id].status === 2); } catch (e) {}  // 2 = eligible
+  return { P, list, trial };
 }
 async function payBuy(id) {
-  const { P, product } = await rcProduct(id);
+  const { P, list } = await rcProducts(), product = list.find(x => x.identifier === id);
+  if (!product) throw new Error("The store didn't answer. Try again in a minute.");
   try { readCI((await P.purchaseStoreProduct({ product })).customerInfo); }
   catch (e) { if (e && (e.userCancelled || (e.code && /cancel/i.test(String(e.code))))) return false; throw e; }
   if (session) await entitleCall({ op: "check" }).then(j => j && setEnt(j)).catch(() => {});
@@ -3501,70 +3523,162 @@ async function payRestore() {
   if (session) { const j = await entitleCall({ op: "check" }); if (j) setEnt(j); }
   return unlocked();
 }
-// The unlock card: from any locked button, and once on day 15. Before the trial starts (in the app), it starts it.
+// The card: from any locked button, once a day for anyone without Radical (in the app), and when the web trial ends.
+// Yearly, Monthly, Lifetime; prices and the free trial come from the store when it answers.
 function payCard() {
   if (document.querySelector(".sheet.paycard")) return;
   const sheet = el("div", "sheet paycard"), card = el("div", "sheetcard"), msg = el("p", "note");
-  const close = () => sheet.remove(), price = (payCfg && payCfg.price) || "$9.99", days = (payCfg && payCfg.days) || 14;
-  const startTrial = rcAvail() && !ent.trialFrom;
-  const keeps = PAY_RULE === "daily" ? `Without it: ${FREE_READ} words of reading a day, plus your words and Track.` : PAY_RULE === "reading" ? "Reading stays free." : PAY_RULE === "teaser" ? "Your words and Track stay." : "";
-  const fu = payCfg && payCfg.founding, founder = fu && fu >= localDay() ? new Date(fu + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+  const close = () => sheet.remove(), days = (payCfg && payCfg.days) || 14, al = (payCfg && payCfg.allow) || { month: 2.5 };
+  const keeps = PAY_RULE === "daily" ? `Without it: ${FREE_READ} words of reading a day, plus your words and Track.` : "";
   const m = meterBox(DEMO_AI, true); m.classList.add("paymeter");
-  card.append(m, el("div", "paymark", "部"), el("h3", "", startTrial ? `${days} days free` : "Unlock Radical"),
-    el("p", "paylead", startTrial ? `Everything, free for ${days} days. Then ${price}, once. Not a subscription.` : `${price}, once. Not a subscription. Yours for good.`),
-    el("p", "note", "Includes a light daily dose of AI, free." + (payCfg && payCfg.plans && payCfg.plans.length ? ` Need more? Optional AI plans from ${payCfg.plans[0].price} a month.` : "")));
-  if (founder) card.append(el("p", "payfound", `Founding member: double the daily AI, for good, if you unlock by ${founder}.`));
-  if (keeps) card.append(el("p", "note paykeeps", keeps));
-  const row = el("div", "row");
-  const busy = (b, f) => async () => { b.disabled = true; msg.textContent = ""; try { if (await f()) close(); } catch (e) { msg.textContent = e.message || "That didn't work."; } b.disabled = false; };
+  const lead = el("p", "paylead", "Everything in Radical, AI included.");
+  card.append(m, el("div", "paymark noink", "部"), el("h3", "", "Get Radical"), lead,
+    el("p", "note", `${cents(al.month || 2.5)} of AI a month.`));
+  const busy = (b, f) => async () => { card.querySelectorAll("button").forEach(x => x.disabled = true); msg.textContent = ""; try { if (await f()) close(); } catch (e) { msg.textContent = e.message || "That didn't work."; } card.querySelectorAll("button").forEach(x => x.disabled = false); };
   if (rcAvail()) {
-    const go = btn(startTrial ? "Start free trial" : `Unlock · ${price}`, "btn");
-    go.onclick = busy(go, () => payBuy(startTrial ? payCfg.trial : payCfg.product).then(ok => { if (ok) toast(startTrial ? "Trial started." : "Unlocked. Thank you.", 3000); return ok; }));
-    row.append(go);
-  } else card.append(el("p", "note", "Unlock in the Radical app. Signed in, it unlocks here too."));
-  row.append(btn("Not now", "btn ghost", close)); card.append(row);
+    const plans = el("div", "payplans"), terms = el("p", "note planterms");
+    const opt = (id, name, price, sub) => {
+      const b = el("button", "payopt" + (id === "radical_year" ? " best" : ""), `<b>${name}</b><span class="pp">${price}</span><small>${sub}</small>`); b.type = "button";
+      b.onclick = busy(b, () => payBuy(id).then(ok => { if (ok) toast(id === LIFE ? "Radical is yours. Thank you." : "Welcome to Radical.", 3000); return ok; }));
+      return b;
+    };
+    const y = subOf("radical_year"), mo = subOf("radical_month"), life = (payCfg && payCfg.lifetime) || "$79.99";
+    plans.append(opt("radical_year", "Yearly", y.price, "a year"), opt("radical_month", "Monthly", mo.price, "a month"), opt(LIFE, "Lifetime", life, "once, yours for good"));
+    terms.innerHTML = `Subscriptions renew until you cancel in your Apple account, at least a day before the renewal date. <a href="${EULA_URL}" target="_blank" rel="noopener">Terms</a> · <a href="${WEB}/privacy" target="_blank" rel="noopener">Privacy</a>`;
+    card.append(plans, terms);
+    // Local prices and the free trial, once the store answers
+    rcProducts().then(({ list, trial }) => {
+      const by = id => list.find(x => x.identifier === id);
+      plans.querySelectorAll(".payopt").forEach((b, i) => { const p = by(["radical_year", "radical_month", LIFE][i]); if (p && p.priceString) b.querySelector(".pp").textContent = p.priceString; });
+      if (trial) { lead.textContent = `${days} days free. Cancel anytime.`; plans.querySelectorAll(".payopt small").forEach((s, i) => { if (i < 2) s.textContent = `${days} days free, then ${s.previousElementSibling.textContent} ${s.textContent}`; }); }
+    }).catch(() => {});
+  } else card.append(el("p", "note", "Get Radical in the Radical app. Signed in, it opens here too."));
+  if (keeps) card.append(el("p", "note paykeeps", keeps));
+  card.append(btn("Not now", "btn ghost", close));
   const rs = btn("Restore purchase", "linkbtn"); rs.onclick = busy(rs, async () => { const ok = await payRestore(); if (!ok) msg.textContent = session ? "No purchase found for this account." : "No purchase found. Sign in if you bought it on another device."; return ok; });
   card.append(rs, msg); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
 }
-// v61: the day's free AI is used up. Buyers can add a monthly plan (v62: the pot equals the price); everyone else just waits for tomorrow. Shown once a day for things the app does on its own.
-function aiOutSheet(auto) {
+// The AI allowance (or, before launch, the daily safety stop) ran out. Shown once a day for things the app does on its own.
+function aiOutSheet(auto, why) {
   if (document.querySelector(".sheet.aiout") || (auto && store.get("radical-aiout-day", "") === localDay())) return;
   store.set("radical-aiout-day", localDay());
-  const sheet = el("div", "sheet aiout"), card = el("div", "sheetcard"), msg = el("p", "note"), close = () => sheet.remove();
-  const plans = (payCfg && payCfg.plans) || [], can = payOn() && unlocked() && rcAvail() && plans.length && !(ent.plan);
-  card.append(el("h3", "", "Today's free AI is used up."), el("p", "", "It comes back tomorrow. Reading, your words and flash cards keep working."));
-  if (can) {
-    card.append(el("p", "note", "Need more? Add an AI plan:"));
-    const row = el("div", "row");
-    plans.forEach(p => { const b = btn(`${p.price} a month`, "btn small"); b.onclick = async () => { b.disabled = true; msg.textContent = ""; try { if (await payBuy(p.id)) { toast("More AI is on.", 2500); close(); } } catch (e) { msg.textContent = e.message; } b.disabled = false; }; row.append(b); });
-    card.append(row, el("p", "note planterms", `Every dollar is AI: ${plans.map(p => `$${p.pot.toFixed(2)}`).join(" or ")} of AI a month, used after the free daily amount. Renews monthly until you cancel in your Apple account. <a href="${EULA_URL}" target="_blank" rel="noopener">Terms</a> · <a href="${WEB}/privacy" target="_blank" rel="noopener">Privacy</a>`));
-  } else if (payOn() && unlocked() && plans.length && !rcAvail() && !ent.plan) card.append(el("p", "note", "AI plans are in the Radical app."));
-  card.append(btn("OK", "btn ghost", close), msg); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
+  const sheet = el("div", "sheet aiout"), card = el("div", "sheetcard"), close = () => sheet.remove();
+  const keep = "Reading, your words and flash cards keep working.";
+  const [h, p] = why === "month" ? ["This month's AI is used up.", `It comes back on the 1st. ${keep}`]
+    : why === "trial" ? ["Your trial's AI is used up.", `${keep} The full allowance comes with Radical.`]
+    : ["Today's AI is used up.", `It comes back tomorrow. ${keep}`];
+  card.append(el("h3", "", h), el("p", "", p));
+  if (why === "trial" && payOn() && !unlocked()) card.append(btn("Get Radical", "btn", () => { close(); payCard(); }));
+  card.append(btn("OK", "btn ghost", close)); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
-// Day 12: a heads-up; day 15 on: the card once a day when you open the app
+// Heads-ups: 2 days before a free trial ends (the web's, or Apple's on a subscription), and the card once a day for
+// anyone without Radical when the app opens
 function payHeadsUp() {
-  if (!payOn() || unlocked() || PAY_RULE === "words") return;
-  const left = trialLeft(), d = localDay();
+  if (!payOn() || PAY_RULE === "words") return;
+  const d = localDay();
+  if (ent.sub && ent.sub.trial && ent.sub.until) {
+    const left = Math.ceil((ent.sub.until - Date.now()) / 864e5), s = subOf(ent.sub.product);
+    if (left > 0 && left <= 2 && store.get("radical-pay-warned", "") !== String(ent.sub.until)) { store.set("radical-pay-warned", String(ent.sub.until)); toast(`Your free trial ends ${shortDay(ent.sub.until)}. Then ${s.price} a ${s.per}, unless you cancel.`, 5000); }
+    return;
+  }
+  if (unlocked()) return;
+  const left = trialLeft();
   if (left == null) { if (rcAvail() && store.get("radical-pay-asked", "") !== d) { store.set("radical-pay-asked", d); payCard(); } return; }
-  if (left > 0 && left <= 2 && !store.get("radical-pay-warned", "")) { store.set("radical-pay-warned", d); toast(`${left} day${left > 1 ? "s" : ""} left in your free trial. Then ${(payCfg && payCfg.price) || "$9.99"}, once.`, 4500); }
+  if (left > 0 && left <= 2 && !store.get("radical-pay-warned", "")) { store.set("radical-pay-warned", d); toast(`${left} day${left > 1 ? "s" : ""} left in your free trial.`, 4500); }
   if (left === 0 && store.get("radical-pay-asked", "") !== d) { store.set("radical-pay-asked", d); payCard(); }
 }
-// "N days left" (Settings, Account and Track) and the Admin gift box
+// What you have (Settings, Account and Track)
 function payText() {
   if (!payOn() || PAY_RULE === "words") return "";
-  if (unlocked()) return (ent.unlock && ent.unlock.src === "gift" ? "Unlocked (a gift)." : ent.unlock && ent.unlock.founding ? "Unlocked · Founding member" : "Unlocked.") + (ent.plan ? " AI plan on." : "");
+  if (ent.unlock) return ent.unlock.src === "gift" ? "Lifetime (a gift)." : ent.unlock.src === "owner" ? "" : "Lifetime.";
+  if (subLive(ent.sub)) { const s = subOf(ent.sub.product);
+    return ent.sub.trial ? `Free trial: ends ${shortDay(ent.sub.until)}, then ${s.price} a ${s.per}.` : `${s.per === "year" ? "Yearly" : "Monthly"}${ent.sub.until ? ` · renews ${shortDay(ent.sub.until)}` : ""}.`; }
+  if (store.get("radical-owner", null)) return "";
   const left = trialLeft();
-  return left == null ? "Free trial not started." : left > 0 ? `Free trial: ${left} day${left > 1 ? "s" : ""} left.` : "Free trial over.";
+  return left == null ? `Free version: ${FREE_READ} words of reading a day.` : left > 0 ? `Free trial: ${left} day${left > 1 ? "s" : ""} left.` : "Free trial over.";
 }
 function paintPay() { document.querySelectorAll(".payline").forEach(p => { p.textContent = payText(); p.hidden = !p.textContent; }); }
 function giftPanel() {
   const box = $("giftPanel"); if (!box) return; box.innerHTML = "";
   const code = el("input"); code.placeholder = "Friend code"; code.autocapitalize = "characters"; code.maxLength = 12;
   const msg = el("p", "note");
-  const send = op => async () => { msg.textContent = "…"; try { const j = await entitleCall({ op, code: code.value }); msg.textContent = j.already ? "They already have it." : op === "gift" ? "Unlocked for them." : "Gift taken back."; } catch (e) { msg.textContent = e.message; } };
-  const row = el("div", "row"); row.append(btn("Gift unlock", "btn small", send("gift")), btn("Take back", "btn ghost small", send("ungift")));
-  box.append(el("p", "note", "Free unlock for a friend, by their friend code."), code, row, msg);
+  const send = op => async () => { msg.textContent = "…"; try { const j = await entitleCall({ op, code: code.value }); msg.textContent = j.already ? "They already have it." : op === "gift" ? "Lifetime, on us." : "Gift taken back."; } catch (e) { msg.textContent = e.message; } };
+  const row = el("div", "row"); row.append(btn("Gift Lifetime", "btn small", send("gift")), btn("Take back", "btn ghost small", send("ungift")));
+  box.append(el("p", "note", "Radical for good, free, for a friend, by their friend code."), code, row, msg);
+}
+// v63: owners' panels. Who ran out of AI this month, meaning checks learners disputed, and pre-building the cards
+// for the 5,000 most common words (lists/prebuild.txt), a few at a time, picking up where it stopped.
+async function ownerPost(body) {
+  const token = await accessToken(); if (!token) throw new Error("Sign in first.");
+  const r = await fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}`, "x-radical-day": localDay() }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || `That didn't work (${r.status}).`);
+  return j;
+}
+async function hitsPanel() {
+  const box = $("hitsPanel"); if (!box) return; box.innerHTML = ""; box.append(el("p", "note", "Loading…"));
+  try {
+    const { hits = [] } = await entitleCall({ op: "hits" }), by = new Map();
+    hits.forEach(h => { const k = h.email || h.id, x = by.get(k) || { who: k, days: 0, why: h.why, month: 0, real: 0 }; x.days++; x.why = h.why; x.month = Math.max(x.month, h.month || 0); x.real = Math.max(x.real, h.real || 0); by.set(k, x); });
+    box.innerHTML = "";
+    if (!by.size) { box.append(el("p", "note", "Nobody this month.")); return; }
+    const WHY = { day: "daily", month: "monthly", trial: "trial" };
+    [...by.values()].sort((a, b) => b.month - a.month).forEach(x => box.append(el("div", "tarow", `<span>${esc(x.who)}</span><small>${WHY[x.why] || x.why} · ${x.days} day${x.days === 1 ? "" : "s"} · ${cents(x.month)} counted, ${cents(x.real)} real</small>`)));
+  } catch (e) { box.innerHTML = ""; box.append(el("p", "note", e.message)); }
+}
+async function judgePanel() {
+  const box = $("judgePanel"); if (!box) return;
+  const paint = list => {
+    box.innerHTML = "";
+    if (!list.length) { box.append(el("p", "note", "Nothing to review. Checks land here when 3 learners say \u201cI was right\u201d.")); return; }
+    list.slice().reverse().forEach(x => {
+      const row = el("div", "tarow judgerow");
+      row.append(el("div", "", `<b class="wz">${esc(x.word)}</b> · \u201c${esc(x.guess)}\u201d marked <b>${x.verdict === "right" ? "right" : "wrong"}</b>${x.note ? `<small>${esc(x.note)}</small>` : ""}`));
+      const act = op => async () => { try { paint((await ownerPost({ action: "judgereview", op, key: x.key })).list || []); } catch (e) { toast(esc(e.message), 2500); } };
+      const r = el("div", "row"); r.append(btn(x.verdict === "right" ? "Keep right" : "Keep wrong", "btn ghost small", act("confirm")), btn(x.verdict === "right" ? "Make it wrong" : "Make it right", "btn small", act("flip")));
+      row.append(r); box.append(row);
+    });
+  };
+  box.innerHTML = ""; box.append(el("p", "note", "Loading…"));
+  try { paint((await ownerPost({ action: "judgereview", op: "list" })).list || []); } catch (e) { box.innerHTML = ""; box.append(el("p", "note", e.message)); }
+}
+let prebuilding = null;  // the region being built, while it runs
+async function prebuildPanel() {
+  const box = $("prebuildPanel"); if (!box) return; box.innerHTML = "";
+  const st = () => store.get("radical-prebuild", { tw: 0, cn: 0, made: 0, had: 0, failed: [] });
+  const words = (await fetch("lists/prebuild.txt").then(r => r.ok ? r.text() : "").catch(() => "")).split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#"));
+  const line = el("p", "note"), msg = el("p", "note"), N = words.length;
+  const paint = () => { const s = st(); line.textContent = `Taiwan ${s.tw.toLocaleString()} of ${N.toLocaleString()} · Mainland ${s.cn.toLocaleString()} of ${N.toLocaleString()}. Made ${s.made.toLocaleString()}, had ${s.had.toLocaleString()}${s.failed.length ? `, ${s.failed.length} failed (tried again at the end)` : ""}.`; };
+  const run = async r => {
+    if (prebuilding) return; prebuilding = r; draw();
+    const conv = r === "tw" ? toTrad : (x => x), one = async ws => {
+      const j = await ownerPost({ action: "prebuild", words: ws.map(conv), region: r });
+      const s = st(); s.made += j.made || 0; s.had += j.had || 0; const tried = ws.map(w => r + "|" + conv(w)); s.failed = [...new Set([...s.failed.filter(f => !tried.includes(f)), ...(j.failed || []).map(f => r + "|" + f)])]; store.set("radical-prebuild", s);
+    };
+    try {
+      while (prebuilding === r && st()[r] < N) {
+        const at = st()[r], batch = [0, 1, 2, 3].map(i => words.slice(at + i * 4, at + i * 4 + 4)).filter(b => b.length);
+        await Promise.all(batch.map(one));
+        const s = st(); s[r] = Math.min(N, at + 16); store.set("radical-prebuild", s); if (line.isConnected) paint();
+      }
+      if (prebuilding === r && st()[r] >= N) {  // the ones that failed, once more
+        const s = st(), again = s.failed.filter(f => f.startsWith(r + "|")).map(f => f.slice(3)); s.failed = s.failed.filter(f => !f.startsWith(r + "|")); store.set("radical-prebuild", s);
+        for (let i = 0; i < again.length && prebuilding === r; i += 4) await one(again.slice(i, i + 4));
+        msg.textContent = "Done.";
+      } else if (st()[r] < N) msg.textContent = "Stopped. Tap to carry on.";
+    } catch (e) { msg.textContent = e.message + " Tap again to carry on."; }
+    prebuilding = null; if (box.isConnected) draw();
+  };
+  const draw = () => {
+    box.innerHTML = ""; paint();
+    box.append(el("p", "note", "Cards for the 5,000 most common words, shared with everyone. Their sentences explain for free. Very roughly $100 to $200 a region. Keep this page open; it picks up where it stopped."), line);
+    const row = el("div", "row");
+    if (prebuilding) row.append(btn(`Stop (${prebuilding === "tw" ? "Taiwan" : "Mainland"} running…)`, "btn ghost small", () => { prebuilding = null; msg.textContent = "Stopping after this batch…"; }));
+    else row.append(btn("Build Taiwan", "btn small", () => run("tw")), btn("Build Mainland", "btn small", () => run("cn")));
+    box.append(row, msg);
+  };
+  if (!N) { box.append(el("p", "note", "Couldn't load the word list.")); return; }
+  draw();
 }
 function signOut() {
   setSession(null); store.set("radical-synced", 0); store.set("radical-owner", null);
@@ -3585,22 +3699,39 @@ async function fetchUsage() {
   } catch (e) { return null; }
 }
 const money = x => x >= .01 ? `$${x.toFixed(2)}` : x > 0 ? "under 1¢" : "$0";
-// v61: the AI meter on Track (and still, with example numbers, on the tour and the unlock card): today against your
-// daily stop, the month, and tap for the month by feature. Pennies, in plain view.
+// v61, v63: the AI meter on Track (and still, with example numbers, on the tour and the pay card). With payments on it
+// shows the allowance: the month (or the trial) and today against the stated amounts. During the launch bonus the bars
+// run to double, with a tick at the stated amount, and anything past it is gold ("$0.60 on the launch bonus").
+// Tap for the month by feature. Pennies, in plain view.
 const cents = x => x >= 1 ? `$${x.toFixed(2)}` : x >= .095 ? `${Math.round(x * 100)}¢` : x > 0 ? `${(x * 100).toFixed(1).replace(/\.0$/, "")}¢` : "0¢";
+const bonusDay = d => new Date(d + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 function meterBox(me, demo) {
   const box = el("div", "aimeter" + (demo ? " demo" : "")), m = new Date(Date.now() - dayEndNow() * 36e5).toLocaleDateString("en-US", { month: demo ? "short" : "long" });
-  const bar = (f, lab) => { const r = el("div", "amrow"); r.innerHTML = `<span class="amlab">${lab}</span><span class="ambar"><i style="width:${Math.max(2, Math.min(100, f * 100)).toFixed(1)}%"></i></span>`; return r; };
-  box.append(el("div", "amhead", `<b>AI use</b><span>${cents(me.today || 0)} today · ${cents(me.month || 0)} in ${m}</span>`));
-  if (me.cap) box.append(bar((me.today || 0) / me.cap, "Today"));
-  if (me.plan) { box.append(bar(me.plan.used / me.plan.pot, "Plan")); box.append(el("p", "amnote", `${cents(Math.max(0, me.plan.pot - me.plan.used))} of ${cents(me.plan.pot)} plan AI left this month`)); }
+  const a = me.allow, mt = me.meter || {};
+  // f: used / stated; x: how far the bar runs (2 in the bonus); past 1 the bar is gold
+  const bar = (used, base, x, lab) => {
+    const r = el("div", "amrow"), w = v => (Math.max(0, Math.min(x, v)) / x * 100).toFixed(1), f = used / base;
+    r.innerHTML = `<span class="amlab">${lab}</span><span class="ambar${x > 1 ? " bonus" : ""}"><i style="width:${Math.max(2, +w(Math.min(f, 1)))}%"></i>` +
+      (f > 1 ? `<i class="bx" style="width:${(w(f) - w(1)).toFixed(1)}%"></i>` : "") + (x > 1 ? `<s style="left:${w(1)}%"></s>` : "") + `</span>`;
+    return r;
+  };
+  if (!a) {
+    box.append(el("div", "amhead", `<b>AI use</b><span>${cents(me.today || 0)} today · ${cents(me.month || 0)} in ${m}</span>`));
+    if (me.cap) box.append(bar(me.today || 0, me.cap, 1, "Today"));
+    return box;
+  }
+  const x = a.bonus ? 2 : 1, trial = a.kind === "trial", used = trial ? mt.trial || 0 : mt.chg || 0, base = a.base, dbase = a.day / x;
+  box.append(el("div", "amhead", `<b>AI use</b><span>${cents(used)} of ${cents(base)} ${trial ? "in your trial" : "in " + m}</span>`));
+  box.append(bar(used, base, x, trial ? "Trial" : "Month"), bar(mt.dchg || 0, dbase, x, "Today"));
+  if (used > base) box.append(el("p", "amnote ambonus", `${cents(used)} used · ${cents(used - base)} on the launch bonus`));
+  if (a.bonus) box.append(el("p", "amnote ambonus", `Launch bonus: double AI through ${bonusDay(a.bonus)}`));
   return box;
 }
 function aiMeter(holder) {
   if (!session) return;
   const paint = me => { holder.innerHTML = ""; if (!me) return; const b = meterBox(me); b.onclick = () => aiBreakdown(me); holder.append(b); };
   paint(store.get("radical-ai-me", null));
-  fetchUsage().then(j => { if (j && j.me && holder.isConnected) { const me = { ...j.me, plan: j.plan || null }; store.set("radical-ai-me", me); paint(me); } });
+  fetchUsage().then(j => { if (j && j.me && holder.isConnected) { const me = { ...j.me, allow: j.allow || null, meter: j.meter || null }; store.set("radical-ai-me", me); paint(me); } });
 }
 function aiBreakdown(me) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard"), close = () => sheet.remove();
@@ -3609,7 +3740,10 @@ function aiBreakdown(me) {
   const t = el("div", "ambreak");
   rows.forEach(([k, v]) => t.append(el("div", "", `<span>${esc(AI_NAMES[k] || k)}</span><b>${cents(v)}</b>`)));
   if (!rows.length) t.append(el("p", "note", "Nothing yet this month."));
-  card.append(t, el("p", "note", me.cap ? `Your daily AI stops at ${cents(me.cap)} and starts again tomorrow.` : "No daily stop on this account."), btn("Close", "btn ghost", close));
+  const a = me.allow, note = a ? (a.kind === "trial" ? `Your trial includes ${cents(a.base)} of AI, up to ${cents(a.day / (a.bonus ? 2 : 1))} a day.` : `${cents(a.base)} of AI a month, up to ${cents(a.day / (a.bonus ? 2 : 1))} a day.`) +
+    " Answers someone already asked are free; a first ask counts half." + (a.bonus ? ` Double until ${bonusDay(a.bonus)}.` : "")
+    : me.cap ? `Your daily AI stops at ${cents(me.cap)} and starts again tomorrow.` : "No daily stop on this account.";
+  card.append(t, el("p", "note", note), btn("Close", "btn ghost", close));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
 const AI_NAMES = { wordset: "Word Decks", card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
@@ -3625,7 +3759,7 @@ function aiTally() {
   if (store.get("radical-owner", false)) { b.hidden = false; paintTally(last); }
   fetchUsage().then(j => { b.hidden = !(j && j.owner); if (j && j.owner) paintTally(j.all); });
 }
-function openAdmin() { paintTally(store.get("radical-ai-tally", null)); noticePanel(); topicPanel(true); giftPanel(); buildLab(); go("adminScreen"); aiTally(); }
+function openAdmin() { paintTally(store.get("radical-ai-tally", null)); noticePanel(); topicPanel(true); giftPanel(); hitsPanel(); judgePanel(); prebuildPanel(); buildLab(); go("adminScreen"); aiTally(); }
 // v44: the owners' notice: everyone sees it once (per notice), a moment after the splash. Owners write it here.
 // v46: asked fresh every time (never a stored answer; the minute in the address lets the CDN share it for a minute),
 // on start and on every return to the app (at most once a minute), and it waits for as long as a sheet, cards or
@@ -3931,7 +4065,7 @@ function renderAccount() {
     const now = btn("Sync now", "btn ghost small", async () => { now.disabled = true; msg.textContent = "Syncing…"; try { await syncNow(); store.set("radical-sync-error", ""); } catch (e) { msg.textContent = e.message; } now.disabled = false; });
     row.append(now, btn("Sign out", "btn ghost small", () => { signOut(); renderAccount(); }));
     const ai = el("p", "note acctai"); box.append(el("p", "note payline"), ai, row, msg); paintPay();
-    if (payOn() && ent.plan && rcAvail()) { const mg = el("a", "linkbtn", "Manage AI plan"); mg.href = SUBS_URL; mg.target = "_blank"; mg.rel = "noopener"; box.insertBefore(mg, ai); }
+    if (payOn() && subLive(ent.sub) && rcAvail()) { const mg = el("a", "linkbtn", "Manage subscription"); mg.href = SUBS_URL; mg.target = "_blank"; mg.rel = "noopener"; box.insertBefore(mg, ai); }
     const del = btn("Delete account", "btn ghost small acctdel", deleteAccountSheet); box.append(del);
     fetchUsage().then(j => { if (!j || !ai.isConnected) return;
       if (j.ai === false) { ai.textContent = "The AI features aren't turned on for this account yet."; return; }
@@ -4019,7 +4153,9 @@ async function explainLine(text, line, b) {
   if (explainCache[text]) { box.innerHTML = explainHTML(explainCache[text]); return; }
   box.innerHTML = '<p class="exs loading">Explaining…</p>'; b.disabled = true;
   try {
-    const r = await claude({ action: "explain", sentence: text, trad: script !== "simp" });
+    // v63: a sentence on a pre-built card names its word, so the server can explain it for free
+    const pre = myWords.find(w => w.card && w.card.pre && (w.card.examples || []).some(x => x.example === text));
+    const r = await claude({ action: "explain", sentence: text, trad: script !== "simp", ...(pre ? { cw: pre.word } : {}) });
     explainCache[text] = { structure: r.structure, points: r.points, words: r.words };
     const keys = Object.keys(explainCache); while (keys.length > 300) delete explainCache[keys.shift()];
     store.set("radical-explain", explainCache);
@@ -4179,7 +4315,7 @@ function sentenceOf(text, word) {
   return out;
 }
 async function addEntry(word, extra = {}) {
-  if (!payOk("add")) throw new Error("Unlock Radical to add words.");
+  if (!payOk("add")) throw new Error("Get Radical to add words.");
   await ensure(word);
   if (extra.context) extra = { ...extra, context: sentenceOf(extra.context, word) };
   const d = lookup(word);
@@ -4328,7 +4464,7 @@ function weekStats() {
 const num = n => n.toLocaleString("en-US");
 const started = w => !!w.skip || ["srs", "wsrs", "lsrs"].some(k => w[k] && (w[k].reps || w[k].ivl || w[k].lapses));
 // v48: the streak counts days the goal was met: Today finished (q) and/or the words-read target (rq), as picked in
-// Settings (Either, the default, or Both). Days before v48 arrived keep the old rule (anything done). The calendar's
+// Settings (Either, the default, or Both; v63 adds Cards and Reading alone). Days before v48 arrived keep the old rule (anything done). The calendar's
 // solid days are goal days too.
 const readGoal = () => store.get("radical-read-goal", 200), streakRule = () => store.get("radical-streak-rule", "either");
 if (!store.get("radical-streak-from", null)) store.set("radical-streak-from", localDay());
@@ -4355,10 +4491,11 @@ const rulesOn = day => { const r = goalRules(); let g = r[0]; for (const x of r)
 // v55: the two halves of a day's goal, so the calendar can show a Both day with one half done
 const goalParts = (v, day = localDay()) => {
   const g = rulesOn(day);
-  if (!v) return { cards: false, read: false, both: g.rule === "both" };
-  return { cards: !!v.q || day < Q_FROM && (v.c || 0) >= g.daily, read: !!v.rq || day < STREAK_FROM && (v.w || 0) >= g.read, both: g.rule === "both" };
+  if (!v) return { cards: false, read: false, both: g.rule === "both", rule: g.rule };
+  return { cards: !!v.q || day < Q_FROM && (v.c || 0) >= g.daily, read: !!v.rq || day < STREAK_FROM && (v.w || 0) >= g.read, both: g.rule === "both", rule: g.rule };
 };
-const goalMet = (v, day = localDay()) => { if (!v) return false; const p = goalParts(v, day); return p.both ? p.cards && p.read : p.cards || p.read; };
+// v63: four rules: cards (Cards a day alone), read (the reading target alone), either, both
+const goalMet = (v, day = localDay()) => { if (!v) return false; const p = goalParts(v, day); return p.rule === "cards" ? p.cards : p.rule === "read" ? p.read : p.both ? p.cards && p.read : p.cards || p.read; };
 const goalHalf = (v, day) => { if (!v || day < STREAK_FROM) return ""; const p = goalParts(v, day); return p.both && p.cards !== p.read ? (p.cards ? "cards" : "reading") : ""; };
 // v55: today's marks are checked again whenever Today or the targets may have changed (a lower Cards a day or Words read
 // a day, or the last card removed from a session), not only when a card is rated or a line is read.
@@ -6809,6 +6946,14 @@ function checkChars(given, w) {
 // Meaning: generous. Any meaning phrase, or a shared content word, counts.
 const STOP = new Set("to a an the of and or in on at for with be is it one's oneself something someone sb sth".split(" "));
 const norm = t => t.toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z' ]/g, " ").replace(/\s+/g, " ").trim().replace(/^(to|a|an|the) /, "");
+// v63: a guess tidied the way the server stores meaning checks ("The sea." = "sea"); guesses judged right (or that you
+// said were right) are kept on the word, so the quick match takes them next time without asking
+const tidyGuess = g => String(g || "").toLowerCase().replace(/[\p{P}\p{S}]+/gu, " ").replace(/\b(a|an|the|to)\b/g, " ").replace(/\s+/g, " ").trim().slice(0, 120);
+function okGuess(w, g) { const t = tidyGuess(g); if (!t) return; w.okGuess = [...new Set([...(w.okGuess || []), t])].slice(-20); saveWords(); }
+async function dispute(w, g) {
+  try { const token = await accessToken(); if (!token) return;
+    fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}`, "x-radical-day": localDay() }, body: JSON.stringify({ action: "dispute", word: w.word, guess: g, pattern: isPattern(w.word), region }) }).catch(() => {}); } catch (e) {}
+}
 function checkMeaning(given, target) {
   if (!given.trim()) return { ok: null };
   if (!target) return { ok: null };
@@ -6939,7 +7084,7 @@ function showFront() {
     let st;
     if (how === "check") {
       if (listen && /\p{Script=Han}/u.test(py.value)) await ensure(py.value);  // readings of the typed characters, for sound credit
-      const g = mean.value.trim(), local = checkMeaning(g, wMeaning(w));
+      const g = mean.value.trim(), local = (w.okGuess || []).includes(tidyGuess(g)) ? { ok: true, note: "Correct." } : checkMeaning(g, wMeaning(w));
       // The quick match failed: ask the AI judge. If it can't answer (slow, offline, an error), you decide (✓ / ✗).
       if (g && local.ok === false) st = { aiMean: { ok: null, ask: true } };
       if (g && local.ok === false && online() && navigator.onLine !== false) {
@@ -6950,7 +7095,8 @@ function showFront() {
         for (let i = 0; i < 2 && !r; i++) { try { r = await ask(); } catch (e) { why = e.message || "error"; if (/limit|Sign in/i.test(why)) break; } }
         if (r) {
           const ok = r.verdict === "right" ? true : r.verdict === "close" ? "part" : false;
-          st = { aiMean: { ok, note: r.note || (ok === true ? "Correct." : ok ? "Close." : "Not quite.") } };
+          if (ok === true) okGuess(w, g);  // v63: next time the phone accepts it with no call
+          st = { aiMean: { ok, ai: true, note: r.note || (ok === true ? "Correct." : ok ? "Close." : "Not quite.") } };
         } else reportFail("judge", why);
         judging = false;
         if (!box.isConnected || revSide) return;
@@ -7160,9 +7306,17 @@ function showBack(w, how, st) {
     const results = el("div", "results", mark(guess.listen ? "Answer" : "Pinyin", guess.py, rp) + mark("Meaning", guess.mean, rm));
     ans.append(results);
     // The AI couldn't judge the meaning: you say whether it was right, and the suggestion follows your answer.
+    const redo = ok => { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true, answered: true, aiMean: { ok, note: ok ? "You marked it right." : "You marked it wrong." } }); };
     if (rm.ask) {
-      const yn = el("div", "askrow"), redo = ok => { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true, answered: true, aiMean: { ok, note: ok ? "You marked it right." : "You marked it wrong." } }); };
+      const yn = el("div", "askrow");
       yn.append(btn("✓ Right", "btn ghost small", () => redo(true)), btn("✗ Wrong", "btn ghost small", () => redo(false)));
+      results.lastElementChild.append(yn);
+    }
+    // v63: the AI said no (or close) and you disagree: it counts as right for you, and the stored check is told; enough
+    // learners disagreeing sends it to the owners to confirm or flip (it never changes for everyone on one say-so)
+    if (rm.ai && rm.ok !== true) {
+      const yn = el("div", "askrow");
+      yn.append(btn("I was right", "linkbtn small", () => { okGuess(w, guess.mean); dispute(w, guess.mean); redo(true); }));
       results.lastElementChild.append(yn);
     }
     const score = [rp.ok, rm.ok].map(x => x === true ? 2 : x === "part" ? 1 : 0).reduce((a, b) => a + b, 0);
@@ -7492,7 +7646,7 @@ const TOUR = [
         [2600, () => { face("read"); card.classList.add("up"); }], [4300, () => flip("write")], [6400, () => flip("listen")]]) };
   } },
   // v61: where your AI use lives (a still meter with everyday numbers; the finger only shows where to look)
-  { line: "Your AI use, always in view.", note: "Pennies a day, on 記 Track.", chars: "記", pay: true, build(stage) {
+  { line: "Your AI use, always in view.", note: "AI included, counted on 記 Track.", chars: "記", pay: true, build(stage) {
     const tab = el("span", "ttab", `<span lang="zh">${conv("記")}</span>`), m = meterBox(DEMO_AI, true);
     m.classList.add("tmeter"); stage.append(tab, m);
     const f = tourFinger(stage);
@@ -7550,7 +7704,7 @@ function setSums() {
     modes: goal.map(m => HOW_NAME[m]).join(", ") + (store.get("radical-badge", true) ? "" : " · no red number"),
     sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
     speech: `${PACES.find(x => x[0] === sayPace)[1]} · speed ${Math.round(rate * 100)}%`,
-    daily: `${dailyMax()} cards ${streakRule() === "both" ? "and" : "or"} ${readGoal()} words · ends ${hourName(dayEndNow())}`,
+    daily: `${{ cards: `${dailyMax()} cards`, read: `${readGoal()} words` }[streakRule()] || `${dailyMax()} cards ${streakRule() === "both" ? "and" : "or"} ${readGoal()} words`} · ends ${hourName(dayEndNow())}`,
     tiles: trackTiles().map(k => TILES[k][0]).join(", ") };
   document.querySelectorAll("[data-sum]").forEach(x => x.textContent = S[x.dataset.sum] || "");
 }
