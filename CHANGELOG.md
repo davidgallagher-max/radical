@@ -2,6 +2,13 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v72
+
+- The pay card is four matching boxes: Free trial, Monthly, Yearly, Lifetime. Nothing is picked until you tap one; the tapped box lights up and the others fade while Apple asks. Yearly keeps its small Best value tag. The AI use bubble in the corner is gone.
+- After Apple says yes, the card says what you got and thanks you. Buying Lifetime while subscribed adds a link to cancel the subscription.
+- Settings, Account starts with Your plan: the plan and its date, Change plan, Cancel or manage (Apple's subscriptions page), Choose a plan or Get Radical, and Restore purchases.
+- Vercel no longer builds preview copies of work branches (they had filled the storage), and a by-hand workflow can clear old deployments.
+
 ## v71
 
 - The pay card has "Try free for 14 days, no subscription" under the three options, for anyone who hasn't had a trial or a subscription. It's Apple's $0 "14-day Trial" item and starts the same 14 days and trial AI, so someone heading for Lifetime can try Radical without subscribing.
