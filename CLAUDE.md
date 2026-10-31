@@ -151,6 +151,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v73 notes: entitle op `reset` (owners, own account) writes `{unlock: null, sub: null, trialFrom: "", resetAt}`; `check()` ignores RevenueCat purchases before `resetAt` (subs by `original_purchase_date`), `trial()` ignores a from-day before it, the webhook skips SANDBOX `RENEWAL` events once `resetAt` is set. Page: `giftPanel` shows "Reset my plan (test)" while `payTest()` (`armConfirm`), sets `radical-pay-reset` and clears `ent`; `readCI` ignores the trial item and the entitlement (`originalPurchaseDate`) older than it while `payTest()`.
 
+- v74 notes: `.payopt.best::after` shows `data-tag` (Lifetime "Best value", Yearly "Save N%" from `rcProducts` prices, floor, default 33). `.listenprompt` buttons preventDefault on pointerdown/mousedown while `#gPy`/`#gMean` has focus (keyboard stays, one tap plays). Quit (`#revEnd`) with `rDone` empties `rq` and sets `showFront.ended`, so the finish screen reads "Session ended".
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)

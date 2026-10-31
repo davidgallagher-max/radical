@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v74
+
+- Pay card tags: Lifetime is Best value; Yearly says Save 33% (worked out from the store's prices).
+- Listen cards: with the keyboard up, one tap on Play, a speed or In a sentence plays it. The keyboard stays up.
+- Quit after rating at least one card ends on the finish screen, titled Session ended, with your score and what's left today. Cards you didn't reach stay in Today.
+
 ## v73
 
 - Admin tools: with "Paywall test on this phone" on, "Reset my plan (test)" (tap twice) starts you over as a new user. The account forgets your plan, and purchases made before the reset stop counting, so you can try the free trial and each plan again.
