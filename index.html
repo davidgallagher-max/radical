@@ -683,6 +683,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 @media (prefers-reduced-motion:reduce){.resmark,.resmark.late{animation:none;opacity:1}}
 .cardbin{position:absolute;top:-4px;right:-6px;z-index:2;background:color-mix(in srgb,var(--bg) 70%,transparent)}
 .revcard:has(>.cardbin)>.revchars{padding:0 34px}
+.revcard:has(>.cardbin)>.revchars{--cs:min(140px,calc((min(100vw,760px) - 100px - (var(--n,1) - 1) * 6px) / var(--n,1)))}  /* v65: up to four on one row beside the bin */
 .revcard:has(>.cardbin)>:nth-child(2):not(.revchars){padding-right:34px}
 .edpen{all:unset;cursor:pointer;color:var(--accent);padding:6px 8px;margin-left:2px;border-radius:8px;display:inline-flex;align-items:center}
 .edpen .ico{width:20px;height:20px}
@@ -7229,11 +7230,21 @@ function kbFit() {
   const topH = scr.querySelector(".topbar").offsetHeight, form = st.card.querySelector("form.guess"), hint = st.card.querySelector(".cluespot");
   const rest = (form ? form.offsetHeight : 0) + (hint ? hint.offsetHeight : 0) + bar.offsetHeight + 56;
   if (big) {
+    // v65: shrink until the boxes clear the bar, counting the rows the characters really wrap into (three
+    // characters can sit two and one)
     big.style.removeProperty("--cs");
-    const natural = (big.querySelector("svg,.fontglyph,.slotbox") || big).getBoundingClientRect().height || 140;
-    const rows = Math.ceil([...big.children].filter(x => !x.classList.contains("pattag")).length / 4);
-    big.style.setProperty("--cs", Math.max(52, Math.min(natural, Math.floor((vv.height - topH - rest) / rows))) + "px");
-    scr.scrollTop += big.getBoundingClientRect().top - scr.querySelector(".topbar").getBoundingClientRect().bottom - 8;
+    const tiles = [...big.children].filter(x => !x.classList.contains("pattag"));
+    const rowsOf = () => new Set(tiles.map(x => Math.round(x.offsetTop))).size || 1;
+    const top = () => scr.querySelector(".topbar").getBoundingClientRect().bottom;
+    let cs = (big.querySelector("svg,.fontglyph,.slotbox") || big).getBoundingClientRect().height || 140;
+    cs = Math.max(52, Math.min(cs, Math.floor((vv.height - topH - rest) / rowsOf())));
+    for (let i = 0; i < 8; i++) {
+      big.style.setProperty("--cs", cs + "px");
+      scr.scrollTop += big.getBoundingClientRect().top - top() - 8;
+      const low = Math.max(...[form, hint, big].filter(Boolean).map(x => x.getBoundingClientRect().bottom)), room = bar.getBoundingClientRect().top - 8;
+      if (low <= room || cs <= 52) break;
+      cs = Math.max(52, Math.floor(cs - (low - room) / rowsOf()) - 2);
+    }
   }
 }
 if (window.visualViewport) { visualViewport.addEventListener("resize", kbFit); visualViewport.addEventListener("scroll", () => { if ($("reviewScreen").classList.contains("typing")) kbFit(); }); }
