@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v73
+
+- Admin tools: with "Paywall test on this phone" on, "Reset my plan (test)" (tap twice) starts you over as a new user. The account forgets your plan, and purchases made before the reset stop counting, so you can try the free trial and each plan again.
+
 ## v72
 
 - The pay card is four matching boxes: Free trial, Monthly, Yearly, Lifetime. Nothing is picked until you tap one; the tapped box lights up and the others fade while Apple asks. Yearly keeps its small Best value tag. The AI use bubble in the corner is gone.
