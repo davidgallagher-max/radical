@@ -6990,7 +6990,11 @@ $("revEnd").onclick = () => {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard");
   card.innerHTML = rDone ? `<h3>End this session?</h3><p>${rDone} of ${rDone + rq.length} done · ${scoreText(rScore)}</p><p class="note">Your ratings so far are saved.</p>`
     : `<h3>End this session?</h3><p>Nothing rated yet.</p>`;
-  const row = el("div", "row"), stay = btn("Keep going", "btn ghost", () => sheet.remove()), quit = btn("Quit", "btn", () => { sheet.remove(); store.set(RES_KEY, null); history.back(); });
+  const row = el("div", "row"), stay = btn("Keep going", "btn ghost", () => sheet.remove()), quit = btn("Quit", "btn", () => {
+    sheet.remove(); store.set(RES_KEY, null);
+    // v74: with cards rated, Quit ends on the finish screen (score, what it earned, what's left); the cards not reached stay in Today
+    if (rDone) { try { speechSynthesis.cancel(); } catch (e) {} rq.length = 0; showFront.ended = true; showFront(); } else history.back();
+  });
   row.append(stay, quit); card.append(row); sheet.append(card);
   sheet.onclick = ev => { if (ev.target === sheet) sheet.remove(); };
   document.body.append(sheet); stay.focus();
@@ -7214,7 +7218,7 @@ function showFront() {
     if (!rDone) { box.append(el("p", "wmean", "Nothing to review right now."), btn("Back to my words", "btn wide", () => history.back())); return; }
     // The finish: 完 (finished) draws itself in the lit ink, then the session in one glance, what it earned, what's next.
     const fin = el("div", "finish"), mark = el("div", "finmark");
-    fin.append(mark, el("h3", "", "Session complete"));
+    fin.append(mark, el("h3", "", showFront.ended ? "Session ended" : "Session complete")); showFront.ended = false;
     ensure("完").then(() => { if (!fin.isConnected) return; const svg = svgFor("完", false, true); mark.append(svg); animate(svg, "完", 1.2); });
     // What's next, counted the way the red number on 練 counts: what's left of Today, then Today as it will stand when
     // tomorrow starts (when the day ends), capped at 30 the same way.
