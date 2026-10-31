@@ -8,6 +8,8 @@
 const account = require("./_account.js");
 const topics = require("./_topics.js")(account.storage);
 const pay = require("./_pay.js")({ ...account.storage, isOwner: account.isOwner });
+const answers = require("./_answers.js")(account.storage);  // v63: every AI answer, kept and shared
+const POOL_MAX = 3;  // v63: extra example sentences per word, shared, on top of the card's 3
 
 const API = "https://api.anthropic.com/v1/messages";
 const CARD_MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-5-5";
@@ -178,7 +180,7 @@ module.exports = async (req, res) => {
   if (APP_ORIGINS.has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin); res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Headers", "authorization, content-type, x-radical-day, x-radical-anon");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); res.setHeader("Access-Control-Expose-Headers", "x-vercel-cache");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); res.setHeader("Access-Control-Expose-Headers", "x-vercel-cache, x-radical-stored");
     if (req.method === "OPTIONS") return res.status(204).end();
   }
   if (req.method !== "POST" && req.method !== "GET") return res.status(405).json({ error: "Use GET or POST." });
@@ -288,9 +290,24 @@ module.exports = async (req, res) => {
       if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
       if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
       res.setHeader("Cache-Control", "no-store");
-      const u = await account.usage(user, today), pc = await pay.aiCap(user, today).catch(() => null), plan = await pay.planInfo(user, today).catch(() => null);
-      if (pc && pc.cap != null) u.me.cap = pc.cap;  // the unlock's daily amount once payments are on
-      return res.status(200).json({ ...u, plan, owner: account.isOwner(user), ai: account.mayUseAI(user) });
+      const u = await account.usage(user, today), pc = await pay.aiCap(user, today).catch(() => null), m = await pay.meter(user, today).catch(() => null);
+      // v63: the allowance (once payments are on) and what has counted against it
+      const allow = pc && !pc.locked ? pc : null;
+      if (allow) u.me.cap = allow.day;
+      return res.status(200).json({ ...u, allow, meter: m && { chg: m.chg, dchg: m.dchg, trial: m.trial.chg }, owner: account.isOwner(user), ai: account.mayUseAI(user) });
+    }
+    // v63: "I was right" on a meaning check (counted on the stored check), and the owners' review of disputed checks
+    if (body.action === "dispute") {
+      if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+      const word = String(body.word || "").trim().slice(0, 40), guess = String(body.guess || "").trim().slice(0, 120);
+      if (!word || !guess) return res.status(400).json({ error: "Nothing to check." });
+      return res.status(200).json(await answers.dispute(word, guess, !!body.pattern, body.region === "cn"));
+    }
+    if (body.action === "judgereview") {
+      if (!account.isOwner(user)) return res.status(403).json({ error: "Owners only." });
+      res.setHeader("Cache-Control", "no-store");
+      const out = await answers.review(body.op === "flip" || body.op === "confirm" ? body.op : "list", String(body.key || ""));
+      return res.status(out.error ? 400 : 200).json(out);
     }
     // Feedback from the app's menu: emailed to the owners through Resend (from feedback@upslopelabs.com, replies go to
     // the sender) and kept in storage. An optional screenshot comes as a JPEG.
@@ -329,26 +346,48 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: "No API key on the server. Add ANTHROPIC_API_KEY in Vercel, Settings, Environment Variables, then redeploy." });
   }
   if (anon && !(await account.anonTake(req, today))) return res.status(429).json({ error: "Sign in to keep going.", signin: true });
-  // A daily safety stop per person (owners none, signed-out use shares one pool); every AI call is logged with its estimated cost.
-  // v61: after the trial, AI needs the unlock; the unlock brings its own daily amount (double for Founding members)
+  // v61: after the trial, AI needs Radical. v63: paid and trial accounts have an allowance (api/_pay.js); before
+  // launch a daily safety stop per person (owners none, signed-out use shares one pool). Both are checked only when
+  // the AI is really asked: a stored answer costs nothing, so it's given even past the limit. Every AI call is logged
+  // with its estimated cost, and counts against the allowance at `rate` of it: half for a first ask (it's stored and
+  // shared from then on), nothing for the topic chips and for Explain on a pre-built card's own sentences.
   const pc = await pay.aiCap(user, today).catch(() => null);
-  if (pc && pc.locked) return res.status(402).json({ error: "Unlock Radical to use the AI features.", pay: true });
-  const spent = await account.spentToday(who, today), overDay = spent >= (pc ? pc.cap : account.capFor(user, who));
-  if (overDay && !(pc && pc.pot > 0)) return res.status(429).json({ error: "Today's free AI is used up. It comes back tomorrow; reading, saving and flash cards still work.", aiout: true, plan: !!(pc && pc.pot != null) });
+  if (pc && pc.locked) return res.status(402).json({ error: "Get Radical to use the AI features.", pay: true });
+  const OUT = { day: "Today's AI is used up. It comes back tomorrow; reading, saving and flash cards still work.",
+    month: "This month's AI is used up. It comes back on the 1st; reading, saving and flash cards still work.",
+    trial: "The trial's AI is used up. Reading, saving and flash cards still work." };
+  let rate = body.action === "topics" ? 0 : .5;
   const askClaude = async (model, prompt, maxTokens) => {
+    if (body.action !== "topics") {
+      if (pc) { const why = pay.room(pc, await pay.meter(user, today)); if (why) { await pay.hit(user, why, today).catch(() => {}); throw Object.assign(new Error(OUT[why]), { aiout: why }); } }
+      else if (await account.spentToday(who, today) >= account.capFor(user, who)) throw Object.assign(new Error(OUT.day), { aiout: "day" });
+    }
     const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage, user && user.email, today);
-    if (overDay && pc && pc.pot > 0) await pay.draw(user, account.costOf(model, r.usage), today).catch(() => {});  // past the free AI: the plan pays
+    const cost = account.costOf(model, r.usage);
+    if (user) await pay.charge(user, pc, cost, cost * rate, today).catch(() => {});
     return r.text;
   };
-  const cn = body.region === "cn" || body.r === "cn";  // mainland (cards and Word Sets carry it in the URL as r=cn)
+  // A stored answer, or a new one made, stored and returned (null = unreadable, not stored)
+  const kept = async (kind, key, make) => {
+    const x = await answers.get(kind, key);
+    if (x) { res.setHeader("x-radical-stored", "1"); return x.data; }
+    const d = await make(); if (d != null) await answers.put(kind, key, d);
+    return d;
+  };
+  const cn = body.region === "cn" || body.r === "cn", rk = cn ? "cn" : "tw";  // mainland (cards and Word Sets carry it in the URL as r=cn)
   try {
     if (body.action === "card") {
       const word = String(body.word || "").trim().slice(0, 40);
       if (!word) return res.status(400).json({ error: "No word given." });
-      const text = await askClaude(CARD_MODEL, CARD_PROMPT(word, cn), 1600);
-      const card = parseJSON(text);
-      if (!card) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
-      cardExamples(card);
+      const had = await answers.get("card", `${rk}|${word}`);
+      let card = had && had.data;
+      if (card) res.setHeader("x-radical-stored", "1");
+      else {
+        card = parseJSON(await askClaude(CARD_MODEL, CARD_PROMPT(word, cn), 1600));
+        if (!card) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+        cardExamples(card); await answers.put("card", `${rk}|${word}`, card);
+      }
+      if (had && had.pre) card = { ...card, pre: true };  // pre-built: Explain on its sentences is free
       // Cards are the same for everyone, so let Vercel's CDN keep them for a year.
       // The next request for this word (from any device) is answered from the cache
       // without calling Claude. Best effort: the cache is per region and rarely used
@@ -370,15 +409,36 @@ module.exports = async (req, res) => {
       const out = await topics.admin(body, ask);
       return res.status(out.error ? 400 : 200).json(out);
     }
+    // v63: owners pre-build cards for the most common words (Admin tools), a few per call; a card already stored is
+    // just marked pre-built
+    if (body.action === "prebuild") {
+      if (!account.isOwner(user)) return res.status(403).json({ error: "Owners only." });
+      res.setHeader("Cache-Control", "no-store");
+      const words = (Array.isArray(body.words) ? body.words : []).map(w => String(w || "").trim().slice(0, 40)).filter(w => /\p{Script=Han}/u.test(w)).slice(0, 4);
+      let made = 0, had = 0; const failed = [];
+      await Promise.all(words.map(async word => {
+        const key = `${rk}|${word}`, x = await answers.get("card", key);
+        if (x) { had++; if (!x.pre) await answers.put("card", key, x.data, { pre: true }); return; }
+        try {
+          const card = parseJSON(await askClaude(CARD_MODEL, CARD_PROMPT(word, cn), 1600));
+          if (!card) { failed.push(word); return; }
+          cardExamples(card); await answers.put("card", key, card, { pre: true }); made++;
+        } catch (e) { failed.push(word); }
+      }));
+      return res.status(200).json({ made, had, failed });
+    }
     if (body.action === "wordset") {
       const theme = String(body.theme || "").trim().replace(/\s+/g, " ").slice(0, 60);
       if (!theme) return res.status(400).json({ error: "No theme given." });
       // v46: 12, 24 (the default), 50, or 100 for + More words
       const n = [12, 24, 50, 100].includes(+body.n) ? +body.n : 24;
-      const list = parseItems(await askClaude(FAST_MODEL, WORDSET_PROMPT(theme, cn, n), n > 50 ? 9000 : n > 24 ? 5000 : 3000), "words");
-      if (!list) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
-      const words = list.filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word))
-        .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").slice(0, 80) })).slice(0, n + 6);
+      const words = await kept("wordset", `${rk}|${n}|${theme.toLowerCase()}`, async () => {
+        const list = parseItems(await askClaude(FAST_MODEL, WORDSET_PROMPT(theme, cn, n), n > 50 ? 9000 : n > 24 ? 5000 : 3000), "words");
+        const ws = (list || []).filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word))
+          .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").slice(0, 80) })).slice(0, n + 6);
+        return ws.length ? ws : null;
+      });
+      if (!words) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       if (req.method === "GET" && words.length) {  // the same for everyone: Vercel's CDN keeps a set for a year
         res.setHeader("Vercel-CDN-Cache-Control", "max-age=31536000");
         res.setHeader("Cache-Control", "public, max-age=0");
@@ -388,87 +448,121 @@ module.exports = async (req, res) => {
     if (body.action === "words") {
       const text = String(body.text || "").trim().slice(0, 4000);
       if (!text) return res.status(400).json({ error: "No text given." });
-      const out = parseJSON(await askClaude(FAST_MODEL, WORDS_PROMPT(text, cn), 3000));
-      if (!out || !Array.isArray(out.words)) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
-      return res.status(200).json({ words: out.words.filter(w => w && typeof w.word === "string").slice(0, 80) });
+      const words = await kept("words", `${rk}|${text}`, async () => {
+        const out = parseJSON(await askClaude(FAST_MODEL, WORDS_PROMPT(text, cn), 3000));
+        return out && Array.isArray(out.words) ? out.words.filter(w => w && typeof w.word === "string").slice(0, 80) : null;
+      });
+      if (!words) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      return res.status(200).json({ words });
     }
     if (body.action === "notes") {
       const data = String(body.image || ""), type = String(body.media_type || "image/jpeg");
       if (!data || !/^image\/(jpeg|png|webp|gif)$/.test(type)) return res.status(400).json({ error: "No usable image sent." });
       if (data.length > 4_000_000) return res.status(413).json({ error: "That page is too large. Try a closer photo." });
-      const out = parseJSON(await askClaude(CARD_MODEL, [
-        { type: "image", source: { type: "base64", media_type: type, data } }, { type: "text", text: NOTES_PROMPT }
-      ], 4000));
-      if (!out || !Array.isArray(out.items)) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
-      return res.status(200).json({ items: out.items.filter(x => x && typeof x.word === "string" && /\p{Script=Han}/u.test(x.word)).slice(0, 60) });
+      const items = await kept("notes", answers.hash(data), async () => {
+        const out = parseJSON(await askClaude(CARD_MODEL, [
+          { type: "image", source: { type: "base64", media_type: type, data } }, { type: "text", text: NOTES_PROMPT }
+        ], 4000));
+        return out && Array.isArray(out.items) ? out.items.filter(x => x && typeof x.word === "string" && /\p{Script=Han}/u.test(x.word)).slice(0, 60) : null;
+      });
+      if (!items) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      return res.status(200).json({ items });
     }
     if (body.action === "example") {
       const word = String(body.word || "").trim().slice(0, 40);
       if (!word) return res.status(400).json({ error: "No word given." });
-      const n = body.n === 2 ? 2 : 1;
-      const out = parseJSON(await askClaude(CARD_MODEL, EXAMPLE_PROMPT(word, String(body.meaning || "").slice(0, 120), String(body.avoid || "").slice(0, 600), n, cn), 400 * n + 100));
+      // v63: one shared pool per word (POOL_MAX sentences past the card's 3). A sentence this learner hasn't seen
+      // comes from the pool for free; a new one is made only while the pool has room; a full pool just says so (the
+      // page then goes round the ones it has).
+      let n = body.n === 2 ? 2 : 1;
+      const key = `${rk}|${word}`, seen = String(body.avoid || "").split(" / ").map(x => x.trim()).filter(Boolean);
+      const pool = ((await answers.get("pool", key)) || {}).data || [];
+      const fresh = pool.filter(x => !seen.includes(x.example));
+      if (fresh.length) { res.setHeader("x-radical-stored", "1"); const ex = fresh.slice(0, n); return res.status(200).json({ examples: ex, ...ex[0] }); }
+      if (pool.length >= POOL_MAX) { res.setHeader("x-radical-stored", "1"); return res.status(200).json({ examples: [], full: true }); }
+      n = Math.min(n, POOL_MAX - pool.length);
+      const avoid = [...seen, ...pool.map(x => x.example)].join(" / ").slice(0, 600);
+      const out = parseJSON(await askClaude(CARD_MODEL, EXAMPLE_PROMPT(word, String(body.meaning || "").slice(0, 120), avoid, n, cn), 400 * n + 100));
       const ex = out && cardExamples({ examples: out.examples, example: out.example, example_pinyin: out.example_pinyin, example_en: out.example_en }).examples.slice(0, n);
       if (!ex || !ex.length) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      await answers.put("pool", key, [...pool, ...ex].slice(0, POOL_MAX));
       return res.status(200).json({ examples: ex, ...ex[0] });
     }
     if (body.action === "ocr") {
       const data = String(body.image || ""), type = String(body.media_type || "image/jpeg");
       if (!data || !/^image\/(jpeg|png|webp|gif)$/.test(type)) return res.status(400).json({ error: "No usable image sent." });
       if (data.length > 4_000_000) return res.status(413).json({ error: "That image is too large. Try a closer photo." });
-      const text = await askClaude(OCR_MODEL, [
+      const text = await kept("ocr", answers.hash(data), () => askClaude(OCR_MODEL, [
         { type: "image", source: { type: "base64", media_type: type, data } },
         { type: "text", text: "Transcribe the Chinese text in this image exactly as written (Traditional or Simplified, whichever it uses), in reading order, one line per line of the original; for vertical text, read columns right to left. Leave out page numbers and headers, and leave out pinyin printed above or beside the characters (ruby). Keep English words that are part of the text, such as glosses or notes, where they appear on the line. Output only the text. If there is no Chinese text, output nothing." }
-      ], 2000);
+      ], 2000));
       return res.status(200).json({ text });
     }
     if (body.action === "zhquery") {
       const q = String(body.q || "").trim().slice(0, 120);
       if (!q) return res.status(400).json({ error: "Nothing to search for." });
-      const zh = (await askClaude(FAST_MODEL, ZHQUERY_PROMPT(q), 60)).split("\n")[0].replace(/["“”「」]/g, "").trim();
+      const zh = await kept("zhquery", q.toLowerCase(), async () => (await askClaude(FAST_MODEL, ZHQUERY_PROMPT(q), 60)).split("\n")[0].replace(/["“”「」]/g, "").trim());
       return res.status(200).json({ zh });
     }
     if (body.action === "rate") {
       const items = (Array.isArray(body.items) ? body.items : []).slice(0, 15)
         .map(it => ({ t: String(it.t || "").slice(0, 60), s: String(it.s || "").slice(0, 400) })).filter(it => it.t);
       if (!items.length) return res.status(400).json({ error: "Nothing to rate." });
-      const out = parseJSON(await askClaude(FAST_MODEL, RATE_PROMPT(items), 700));  // room for one entry per article
+      // v63: each article's rating is stored by its title and opening, so only the new ones are asked
+      const keyOf = it => `${it.t}|${it.s}`, had = await Promise.all(items.map(it => answers.get("rate", keyOf(it))));
+      const ratings = had.map(x => x ? x.data : null), ask = items.filter((it, i) => !had[i]);
+      if (!ask.length) { res.setHeader("x-radical-stored", "1"); return res.status(200).json({ ratings }); }
+      const out = parseJSON(await askClaude(FAST_MODEL, RATE_PROMPT(ask), 700));  // room for one entry per article
       // Matched by number, so a skipped or extra entry can't shift every rating by one.
-      const ratings = items.map(() => null);
+      const got = ask.map(() => null);
       const clamp = v => { const n = Math.round(+v); return n >= 1 ? Math.min(10, n) : null; };
       if (out && Array.isArray(out.ratings)) out.ratings.forEach((x, k) => {
-        if (x && typeof x === "object") { const i = Math.round(+x.n) - 1; if (i >= 0 && i < items.length) ratings[i] = clamp(x.r); }
-        else if (out.ratings.length === items.length) ratings[k] = clamp(x);  // plain list of numbers, same length
+        if (x && typeof x === "object") { const i = Math.round(+x.n) - 1; if (i >= 0 && i < ask.length) got[i] = clamp(x.r); }
+        else if (out.ratings.length === ask.length) got[k] = clamp(x);  // plain list of numbers, same length
       });
+      let j = 0;
+      await Promise.all(items.map((it, i) => { if (had[i]) return null; const v = got[j++]; ratings[i] = v; return v != null ? answers.put("rate", keyOf(it), v) : null; }));
       return res.status(200).json({ ratings });
     }
     if (body.action === "simplify") {
       const text = String(body.text || "").trim().slice(0, 2500), level = body.level === "easy" ? "easy" : "mid";
       if (!text) return res.status(400).json({ error: "Nothing to simplify." });
-      const out = await askClaude(FAST_MODEL, SIMPLIFY_PROMPT(text, level, body.trad !== false), 2000);
+      const out = await kept("simplify", `${level}|${body.trad !== false ? 1 : 0}|${text}`, () => askClaude(FAST_MODEL, SIMPLIFY_PROMPT(text, level, body.trad !== false), 2000));
       return res.status(200).json({ text: out });
     }
     if (body.action === "judge") {
       const word = String(body.word || "").trim().slice(0, 40), meaning = String(body.meaning || "").trim().slice(0, 300), guess = String(body.guess || "").trim().slice(0, 120);
       if (!word || !guess) return res.status(400).json({ error: "Nothing to check." });
-      let raw;
-      try { raw = await askClaude(FAST_MODEL, JUDGE_PROMPT(word, meaning, guess, !!body.pattern), 200); }
-      catch (e) { await account.logFail(who, "judge", "server: " + e.message, today); throw e; }
-      const out = parseJSON(raw), verdict = out && ["right", "close", "wrong"].includes(out.verdict) ? out.verdict : null;
-      if (!verdict) { await account.logFail(who, "judge", "unreadable answer", today); return res.status(502).json({ error: "The answer wasn't readable. Try again." }); }
-      return res.status(200).json({ verdict, note: String(out.note || "").slice(0, 120) });
+      // v63: a check is stored by word and tidied guess and shared ("sea" for 海 is asked once, ever); owners can flip
+      // one that learners dispute (Admin tools)
+      const v = await kept("judge", answers.judgeKey(word, guess, !!body.pattern, cn), async () => {
+        let raw;
+        try { raw = await askClaude(FAST_MODEL, JUDGE_PROMPT(word, meaning, guess, !!body.pattern), 200); }
+        catch (e) { if (!e.aiout) await account.logFail(who, "judge", "server: " + e.message, today); throw e; }
+        const out = parseJSON(raw), verdict = out && ["right", "close", "wrong"].includes(out.verdict) ? out.verdict : null;
+        if (!verdict) { await account.logFail(who, "judge", "unreadable answer", today); return null; }
+        return { verdict, note: String(out.note || "").slice(0, 120) };
+      });
+      if (!v) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      return res.status(200).json(v);
     }
     if (body.action === "explain") {
       const sentence = String(body.sentence || "").trim().slice(0, 300);
       if (!sentence) return res.status(400).json({ error: "Nothing to explain." });
       const trad = body.trad !== false && body.trad !== "0";
-      const out = parseJSON(await askClaude(CARD_MODEL, EXPLAIN_PROMPT(sentence, trad, cn), 900));
-      if (!out) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      // v63: a sentence from a pre-built card (cw names the card's word) explains for free: we chose not to pre-build these
+      if (body.cw) { const c = await answers.get("card", `${rk}|${String(body.cw).slice(0, 40)}`); if (c && c.pre && (c.data.examples || []).some(x => String(x.example || "").trim() === sentence)) rate = 0; }
       const list = (x, n) => (Array.isArray(x) ? x : []).filter(v => v && typeof v === "object").slice(0, n);
+      const ans = await kept("explain", `${rk}|${trad ? 1 : 0}|${sentence}`, async () => {
+        const out = parseJSON(await askClaude(CARD_MODEL, EXPLAIN_PROMPT(sentence, trad, cn), 900));
+        return out ? { structure: String(out.structure || "").slice(0, 400),
+          points: list(out.points, 4).map(p => ({ pattern: String(p.pattern || "").slice(0, 30), note: String(p.note || "").slice(0, 300) })).filter(p => p.pattern),
+          words: list(out.words, 3).map(w => ({ word: String(w.word || "").slice(0, 12), note: String(w.note || "").slice(0, 200) })).filter(w => w.word) } : null;
+      });
+      if (!ans) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       // v44: an explanation is the same for everyone, so asked with GET the CDN keeps it (the next person gets it at once)
       if (req.method === "GET") { res.setHeader("Vercel-CDN-Cache-Control", "max-age=31536000"); res.setHeader("Cache-Control", "public, max-age=0"); }
-      return res.status(200).json({ structure: String(out.structure || "").slice(0, 400),
-        points: list(out.points, 4).map(p => ({ pattern: String(p.pattern || "").slice(0, 30), note: String(p.note || "").slice(0, 300) })).filter(p => p.pattern),
-        words: list(out.words, 3).map(w => ({ word: String(w.word || "").slice(0, 12), note: String(w.note || "").slice(0, 200) })).filter(w => w.word) });
+      return res.status(200).json(ans);
     }
     if (body.action === "topics") {
       const list = (x, n, len) => (Array.isArray(x) ? x : []).slice(0, n).map(v => String(v || "").slice(0, len)).filter(Boolean);
@@ -483,24 +577,28 @@ module.exports = async (req, res) => {
       const text = String(body.text || "").trim().slice(0, 2000), simp = !!body.simp, cnU = body.region ? cn : simp;  // older pages: the script said both
       if (!text) return res.status(400).json({ error: "Nothing to translate." });
       if (body.kind === "word") {
-        const list = parseItems(await askClaude(FAST_MODEL, TOZH_WORD_PROMPT(text.slice(0, 200), simp, cnU), 400), "words");
-        const words = (list || []).filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word))
-          .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").slice(0, 80) })).slice(0, 3);
-        if (!words.length) return res.status(502).json({ error: "No Chinese word came back. Try other words." });
+        const words = await kept("tozh", `w|${simp ? 1 : 0}|${cnU ? "cn" : "tw"}|${text.slice(0, 200).toLowerCase()}`, async () => {
+          const list = parseItems(await askClaude(FAST_MODEL, TOZH_WORD_PROMPT(text.slice(0, 200), simp, cnU), 400), "words");
+          const ws = (list || []).filter(w => w && typeof w.word === "string" && /\p{Script=Han}/u.test(w.word))
+            .map(w => ({ word: w.word.trim().slice(0, 12), pinyin: String(w.pinyin || "").slice(0, 60), meaning: String(w.meaning || "").slice(0, 80) })).slice(0, 3);
+          return ws.length ? ws : null;
+        });
+        if (!words) return res.status(502).json({ error: "No Chinese word came back. Try other words." });
         return res.status(200).json({ words });
       }
-      const zh = await askClaude(FAST_MODEL, TOZH_TEXT_PROMPT(text, simp, cnU), 2500);
-      if (!/\p{Script=Han}/u.test(zh)) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      const zh = await kept("tozh", `t|${simp ? 1 : 0}|${cnU ? "cn" : "tw"}|${text}`, async () => { const z = await askClaude(FAST_MODEL, TOZH_TEXT_PROMPT(text, simp, cnU), 2500); return /\p{Script=Han}/u.test(z) ? z : null; });
+      if (!zh) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       return res.status(200).json({ zh });
     }
     if (body.action === "translate") {
       const sentence = String(body.sentence || "").trim().slice(0, 600);
       if (!sentence) return res.status(400).json({ error: "No sentence given." });
-      const translation = await askClaude(FAST_MODEL, TRANSLATE_PROMPT(sentence), 400);
+      const translation = await kept("translate", sentence, () => askClaude(FAST_MODEL, TRANSLATE_PROMPT(sentence), 400));
       return res.status(200).json({ translation });
     }
     return res.status(400).json({ error: "Unknown action." });
   } catch (e) {
+    if (e.aiout) return res.status(429).json({ error: e.message, aiout: e.aiout });  // v63: past the allowance (or the daily stop)
     return res.status(e.status === 401 ? 502 : 500).json({ error: e.status === 401 ? "The server's API key was rejected. Check ANTHROPIC_API_KEY in Vercel." : e.message });
   }
 };
