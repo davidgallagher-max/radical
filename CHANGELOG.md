@@ -2,6 +2,11 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v68
+
+- Read: ENG turns purple while it says Hide, like 解.
+- A translation that comes back blank is never shown or kept (it used to stick for everyone reading that line); tap ENG again to retry.
+
 ## v67
 
 - iPhone app: the chimes play again (the new build's play-on-silent change could leave the sound player stopped; a tap now wakes it). The voice was never affected.
