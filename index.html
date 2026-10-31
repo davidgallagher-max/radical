@@ -241,7 +241,7 @@ p.busy{margin:-4px 4px 0}
 .paycard .sheetcard{text-align:center;justify-items:center;position:relative}
 .paycard .sheetcard{padding-top:78px}
 .paymeter{position:absolute;top:10px;right:12px;width:11em;padding:5px 9px;gap:2px;opacity:.85}.paymeter .amhead,.paymeter .amrow{font-size:.72rem}.paymeter .amhead{flex-direction:column;align-items:flex-start;gap:0}.paymeter .amhead span{font-size:.72rem}.paymeter .amlab{display:none}
-.paylead{font-size:1.05rem;margin:0}.payplans{display:grid;gap:8px;width:100%}.payopt{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:2px 10px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--fg);font:inherit;cursor:pointer;position:relative}.payopt b{font-weight:600}.payopt .pp{font-weight:600;color:var(--fg)}.payopt small{grid-column:1/-1;color:var(--muted);font-size:.85rem}.payopt.best{border:2px solid var(--gold2);box-shadow:0 0 12px color-mix(in srgb,var(--gold2) 30%,transparent)}.payopt.best::after{content:"Best value";position:absolute;top:-9px;right:12px;background:var(--surface);color:var(--gold2);font-size:.72rem;padding:0 6px}.payopt:disabled{opacity:.6}.payfound{color:var(--gold2);margin:0}.paykeeps{margin:0}
+.paylead{font-size:1.05rem;margin:0}.payplans{display:grid;gap:8px;width:100%}.payopt{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:2px 10px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--fg);font:inherit;cursor:pointer;position:relative}.payopt b{font-weight:600}.payopt .pp{font-weight:600;color:var(--fg)}.payopt small{grid-column:1/-1;color:var(--muted);font-size:.85rem}.payopt.picked{border:2px solid var(--gold2);box-shadow:0 0 12px color-mix(in srgb,var(--gold2) 30%,transparent);padding:11px 13px}.payopt.dim{opacity:.4}.payopt.mine{opacity:1;border-style:dashed}.payopt.mine::after{content:"Your plan";position:absolute;top:-9px;right:12px;background:var(--surface);color:var(--accent);font-size:.72rem;padding:0 6px}.payopt.mine.best::after{content:"Your plan"}.paythanks{margin:0}.planbox{display:grid;gap:4px;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:14px}.planbox[hidden]{display:none}.planhead{margin:0;display:flex;align-items:baseline;justify-content:space-between;gap:10px}.planlab{font-size:.92rem;color:var(--muted)}.planhead b{font-size:1.1rem}.planline{margin:0}.planbox .row{flex-wrap:wrap;margin-top:6px}.planbox a.btn{text-decoration:none}.payopt.best::after{content:"Best value";position:absolute;top:-9px;right:12px;background:var(--surface);color:var(--gold2);font-size:.72rem;padding:0 6px}.payopt:disabled{opacity:.6}.payopt.picked:disabled,.payopt.mine:disabled{opacity:1}.payopt.dim:disabled{opacity:.35}.payfound{color:var(--gold2);margin:0}.paykeeps{margin:0}
 #reader.capped .line:not(.counted){filter:blur(5px);opacity:.45;pointer-events:none;user-select:none}
 .capnote{display:grid;gap:4px;justify-items:center;text-align:center;padding:14px;border:1px solid var(--gold2);border-radius:12px;color:var(--fg)}.capnote span{color:var(--muted)}
 .tmeter{position:absolute;left:50%;top:42%;opacity:0;transform:translate(-50%,-40%);transition:opacity .6s,transform .6s;width:min(280px,86%);box-sizing:border-box}.tmeter.on{opacity:1;transform:translate(-50%,-50%)}.paycard .row{justify-content:center}
@@ -1754,7 +1754,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v71";
+const APP_VERSION = "v72";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3587,45 +3587,92 @@ async function payRestore() {
 }
 // The card: from any locked button, once a day for anyone without Radical (in the app), and when the web trial ends.
 // Yearly, Monthly, Lifetime; prices and the free trial come from the store when it answers.
-function payCard() {
+function payCard(opts = {}) {
   if (document.querySelector(".sheet.paycard")) return;
   const sheet = el("div", "sheet paycard"), card = el("div", "sheetcard"), msg = el("p", "note");
-  const close = () => sheet.remove(), days = (payCfg && payCfg.days) || 14, al = (payCfg && payCfg.allow) || { month: 2.5 };
-  const keeps = PAY_RULE === "daily" ? `Without it: ${FREE_READ} words of reading a day, plus your words and Track.` : "";
-  const m = meterBox(DEMO_AI, true); m.classList.add("paymeter");
-  const lead = el("p", "paylead", "Everything in Radical, AI included.");
-  card.append(m, el("div", "paymark noink", "部"), el("h3", "", "Get Radical"), lead,
-    el("p", "note", `${cents(al.month || 2.5)} of AI a month.`));
-  const busy = (b, f) => async () => { card.querySelectorAll("button").forEach(x => x.disabled = true); msg.textContent = ""; try { if (await f()) close(); } catch (e) { msg.textContent = e.message || "That didn't work."; } card.querySelectorAll("button").forEach(x => x.disabled = false); };
+  const close = () => { sheet.remove(); if ($("planBox")) planBox(); }, days = (payCfg && payCfg.days) || 14, al = (payCfg && payCfg.allow) || { month: 2.5 };
+  const keeps = PAY_RULE === "daily" && !unlocked() ? `Without it: ${FREE_READ} words of reading a day, plus your words and Track.` : "";
+  const cur = curPlan();
+  card.append(el("div", "paymark noink", "部"), el("h3", "", opts.change ? "Change plan" : "Get Radical"),
+    el("p", "paylead", `Everything in Radical. ${cents(al.month || 2.5)} of AI a month.`));
   if (rcAvail()) {
     const plans = el("div", "payplans"), terms = el("p", "note planterms");
-    const opt = (id, name, price, sub) => {
-      const b = el("button", "payopt" + (id === "radical_year" ? " best" : ""), `<b>${name}</b><span class="pp">${price}</span><small>${sub}</small>`); b.type = "button";
-      b.onclick = busy(b, () => payBuy(id).then(ok => { if (ok) toast(id === LIFE ? "Radical is yours. Thank you." : "Welcome to Radical.", 3000); return ok; }));
+    const y = subOf("radical_year"), mo = subOf("radical_month"), life = (payCfg && payCfg.lifetime) || "$79.99";
+    // v72: four matching boxes in this order; nothing is picked until you tap one
+    const rows = [];
+    if (!ent.trialFrom && !ent.sub && !unlocked()) rows.push([TRIAL_ITEM, "Free trial", "$0", `${days} days, then you choose. Nothing renews.`]);
+    rows.push(["radical_month", "Monthly", mo.price, "a month"], ["radical_year", "Yearly", y.price, "a year"], [LIFE, "Lifetime", life, "once, yours for good"]);
+    const opt = ([id, name, price, sub]) => {
+      const b = el("button", "payopt" + (id === "radical_year" ? " best" : "") + (id === cur ? " mine" : ""), `<b>${name}</b><span class="pp">${price}</span><small>${sub}</small>`);
+      b.type = "button"; b.dataset.id = id; if (id === cur) b.disabled = true;
+      b.onclick = async () => {
+        const all = [...plans.querySelectorAll(".payopt")];
+        all.forEach(x => { x.classList.toggle("picked", x === b); x.classList.toggle("dim", x !== b); x.disabled = true; });
+        card.querySelectorAll("button:not(.payopt)").forEach(x => x.disabled = true); msg.textContent = "";
+        const had = cur;
+        try { if (await payBuy(id)) { payThanks(card, id, had, close); return; } }
+        catch (e) { msg.textContent = e.message || "That didn't work."; }
+        all.forEach(x => { x.classList.remove("picked", "dim"); x.disabled = x.dataset.id === cur; });
+        card.querySelectorAll("button:not(.payopt)").forEach(x => x.disabled = false);
+      };
       return b;
     };
-    const y = subOf("radical_year"), mo = subOf("radical_month"), life = (payCfg && payCfg.lifetime) || "$79.99";
-    plans.append(opt("radical_year", "Yearly", y.price, "a year"), opt("radical_month", "Monthly", mo.price, "a month"), opt(LIFE, "Lifetime", life, "once, yours for good"));
+    plans.append(...rows.map(opt));
     terms.innerHTML = `Subscriptions renew until you cancel in your Apple account, at least a day before the renewal date. <a href="${EULA_URL}" target="_blank" rel="noopener">Terms</a> · <a href="${WEB}/privacy" target="_blank" rel="noopener">Privacy</a>`;
     card.append(plans, terms);
-    // Local prices and the free trial, once the store answers
+    // Local prices and Apple's free trial on the subscriptions, once the store answers
     rcProducts().then(({ list, trial }) => {
-      const by = id => list.find(x => x.identifier === id);
-      plans.querySelectorAll(".payopt").forEach((b, i) => { const p = by(["radical_year", "radical_month", LIFE][i]); if (p && p.priceString) b.querySelector(".pp").textContent = p.priceString; });
-      if (trial) { lead.textContent = `${days} days free. Cancel anytime.`; plans.querySelectorAll(".payopt small").forEach((s, i) => { if (i < 2) s.textContent = `${days} days free, then ${s.previousElementSibling.textContent} ${s.textContent}`; }); }
+      plans.querySelectorAll(".payopt").forEach(b => { const id = b.dataset.id, p = list.find(x => x.identifier === id);
+        if (p && p.priceString && id !== TRIAL_ITEM) b.querySelector(".pp").textContent = p.priceString;
+        if (trial && !ent.sub && /^radical_(month|year)$/.test(id)) { const s = b.querySelector("small"); s.textContent = `${days} days free, then ${b.querySelector(".pp").textContent} ${s.textContent}`; } });
     }).catch(() => {});
-    // v71: the free trial without a subscription (for anyone not yet trialled or subscribed), via the $0 item
-    if (!ent.trialFrom && !ent.sub && !unlocked()) {
-      const tl = btn(`Try free for ${days} days, no subscription`, "linkbtn paytry");
-      tl.onclick = busy(tl, () => payBuy(TRIAL_ITEM).then(ok => { if (ok) toast(`${days} days free. Enjoy.`, 3000); return ok; }));
-      card.append(tl);
-    }
   } else card.append(el("p", "note", "Get Radical in the Radical app. Signed in, it opens here too."));
   if (keeps) card.append(el("p", "note paykeeps", keeps));
   card.append(btn("Not now", "btn ghost", close));
-  const rs = btn("Restore purchase", "linkbtn"); rs.onclick = busy(rs, async () => { const ok = await payRestore(); if (!ok) msg.textContent = session ? "No purchase found for this account." : "No purchase found. Sign in if you bought it on another device."; return ok; });
+  const rs = btn("Restore purchase", "linkbtn"); rs.onclick = async () => { rs.disabled = true; msg.textContent = "";
+    try { const ok = await payRestore(); if (ok) { close(); toast("Restored.", 2000); } else msg.textContent = session ? "No purchase found for this account." : "No purchase found. Sign in if you bought it on another device."; }
+    catch (e) { msg.textContent = e.message || "That didn't work."; } rs.disabled = false; };
   card.append(rs, msg); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
+}
+// What you have now, as a product id: Lifetime, a live subscription, or the $0 trial while it runs ("" otherwise)
+function curPlan() {
+  if (ent.unlock && (ent.unlock.src === "store" || ent.unlock.src === "gift")) return LIFE;
+  if (subLive(ent.sub)) return ent.sub.product;
+  return ent.trialFrom && trialLeft() > 0 ? TRIAL_ITEM : "";
+}
+const planName = id => ({ radical_month: "Monthly", radical_year: "Yearly", [LIFE]: "Lifetime", [TRIAL_ITEM]: "Free trial" })[id] || "";
+// v72: after Apple says yes, the card says what you got and thanks you
+function payThanks(card, id, had, close) {
+  const s = subOf(id), sub = ent.sub && ent.sub.product === id ? ent.sub : null, days = (payCfg && payCfg.days) || 14;
+  const line = id === TRIAL_ITEM ? `${days} days of everything. Then pick a plan, or don't. Nothing renews.`
+    : id === LIFE ? "Radical is yours for good."
+    : sub && sub.trial && sub.until ? `Free until ${shortDay(sub.until)}, then ${s.price} a ${s.per}. Cancel anytime in Settings, Account.`
+    : sub && sub.until ? `${s.price} a ${s.per}. Renews ${shortDay(sub.until)}.` : `${s.price} a ${s.per}.`;
+  card.innerHTML = "";
+  card.append(el("div", "paymark noink", "部"), el("h3", "", "Thank you"), el("p", "paylead", id === TRIAL_ITEM ? "Your free trial is on." : `You're on <b>${planName(id)}</b>.`), el("p", "note paythanks", line));
+  if (id === LIFE && /^radical_(month|year)$/.test(had)) {
+    const a = el("a", "linkbtn", `Cancel your ${planName(had)} so it doesn't renew`); a.href = SUBS_URL; a.target = "_blank"; a.rel = "noopener"; card.append(a);
+  }
+  card.append(btn("Done", "btn", close)); play("right");
+}
+// v72: Settings, Account: which plan you're on, and what you can do about it
+function planBox() {
+  const box = $("planBox"); if (!box) return; box.innerHTML = "";
+  box.hidden = !payOn() || (!!store.get("radical-owner", null) && !payTest()); if (box.hidden) return;
+  const cur = curPlan(), s = subOf(cur), left = trialLeft();
+  const [name, line] = cur === LIFE ? ["Lifetime", ent.unlock && ent.unlock.src === "gift" ? "A gift. Yours for good." : "Yours for good."]
+    : cur === TRIAL_ITEM ? ["Free trial", `${left} day${left > 1 ? "s" : ""} left. Nothing renews.`]
+    : cur ? [planName(cur), ent.sub.trial && ent.sub.until ? `Free until ${shortDay(ent.sub.until)}, then ${s.price} a ${s.per}.` : ent.sub.until ? `${s.price} a ${s.per}. Renews ${shortDay(ent.sub.until)}.` : `${s.price} a ${s.per}.`]
+    : [left != null && left <= 0 ? "Free trial over" : "Free version", `${FREE_READ} words of reading a day.`];
+  box.append(el("p", "planhead", `<span class="planlab">Your plan</span><b>${name}</b>`), el("p", "note planline", line));
+  const row = el("div", "row");
+  if (/^radical_(month|year)$/.test(cur)) {
+    row.append(btn("Change plan", "btn small", () => payCard({ change: true })));
+    if (rcAvail()) { const a = el("a", "btn ghost small", "Cancel or manage"); a.href = SUBS_URL; a.target = "_blank"; a.rel = "noopener"; row.append(a); }
+  } else if (cur !== LIFE) row.append(btn(cur === TRIAL_ITEM ? "Choose a plan" : "Get Radical", "btn small", () => payCard()));
+  if (rcAvail()) { const rs = btn("Restore purchases", "btn ghost small"); rs.onclick = async () => { rs.disabled = true; try { toast(await payRestore() ? "Restored." : "No purchase found.", 2000); } catch (e) { toast(esc(e.message || "That didn't work."), 2500); } rs.disabled = false; planBox(); }; row.append(rs); }
+  box.append(row);
 }
 // The AI allowance (or, before launch, the daily safety stop) ran out. Shown once a day for things the app does on its own.
 function aiOutSheet(auto, why) {
@@ -3666,7 +3713,7 @@ function payText() {
   const left = trialLeft();
   return left == null ? `Free version: ${FREE_READ} words of reading a day.` : left > 0 ? `Free trial: ${left} day${left > 1 ? "s" : ""} left.` : "Free trial over.";
 }
-function paintPay() { document.querySelectorAll(".payline").forEach(p => { p.textContent = payText(); p.hidden = !p.textContent; }); }
+function paintPay() { document.querySelectorAll(".payline").forEach(p => { p.textContent = payText(); p.hidden = !p.textContent; }); planBox(); }
 function giftPanel() {
   const box = $("giftPanel"); if (!box) return; box.innerHTML = "";
   const code = el("input"); code.placeholder = "Friend code"; code.autocapitalize = "characters"; code.maxLength = 12;
@@ -4139,6 +4186,7 @@ function deleteAccountSheet() {
 function renderAccount() {
   const box = $("acctPanel"); if (!box) return; box.innerHTML = "";
   const msg = el("p", "note acctmsg");
+  const pb = el("div", "planbox"); pb.id = "planBox"; box.append(pb); planBox();  // v72: Your plan, first
   if (session) {
     const at = store.get("radical-synced", 0), err = store.get("radical-sync-error", "");
     box.append(el("p", "", `Signed in as <b>${esc(session.email)}</b>`),
@@ -4146,8 +4194,7 @@ function renderAccount() {
     const row = el("div", "row");
     const now = btn("Sync now", "btn ghost small", async () => { now.disabled = true; msg.textContent = "Syncing…"; try { await syncNow(); store.set("radical-sync-error", ""); } catch (e) { msg.textContent = e.message; } now.disabled = false; });
     row.append(now, btn("Sign out", "btn ghost small", () => { signOut(); renderAccount(); }));
-    const ai = el("p", "note acctai"); box.append(el("p", "note payline"), ai, row, msg); paintPay();
-    if (payOn() && subLive(ent.sub) && rcAvail()) { const mg = el("a", "linkbtn", "Manage subscription"); mg.href = SUBS_URL; mg.target = "_blank"; mg.rel = "noopener"; box.insertBefore(mg, ai); }
+    const ai = el("p", "note acctai"); box.append(ai, row, msg);
     const del = btn("Delete account", "btn ghost small acctdel", deleteAccountSheet); box.append(del);
     fetchUsage().then(j => { if (!j || !ai.isConnected) return;
       if (j.ai === false) { ai.textContent = "The AI features aren't turned on for this account yet."; return; }
