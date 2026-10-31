@@ -57,14 +57,15 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
     if (!r.ok) return get(user);
     const s = ((await r.json().catch(() => ({}))).subscriber) || {};
     const e = await read(user.id); let changed = false;
-    const life = ((s.non_subscriptions || {})[UNLOCK] || []).find(t => !t.refunded_at);
+    const after = t => !e.resetAt || Date.parse(t || 0) >= e.resetAt;  // v73: an owner's test reset hides older purchases
+    const life = ((s.non_subscriptions || {})[UNLOCK] || []).find(t => !t.refunded_at && after(t.purchase_date));
     if (life && !(e.unlock && e.unlock.src === "store" && !e.unlock.until)) {
       const at = life.purchase_date || new Date().toISOString();
       e.unlock = { at, src: "store", product: UNLOCK, ...(life.is_sandbox ? { until: Date.parse(at) + SANDBOX_DAYS * 864e5 } : {}) }; changed = true;
     }
-    const tr = ((s.non_subscriptions || {})[TRIAL] || [])[0];
+    const tr = ((s.non_subscriptions || {})[TRIAL] || []).filter(t => after(t.purchase_date))[0];
     if (tr && tr.purchase_date) { const t = earlier(e.trialFrom, tr.purchase_date.slice(0, 10)); if (t !== e.trialFrom) { e.trialFrom = t; changed = true; } }
-    for (const [pid, sub] of Object.entries(s.subscriptions || {})) if (SUBS[pid] && sub.expires_date && Date.parse(sub.expires_date) > Date.now() && !sub.refunded_at
+    for (const [pid, sub] of Object.entries(s.subscriptions || {})) if (SUBS[pid] && sub.expires_date && Date.parse(sub.expires_date) > Date.now() && !sub.refunded_at && after(sub.original_purchase_date || sub.purchase_date)
       && (!e.sub || +e.sub.until < Date.parse(sub.expires_date))) { e.sub = { product: pid, until: Date.parse(sub.expires_date), ...(sub.period_type === "trial" ? { trial: true } : {}) }; changed = true; }
     if (changed) await putJSON(path(user.id), e);
     return get(user);
@@ -72,7 +73,9 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
   // The web's trial: the page tells us when it began; the earliest day any device reports wins
   async function trial(user, from, today) {
     if (!DAY.test(String(from || "")) || from > today) return get(user);
-    const e = await read(user.id), t = earlier(e.trialFrom, from);
+    const e = await read(user.id);
+    if (e.resetAt && from < dayOfMs(e.resetAt)) return get(user);  // a trial from before an owner's test reset
+    const t = earlier(e.trialFrom, from);
     if (t !== e.trialFrom) { e.trialFrom = t; await putJSON(path(user.id), e); }
     return get(user);
   }
@@ -97,6 +100,8 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
   async function act(user, body, today) {
     if (body.op === "trial") return trial(user, body.from, today);
     if (body.op === "check") return check(user);
+    // v73: owners testing the paywall start over as a new user (their own account only)
+    if (body.op === "reset") { if (!isOwner(user)) return { error: "Owners only." }; await putJSON(path(user.id), { unlock: null, sub: null, trialFrom: "", resetAt: Date.now() }); return { ok: true, resetAt: Date.now() }; }
     if (body.op === "gift" || body.op === "ungift") return gift(user, body);
     if (body.op === "hits") return isOwner(user) ? { hits: ((await getJSON(`hits/${today.slice(0, 7)}.json`).catch(() => null)) || { list: [] }).list } : { error: "Owners only." };
     return get(user);
@@ -114,6 +119,7 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
       log.events = log.events.slice(-200);
       await putJSON(`users/${id}/purchases.json`, log);
       const e = await read(id), pid = SUBS[ev.new_product_id] ? ev.new_product_id : ev.product_id;
+      if (e.resetAt && ev.environment === "SANDBOX" && ev.type === "RENEWAL") continue;  // v73: a test subscription bought before an owner's reset
       if (ev.product_id === UNLOCK && ["INITIAL_PURCHASE", "NON_RENEWING_PURCHASE", "TRANSFER"].includes(ev.type) && !(ev.transferred_from || []).includes(id))
         e.unlock = { at: new Date(+ev.purchased_at_ms || Date.now()).toISOString(), src: "store", product: UNLOCK, store: ev.store,
           ...(ev.environment === "SANDBOX" ? { until: (+ev.purchased_at_ms || Date.now()) + SANDBOX_DAYS * 864e5 } : {}) };

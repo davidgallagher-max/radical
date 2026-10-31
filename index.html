@@ -1754,7 +1754,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v72";
+const APP_VERSION = "v73";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3530,9 +3530,12 @@ function payOk(what, quiet) { if (payFree(what)) return true; if (!quiet) payCar
 // What the store says: Lifetime, or a live subscription (and whether it's still Apple's free trial)
 function readCI(ci) {
   if (!ci || !payCfg) return;
-  const tr = (ci.nonSubscriptionTransactions || []).find(t => t.productIdentifier === TRIAL_ITEM);
+  // v73: after an owner's test reset, purchases made before it don't count on this phone
+  const rs = payTest() ? +store.get("radical-pay-reset", 0) : 0, after = t => !rs || (Date.parse(t || 0) || 0) >= rs;
+  const tr = (ci.nonSubscriptionTransactions || []).find(t => t.productIdentifier === TRIAL_ITEM && after(t.purchaseDate));
   if (tr) setEnt({ trialFrom: localDay(Date.parse(tr.purchaseDate) || Date.now()) });
-  const a = ci.entitlements && ci.entitlements.active && ci.entitlements.active[payCfg.entitlement];
+  let a = ci.entitlements && ci.entitlements.active && ci.entitlements.active[payCfg.entitlement];
+  if (a && !after(a.originalPurchaseDate || a.latestPurchaseDate)) a = null;
   if (!a) { setEnt({ unlock: ent.unlock && ent.unlock.src === "gift" ? ent.unlock : null, sub: null }); return; }
   if (a.productIdentifier === LIFE) setEnt({ unlock: { src: "store", product: LIFE } });
   else setEnt({ sub: { product: a.productIdentifier, until: a.expirationDate ? Date.parse(a.expirationDate) : 0, ...(a.periodType === "TRIAL" ? { trial: true } : {}) } });
@@ -3725,6 +3728,12 @@ function giftPanel() {
   const t = btn("", "btn ghost small"), paint = () => t.textContent = payTest() ? "Paywall test on this phone: on" : "Paywall test on this phone: off";
   t.onclick = () => { store.set("radical-pay-test", !payTest()); paint(); toast(payTest() ? "Paywall on for this phone. Restarting…" : "Paywall test off. Restarting…", 1500); setTimeout(() => location.reload(), 1200); };
   paint(); box.append(t);
+  // v73: start over as a new user (test purchases on this account and phone stop counting)
+  if (payTest()) { const r = btn("Reset my plan (test)", "btn ghost small"); r.onclick = () => armConfirm(r, on => r.textContent = on ? "Reset? Tap again" : "Reset my plan (test)", async () => {
+    try { await entitleCall({ op: "reset" }); } catch (e) { toast(esc(e.message), 2500); return; }
+    store.set("radical-pay-reset", Date.now()); ent = { unlock: null, sub: null, trialFrom: "" }; store.set("radical-ent", ent);
+    ["radical-pay-asked", "radical-pay-warned"].forEach(k => store.set(k, "")); paintPay(); toast("Plan reset. You're a new user here.", 2500);
+  }); box.append(r); }
 }
 // v63: owners' panels. Who ran out of AI this month, meaning checks learners disputed, and pre-building the cards
 // for the 5,000 most common words (lists/prebuild.txt), a few at a time, picking up where it stopped.
