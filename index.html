@@ -533,7 +533,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .glue>*{min-width:0}
 .glue .glyph:not(.latin){text-align:left}
 .glue .latin{text-align:left}
-.line.counted::before{content:"";position:absolute;left:-8px;top:calc(var(--cell,38px) * .4);width:3px;height:7px;border:solid var(--gold2);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);opacity:.45;pointer-events:none}
+.rtick{position:absolute;right:-8px;width:4px;height:8px;margin-top:-6px;border:solid var(--gold2);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);opacity:.7;pointer-events:none}
 .line.flow{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-start;--colw:var(--cell,38px)}
 .line.flow .cell{width:var(--colw);flex:none}
 .line.flow .glue{display:inline-flex;align-items:flex-end;flex:none}
@@ -1863,7 +1863,28 @@ const readBefore = line => {
   return store.get("radical-reread", false) ? d === localDay() : dayGap(d, localDay()) < READ_DAYS;
 };
 // a faint gold tick in the margin shows a line has counted (now or earlier this month)
-const markCounted = line => { line._counted = true; line.classList.add("counted"); };
+// v69: one tick per row on screen, in the right margin, as the reading credit passes the end of that row; redrawn
+// when the rows change (text size, rotation, a narrower screen) through a ResizeObserver on each line.
+const markCounted = line => { line._counted = true; line.classList.add("counted"); paintTicks(line); };
+function paintTicks(line) {
+  if (!line.isConnected || !line.closest("#reader")) return;
+  const items = line.querySelectorAll(".cell,.glyph"); if (!items.length) return;
+  const top0 = line.getBoundingClientRect().top, rows = [];
+  let cur = null;
+  items.forEach(x => {
+    const r = x.getBoundingClientRect(); if (!r.height) return;
+    if (!cur || r.top > cur.top + r.height / 2) { cur = { top: r.top, bottom: r.bottom, han: 0 }; rows.push(cur); }
+    cur.bottom = Math.max(cur.bottom, r.bottom);
+    cur.han += hanIn(x._ch || (x.classList.contains("cell") ? "" : x.textContent));
+  });
+  const got = line._counted ? Infinity : line._got || 0;
+  let sum = 0; const want = [];
+  rows.forEach(r => { sum += r.han; if (r.han && sum <= got) want.push(Math.round((r.top + r.bottom) / 2 - top0)); });
+  const sig = want.join(","); if (line._tickSig === sig) return; line._tickSig = sig;
+  line.querySelectorAll(":scope>.rtick").forEach(t => t.remove());
+  want.forEach(y => { const t = el("i", "rtick"); t.setAttribute("aria-hidden", "true"); t.style.top = y + "px"; line.append(t); });
+  if (!line._tickRO && "ResizeObserver" in window) { line._tickRO = new ResizeObserver(() => { line._tickSig = null; paintTicks(line); }); line._tickRO.observe(line); }
+}
 // v56: a long paragraph is one line, so credit is paid into a line bit by bit (in reading order) and each word is
 // logged as the credit passes it: the count moves smoothly instead of waiting for a whole paragraph. A line is "in
 // view" when most of it is on screen, or when it fills a good part of the screen (a paragraph taller than the screen).
@@ -1886,6 +1907,7 @@ function payLine(line, upTo) {
   partRead.set(lineKey(t), { got: line._got, wi: i, ci: at, day: localDay() });
   if (chars) logDay("r", chars);
   if (words) logDay("w", words);
+  if (line._got < n) paintTicks(line);
   if (line._got >= n) {
     markCounted(line); markRead(lineKey(t));
     readNoted.add(lineKey((document.querySelector("#reader .line") || {})._text || ""));  // read here just now: no "read before" note on a redraw
@@ -2824,8 +2846,7 @@ function buildLine(lineText, onTap, withEN = true) {
   say._onSay = on => { const sp = $("speedPop"); if (!sp || !line.closest("#reader")) return; if (on) { sizeOpen(false); $("speedIn").value = rate; sp.hidden = false; } else if (!listenAll) sp.hidden = true; };
   ctl.append(say);
   if (withEN) { const en = btn("ENG", "enbtn"); en.title = "Translate this line"; en.onclick = () => translateLine(lineText, line, en); ctl.append(en); }
-  // 解 Explain: the sentence's structure, its grammar points and any word used in a less obvious sense. The button says
-  // "解 Explain" until it has been used a few times, then just 解.
+  // 解 Explain: the sentence's structure, its grammar points and any word used in a less obvious sense (v69: just 解).
   if (/\p{Script=Han}/u.test(lineText)) {
     const ex = el("button", "enbtn exbtn", '<span lang="zh">解</span>');
     ex.type = "button"; ex.title = "Explain this sentence's grammar"; ex.onclick = e => { e.stopPropagation(); explainLine(lineText, line, ex); };
@@ -5299,8 +5320,15 @@ const isDeck = L => typeof L === "string" && L.startsWith("d:"), deckKey = n => 
 // v44: several of your decks studied together: "g:" + their keys, one per line
 const isGroup = L => typeof L === "string" && L.startsWith("g:"), groupKey = ks => "g:" + ks.join("\n"), groupKeys = L => isGroup(L) ? L.slice(2).split("\n") : [L];
 function saveDecks() { decks.t = Date.now(); store.set("radical-decks", decks); if (typeof scheduleSync === "function") scheduleSync(); }
-const inList = (w, L = curList) => L === "all" ? true : isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common || inDeck(w, RM + "top") : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L || inDeck(w, RM + L);
+const inList = (w, L = curList) => L === "all" ? true : isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common || inDeck(w, RM + "top") || topHas(w) : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L || inDeck(w, RM + L);
 const listWords = () => myWords.filter(w => inList(w));
+// v69: a word you saved before picking Top (in Basecamp or a deck) still counts in Top, so Top 500 shows 500
+let topSetOf = null;
+function topHas(w) {
+  const size = commonSize(); if (!size || !commonRows) return false;
+  if (!topSetOf || topSetOf.rows !== commonRows || topSetOf.size !== size) topSetOf = { rows: commonRows, size, set: new Set(commonRows.slice(0, size).map(r => toSimp(r.word))) };
+  return topSetOf.set.has(toSimp(w.word));
+}
 const keyOf = w => wDecks(w).length ? (curList !== "all" && !isGroup(curList) && curList !== "mine" && inList(w, curList) ? curList : isRm(wDecks(w)[0]) ? rmKey(wDecks(w)[0]) : deckKey(wDecks(w)[0])) : w.set || (w.common ? "top" : "mine");  // the list a word belongs to
 const lazyCard = w => !!(w.common || w.set || w.got) && !practiced(w);  // v46: words from a shared deck too
 function allLists() {
