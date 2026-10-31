@@ -2,6 +2,28 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v69
+
+Read:
+- Gold ticks mark each row you've read, on the right, as the count passes the end of the row; they move when you change the text size.
+- 解 is just 解 (no "Explain").
+- ENG, 解 and 拼 Pinyin look the same when turned on.
+- A words-read milestone (賀) shows the moment you cross it, not later on a card's finish screen.
+
+Practice:
+- Finishing Today's cards: a burst of gold sparks over 完 with its own sound (two woodblock knocks, a sweep up the strings, three notes ringing out), then the ring around 練.
+- "I was right" is a green button.
+- Top 500 (and the other Top decks) count Top words you'd already saved before picking Top, so Top 500 shows 500.
+- The Review list says Previous card / Next card.
+
+Explore:
+- Today's holiday is the first topic chip and leads On this day: Chinese festivals, Taiwan or Mainland days (by your 國語 / 普通话 setting), and your own country's from the phone's language setting (US, UK, Canada, Australia, New Zealand, Ireland).
+
+Elsewhere:
+- Track's header folds into the slim strip when you scroll, like the other tabs.
+- Calendar key says "reading" and "cards".
+- Sheets close the same way: Close on ones that only show something, Done where you picked something; Word Decks has just the ✕.
+
 ## v68
 
 - Read: ENG turns purple while it says Hide, like 解.
