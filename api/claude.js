@@ -303,6 +303,12 @@ module.exports = async (req, res) => {
       if (!word || !guess) return res.status(400).json({ error: "Nothing to check." });
       return res.status(200).json(await answers.dispute(word, guess, !!body.pattern, body.region === "cn"));
     }
+    // v64: owners see how many of the 5,000 list cards are stored (however they were made); recount fills in older ones
+    if (body.action === "cardtally") {
+      if (!account.isOwner(user)) return res.status(403).json({ error: "Owners only." });
+      res.setHeader("Cache-Control", "no-store");
+      return res.status(200).json(await answers.tally(body.op === "recount" ? "recount" : "count", Math.max(0, +body.from || 0)));
+    }
     if (body.action === "judgereview") {
       if (!account.isOwner(user)) return res.status(403).json({ error: "Owners only." });
       res.setHeader("Cache-Control", "no-store");
@@ -383,9 +389,12 @@ module.exports = async (req, res) => {
       let card = had && had.data;
       if (card) res.setHeader("x-radical-stored", "1");
       else {
+        // v64: a word on the 5,000 list costs the first learner nothing, and its card counts as pre-built
+        const listed = answers.onList(rk, word); if (listed) rate = 0;
         card = parseJSON(await askClaude(CARD_MODEL, CARD_PROMPT(word, cn), 1600));
         if (!card) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
-        cardExamples(card); await answers.put("card", `${rk}|${word}`, card);
+        cardExamples(card); await answers.put("card", `${rk}|${word}`, card, listed ? { pre: true } : {});
+        if (listed) { await answers.mark(`${rk}|${word}`); card = { ...card, pre: true }; }
       }
       if (had && had.pre) card = { ...card, pre: true };  // pre-built: Explain on its sentences is free
       // Cards are the same for everyone, so let Vercel's CDN keep them for a year.
@@ -418,11 +427,11 @@ module.exports = async (req, res) => {
       let made = 0, had = 0; const failed = [];
       await Promise.all(words.map(async word => {
         const key = `${rk}|${word}`, x = await answers.get("card", key);
-        if (x) { had++; if (!x.pre) await answers.put("card", key, x.data, { pre: true }); return; }
+        if (x) { had++; if (!x.pre) await answers.put("card", key, x.data, { pre: true }); await answers.mark(key); return; }
         try {
           const card = parseJSON(await askClaude(CARD_MODEL, CARD_PROMPT(word, cn), 1600));
           if (!card) { failed.push(word); return; }
-          cardExamples(card); await answers.put("card", key, card, { pre: true }); made++;
+          cardExamples(card); await answers.put("card", key, card, { pre: true }); await answers.mark(key); made++;
         } catch (e) { failed.push(word); }
       }));
       return res.status(200).json({ made, had, failed });

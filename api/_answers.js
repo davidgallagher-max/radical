@@ -7,14 +7,43 @@
 //   answers/pool/...       extra example sentences for a word (beyond the card's 3, at most 3 more), shared
 //   answers/judge/...      meaning checks, by word and tidied guess; { dis } counts learners who said "I was right"
 //   answers/judge-review.json   checks with enough disagreement for an owner to confirm or flip
+//   answers/listed/<tw|cn>/...  v64: one small marker per stored card that's on the 5,000 list (lists/prebuild*.txt),
+//                               so Admin tools can count them without reading every card
 const crypto = require("crypto");
 const hash = s => crypto.createHash("sha256").update(String(s)).digest("hex").slice(0, 40);
 // A guess, tidied so "The sea." and "sea" are the same question
 const tidy = g => String(g || "").toLowerCase().replace(/[\p{P}\p{S}]+/gu, " ").replace(/\b(a|an|the|to)\b/g, " ").replace(/\s+/g, " ").trim().slice(0, 120);
 const DISPUTES = 3;  // learners saying "I was right" before a check goes to the owners
 
-module.exports = ({ getJSON, putJSON }) => {
+// v64: the 5,000 most common words (Simplified, and Traditional as the page converts them). The first card made for one
+// of them costs the learner nothing and counts as pre-built (Explain on its sentences is free too).
+const fs = require("fs"), pathm = require("path");
+const LIST = {};
+function onList(rk, word) {
+  if (!LIST[rk]) {
+    const read = f => { try { return fs.readFileSync(pathm.join(process.cwd(), "lists", f), "utf8").split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#")); } catch (e) { return []; } };
+    LIST[rk] = new Set(rk === "cn" ? read("prebuild.txt") : read("prebuild-tw.txt"));
+  }
+  return LIST[rk].has(word);
+}
+const listSize = rk => (onList(rk, ""), LIST[rk].size);
+
+module.exports = ({ getJSON, putJSON, list }) => {
   const path = (kind, key) => `answers/${kind}/${hash(key)}.json`;
+  // a stored card on the list leaves a marker (rk|word keys only)
+  async function mark(key) { const [rk, word] = String(key).split("|"); if (word && onList(rk, word)) await putJSON(`answers/listed/${rk}/${hash(word)}.json`, { w: word }).catch(() => {}); }
+  // Owners: how many list cards are stored, per region, and all cards. Recount (a page of 200 cards at a time, from
+  // `from`) adds markers for cards stored before v64.
+  async function tally(op, from = 0) {
+    const n = async p => (await list(p).catch(() => [])).filter(x => x.endsWith(".json")).length;
+    if (op === "recount") {
+      const files = (await list("answers/card").catch(() => [])).filter(x => x.endsWith(".json")).sort(), part = files.slice(from, from + 200);
+      await Promise.all(part.map(async f => { const x = await getJSON(`answers/card/${f}`).catch(() => null); if (x && x.key) await mark(x.key); }));
+      return { next: from + part.length < files.length ? from + part.length : null, total: files.length };
+    }
+    const [tw, cn, all] = await Promise.all([n("answers/listed/tw"), n("answers/listed/cn"), n("answers/card")]);
+    return { tw, cn, all, of: listSize("cn") };
+  }
   async function get(kind, key) { const x = await getJSON(path(kind, key)).catch(() => null); return x && x.key === key ? x : null; }
   async function put(kind, key, data, extra = {}) { const x = { key, data, at: Date.now(), ...extra }; await putJSON(path(kind, key), x).catch(() => {}); return x; }
   const judgeKey = (word, guess, pattern, cn) => `${cn ? "cn" : "tw"}|${pattern ? "p" : "w"}|${word}|${tidy(guess)}`;
@@ -42,5 +71,5 @@ module.exports = ({ getJSON, putJSON }) => {
     r.list = r.list.filter(y => y.key !== key); await putJSON("answers/judge-review.json", r).catch(() => {});
     return { ok: true, list: r.list };
   }
-  return { get, put, hash, tidy, judgeKey, dispute, review };
+  return { get, put, hash, tidy, judgeKey, dispute, review, onList, mark, tally };
 };

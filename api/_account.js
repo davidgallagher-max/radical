@@ -549,4 +549,4 @@ async function setNotice(user, body) {
 
 module.exports = { deleteAccount, demoSignIn, notice, notes, getDeck, setNotice, anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, logFail, DAILY_CAP, capFor, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };
 // v59: the topic decks (api/_topics.js) keep their files in the same bucket
-module.exports.storage = { getJSON, putJSON, removeFiles };
+module.exports.storage = { getJSON, putJSON, removeFiles, list };

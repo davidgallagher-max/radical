@@ -3,6 +3,11 @@
   "installCommand": "echo 'no packages to install'",
   "buildCommand": "bash scripts/build_site.sh",
   "outputDirectory": "public",
+  "functions": {
+    "api/claude.js": {
+      "includeFiles": "lists/prebuild*.txt"
+    }
+  },
   "routes": [
     {
       "src": "/data/(.*)",
