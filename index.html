@@ -549,7 +549,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .trans{margin:-2px 0 4px;padding:8px 12px;border-left:3px solid var(--accent);font-size:.96rem;background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:0 8px 8px 0}
 .loading{color:var(--muted);font-size:.92rem}
 .exbtn{white-space:nowrap}.exbtn [lang=zh]{font-family:var(--font-zh);font-size:.9rem;font-weight:600}
-.exbtn.on{border-color:var(--idea);color:var(--idea)}
+.exbtn.on,.enbtn.on{border-color:var(--idea);color:var(--idea)}
 .linectl{flex-wrap:nowrap}
 .explain{margin:-2px 0 6px;padding:9px 12px;border-left:3px solid var(--idea);font-size:.92rem;line-height:1.5;background:color-mix(in srgb,var(--idea) 7%,transparent);border-radius:0 8px 8px 0;display:grid;gap:6px}
 .explain p,.explain ul{margin:0}.explain ul{padding-left:1.1em;display:grid;gap:3px}
@@ -1748,7 +1748,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v67";
+const APP_VERSION = "v68";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2965,8 +2965,8 @@ function miniReader(text, mark, en, opts = {}) {
     e.stopPropagation();
     if (!en) { translateLine(text.split(/\n+/)[0], lastLine(), enb); return; }  // no English on the card: ask, as in Read
     const line = lastLine(), next = line.nextElementSibling;
-    if (next && next.classList.contains("trans")) { next.remove(); enb.textContent = "ENG"; return; }
-    const t = el("p", "trans", esc(en)); t.lang = "en"; line.after(t); enb.textContent = "Hide";
+    if (next && next.classList.contains("trans")) { next.remove(); enb.textContent = "ENG"; enb.classList.remove("on"); return; }
+    const t = el("p", "trans", esc(en)); t.lang = "en"; line.after(t); enb.textContent = "Hide"; enb.classList.add("on");
   };
   const exb = el("button", "enbtn exbtn", store.get("radical-explain-uses", 0) >= 3 ? '<span lang="zh">解</span>' : '<span lang="zh">解</span> Explain');
   exb.type = "button"; exb.title = "Explain this sentence's grammar"; exb.hidden = !/\p{Script=Han}/u.test(text);
@@ -4203,16 +4203,17 @@ const transCache = store.get("radical-trans", {});
 async function translateLine(text, line, b) {
   const next = line.nextElementSibling;
   if (next && next.classList.contains("trans")) {
-    const failed = next.classList.contains("err"); next.remove(); b.textContent = "ENG";
+    const failed = next.classList.contains("err"); next.remove(); b.textContent = "ENG"; b.classList.remove("on");
     if (!failed) return;
   }
   const box = el("p", "trans"); line.after(box);
-  if (transCache[text]) { box.textContent = transCache[text]; b.textContent = "Hide"; return; }
+  if (transCache[text]) { box.textContent = transCache[text]; b.textContent = "Hide"; b.classList.add("on"); return; }
   box.textContent = "Translating…"; b.disabled = true;
   try {
     const { translation } = await claude({ action: "translate", sentence: text });
+    if (!String(translation || "").trim()) throw new Error("No translation came back. Tap ENG to try again.");  // v68: never show or keep a blank
     transCache[text] = translation; store.set("radical-trans", transCache);
-    box.textContent = translation; b.textContent = "Hide";
+    box.textContent = translation; b.textContent = "Hide"; b.classList.add("on");
   } catch (e) { box.textContent = e.message; box.classList.add("err"); }
   b.disabled = false;
 }
