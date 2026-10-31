@@ -1754,7 +1754,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v70";
+const APP_VERSION = "v71";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3481,10 +3481,13 @@ const PAY_LOCKS = { daily: ["cards", "ai", "add"], reading: ["cards", "ai", "add
 const DEMO_AI = { allow: { kind: "paid", base: 2.5, day: .5 }, meter: { chg: .38, dchg: .02 } };  // the still meter on the tour and the card
 const AUTO_AI = ["card", "topics", "rate", "wordset", "example"];  // calls the app makes on its own: no card or sheet for them
 const SUBS_URL = "https://apps.apple.com/account/subscriptions", EULA_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
-const LIFE = "radical_unlock";  // Lifetime ($79.99); the product id is from before v63
+const LIFE = "radical_unlock", TRIAL_ITEM = "radical_trial";  // Lifetime ($79.99; the id is from before v63) and, v71, the $0 item that starts the trial without a subscription
 let payCfg = store.get("radical-pay", null), ent = store.get("radical-ent", null) || { unlock: null, sub: null, trialFrom: "" }, rcReady = null;
 const rcAvail = () => NATIVE && !!(window.Capacitor && Capacitor.isPluginAvailable && Capacitor.isPluginAvailable("Purchases"));
-const payOn = () => !!(payCfg && payCfg.on && PAY_RULE);
+// v71: an owner can try the paywall on one phone (Admin tools) before it's on for everyone; owners are then treated
+// like anyone else here (the server still never limits their AI)
+const payTest = () => !!store.get("radical-pay-test", false) && !!store.get("radical-owner", null);
+const payOn = () => !!(payCfg && (payCfg.on || payTest()) && PAY_RULE);
 const trialOver = () => { const l = trialLeft(); return l == null ? rcAvail() : l <= 0; };
 // The daily rule's reading allowance: past the trial, once today's words read reach FREE_READ, unread lines veil
 const readCapped = () => PAY_RULE === "daily" && payOn() && !unlocked() && trialOver() && ((store.get("radical-days", {})[localDay()] || {}).w || 0) >= FREE_READ;
@@ -3504,10 +3507,11 @@ function capReader() {
 const earlierDay = (a, b) => !a ? b || "" : !b ? a : a < b ? a : b;
 const subLive = s => !!(s && s.product && (!s.until || +s.until > Date.now()));
 function setEnt(e) {
+  if (payTest() && e.unlock && e.unlock.src === "owner") e = { ...e, unlock: null };  // testing the paywall as a new user
   ent = { unlock: "unlock" in e ? e.unlock || null : ent.unlock || null, sub: "sub" in e ? e.sub || null : ent.sub || null, trialFrom: earlierDay(ent.trialFrom, e.trialFrom) };
   store.set("radical-ent", ent); paintPay();
 }
-const unlocked = () => !!ent.unlock || subLive(ent.sub) || !!store.get("radical-owner", null);
+const unlocked = () => !!ent.unlock || subLive(ent.sub) || (!!store.get("radical-owner", null) && !payTest());
 const trialLeft = () => ent.trialFrom ? Math.max(0, (payCfg && payCfg.days || 14) - dayGap(ent.trialFrom, localDay())) : null;
 const ownWords = () => myWords.filter(w => !w.common && !w.set && !w.got).length;
 const subOf = id => ((payCfg && payCfg.subs) || []).find(x => x.id === id) || { price: id === "radical_year" ? "$39.99" : "$4.99", per: id === "radical_year" ? "year" : "month" };
@@ -3526,6 +3530,8 @@ function payOk(what, quiet) { if (payFree(what)) return true; if (!quiet) payCar
 // What the store says: Lifetime, or a live subscription (and whether it's still Apple's free trial)
 function readCI(ci) {
   if (!ci || !payCfg) return;
+  const tr = (ci.nonSubscriptionTransactions || []).find(t => t.productIdentifier === TRIAL_ITEM);
+  if (tr) setEnt({ trialFrom: localDay(Date.parse(tr.purchaseDate) || Date.now()) });
   const a = ci.entitlements && ci.entitlements.active && ci.entitlements.active[payCfg.entitlement];
   if (!a) { setEnt({ unlock: ent.unlock && ent.unlock.src === "gift" ? ent.unlock : null, sub: null }); return; }
   if (a.productIdentifier === LIFE) setEnt({ unlock: { src: "store", product: LIFE } });
@@ -3549,7 +3555,7 @@ async function payRefresh(op = "get") {
 }
 async function payInit() {
   try { const j = await (await fetch(API + "/api/claude?action=config", { cache: "no-store" })).json(); if (j && j.pay) { payCfg = j.pay; store.set("radical-pay", j.pay); } } catch (e) {}
-  if (!payCfg || !payCfg.on) return;
+  if (!payCfg || !(payCfg.on || payTest())) return;
   if (rcAvail() && payCfg.ios) rcReady = (async () => { const P = plug("Purchases"); await P.configure({ apiKey: payCfg.ios, appUserID: (session && session.id) || undefined }); return P; })().catch(() => null);
   await payRefresh();
   payHeadsUp();
@@ -3559,7 +3565,7 @@ function rcAccount(id) { if (rcReady) rcReady.then(P => P && (id ? P.logIn({ app
 async function rcProducts() {
   const P = rcReady && await rcReady; if (!P) throw new Error("Purchases aren't available here.");
   const subs = (payCfg.subs || []).map(x => x.id);
-  const [a, b] = await Promise.all([P.getProducts({ productIdentifiers: subs, type: "SUBSCRIPTION" }), P.getProducts({ productIdentifiers: [LIFE], type: "NON_SUBSCRIPTION" })]);
+  const [a, b] = await Promise.all([P.getProducts({ productIdentifiers: subs, type: "SUBSCRIPTION" }), P.getProducts({ productIdentifiers: [LIFE, TRIAL_ITEM], type: "NON_SUBSCRIPTION" })]);
   const list = [...(a.products || []), ...(b.products || [])];
   let trial = null;
   try { const el = await P.checkTrialOrIntroductoryPriceEligibility({ productIdentifiers: subs }); trial = subs.some(id => el[id] && el[id].status === 2); } catch (e) {}  // 2 = eligible
@@ -3570,7 +3576,7 @@ async function payBuy(id) {
   if (!product) throw new Error("The store didn't answer. Try again in a minute.");
   try { readCI((await P.purchaseStoreProduct({ product })).customerInfo); }
   catch (e) { if (e && (e.userCancelled || (e.code && /cancel/i.test(String(e.code))))) return false; throw e; }
-  if (session) await entitleCall({ op: "check" }).then(j => j && setEnt(j)).catch(() => {});
+  if (session) await (id === TRIAL_ITEM && ent.trialFrom ? entitleCall({ op: "trial", from: ent.trialFrom }) : entitleCall({ op: "check" })).then(j => j && setEnt(j)).catch(() => {});
   return true;
 }
 async function payRestore() {
@@ -3608,6 +3614,12 @@ function payCard() {
       plans.querySelectorAll(".payopt").forEach((b, i) => { const p = by(["radical_year", "radical_month", LIFE][i]); if (p && p.priceString) b.querySelector(".pp").textContent = p.priceString; });
       if (trial) { lead.textContent = `${days} days free. Cancel anytime.`; plans.querySelectorAll(".payopt small").forEach((s, i) => { if (i < 2) s.textContent = `${days} days free, then ${s.previousElementSibling.textContent} ${s.textContent}`; }); }
     }).catch(() => {});
+    // v71: the free trial without a subscription (for anyone not yet trialled or subscribed), via the $0 item
+    if (!ent.trialFrom && !ent.sub && !unlocked()) {
+      const tl = btn(`Try free for ${days} days, no subscription`, "linkbtn paytry");
+      tl.onclick = busy(tl, () => payBuy(TRIAL_ITEM).then(ok => { if (ok) toast(`${days} days free. Enjoy.`, 3000); return ok; }));
+      card.append(tl);
+    }
   } else card.append(el("p", "note", "Get Radical in the Radical app. Signed in, it opens here too."));
   if (keeps) card.append(el("p", "note paykeeps", keeps));
   card.append(btn("Not now", "btn ghost", close));
@@ -3662,6 +3674,10 @@ function giftPanel() {
   const send = op => async () => { msg.textContent = "…"; try { const j = await entitleCall({ op, code: code.value }); msg.textContent = j.already ? "They already have it." : op === "gift" ? "Lifetime, on us." : "Gift taken back."; } catch (e) { msg.textContent = e.message; } };
   const row = el("div", "row"); row.append(btn("Gift Lifetime", "btn small", send("gift")), btn("Take back", "btn ghost small", send("ungift")));
   box.append(el("p", "note", "Radical for good, free, for a friend, by their friend code."), code, row, msg);
+  // v71: the paywall on this phone only, as a new user would see it (test purchases in TestFlight are free)
+  const t = btn("", "btn ghost small"), paint = () => t.textContent = payTest() ? "Paywall test on this phone: on" : "Paywall test on this phone: off";
+  t.onclick = () => { store.set("radical-pay-test", !payTest()); paint(); toast(payTest() ? "Paywall on for this phone. Restarting…" : "Paywall test off. Restarting…", 1500); setTimeout(() => location.reload(), 1200); };
+  paint(); box.append(t);
 }
 // v63: owners' panels. Who ran out of AI this month, meaning checks learners disputed, and pre-building the cards
 // for the 5,000 most common words (lists/prebuild.txt), a few at a time, picking up where it stopped.

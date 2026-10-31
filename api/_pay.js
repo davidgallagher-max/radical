@@ -3,7 +3,10 @@
 // paid lives in Storage, so the web app follows the account and switching away from RevenueCat stays cheap:
 //   users/<id>/entitlement.json   { unlock: { at, src: "store" | "gift", product?, by? } | null,   (lifetime or a gift)
 //                                   sub: { product, until, trial? } | null,                       (monthly or yearly)
-//                                   trialFrom: "YYYY-MM-DD" }                                      (the web's own trial)
+//                                   trialFrom: "YYYY-MM-DD" }              (the web's trial, or the app's $0 radical_trial)
+// v71: the app's trial without a subscription is radical_trial, a $0 one-time item (Apple's way to offer a free
+// trial before a one-time purchase); buying it starts the same 14 days. A test (sandbox) Lifetime from TestFlight
+// lasts SANDBOX_DAYS, not for good.
 //   users/<id>/purchases.json     the RevenueCat events for this person, newest last (at most 200)
 //   users/<id>/meter.json         this month's and today's AI: what it really cost us and what it counted
 //   hits/<YYYY-MM>.json           who ran into their AI allowance this month (owners see it in Admin tools)
@@ -19,7 +22,7 @@
 //   REVENUECAT_SECRET          RevenueCat secret API key (sk_...), Secret type: lets the server check a purchase itself
 //   REVENUECAT_WEBHOOK_AUTH    the Authorization value set on RevenueCat's webhook, Secret type
 //   RADICAL_AI_MONTH, RADICAL_AI_DAY, RADICAL_AI_TRIAL, RADICAL_AI_TRIAL_DAY, RADICAL_BONUS_UNTIL   (above)
-const UNLOCK = "radical_unlock", ENTITLEMENT = "unlock", TRIAL_DAYS = 14;  // radical_unlock is Lifetime ($79.99)
+const UNLOCK = "radical_unlock", TRIAL = "radical_trial", ENTITLEMENT = "unlock", TRIAL_DAYS = 14, SANDBOX_DAYS = 30;  // radical_unlock is Lifetime ($79.99)
 const SUBS = { radical_month: { price: "$4.99", per: "month" }, radical_year: { price: "$39.99", per: "year" } };
 const LIFETIME = "$79.99";
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -33,8 +36,10 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
     return { month: num("RADICAL_AI_MONTH", 2.5), day: num("RADICAL_AI_DAY", .5), trial: num("RADICAL_AI_TRIAL", 1.5), trialDay: num("RADICAL_AI_TRIAL_DAY", .25), x: b, bonus: bonusUntil() };
   };
   const config = () => ({ on: process.env.RADICAL_PAYWALL === "on", ios: process.env.REVENUECAT_IOS_KEY || "", android: process.env.REVENUECAT_ANDROID_KEY || "",
-    days: TRIAL_DAYS, product: UNLOCK, lifetime: LIFETIME, entitlement: ENTITLEMENT, subs: Object.entries(SUBS).map(([id, s]) => ({ id, ...s })),
+    days: TRIAL_DAYS, product: UNLOCK, trial: TRIAL, lifetime: LIFETIME, entitlement: ENTITLEMENT, subs: Object.entries(SUBS).map(([id, s]) => ({ id, ...s })),
     allow: allow(new Date().toISOString().slice(0, 10)) });
+  const lifeOn = e => !!(e.unlock && (!e.unlock.until || +e.unlock.until > Date.now()));
+  const dayOfMs = ms => new Date(+ms || Date.now()).toISOString().slice(0, 10);
   const subOn = e => !!(e.sub && SUBS[e.sub.product] && +e.sub.until > Date.now());
   const path = id => `users/${id}/entitlement.json`;
   const read = async id => (await getJSON(path(id)).catch(() => null)) || { unlock: null, sub: null, trialFrom: "" };
@@ -43,7 +48,7 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
   // What the page needs: lifetime or a subscription, and when the web trial began (owners always have it)
   async function get(user) {
     const e = await read(user.id);
-    return { unlock: isOwner(user) ? { src: "owner" } : e.unlock || null, sub: subOn(e) ? e.sub : null, trialFrom: e.trialFrom || "" };
+    return { unlock: isOwner(user) ? { src: "owner" } : lifeOn(e) ? e.unlock : null, sub: subOn(e) ? e.sub : null, trialFrom: e.trialFrom || "" };
   }
   // Ask RevenueCat directly (needs the secret key): lifetime or a live subscription, whichever device bought it
   async function check(user) {
@@ -53,7 +58,12 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
     const s = ((await r.json().catch(() => ({}))).subscriber) || {};
     const e = await read(user.id); let changed = false;
     const life = ((s.non_subscriptions || {})[UNLOCK] || []).find(t => !t.refunded_at);
-    if (life && !(e.unlock && e.unlock.src === "store")) { e.unlock = { at: life.purchase_date || new Date().toISOString(), src: "store", product: UNLOCK }; changed = true; }
+    if (life && !(e.unlock && e.unlock.src === "store" && !e.unlock.until)) {
+      const at = life.purchase_date || new Date().toISOString();
+      e.unlock = { at, src: "store", product: UNLOCK, ...(life.is_sandbox ? { until: Date.parse(at) + SANDBOX_DAYS * 864e5 } : {}) }; changed = true;
+    }
+    const tr = ((s.non_subscriptions || {})[TRIAL] || [])[0];
+    if (tr && tr.purchase_date) { const t = earlier(e.trialFrom, tr.purchase_date.slice(0, 10)); if (t !== e.trialFrom) { e.trialFrom = t; changed = true; } }
     for (const [pid, sub] of Object.entries(s.subscriptions || {})) if (SUBS[pid] && sub.expires_date && Date.parse(sub.expires_date) > Date.now() && !sub.refunded_at
       && (!e.sub || +e.sub.until < Date.parse(sub.expires_date))) { e.sub = { product: pid, until: Date.parse(sub.expires_date), ...(sub.period_type === "trial" ? { trial: true } : {}) }; changed = true; }
     if (changed) await putJSON(path(user.id), e);
@@ -78,7 +88,7 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
       if (!e.unlock || e.unlock.src !== "gift") return { error: e.unlock ? "They bought it; that can't be taken back here." : "They don't have a gift." };
       e.unlock = null;
     } else {
-      if (e.unlock) return { ok: true, already: true };
+      if (lifeOn(e)) return { ok: true, already: true };
       e.unlock = { at: new Date().toISOString(), src: "gift", by: user.email };
     }
     await putJSON(path(c.id), e);
@@ -105,7 +115,9 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
       await putJSON(`users/${id}/purchases.json`, log);
       const e = await read(id), pid = SUBS[ev.new_product_id] ? ev.new_product_id : ev.product_id;
       if (ev.product_id === UNLOCK && ["INITIAL_PURCHASE", "NON_RENEWING_PURCHASE", "TRANSFER"].includes(ev.type) && !(ev.transferred_from || []).includes(id))
-        e.unlock = { at: new Date(+ev.purchased_at_ms || Date.now()).toISOString(), src: "store", product: UNLOCK, store: ev.store };
+        e.unlock = { at: new Date(+ev.purchased_at_ms || Date.now()).toISOString(), src: "store", product: UNLOCK, store: ev.store,
+          ...(ev.environment === "SANDBOX" ? { until: (+ev.purchased_at_ms || Date.now()) + SANDBOX_DAYS * 864e5 } : {}) };
+      else if (ev.product_id === TRIAL && ["INITIAL_PURCHASE", "NON_RENEWING_PURCHASE"].includes(ev.type)) e.trialFrom = earlier(e.trialFrom, dayOfMs(ev.purchased_at_ms));
       else if (ev.product_id === UNLOCK && ev.type === "CANCELLATION" && e.unlock && e.unlock.src === "store") e.unlock = null;  // a refund
       else if (SUBS[pid] && ["INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION"].includes(ev.type) && ev.expiration_at_ms)
         e.sub = { product: pid, until: +ev.expiration_at_ms, ...(ev.period_type === "TRIAL" ? { trial: true } : {}) };
@@ -123,7 +135,7 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
   async function aiCap(user, today) {
     if (!config().on || !user || isOwner(user)) return null;
     const e = await read(user.id), a = allow(today);
-    if (e.unlock || (subOn(e) && !e.sub.trial)) return { kind: "paid", month: a.month * a.x, day: a.day * a.x, base: a.month, bonus: a.x > 1 ? a.bonus : "" };
+    if (lifeOn(e) || (subOn(e) && !e.sub.trial)) return { kind: "paid", month: a.month * a.x, day: a.day * a.x, base: a.month, bonus: a.x > 1 ? a.bonus : "" };
     if (subOn(e) || (e.trialFrom && Math.round((Date.parse(today) - Date.parse(e.trialFrom)) / 864e5) < TRIAL_DAYS))
       return { kind: "trial", total: a.trial * a.x, day: a.trialDay * a.x, base: a.trial, bonus: a.x > 1 ? a.bonus : "" };
     return { locked: true };
