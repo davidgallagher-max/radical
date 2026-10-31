@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v71
+
+- The pay card has "Try free for 14 days, no subscription" under the three options, for anyone who hasn't had a trial or a subscription. It's Apple's $0 "14-day Trial" item and starts the same 14 days and trial AI, so someone heading for Lifetime can try Radical without subscribing.
+- A test Lifetime bought in TestFlight lasts 30 days on our side, not for good.
+- Admin tools: "Paywall test on this phone" turns the paywall on for this phone only, as a new user sees it, before it's on for everyone.
+
 ## v70
 
 - Cards: Check accepts any dictionary sense of the word and small differences in form ("running" for "to run", "colours" for "color"), so far fewer answers wait on the AI; when it does ask, it's one try of up to 5 seconds, then you call it with ✓ / ✗.

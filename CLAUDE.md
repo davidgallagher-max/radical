@@ -145,6 +145,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v70 notes (fix): `meaningsOf(w)` = your meaning, the card's, `w.meaning` and every CC-CEDICT sense (all entries for the word and its Simplified form; CL:/variant/see lines dropped); `checkMeaning` compares by `stem()` (US spelling, -ing/-ed/-es/-s/-ly, never under 3 letters) and `stemAll`. The judge gets `meaningsOf` (300 chars), one try of 5s (was two of 8s), then ✓/✗. Server: `clock(k)` laps (`auth`, `cap`, `pre`, `ai`, `logged`, `total`) in `Server-Timing` and the judge's JSON `t`; `logUse` and `pay.charge` run in parallel. Owners get a toast with the check's time.
 
+- v71 notes: `radical_trial` ($0 non-consumable) is back as the app's trial without a subscription: `TRIAL_ITEM` on the page (`rcProducts` fetches it, `readCI` reads `nonSubscriptionTransactions` into `trialFrom`, `payBuy` then sends op `trial`), `.paytry` link on `payCard` shown when no `trialFrom`, no `sub`, not unlocked; server `TRIAL` in `_pay.js` (webhook and `check` set `trialFrom`, earliest wins; never attach it to the `unlock` entitlement in RevenueCat). Sandbox Lifetime gets `unlock.until` (`SANDBOX_DAYS` 30; `lifeOn(e)`). `payTest()` (`radical-pay-test`, owners, Admin tools button in `giftPanel`) makes `payOn()` true on that phone and stops owners counting as unlocked (`setEnt` drops `src: "owner"`).
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)
