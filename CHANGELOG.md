@@ -2,6 +2,25 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v63
+
+Pricing, reworked (still switched off until launch).
+
+- $4.99 a month or $39.99 a year, each with 14 days free (Apple's free trial), or $79.99 once for Lifetime. No AI plans, no $0 trial item, no Founding members.
+- Without Radical after the trial: 100 words of reading a day, plus your words and Track.
+- AI is included, the same for subscribers and Lifetime: $2.50 a month, at most 50¢ a day. The trial gets $1.50 in all, at most 25¢ a day. Launch bonus: double for the first six months (Vercel `RADICAL_BONUS_UNTIL`), shown on the meter; use past $2.50 shows in gold ("$3.10 used · 60¢ on the launch bonus").
+- Every AI answer is kept and shared: cards, word lists, Explain, translations, easier versions, ratings, searches, photo and notes reading, meaning checks. An answer someone already asked for is free; a first ask counts half. Explain on a pre-built card's sentences and Explore's topic chips are free.
+- ↻ on a card: after its 3 sentences, up to 3 more are made once and shared; after 6 it cycles, free.
+- Meaning checks: a guess the AI accepted is accepted on your phone next time with no call. "I was right" under a check marked wrong counts it right for you; at 3 learners it goes to Admin tools for David to keep or flip. Your own ✓/✗ never changes anything for anyone else.
+- Admin tools: Used up their AI (this month), Meaning checks to review, and Pre-built cards (the 5,000 most common words, Taiwan and Mainland, a few at a time, picks up where it stopped).
+
+Also:
+
+- Settings: the sound row is just Sounds.
+- Settings, Daily goal: a streak day can need Cards, Reading, Either or Both. Past days keep the rule they had.
+- iPhone: speech and chimes play with the silent switch on (the Sounds switch turns chimes off). Needs the next TestFlight build.
+- iPhone: a new version is picked up when you come back to the app, without closing it first (not mid-card, typing, listening or in a sheet).
+
 ## v62
 
 - Chinese is drawn in color across the app, like the reader: Explore's topics, search results, On this day and Random article, History, the Practice word list, deck names, sheets and the rest. Controls stay plain: one-character buttons (解 拼 繁 简 字字), heading and menu marks, the tab bar and the gold 部. The Original look keeps the font.
