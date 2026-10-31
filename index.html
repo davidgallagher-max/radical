@@ -7265,6 +7265,9 @@ function showFront() {
       noListen = true; try { speechSynthesis.cancel(); } catch (e) {}
       rq.forEach(x => { if (cardMode.get(x) === "listen") cardMode.set(x, "read"); }); showFront();
     }));
+    // v74: the Answer box has the keyboard up; a tap here must not take the focus, or it only closes the keyboard
+    // (and the screen jumps) and the sound needs a second tap. Same as the bar's 🔊 (v64).
+    ["pointerdown", "mousedown"].forEach(t => lp.addEventListener(t, e => { if (e.target.closest("button") && document.activeElement && document.activeElement.matches("#gPy,#gMean")) e.preventDefault(); }));
     box.append(lp);
     setTimeout(() => { if (lp.isConnected) say(); }, 250);
   } else box.append(bigWord(conv(w.word)));
