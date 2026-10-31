@@ -4,7 +4,7 @@
 <script>/* v54, iPhone app only: a newer page fetched from the web (see liveUpdate) runs instead of the one in the app. */
 (function () {
   if (/^https?:$/.test(location.protocol) || window.__radicalLive) return;
-  var BUNDLED = /*BUNDLED*/"", SHELL = 3, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
+  var BUNDLED = /*BUNDLED*/"", SHELL = 4, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
   try { ls.setItem("radical-shell", SHELL); var v = ls.getItem("radical-live-v"); } catch (e) { return; }
   if (!v || num(v) <= num(BUNDLED) || v === ls.getItem("radical-live-bad")) return;
   if (ls.getItem("radical-live-tried") === v && ls.getItem("radical-live-ok") !== v) { ls.setItem("radical-live-bad", v); return; }  // it never started last time
@@ -391,12 +391,9 @@ p.busy{margin:-4px 4px 0}
 .peek .ptiles{display:flex;gap:2px;min-width:0;overflow-x:auto;scrollbar-width:none}
 .peek .ptiles::-webkit-scrollbar{display:none}
 .peek .ptile{all:unset;cursor:default;font-family:var(--font-zh);font-size:1.35rem;font-weight:600;line-height:1;padding:5px 3px;border-radius:7px;flex:none}
-.peek .ptile.end{cursor:pointer;box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--accent) 55%,transparent)}
-.peek .ptile.end:active{background:color-mix(in srgb,var(--accent) 16%,transparent)}
-.peek .pback{all:unset;cursor:pointer;flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:9px;font-size:1.05rem;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.peek .ptile{cursor:pointer}
+.peek .ptile:active{background:color-mix(in srgb,var(--accent) 16%,transparent)}
 .reader .cell,.mini .cell{touch-action:pan-y}
-.peek .pgrow{all:unset;cursor:pointer;flex:none;width:30px;height:34px;display:grid;place-items:center;border-radius:9px;font-size:1.3rem;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
-.peek .pgrow:disabled{opacity:.25;cursor:default}
 .peek .prow .saybtn{margin-left:auto}
 .peek .pt{min-width:0;flex:1;display:flex;align-items:baseline;gap:8px;line-height:1.25;padding-left:6px}
 .peek .pp{font-size:.95rem;font-weight:500;color:var(--accent);flex:none}
@@ -776,7 +773,7 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .calday.half.cards .hd{background-image:linear-gradient(135deg,var(--fg) 0 50%,var(--bg) 50%)}
 .kd.half{background:linear-gradient(135deg,var(--accent) 0 50%,color-mix(in srgb,var(--accent) 30%,transparent) 50%)}.kd.half.cards{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 30%,transparent) 0 50%,var(--accent) 50%)}
 .kdi{white-space:nowrap}.trs .kdi:first-child .kd{margin-left:0}
-.kd{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 8px}.trs > .kd:first-child{margin-left:0}.kd.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}.kd.hit{background:var(--accent)}.kd.off{border:1px dashed var(--muted)}
+.kd{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin:0 4px 0 8px}.calline .kd{margin-left:0}.trs > .kd:first-child{margin-left:0}.kd.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}.kd.hit{background:var(--accent)}.kd.off{border:1px dashed var(--muted)}
 .tchart{width:100%;height:auto;display:block;overflow:visible}
 .tgrid{stroke:var(--line);stroke-width:1}
 .tline{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}.tline2{stroke:var(--st-active);stroke-width:1.8;stroke-dasharray:4 3}
@@ -1192,15 +1189,16 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 /* ---- history, settings */
 .list{display:grid;gap:8px}
 .setsec{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
-.setsec>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:10px;padding:14px 16px;position:relative}
+.setsec>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:10px;padding:14px 36px 14px 16px;position:relative}
 .setsec>summary::-webkit-details-marker{display:none}
 .setsec>summary b{font-weight:600;flex:none}
-.setsec>summary .sum{flex:1;min-width:0;text-align:right;color:var(--muted);font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
+.setsec>summary .sum{flex:1;min-width:0;text-align:right;color:var(--muted);font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .setsec>summary::after{content:"";position:absolute;right:16px;top:50%;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .2s}
 .setsec[open]>summary::after{transform:translateY(-30%) rotate(225deg)}
 .setsec>.panel,.setsec>.setbody,.setsec>.seg{margin:0 12px 14px}
 .setsec>p.note{margin:-6px 12px 12px}.setsec>p.setlbl{margin:4px 12px 6px;color:var(--fg);font-weight:600}
 .setsec>.panel{border:0;background:var(--bg)}
+.setsec .panel p.note:has(+ .seg,+ .seg2,+ .daydial){color:var(--fg);font-size:1rem}
 .setbody{display:grid;gap:10px}
 .voices{gap:8px}
 .histchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
@@ -1658,6 +1656,9 @@ function nativeBadge() {
   const n = store.get("radical-badge", true) ? dueCount() : 0;
   (n ? b.set({ count: n }) : b.clear()).catch(() => {});
 }
+// v65: no ⌃ ⌄ ✓ strip over the iPhone keyboard (needs the Keyboard plugin, in the app since SHELL 4); tapping off
+// a box closes the keyboard instead.
+function nativeKeyboard() { const k = plug("Keyboard"); if (k && k.setAccessoryBarVisible) Promise.resolve().then(() => k.setAccessoryBarVisible({ isVisible: false })).catch(() => {}); }
 function askBadge() {
   const b = plug("Badge"); if (!b || store.get("radical-badge-asked", false) || !store.get("radical-badge", true)) return;
   store.set("radical-badge-asked", true); b.requestPermissions().catch(() => {});
@@ -1746,7 +1747,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v64";
+const APP_VERSION = "v65";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2822,15 +2823,15 @@ function readerTap(group, tok, lineText, cell) {
 }
 // Long-press a character: a new selection of just that character (then grow it with ‹ ›).
 function holdToPick(b) {
-  let t = 0, x0 = 0, y0 = 0;
+  let t = 0, x0 = 0, y0 = 0, drag = null;
   const stop = () => { clearTimeout(t); t = 0; };
-  b.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; stop(); b._held = false; t = setTimeout(() => {
-    // Hold: the character opens big (as on cards), with Select just this (the one-character pick) and Open.
+  b.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; stop(); b._held = false; const pid = e.pointerId; t = setTimeout(() => {
+    // v65: hold picks this one character; keep holding and drag along the line to take in more (or fewer).
     t = 0; b._held = true; const line = b.closest(".line"), cells = [...line.querySelectorAll(".cell")], i = cells.indexOf(b);
-    enlarge(b._ch, [["Select just this", () => pickSpan(line, i, i)], ["Open", () => openWord(b._ch, { context: line._text })]]);
+    drag = { line, cells, from: i, to: i }; pickSpan(line, i, i); try { b.setPointerCapture(pid); } catch (err) {}
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) {}
   }, 450); });
   // v54: slide sideways along a line to pick every character you pass; sliding back drops them again.
-  let drag = null;
   b.addEventListener("pointermove", e => {
     const dx = e.clientX - x0, dy = e.clientY - y0;
     if (!drag && !b._held && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.5) {
@@ -2845,7 +2846,7 @@ function holdToPick(b) {
     }
     if (t && Math.hypot(dx, dy) > 8) stop();
   });
-  const end = () => { stop(); if (drag) { if (drag.to >= 0) b._held = true; drag = null; } };  // _held: the click that follows isn't a tap
+  const end = () => { stop(); if (drag) { if (drag.to >= 0) b._held = true; drag = null; } };  // a hold sets to = from, so its click is swallowed too  // _held: the click that follows isn't a tap
   ["pointerup", "pointercancel"].forEach(ev => b.addEventListener(ev, end));
   b.addEventListener("pointerleave", () => { if (!drag) stop(); });
   b.addEventListener("contextmenu", e => e.preventDefault());
@@ -3015,16 +3016,12 @@ function pickSpan(line, a, b, tok, hist = []) {
   const open = () => openWord(word, isTok ? { context: text, syl: tok.syl, mean: tok.mean, tw: tok.tw } : { context: text, syl });
   const peek = peekFor(line);
   picked = { line, a, b, open, tok, peek, hist };
-  const tiles = span.map((c, k) => `<button type="button" class="ptile${span.length > 1 && (k === 0 || k === span.length - 1) ? " end" : ""}" data-k="${k}" lang="zh"${span.length > 1 && (k === 0 || k === span.length - 1) ? ` aria-label="Drop ${esc(c._ch)}"` : ' tabindex="-1"'}>${esc(c._ch)}</button>`).join("");
-  peek.innerHTML = `<div class="prow"><button type="button" class="pgrow" data-d="-1" aria-label="Take in the character before"${a === 0 ? " disabled" : ""}>‹</button><span class="ptiles">${tiles}</span><button type="button" class="pgrow" data-d="1" aria-label="Take in the character after"${b === cells.length - 1 ? " disabled" : ""}>›</button>${span.length > 1 ? '<button type="button" class="pback" aria-label="Take back the last character">⌫</button>' : ""}${sayHTML(word, true)}<button type="button" class="pshut" aria-label="Close">✕</button></div>`
+  // v65: no ‹ › or ⌫: swipe, or hold and drag, to change the pick. Tap a character here to see it big.
+  const tiles = span.map((c, k) => `<button type="button" class="ptile" data-k="${k}" lang="zh" aria-label="${esc(c._ch)}, big">${esc(c._ch)}</button>`).join("");
+  peek.innerHTML = `<div class="prow"><span class="ptiles">${tiles}</span>${sayHTML(word, true)}<button type="button" class="pshut" aria-label="Close">✕</button></div>`
     + `<div class="prow"><span class="pt"><span class="pp">${esc(g.py)}</span><span class="pm">${esc(g.mean || "Tap again for details")}</span></span></div><div class="prow pacts"><span class="popen">Open ›</span></div>`;
   peek.querySelector(".pshut").onclick = e => { e.stopPropagation(); unpick(); };
-  const more = [...hist, [a, b]];
-  peek.querySelectorAll(".pgrow").forEach(x => x.onclick = e => { e.stopPropagation(); const d = +x.dataset.d; pickSpan(line, d < 0 ? a - 1 : a, d > 0 ? b + 1 : b, tok, more); });
-  peek.querySelectorAll(".ptile.end").forEach(x => x.onclick = e => { e.stopPropagation(); const k = +x.dataset.k; pickSpan(line, k === 0 ? a + 1 : a, k === 0 ? b : b - 1, tok, more); });
-  // v54: ⌫ takes back the last character added (‹ or ›); with nothing added, it drops the last character.
-  const back = peek.querySelector(".pback");
-  if (back) back.onclick = e => { e.stopPropagation(); const h = hist.slice(), p = h.pop(); if (p) pickSpan(line, p[0], p[1], tok, h); else pickSpan(line, a, b - 1, tok); };
+  peek.querySelectorAll(".ptile").forEach(x => x.onclick = e => { e.stopPropagation(); const ch = span[+x.dataset.k]._ch; enlarge(ch, [["Open", () => openWord(ch, { context: text })]]); });
   // + Add for the selection. v51: it names the deck (the one picked last); ▾ picks another. Tap ✓ Added to take it
   // back out: one deck, it asks Remove?; several, the deck list with ticks and Remove word.
   // v52: + Add opens the deck sheet (your last decks ticked); ✓ Added opens it again, with Remove word.
@@ -4696,23 +4693,29 @@ function renderTrack() {
   for (let i = 0; i < firstDow; i++) grid.append(el("span", "calday blank"));
   let usedMonth = 0, picked = null;
   // v43: tap a day for its numbers (growth only); tap it again to close
-  const dayLine = el("p", "trs calline"), mark = script === "simp" ? "达标" : "達標"; dayLine.hidden = true;
+  const dayLine = el("p", "trs calline"); dayLine.hidden = true;
+  // v65: the tapped day leads with its square from the key, in the key's words
+  const sq = (cls, t) => `<span class="kdi"><i class="kd ${cls}"></i> ${t}</span>`;
+  let halves = false;
   const showDay = (c, key, v) => {
     if (picked) picked.classList.remove("picked");
     if (picked === c) { picked = null; dayLine.hidden = true; return; }
     picked = c; c.classList.add("picked"); dayLine.hidden = false;
     const [y, m, dd] = key.split("-").map(Number), name = new Date(y, m - 1, dd).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
     const bits = v ? [[v.c, "card"], [v.w, "word", " read"], [v.n, "word", " added"]].filter(b => b[0]).map(([n, u, t = ""]) => `${num(n)} ${u}${n === 1 ? "" : "s"}${t}`) : [];
-    dayLine.innerHTML = `<b>${name}</b> · ${bits.length ? bits.join(" · ") : "Nothing that day"}${goalMet(v, key) ? ` · <span class="calmark"><span lang="zh">${mark}</span> Goal met</span>` : goalHalf(v, key) ? ` · ${goalHalf(v, key) === "cards" ? "Cards done, reading not yet" : "Reading done, cards not yet"}` : ""}`;
+    const half = !goalMet(v, key) && dayUsed(v) && goalHalf(v, key);
+    const state = goalMet(v, key) ? sq("hit", "Goal met") : half === "cards" ? sq("half cards", "Cards done, reading not yet") : half ? sq("half", "Reading done, cards not yet") : dayUsed(v) ? sq("on", "Studied") : firstUse && key >= firstUse && key < today ? sq("off", "Rest day") : "";
+    dayLine.innerHTML = `<b>${name}</b> · ${bits.length ? bits.join(" · ") : "Nothing that day"}${state ? `<br>${state}` : ""}`;
   };
   for (let k = 1; k <= nDays; k++) {
     const key = `${trackMonth.y}-${String(trackMonth.m + 1).padStart(2, "0")}-${String(k).padStart(2, "0")}`, v = d[key];
     const cls = key > today ? "future" : dayUsed(v) ? (goalMet(v, key) ? "hit" : goalHalf(v, key) ? `half ${goalHalf(v, key) === "cards" ? "cards" : "read"}` : "on") : firstUse && key >= firstUse && key < today ? "off" : "";
     if (dayUsed(v)) usedMonth++;
+    if (cls.startsWith("half")) halves = true;
     const c = el(key > today ? "span" : "button", `calday ${cls}${key === today ? " today" : ""}`, cls.startsWith("half") ? `<span class="hd">${k}</span>` : String(k)); grid.append(c);
     if (key <= today) { c.type = "button"; c.onclick = () => showDay(c, key, v); }
   }
-  cal.append(head, grid, dayLine, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<span class="kdi"><i class="kd hit"></i> <span lang="zh">${mark}</span> goal met</span> ${streakRule() === "both" ? '<span class="kdi"><i class="kd half"></i> read</span> <span class="kdi"><i class="kd half cards"></i> cards</span> ' : ""}<span class="kdi"><i class="kd on"></i> studied</span> <span class="kdi"><i class="kd off"></i> rest day</span>`));
+  cal.append(head, grid, dayLine, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<span class="kdi"><i class="kd hit"></i> goal met</span> ${halves || streakRule() === "both" ? '<span class="kdi"><i class="kd half"></i> reading done</span> <span class="kdi"><i class="kd half cards"></i> cards done</span> ' : ""}<span class="kdi"><i class="kd on"></i> studied</span> <span class="kdi"><i class="kd off"></i> rest day</span>`));
   box.append(cal);
   // your three boxes (tap: what's in it; touch and hold: change it): a number and one word each, under "Words" when all
   // three count words
@@ -5263,22 +5266,27 @@ const MINE = "Basecamp", mineName = () => MINE;
 const wDecks = w => w.decks || (w.deck ? [w.deck] : []);
 function setDecks(w, a) { a = [...new Set(a.filter(Boolean))]; delete w.deck; if (a.length) w.decks = a; else delete w.decks; }
 const inDeck = (w, n) => wDecks(w).includes(n);
+// v65: a word can also be filed into a ready-made deck (Top or a topic): w.decks holds "@:" + that list's key beside
+// your own deck names. The ready-made deck's own word list doesn't change; the word just shows and studies there too.
+const RM = "@:", isRm = n => typeof n === "string" && n.startsWith(RM), rmKey = n => n.slice(RM.length);
+const ownDecks = w => wDecks(w).filter(n => !isRm(n));
+const deckLabel = n => isRm(n) ? keyName(rmKey(n)) : n;
 const DECK_MAX = 20;  // deck names (v44)
 const isDeck = L => typeof L === "string" && L.startsWith("d:"), deckKey = n => "d:" + n;
 // v44: several of your decks studied together: "g:" + their keys, one per line
 const isGroup = L => typeof L === "string" && L.startsWith("g:"), groupKey = ks => "g:" + ks.join("\n"), groupKeys = L => isGroup(L) ? L.slice(2).split("\n") : [L];
 function saveDecks() { decks.t = Date.now(); store.set("radical-decks", decks); if (typeof scheduleSync === "function") scheduleSync(); }
-const inList = (w, L = curList) => L === "all" ? true : isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L;
+const inList = (w, L = curList) => L === "all" ? true : isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common || inDeck(w, RM + "top") : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L || inDeck(w, RM + L);
 const listWords = () => myWords.filter(w => inList(w));
-const keyOf = w => wDecks(w).length ? (isDeck(curList) && inList(w, curList) ? curList : deckKey(wDecks(w)[0])) : w.set || (w.common ? "top" : "mine");  // the list a word belongs to
+const keyOf = w => wDecks(w).length ? (curList !== "all" && !isGroup(curList) && curList !== "mine" && inList(w, curList) ? curList : isRm(wDecks(w)[0]) ? rmKey(wDecks(w)[0]) : deckKey(wDecks(w)[0])) : w.set || (w.common ? "top" : "mine");  // the list a word belongs to
 const lazyCard = w => !!(w.common || w.set || w.got) && !practiced(w);  // v46: words from a shared deck too
 function allLists() {
   const out = curList === "mine" || myWords.some(w => inList(w, "mine")) ? [["mine", mineName()]] : [], size = commonSize();  // Mine shows once it has words
   const cut = t => t.length > DECK_MAX ? t.slice(0, DECK_MAX - 1) + "…" : t;
   if (isGroup(curList)) out.unshift([curList, groupName(curList)]);
-  new Set([...decks.names, ...myWords.flatMap(wDecks)]).forEach(n => out.push([deckKey(n), cut(n)]));
+  new Set([...decks.names, ...myWords.flatMap(ownDecks)]).forEach(n => out.push([deckKey(n), cut(n)]));
   if (size) out.push(["top", `Top ${num(size)}`]);
-  [...new Set([...myWords.filter(w => w.set).map(w => w.set), ...Object.keys(setCache)])].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
+  [...new Set([...myWords.filter(w => w.set).map(w => w.set), ...Object.keys(setCache), ...myWords.flatMap(wDecks).filter(isRm).map(rmKey).filter(k => k !== "top")])].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
   if (myWords.length) out.push(["all", "All decks"]);  // v52: every word, each once (last, so a real deck comes first)
   return out;
 }
@@ -5778,7 +5786,7 @@ function renderStrip(sizes) {
 const csvCell = x => { x = String(x ?? ""); return /[",\r\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x; };
 async function exportWords(ws) {
   const rows = [["Word", "Pinyin", "Meaning", "Deck", "Status"],
-    ...ws.map(w => [w.word, wPinyin(w), wMeaning(w), wDecks(w).length ? wDecks(w).join("; ") : keyName(keyOf(w)), STATUS_NAME[wStatus(w)] || ""])];
+    ...ws.map(w => [w.word, wPinyin(w), wMeaning(w), wDecks(w).length ? wDecks(w).map(deckLabel).join("; ") : keyName(keyOf(w)), STATUS_NAME[wStatus(w)] || ""])];
   const name = `radical-words-${localDay()}.csv`;
   const blob = new Blob(["\ufeff" + rows.map(r => r.map(csvCell).join(",")).join("\r\n")], { type: "text/csv" });  // the mark tells Excel it's UTF-8
   const file = new File([blob], name, { type: "text/csv" });
@@ -6133,7 +6141,7 @@ function nameDeck(cur, done, back) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard signcard"), inp = el("input"), msg = el("p", "note");
   inp.type = "text"; inp.placeholder = "Lesson 5, Travel, My office…"; inp.maxLength = DECK_MAX; inp.value = cur.slice(0, DECK_MAX); inp.setAttribute("aria-label", "Deck name");
   const go = btn("Save", "btn wide", () => {
-    const n = inp.value.trim().replace(/\s+/g, " ");
+    const n = inp.value.trim().replace(/\s+/g, " ").replace(/^@:/, "");
     if (!n) { msg.textContent = "Type a name first."; return; }
     if (n !== cur && (decks.names.includes(n) || n === (mineName()) || themesNow().includes(n))) { msg.textContent = "You have a deck with that name."; return; }
     sheet.remove(); if (n !== cur) done(n);
@@ -6170,7 +6178,12 @@ function deckPicker({ w, title, start, save, remove, cancel }) {
     const fixed = w && (w.common || w.set) ? keyName(w.set || "top") : "";
     if (fixed) row(esc(fixed), true, null, " fixed").disabled = true;
     else row(`${esc(mineName())}<small>new words camp here</small>`, !sel.size, () => { sel.clear(); paint(); }, " base");
-    [...new Set([...decks.names, ...sel])].forEach(n => row(esc(n), sel.has(n), () => { sel.has(n) ? sel.delete(n) : sel.add(n); paint(); }));
+    [...new Set([...decks.names, ...[...sel].filter(n => !isRm(n))])].forEach(n => row(esc(n), sel.has(n), () => { sel.has(n) ? sel.delete(n) : sel.add(n); paint(); }));
+    // v65: the ready-made decks in your list too (not the one a word already comes from)
+    allLists().filter(([k]) => k === "top" || (!isDeck(k) && !isGroup(k) && k !== "mine" && k !== "all")).forEach(([k]) => {
+      if (w && (k === "top" ? w.common : w.set === k)) return;
+      const n = RM + k; row(esc(keyName(k)), sel.has(n), () => { sel.has(n) ? sel.delete(n) : sel.add(n); paint(); });
+    });
     row("＋ New deck", false, () => { sheet.remove(); nameDeck("", n => {
       if (!decks.names.includes(n)) { decks.names.push(n); decks.made[deckKey(n)] = localDay(); saveDecks(); }
       deckPicker({ w, title, start: [...sel, n], save, remove, cancel });
@@ -6188,26 +6201,29 @@ function deckPicker({ w, title, start, save, remove, cancel }) {
 // The decks a word is in, as a chip: tap to change them.
 function deckChip(w, after) {
   const b = btn("", "deckchip");
-  const paint = () => { const ds = wDecks(w), names = ds.length ? ds : [w.common || w.set ? keyName(w.set || "top") : mineName()];
+  const paint = () => { const ds = wDecks(w).map(deckLabel), fixed = w.common || w.set ? [keyName(w.set || "top")] : [], names = fixed.concat(ds).length ? fixed.concat(ds) : [mineName()];
     b.innerHTML = `<span>${esc(names[0])}${names.length > 1 ? ` +${names.length - 1}` : ""}</span> ▾`; b.setAttribute("aria-label", `Decks: ${names.join(", ")}. Change`); };
   b.onclick = e => { e.stopPropagation(); deckPicker({ w, title: `${conv(w.word)} is in`, save: a => { setDecks(w, a); saveWords(); paint(); updateCounts(); if (after) after(); } }); };
   paint(); return b;
 }
 // v53: a DECK (or DECKS) label in front, so the chip reads as a control
-const deckRow = w => { const r = el("div", "deckline"), lab = el("span", "decklab"), set = () => lab.textContent = wDecks(w).length > 1 ? "Decks" : "Deck";
+const deckRow = w => { const r = el("div", "deckline"), lab = el("span", "decklab"), set = () => lab.textContent = wDecks(w).length + (w.common || w.set ? 1 : 0) > 1 ? "Decks" : "Deck";
   set(); r.append(lab, deckChip(w, set)); return r; };
-const addedToast = a => toast(`Added to <b>${esc(a && a.length ? a.join(", ") : mineName())}</b>`, 2200);
+const addedToast = a => toast(`Added to <b>${esc(a && a.length ? a.map(deckLabel).join(", ") : mineName())}</b>`, 2200);
 // v51: + Add names its deck: the one you picked last ("" is Basecamp), so a word never lands somewhere you didn't see.
 // v52: the decks picked last (several, or [] for Basecamp); the deck sheet opens with them ticked.
-const lastDecks = () => { let a = store.get("radical-last-decks", null); if (!a) { const n = store.get("radical-last-deck", ""); a = n ? [n] : []; } return a.filter(n => decks.names.includes(n)); };
+const lastDecks = () => { let a = store.get("radical-last-decks", null); if (!a) { const n = store.get("radical-last-deck", ""); a = n ? [n] : []; } return a.filter(n => decks.names.includes(n) || (isRm(n) && rmOk(rmKey(n)))); };
 const setLastDecks = a => store.set("radical-last-decks", a);
-const decksLabel = a => { if (!a.length) return mineName(); const n = a[0].length > 14 ? a[0].slice(0, 13) + "…" : a[0]; return a.length > 1 ? `${n} +${a.length - 1}` : n; };
+const rmOk = k => allLists().some(([x]) => x === k);
+const decksLabel = a => { if (!a.length) return mineName(); const f = deckLabel(a[0]), n = f.length > 14 ? f.slice(0, 13) + "…" : f; return a.length > 1 ? `${n} +${a.length - 1}` : n; };
 // Take a word out of your words (the sync records it), e.g. ✓ Added tapped by mistake.
 function dropWord(w) { const i = myWords.indexOf(w); if (i < 0) return; myWords.splice(i, 1); saveWords(); updateCounts(); }
 // Removing a list: the words you haven't studied go; the ones you have stay (in Basecamp unless in a deck).
 function removeList(L) {
-  myWords = myWords.filter(w => !(inList(w, L) && !practiced(w)));
-  myWords.forEach(w => { if (inList(w, L)) { delete w.common; delete w.set; } });
+  const filed = w => inDeck(w, RM + L), own = w => (L === "top" ? w.common : w.set === L);  // v65: words you filed here stay, untagged
+  myWords.forEach(w => { if (filed(w)) setDecks(w, wDecks(w).filter(n => n !== RM + L)); });
+  myWords = myWords.filter(w => !(own(w) && !practiced(w)));
+  myWords.forEach(w => { if (own(w)) { delete w.common; delete w.set; } });
   if (L === "top") store.set("radical-common", { size: 0 });
   saveWords(); setList("mine"); renderWords();
 }
@@ -6262,7 +6278,7 @@ function openSets() {
 // panel instead: its deck ("Into", the one picked last) and open when there are no words yet.
 function renderCommon() {
   const b = $("addInto"); if (!b) return;
-  b.innerHTML = `<span>${esc(decksLabel(lastDecks()))}</span> ▾`; b.setAttribute("aria-label", `Into ${lastDecks().join(", ") || mineName()}. Change`);
+  b.innerHTML = `<span>${esc(decksLabel(lastDecks()))}</span> ▾`; b.setAttribute("aria-label", `Into ${lastDecks().map(deckLabel).join(", ") || mineName()}. Change`);
   if (!myWords.length) $("wordAddPanel").open = true;
 }
 $("addInto").onclick = () => deckPicker({ title: "Add words to", save: () => renderCommon() });
@@ -6396,7 +6412,7 @@ function renderSelBar(shown) {
   const into = btn("Add to deck ▾", "btn", () => deckPicker({ title: `Add ${picks.size} to`, start: [], save: a => {
     if (!a.length) return;
     const ws = [...picks]; ws.forEach(w => setDecks(w, [...wDecks(w), ...a])); picks.clear(); sorting = false; saveWords(); renderWords(); updateCounts();
-    toast(`${num(ws.length)} added to <b>${esc(a.join(", "))}</b>`, 2500); } }));
+    toast(`${num(ws.length)} added to <b>${esc(a.map(deckLabel).join(", "))}</b>`, 2500); } }));
   const own = isDeck(curList) ? curList.slice(2) : "";
   const out = own && btn(`Take out of ${own.length > 12 ? own.slice(0, 11) + "…" : own}`, "btn ghost", () => {
     [...picks].forEach(w => setDecks(w, wDecks(w).filter(x => x !== own))); picks.clear(); saveWords(); renderWords(); updateCounts(); });
@@ -7190,11 +7206,20 @@ function showFront() {
 // aside, the big characters shrink just enough to stay whole, and the screen is sized to the visible area so the
 // phone has no reason to scroll it (switching between the two boxes moves nothing). Enter goes Pinyin → Meaning → Check.
 let kbState = null;
+const kbTall = {};
+const fullH = () => kbTall[innerWidth > innerHeight ? "l" : "p"] || 0;
+function noteTall() {
+  const a = document.activeElement; if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) return;
+  const o = innerWidth > innerHeight ? "l" : "p"; kbTall[o] = Math.max(kbTall[o] || 0, innerHeight);
+}
+noteTall(); addEventListener("resize", noteTall); addEventListener("orientationchange", () => { setTimeout(() => { delete kbTall.l; delete kbTall.p; noteTall(); }, 400); });
 function kbFit() {
   const st = kbState, scr = $("reviewScreen"), vv = window.visualViewport;
   const live = st && st.card.isConnected && !scr.hidden;
   const focused = live && st.inputs.includes(document.activeElement);
-  const kb = vv ? innerHeight - vv.height : 0, typing = focused && kb > 120;
+  // v65: the iPhone app shrinks the whole page for the keyboard (innerHeight drops with it), so measure against the
+  // tallest height seen in this orientation with no keyboard up, not just innerHeight.
+  const kb = vv ? Math.max(innerHeight, fullH()) - vv.height : 0, typing = focused && kb > 120;
   scr.classList.toggle("typing", typing);
   const big = live && st.card.querySelector(".revchars");
   const bar = $("revBar");
@@ -7747,7 +7772,7 @@ $("regionHost").append(regionPills());
 $("voiceTW").onclick = () => sayVoice("tw"); $("voiceCN").onclick = () => sayVoice("cn");
 // ---- Settings is a list of sections that open on tap; each shows a one-line summary while closed.
 function setSums() {
-  const S = { region: (REGIONS.find(x => x[0] === region) || [])[2] || "", acct: session ? `Signed in as ${session.email}` : "Not signed in",
+  const S = { region: (REGIONS.find(x => x[0] === region) || [])[2] || "", acct: session ? session.email : "Signed out",
     theme: (PALETTES[palette] || {}).name || "", appear: ({ dark: "Dark", light: "Light", system: "Match phone" }[store.get("radical-theme", "dark")] || "") + (cvd ? " · red-green safe" : ""),
     modes: goal.map(m => HOW_NAME[m]).join(", ") + (store.get("radical-badge", true) ? "" : " · no red number"),
     sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
@@ -8119,8 +8144,8 @@ const chipList = () => (daily && daily.day === localDay() && daily.list.length ?
 function wikiLabels() {
   $("wikiRandomZh").textContent = script === "simp" ? "随机条目" : "隨機條目";
   const box = $("wikiTopics"); box.innerHTML = "";
-  chipList().forEach(([zh, en, py]) => {
-    const b = el("button", "", `<b>${esc(conv(zh))}</b>${py ? `<i>${esc(py)}</i>` : ""}${en ? `<span>${esc(en)}</span>` : ""}`); b.type = "button"; b.dataset.zh = zh;
+  chipList().forEach(([zh, en]) => {
+    const b = el("button", "", `<b>${esc(conv(zh))}</b>${en ? `<span>${esc(en)}</span>` : ""}`); b.type = "button"; b.dataset.zh = zh;
     b.classList.toggle("on", activeChip === zh);
     b.onclick = () => { markChip(zh); wikiSearch(conv(zh), en); };
     box.append(b);
@@ -8415,7 +8440,7 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   // The splash takes a tap from the very first moment: a tap hides it even while the app is still loading behind it
   // (the reader shows "Drawing…" until the characters arrive), so a slow connection never looks like a frozen app.
   window.__radicalStarted = true;
-  setTimeout(liveUpdate, 8000); fetchTopics();
+  setTimeout(liveUpdate, 8000); fetchTopics(); nativeKeyboard();
   payInit().then(() => { if ((tab === "readScreen" && !payFree("read")) || (tab === "wikiScreen" && !payFree("explore"))) setTab("trackScreen"); }).catch(() => {});  // v61
   const sp0 = $("splash");
   let harped = false, done = false;
