@@ -176,6 +176,7 @@ const ANON_ACTIONS = new Set(["explain", "translate", "words", "zhquery", "simpl
 // v54: the iPhone app's page runs at capacitor://localhost, so it may call here across origins (only that origin).
 const APP_ORIGINS = new Set(["capacitor://localhost", "ionic://localhost"]);
 module.exports = async (req, res) => {
+  const T0 = Date.now(), lap = {}, clock = k => { lap[k] = Date.now() - T0; };  // v70: where a request's time goes (judge reports it)
   const origin = String(req.headers.origin || "");
   if (APP_ORIGINS.has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin); res.setHeader("Vary", "Origin");
@@ -233,7 +234,7 @@ module.exports = async (req, res) => {
     try { const s = await account.demoSignIn(body.email, body.code); return s ? res.status(200).json(s) : res.status(403).json({ error: "That code didn't work." }); }
     catch (e) { return res.status(500).json({ error: e.message }); }
   }
-  const user = await account.userOf(req);
+  const user = await account.userOf(req); clock("auth");
   // Signed out (v41): only the things a newcomer taps for, and only a few (see account.anonTake).
   const anon = !user && !!req.headers["x-radical-anon"] && ANON_ACTIONS.has(body.action);
   if (!user && !anon) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
@@ -357,7 +358,7 @@ module.exports = async (req, res) => {
   // the AI is really asked: a stored answer costs nothing, so it's given even past the limit. Every AI call is logged
   // with its estimated cost, and counts against the allowance at `rate` of it: half for a first ask (it's stored and
   // shared from then on), nothing for the topic chips and for Explain on a pre-built card's own sentences.
-  const pc = await pay.aiCap(user, today).catch(() => null);
+  const pc = await pay.aiCap(user, today).catch(() => null); clock("cap");
   if (pc && pc.locked) return res.status(402).json({ error: "Get Radical to use the AI features.", pay: true });
   const OUT = { day: "Today's AI is used up. It comes back tomorrow; reading, saving and flash cards still work.",
     month: "This month's AI is used up. It comes back on the 1st; reading, saving and flash cards still work.",
@@ -368,9 +369,13 @@ module.exports = async (req, res) => {
       if (pc) { const why = pay.room(pc, await pay.meter(user, today)); if (why) { await pay.hit(user, why, today).catch(() => {}); throw Object.assign(new Error(OUT[why]), { aiout: why }); } }
       else if (await account.spentToday(who, today) >= account.capFor(user, who)) throw Object.assign(new Error(OUT.day), { aiout: "day" });
     }
-    const r = await askAI(model, prompt, maxTokens); await account.logUse(who, body.action, model, r.usage, user && user.email, today);
+    clock("pre"); const a0 = Date.now();
+    const r = await askAI(model, prompt, maxTokens); lap.ai = Date.now() - a0;
+    // v70: the usage log and the meter are written side by side (they were one after the other)
     const cost = account.costOf(model, r.usage);
-    if (user) await pay.charge(user, pc, cost, cost * rate, today).catch(() => {});
+    await Promise.all([account.logUse(who, body.action, model, r.usage, user && user.email, today).catch(() => {}),
+      user ? pay.charge(user, pc, cost, cost * rate, today).catch(() => {}) : null]);
+    clock("logged");
     return r.text;
   };
   // A stored answer, or a new one made, stored and returned (null = unreadable, not stored)
@@ -555,7 +560,8 @@ module.exports = async (req, res) => {
         return { verdict, note: String(out.note || "").slice(0, 120) };
       });
       if (!v) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
-      return res.status(200).json(v);
+      clock("total"); res.setHeader("Server-Timing", Object.entries(lap).map(([k, ms]) => `${k};dur=${ms}`).join(", "));
+      return res.status(200).json({ ...v, t: lap });
     }
     if (body.action === "explain") {
       const sentence = String(body.sentence || "").trim().slice(0, 300);
