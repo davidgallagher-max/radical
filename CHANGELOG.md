@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v66
+
+- Cards: up to four characters sit on one row beside the 🗑, and while you type they shrink until the Pinyin and Meaning boxes clear the button bar (three characters used to wrap onto two rows and push the boxes under it).
+
 ## v65
 
 Read:
