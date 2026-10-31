@@ -8226,7 +8226,53 @@ function fetchDaily() {
     .catch(() => {}).finally(() => { dailyJob = null; });
   return dailyJob;
 }
-const chipList = () => (daily && daily.day === localDay() && daily.list.length ? daily.list.map(t => [t.zh, t.en, t.py]) : TOPICS).slice(0, 9);
+// v69: today's holiday (Chinese, the Taiwan or Mainland one for your region, or your own country's from the phone's
+// language setting) is the first chip and leads On this day. Search words are Traditional; conv() shows your script.
+function homeCountry() {
+  for (const l of navigator.languages || [navigator.language || ""]) { const m = /^[a-z]{2,3}[-_](?:[A-Za-z]{4}[-_])?([A-Z]{2})\b/.exec(l); if (m) return m[1]; }
+  return "";
+}
+function holidayToday(day = localDay()) {
+  const [Y, M, D] = day.split("-").map(Number), dt = new Date(Y, M - 1, D, 12), md = `${M}/${D}`;
+  const nth = (wd, n) => D > (n - 1) * 7 && D <= n * 7 && dt.getDay() === wd;  // the nth weekday of the month
+  let lunar = "";
+  try {
+    const f = new Intl.DateTimeFormat("en-u-ca-chinese", { month: "numeric", day: "numeric" }), lp = d => { const p = f.formatToParts(d); return `${p.find(x => x.type === "month").value}/${p.find(x => x.type === "day").value}`; };
+    lunar = lp(dt); if (lp(new Date(Y, M - 1, D + 1, 12)) === "1/1") lunar = "eve";
+  } catch (e) {}
+  const LUNAR = { "eve": ["除夕", "Lunar New Year's Eve"], "1/1": ["春節", "Lunar New Year"], "1/15": ["元宵節", "Lantern Festival"], "5/5": ["端午節", "Dragon Boat Festival"],
+    "7/7": ["七夕", "Qixi Festival"], "8/15": ["中秋節", "Mid-Autumn Festival"], "9/9": ["重陽節", "Double Ninth Festival"], "12/8": ["臘八節", "Laba Festival"] };
+  if (LUNAR[lunar]) return LUNAR[lunar];
+  const y = Y % 100; if (M === 4 && D === Math.floor(y * .2422 + 4.81) - Math.floor(y / 4)) return ["清明節", "Qingming Festival"];
+  const tw = region === "tw";
+  const CHINA = tw ? { "10/10": ["雙十節", "Double Tenth Day"], "9/28": ["教師節", "Teachers' Day"], "4/4": ["兒童節", "Children's Day"] }
+    : { "10/1": ["中華人民共和國國慶節", "National Day"], "5/1": ["勞動節", "Labour Day"], "6/1": ["兒童節", "Children's Day"], "9/10": ["教師節", "Teachers' Day"] };
+  if (CHINA[md]) return CHINA[md];
+  const c = homeCountry(), west = ["US", "GB", "CA", "AU", "NZ", "IE"].includes(c);
+  if (md === "1/1") return ["元旦", "New Year's Day"];
+  if (!west) return null;
+  const easter = (() => { const a = Y % 19, b = Math.floor(Y / 100), cc = Y % 100, d = Math.floor(b / 4), e = b % 4, f2 = Math.floor((b + 8) / 25), g = Math.floor((b - f2 + 1) / 3),
+    h = (19 * a + b - d - g + 15) % 30, i = Math.floor(cc / 4), k = cc % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451); return [Math.floor((h + l - 7 * m + 114) / 31), ((h + l - 7 * m + 114) % 31) + 1]; })();
+  if (M === easter[0] && D === easter[1]) return ["復活節", "Easter"];
+  const own = {
+    US: { "7/4": ["美國獨立日", "Independence Day"], "10/31": ["萬聖節", "Halloween"] },
+    CA: { "7/1": ["加拿大日", "Canada Day"], "10/31": ["萬聖節", "Halloween"] },
+    GB: { "11/5": ["蓋伊·福克斯之夜", "Bonfire Night"], "10/31": ["萬聖節", "Halloween"], "12/26": ["節禮日", "Boxing Day"] },
+    IE: { "3/17": ["聖派翠克節", "St Patrick's Day"], "10/31": ["萬聖節", "Halloween"] },
+    AU: { "12/26": ["節禮日", "Boxing Day"] }, NZ: { "12/26": ["節禮日", "Boxing Day"] }
+  }[c] || {};
+  if (own[md]) return own[md];
+  if (md === "2/14") return ["情人節", "Valentine's Day"];
+  if (md === "12/25") return ["聖誕節", "Christmas"];
+  if (c === "US" && M === 11 && nth(4, 4) || c === "CA" && M === 10 && nth(1, 2)) return ["感恩節", "Thanksgiving"];
+  if (M === 5 && nth(0, 2) && c !== "GB" && c !== "IE") return ["母親節", "Mother's Day"];
+  if (M === 6 && nth(0, 3) && c !== "AU" && c !== "NZ") return ["父親節", "Father's Day"];
+  return null;
+}
+const chipList = () => {
+  const base = (daily && daily.day === localDay() && daily.list.length ? daily.list.map(t => [t.zh, t.en, t.py]) : TOPICS), h = holidayToday();
+  return (h ? [[h[0], h[1]], ...base.filter(([zh]) => zh !== h[0])] : base).slice(0, 9);
+};
 function wikiLabels() {
   $("wikiRandomZh").textContent = script === "simp" ? "随机条目" : "隨機條目";
   const box = $("wikiTopics"); box.innerHTML = "";
@@ -8291,6 +8337,11 @@ async function fetchToday() {
 let todayShown = "";
 async function paintToday(items) {
   const box = $("wikiToday"), list = $("wikiTodayList"); if (!box) return;
+  const h = holidayToday();  // v69: today's holiday leads, as the top search hit for its name
+  if (h) {
+    const t = await searchHits(conv(h[0])).then(x => x[0]).catch(() => "");
+    items = [...(t ? [{ y: "Today", t, s: conv(h[0]), hol: 1 }] : []), ...(items || []).filter(x => x.t !== t)].slice(0, 3);
+  }
   box.hidden = !items || !items.length; if (box.hidden) return;
   const key = localDay() + script; if (todayShown === key && list.childElementCount) return; todayShown = key;
   $("wikiTodayDate").textContent = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
