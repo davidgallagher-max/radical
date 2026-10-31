@@ -4,7 +4,7 @@
 <script>/* v54, iPhone app only: a newer page fetched from the web (see liveUpdate) runs instead of the one in the app. */
 (function () {
   if (/^https?:$/.test(location.protocol) || window.__radicalLive) return;
-  var BUNDLED = /*BUNDLED*/"", SHELL = 2, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
+  var BUNDLED = /*BUNDLED*/"", SHELL = 3, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
   try { ls.setItem("radical-shell", SHELL); var v = ls.getItem("radical-live-v"); } catch (e) { return; }
   if (!v || num(v) <= num(BUNDLED) || v === ls.getItem("radical-live-bad")) return;
   if (ls.getItem("radical-live-tried") === v && ls.getItem("radical-live-ok") !== v) { ls.setItem("radical-live-bad", v); return; }  // it never started last time
@@ -339,6 +339,10 @@ p.busy{margin:-4px 4px 0}
 .sckey{color:var(--muted);font-weight:400}
 #revProg{font-family:var(--font-ui);font-size:.95rem;font-weight:600;color:var(--muted)}
 .ptag{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:1px 7px;vertical-align:2px}
+/* v64: a long deck name shortens; the title never clips */
+#reviewScreen .revhead .revtitle{display:flex;align-items:center;gap:.3em;min-width:0}
+#revProg{display:inline-flex;align-items:center;gap:5px;min-width:0}#revProg .ptag{flex:none}
+#revProg .ptag.pdeck{flex:0 1 auto;min-width:3.2em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .revtitle{white-space:nowrap}
 .donescore{text-align:center;color:var(--muted);margin:0}
 .finish{display:grid;justify-items:center;gap:10px;padding:10px 0 20px;text-align:center}
@@ -370,6 +374,7 @@ p.busy{margin:-4px 4px 0}
 .revbartop .rl{flex:1;display:grid;line-height:1.25}.revbartop .rl b{font-size:.92rem}.revbartop .rl small{font-size:.92rem;color:var(--muted)}
 .revbartop .flipbtn{flex:none;display:inline-flex;align-items:center;gap:6px}
 .revbartop .flipbtn i{font-style:normal;font-size:1.05rem}
+.revbartop.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.revbartop.two .rl{display:none}.revbartop.two .flipbtn{justify-content:center;padding-left:6px;padding-right:6px;white-space:nowrap}
 #reviewScreen.screen.sub{padding-bottom:calc(var(--bot) + 170px)}
 .resdetail{grid-column:2;display:grid;gap:4px;margin-top:2px}
 .sylrow{display:flex;gap:6px;flex-wrap:wrap}
@@ -420,10 +425,10 @@ p.busy{margin:-4px 4px 0}
 .seg button[aria-pressed="true"]{border-radius:6px}.seg2 button[aria-pressed="true"]{border-radius:8px}
 .seg button[aria-pressed="true"],.seg button[aria-pressed="true"]+button,.seg2 button[aria-pressed="true"],.seg2 button[aria-pressed="true"]+button{border-left-color:transparent}
 .tpanel .seg{background:var(--bg)}.outline-panels .tpanel .seg{background:var(--surface)}
-.seg button{font-family:var(--font-zh);font-size:1.05rem;line-height:1;background:var(--surface);color:var(--muted);border:0;padding:5px 12px;cursor:pointer}
+.seg button{font-family:var(--font-zh);font-size:1.05rem;line-height:1;background:var(--surface);color:var(--fg);font-weight:400;border:0;padding:5px 12px;cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
 .seg.uiseg{display:flex;width:100%}
-.seg.uiseg button{font-family:var(--font-ui);font-size:.95rem;font-weight:500;padding:8px 4px;flex:1}
+.seg.uiseg button{font-family:var(--font-ui);font-size:.95rem;font-weight:400;padding:8px 4px;flex:1}
 .seg button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);border-color:var(--accent);font-weight:700}
 .ctl{display:grid;gap:3px}
 .themeseg{justify-self:start}
@@ -803,12 +808,14 @@ button.calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}but
 .readring.met .rr1{stroke:var(--gold2)}.readring.met .rr0{stroke:transparent}
 /* v57: crossing the reading target: the ring swells and settles while sparks leave its rim (2s) */
 .readring.burst{animation:ringburst 5s cubic-bezier(.2,.8,.3,1)}
+.cardring{opacity:0;animation:cardring 5.4s ease forwards}@keyframes cardring{0%{opacity:0}10%{opacity:1}75%{opacity:1}100%{opacity:0}}
+.cardring.burst{animation:ringburst 5s cubic-bezier(.2,.8,.3,1),cardring 5.4s ease forwards}
 @keyframes ringburst{0%{scale:1}18%{scale:1.38}42%{scale:.92}62%{scale:1.06}80%{scale:.98}100%{scale:1}}
 .readring.burst .rr1{filter:drop-shadow(0 0 3px var(--gold1))}
 .rspark{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:var(--gold1);box-shadow:0 0 6px var(--gold2);pointer-events:none;opacity:0;
   transform:rotate(var(--a)) translateY(-.66em);animation:rspark var(--t,3.5s) cubic-bezier(.25,.6,.35,1) var(--d,.3s) forwards}
 @keyframes rspark{0%{opacity:1;transform:rotate(var(--a)) translateY(-.66em) scale(1)}45%{opacity:.85}100%{opacity:0;transform:rotate(calc(var(--a) + var(--s,0deg))) translateY(calc(-.66em - var(--r,18px))) scale(.3)}}
-@media (prefers-reduced-motion:reduce){.readring.burst{animation:none}.rspark{display:none}}
+@media (prefers-reduced-motion:reduce){.readring.burst{animation:none}.rspark{display:none}.cardring{display:none}}
 .togo{font-size:.92rem;font-weight:400;color:var(--muted);white-space:nowrap}
 h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-size:.92rem}
 .minihead .togo{flex:1;text-align:center;font-size:.85rem}
@@ -878,7 +885,7 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 @media (max-width:370px){.seg2.four button{font-size:.8rem;padding-left:1px;padding-right:1px}}
 .revcount.typerow{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:8px;row-gap:4px}
 .revcount.typerow .revmix{grid-column:2;margin:0;text-align:left;padding-left:8px}
-.seg2 button{all:unset;cursor:pointer;text-align:center;white-space:nowrap;padding:9px 5px;font-size:.88rem;font-weight:500;color:var(--fg)}
+.seg2 button{all:unset;cursor:pointer;text-align:center;white-space:nowrap;padding:9px 5px;font-size:.88rem;font-weight:400;color:var(--fg)}
 .seg2 button+button{border-left:1px solid var(--line)}
 /* Flash card choices: the chosen one is an outlined pill inside the row, so Start is the only solid button. */
 .revpanel .seg2{padding:2px}
@@ -915,8 +922,8 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .pills button:disabled{opacity:.4;cursor:default}
 .pills button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .pills.hows{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
-.pills.lists{flex-wrap:nowrap}.pills.lists button.base{flex:none;font-weight:700;letter-spacing:.01em;color:var(--gold2);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold2) 60%,transparent)}
-.pills.lists button.base[aria-pressed="true"]{color:var(--gold2);background:color-mix(in srgb,var(--gold2) 14%,var(--bg));box-shadow:inset 0 0 0 2px var(--gold2),0 0 12px color-mix(in srgb,var(--gold2) 45%,transparent)}.pills.lists button{min-width:0;overflow:hidden;text-overflow:ellipsis;padding-left:10px;padding-right:10px}
+.pills.lists{flex-wrap:nowrap}.pills.lists button.base{flex:none;font-weight:700;letter-spacing:.01em;color:var(--base,var(--gold2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--base,var(--gold2)) 60%,transparent)}
+.pills.lists button.base[aria-pressed="true"]{color:var(--base,var(--gold2));background:color-mix(in srgb,var(--base,var(--gold2)) 14%,var(--bg));box-shadow:inset 0 0 0 2px var(--base,var(--gold2)),0 0 12px color-mix(in srgb,var(--base,var(--gold2)) 45%,transparent)}.pills.lists button{min-width:0;overflow:hidden;text-overflow:ellipsis;padding-left:10px;padding-right:10px}
 .pills.hows button{padding:9px 2px;font-size:.95rem}
 .pills.counts button{flex:1 1 0;padding:8px 4px}
 .pills.counts.solo{justify-content:center}.pills.counts.solo button{flex:0 1 60%}
@@ -953,7 +960,7 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .havekey{float:right;color:var(--accent)}
 .setchip.have::after{content:" ✓";color:var(--accent)}.setchip.top.have small::after{content:" ✓";color:var(--accent)}.setchip.top.have::after{content:none}
 .signcard p{margin:0}.signcard input{font:inherit;font-size:1.05rem;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);width:100%;box-sizing:border-box}
-.linkbtn{all:unset;cursor:pointer;justify-self:center;padding:8px;color:var(--accent);font-weight:600}
+.linkbtn{all:unset;cursor:pointer;justify-self:center;padding:8px;color:var(--accent);font-weight:600}.linkbtn.frsign{justify-self:start;padding:6px 0;font-weight:500}
 .wdot .settag{color:var(--accent);opacity:.85}
 .wdot .newtag{font-size:.83rem;font-weight:600;color:var(--muted);margin-right:6px;letter-spacing:.02em}
 .goalpills{margin:10px 0 4px}.goalpills button{padding:10px 12px;font-size:1rem}
@@ -1011,8 +1018,8 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .dprow.fixed{opacity:.75;cursor:default}
 .dprow small{margin-left:8px;font-size:.8rem;color:var(--muted)}.dpacts{margin-top:4px}.dpacts .btn{flex:1}.dprm{margin-top:8px}
 .basecap{margin:2px 0 8px;text-align:center;font-size:.92rem;color:var(--muted)}
-.basetip{position:fixed;z-index:30;padding:8px 12px;border-radius:10px;background:var(--surface);color:var(--gold2);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold2) 60%,transparent),0 6px 20px rgba(0,0,0,.25);font-size:.92rem;opacity:0;transform:translateY(-4px);transition:opacity .2s,transform .2s;pointer-events:none}.basetip.on{opacity:1;transform:none}
-.sortnudge{display:block;width:100%;min-height:46px;margin:4px 0 8px;border:1px dashed color-mix(in srgb,var(--gold2) 60%,transparent);border-radius:12px;background:transparent;color:var(--gold2);font:inherit;font-size:.95rem;font-weight:500;cursor:pointer}
+.basetip{position:fixed;z-index:30;padding:8px 12px;border-radius:10px;background:var(--surface);color:var(--base,var(--gold2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--base,var(--gold2)) 60%,transparent),0 6px 20px rgba(0,0,0,.25);font-size:.92rem;opacity:0;transform:translateY(-4px);transition:opacity .2s,transform .2s;pointer-events:none}.basetip.on{opacity:1;transform:none}
+.sortnudge{display:block;width:100%;min-height:46px;margin:4px 0 8px;border:1px dashed color-mix(in srgb,var(--base,var(--gold2)) 60%,transparent);border-radius:12px;background:transparent;color:var(--base,var(--gold2));font:inherit;font-size:.95rem;font-weight:500;cursor:pointer}
 .selrow .btn{flex:1;white-space:nowrap;padding-left:8px;padding-right:8px}.selrow:first-child .btn{flex:none}
 .lookbtn{font-size:.95rem;padding:11px}
 .lookrow{display:flex;gap:8px}.lookrow .lookbtn{flex:1;width:auto}
@@ -1046,7 +1053,9 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .revcard{display:grid;gap:14px}
 .revchars{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 /* Typing on a card: only the characters, the clue line and the boxes; the tone buttons sit on the keyboard. */
-#reviewScreen.typing .revhead,#reviewScreen.typing .revsub,#reviewScreen.typing #revBar{display:none}
+#reviewScreen.typing .revhead,#reviewScreen.typing .revsub{display:none}
+/* v64: the card's buttons ride just above the keyboard (kbFit sets the bottom) */
+#reviewScreen.typing #revBar{padding-bottom:8px;padding-top:8px}#reviewScreen.typing #revBar .revbartop{display:none}
 /* v42: the tab bar stays under the cards (hidden while typing); the card's bottom bar sits on top of it */
 body.oncards .revbar{bottom:calc(var(--tabh) + var(--bot));padding-bottom:12px}
 body.oncards #reviewScreen.screen.sub{padding-bottom:calc(var(--bot) + var(--tabh) + 170px)}
@@ -1154,7 +1163,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .pyprev{justify-self:start;margin:-2px 0 0 calc(5.2em + 8px);font-size:1.1rem;padding:4px 10px;border-radius:8px;border:1px dashed var(--line);background:var(--surface);cursor:pointer}
 .pyprev span{font-size:.8rem;color:var(--muted);margin-left:4px}
 .guessacts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.guessacts.three{grid-template-columns:1fr 1fr 1fr}
+.guessacts.three{grid-template-columns:1fr 1fr 1fr}.guessacts.three.play{grid-template-columns:52px 1fr 1fr 1fr}.guessacts .replay{padding:0;display:flex;align-items:center;justify-content:center}.guessacts .replay svg{width:22px;height:22px}
 .guessacts.one{grid-template-columns:1fr}
 .hintbox{display:grid;gap:6px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,transparent);font-size:.92rem}
 .hintbox p{margin:0}
@@ -1186,7 +1195,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .setsec>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:10px;padding:14px 16px;position:relative}
 .setsec>summary::-webkit-details-marker{display:none}
 .setsec>summary b{font-weight:600;flex:none}
-.setsec>summary .sum{flex:1;min-width:0;text-align:right;color:var(--muted);font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:18px}
+.setsec>summary .sum{flex:1;min-width:0;text-align:right;color:var(--muted);font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
 .setsec>summary::after{content:"";position:absolute;right:16px;top:50%;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .2s}
 .setsec[open]>summary::after{transform:translateY(-30%) rotate(225deg)}
 .setsec>.panel,.setsec>.setbody,.setsec>.seg{margin:0 12px 14px}
@@ -1628,6 +1637,8 @@ const $ = id => document.getElementById(id);
 // v54: in the iPhone app the page is local (capacitor://localhost); the server and shared links stay on the web.
 const NATIVE = !/^https?:$/.test(location.protocol) || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const WEB = NATIVE ? "https://radical-tawny.vercel.app" : location.origin, API = NATIVE ? WEB : "";
+// v64: a data or list file the app was built without (a live update can need one) comes from the website instead
+const getFile = path => { const web = () => fetch(`${WEB}/${path}`); return fetch(path).then(r => r.ok || !NATIVE ? r : web(), e => { if (NATIVE) return web(); throw e; }); };
 let storeHook = null;  // v58: settings and the open text note when they change, so they sync (see syncLive)
 const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } },
@@ -1712,7 +1723,7 @@ function binBtn(cls, label, ask, fn, noCancel) {
 }
 const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>';
 // ---- the menu (on every page): Settings, How it works, About, Send feedback. The tabs aren't in it (the tab
-// bar has them). Pages opened from the menu say "‹ Menu" and go back to it.
+// bar has them).
 const MENU = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6.5h16v2H4zm0 4.5h16v2H4zm0 4.5h16v2H4z"/></svg>';
 function openMenu() {
   $("menu").hidden = false; $("menu").querySelector("[data-go]:not([hidden])").focus();
@@ -1735,7 +1746,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v63";
+const APP_VERSION = "v64";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2126,37 +2137,37 @@ const pyWordHTML = s => String(s || "").split(/(\s+|['’-])/).map(p => /^[\s'�
 
 // ================= colors
 const ROLES = ["meaning","sound","idea","idea2","radical","whole","part1","part2","part3"];
-// Themes: the brand is Scholar's Ink; the others are alternatives. Each sets the page tones and the part colors,
+// Themes (v64: `base` is the Basecamp color, picked to stand apart from each theme's accent): the brand is Scholar's Ink; the others are alternatives. Each sets the page tones and the part colors,
 // in dark and light. Part order: meaning, sound, idea, idea2, radical, whole (picture), part1, part2 (origin unclear), part3 (unassigned strokes, shown as origin unclear).
 const PALETTES = {
   scholar: { name: "Scholar's Ink", blurb: "Night-blue ink, jade and celadon", sheen: "#F2FFF9", sheenA: .55,
-    darkUI:  { bg: "#0A0F14", surface: "#111821", line: "#1F2C3A", fg: "#E3ECEF", muted: "#8597A3", accent: "#7FD3B6", accent2: "#55A3FB", grid: "#1A2531" },
-    lightUI: { bg: "#EEF2F0", surface: "#FBFCFB", line: "#D3DCDA", fg: "#14202A", muted: "#5A6B73", accent: "#0F7C5C", accent2: "#1068CC", grid: "#E2E9E7" },
+    darkUI:  { bg: "#0A0F14", surface: "#111821", line: "#1F2C3A", fg: "#E3ECEF", muted: "#8597A3", accent: "#7FD3B6", accent2: "#55A3FB", grid: "#1A2531", base: "#D1A24B" },
+    lightUI: { bg: "#EEF2F0", surface: "#FBFCFB", line: "#D3DCDA", fg: "#14202A", muted: "#5A6B73", accent: "#0F7C5C", accent2: "#1068CC", grid: "#E2E9E7", base: "#A0661A" },
     dark:  ["#2AE69F","#55A3FB","#9D7CFC","#F4C25A","#2AE69F","#EF9837","#8E9C9A","#8E9C9A","#46535F"],
     light: ["#048B61","#1068CC","#562BDE","#A97D15","#048B61","#A96715","#5E6B69","#5E6B69","#A3AEB6"] },
   lacquer: { name: "Lacquer & Gold", blurb: "Black lacquer, cinnabar, gold leaf and jade", sheen: "#FFF6DC", sheenA: .5,
-    darkUI:  { bg: "#0E0A09", surface: "#171110", line: "#2E2320", fg: "#F1E7DA", muted: "#A08F80", accent: "#D9A84E", accent2: "#34C48E", grid: "#231A18" },
-    lightUI: { bg: "#F5EFE7", surface: "#FFFCF7", line: "#E2D6C8", fg: "#2A1B16", muted: "#7A6658", accent: "#A0661A", accent2: "#11845A", grid: "#EDE3D7" },
+    darkUI:  { bg: "#0E0A09", surface: "#171110", line: "#2E2320", fg: "#F1E7DA", muted: "#A08F80", accent: "#D9A84E", accent2: "#34C48E", grid: "#231A18", base: "#34C48E" },
+    lightUI: { bg: "#F5EFE7", surface: "#FFFCF7", line: "#E2D6C8", fg: "#2A1B16", muted: "#7A6658", accent: "#A0661A", accent2: "#11845A", grid: "#EDE3D7", base: "#11845A" },
     dark:  ["#EC3B1E","#F9AD17","#34C48E","#9DC4EA","#EC3B1E","#EFE2C4","#B5875A","#B5875A","#5A4C45"],
     light: ["#C51D05","#A87104","#11845A","#3F74A8","#C51D05","#8A8172","#8A5A32","#8A5A32","#B3A59C"] },
   observatory: { name: "Observatory", blurb: "Midnight indigo, amber and violet", sheen: "iris", sheenA: .6,
-    darkUI:  { bg: "#090A16", surface: "#10122A", line: "#24274F", fg: "#ECEAF6", muted: "#9592B8", accent: "#B79BFF", accent2: "#FAA842", grid: "#191B3A" },
-    lightUI: { bg: "#F0F0F7", surface: "#FCFCFF", line: "#D9D9EA", fg: "#17172E", muted: "#5F5D80", accent: "#5B3FD0", accent2: "#BB6F05", grid: "#E5E5F2" },
+    darkUI:  { bg: "#090A16", surface: "#10122A", line: "#24274F", fg: "#ECEAF6", muted: "#9592B8", accent: "#B79BFF", accent2: "#FAA842", grid: "#191B3A", base: "#FAA842" },
+    lightUI: { bg: "#F0F0F7", surface: "#FCFCFF", line: "#D9D9EA", fg: "#17172E", muted: "#5F5D80", accent: "#5B3FD0", accent2: "#BB6F05", grid: "#E5E5F2", base: "#BB6F05" },
     dark:  ["#FAA842","#9470FB","#2EDFFA","#FB709C","#FAA842","#FBC65F","#8C8AA8","#8C8AA8","#3A3C5E"],
     light: ["#BB6F05","#5223F5","#048EA4","#D91F60","#BB6F05","#A97D04","#6E6C8C","#6E6C8C","#AAABC6"] },
   bauhaus: { name: "Bauhaus", blurb: "Red, yellow and blue on black, nothing wasted", sheen: "#FFFFFF", sheenA: .5,
-    darkUI:  { bg: "#111111", surface: "#1B1B1B", line: "#2C2C2A", fg: "#F2EFE8", muted: "#9A978F", accent: "#FFD23F", accent2: "#4C82F7", grid: "#1F1F1E" },
-    lightUI: { bg: "#F4F1EA", surface: "#FFFFFF", line: "#DDD8CD", fg: "#141414", muted: "#66625A", accent: "#C8200F", accent2: "#1F4FD1", grid: "#E9E5DC" },
+    darkUI:  { bg: "#111111", surface: "#1B1B1B", line: "#2C2C2A", fg: "#F2EFE8", muted: "#9A978F", accent: "#FFD23F", accent2: "#4C82F7", grid: "#1F1F1E", base: "#4C82F7" },
+    lightUI: { bg: "#F4F1EA", surface: "#FFFFFF", line: "#DDD8CD", fg: "#141414", muted: "#66625A", accent: "#C8200F", accent2: "#1F4FD1", grid: "#E9E5DC", base: "#1F4FD1" },
     dark:  ["#F0402F","#FFD23F","#4C82F7","#7FD3F8","#F0402F","#F2EFE8","#8A8A85","#8A8A85","#3A3A38"],
     light: ["#C8200F","#C29400","#1F4FD1","#2A8CC9","#C8200F","#141414","#9A968E","#9A968E","#C9C6BE"] },
   aurora: { name: "Aurora", blurb: "Magenta and green light over arctic night", sheen: "#E8FFF4", sheenA: .55,
-    darkUI:  { bg: "#071019", surface: "#0D1A26", line: "#1B2C3B", fg: "#E6F0F2", muted: "#8A9DAA", accent: "#7CF5B0", accent2: "#FF5C8A", grid: "#12212E" },
-    lightUI: { bg: "#EEF3F5", surface: "#FFFFFF", line: "#D3DEE3", fg: "#0E1A24", muted: "#56687A", accent: "#0F7E4E", accent2: "#B0164A", grid: "#E1E9ED" },
+    darkUI:  { bg: "#071019", surface: "#0D1A26", line: "#1B2C3B", fg: "#E6F0F2", muted: "#8A9DAA", accent: "#7CF5B0", accent2: "#FF5C8A", grid: "#12212E", base: "#FF5C8A" },
+    lightUI: { bg: "#EEF3F5", surface: "#FFFFFF", line: "#D3DEE3", fg: "#0E1A24", muted: "#56687A", accent: "#0F7E4E", accent2: "#B0164A", grid: "#E1E9ED", base: "#B0164A" },
     dark:  ["#FF5C8A","#7CF5B0","#56E3D9","#9475FF","#FF5C8A","#F0E6C8","#7E8E99","#7E8E99","#2E3D4A"],
     light: ["#8E0E35","#1BA868","#1A7FC0","#6B45D6","#8E0E35","#6B5A2E","#7A8790","#7A8790","#B6C2C9"] },
   riso: { name: "Risograph", blurb: "Fluorescent pink, sunflower and teal on newsprint", sheen: "#FFF0F6", sheenA: .5,
-    darkUI:  { bg: "#141216", surface: "#1D1B20", line: "#2F2C33", fg: "#F4EEE6", muted: "#9C95A0", accent: "#FF4F9A", accent2: "#4FE3D0", grid: "#221F25" },
-    lightUI: { bg: "#F6F1E9", surface: "#FFFDF8", line: "#E3DACD", fg: "#1A1720", muted: "#6B6470", accent: "#D81B6A", accent2: "#007A6E", grid: "#ECE5DA" },
+    darkUI:  { bg: "#141216", surface: "#1D1B20", line: "#2F2C33", fg: "#F4EEE6", muted: "#9C95A0", accent: "#FF4F9A", accent2: "#4FE3D0", grid: "#221F25", base: "#4FE3D0" },
+    lightUI: { bg: "#F6F1E9", surface: "#FFFDF8", line: "#E3DACD", fg: "#1A1720", muted: "#6B6470", accent: "#D81B6A", accent2: "#007A6E", grid: "#ECE5DA", base: "#007A6E" },
     dark:  ["#FF4F9A","#FFE04A","#4FE3D0","#6C8BFF","#FF4F9A","#FF8A3D","#8E8890","#8E8890","#3B3840"],
     light: ["#D81B6A","#A87F00","#007A6E","#3D5AFE","#D81B6A","#E2640F","#8B8590","#8B8590","#C4BEC8"] },
   original: { name: "Plain ink", blurb: "Drawn strokes in one ink, no color" },
@@ -2277,11 +2288,11 @@ try {
   toSimp = OpenCC.Converter({ from: "tw", to: "cn" });
 } catch (e) {}
 function loadShard(n) {
-  if (!shardLoads[n]) shardLoads[n] = fetch(`data/zh-${String(n).padStart(2, "0")}.json`).then(r => r.ok ? r.json() : {}).then(d => Object.assign(cache, d)).catch(() => {});
+  if (!shardLoads[n]) shardLoads[n] = getFile(`data/zh-${String(n).padStart(2, "0")}.json`).then(r => r.ok ? r.json() : {}).then(d => Object.assign(cache, d)).catch(() => {});
   return shardLoads[n];
 }
 function loadWords(n) {
-  if (!wordLoads[n]) wordLoads[n] = fetch(`data/w-${String(n).padStart(2, "0")}.json`).then(r => r.ok ? r.json() : {}).then(d => Object.assign(words, d)).catch(() => {});
+  if (!wordLoads[n]) wordLoads[n] = getFile(`data/w-${String(n).padStart(2, "0")}.json`).then(r => r.ok ? r.json() : {}).then(d => Object.assign(words, d)).catch(() => {});
   return wordLoads[n];
 }
 function ensure(chars) {
@@ -2553,7 +2564,7 @@ function drawn(text, size = 34, mark) {
 // hidden inside so copying, searching and textContent still work. Drawn lazily as it nears the screen. Controls
 // stay plain: one-character buttons (解 拼 繁 简), heading and menu marks, the tab bar and the brand. The Original
 // look keeps the font.
-const INK_SKIP = "#tabbar,#splash,#menu,.about,.ti,.uizh,.noink,.ink,svg,textarea,input,select,option,script,style,[contenteditable],.mi,.tz,.minihead,.topbrand,.railbrand,#reader,.line,.cell,.drawn,.revchars,.bigview,.tpchars,.tlcell,.tc,.fontglyph,.sizepop,#sizePop";
+const INK_SKIP = ".sc,.bloom,.resmark,#tabbar,#splash,#menu,.about,.ti,.uizh,.noink,.ink,svg,textarea,input,select,option,script,style,[contenteditable],.mi,.tz,.minihead,.topbrand,.railbrand,#reader,.line,.cell,.drawn,.revchars,.bigview,.tpchars,.tlcell,.tc,.fontglyph,.sizepop,#sizePop";
 const INK_RUN = /\p{Script=Han}+/gu;
 const inkIO = new IntersectionObserver(es => es.forEach(e => {
   if (!e.isIntersecting) return; inkIO.unobserve(e.target);
@@ -2622,11 +2633,11 @@ function setTab(id) {
   }
   tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); if (id === "trackScreen") renderTrack();
 }
-// Pages that can be opened from the menu: their Back says "‹ Menu" then (and reopens it), "‹ Back" otherwise.
+// Pages that can be opened from the menu (their Back always says "‹ Back").
 const MENU_PAGES = ["historyScreen", "settingsScreen", "aboutScreen", "adminScreen", "notesScreen"];
 function go(id) {
-  if (MENU_PAGES.includes(id)) { $(id).dataset.via = viaMenu ? "menu" : ""; const bk = $(id).querySelector(".topbar .back"); if (bk) bk.textContent = viaMenu ? "Menu" : "Back";
-    const mb = $(id).querySelector(".topbar .menubtn"); if (mb) mb.style.visibility = viaMenu ? "hidden" : ""; }  // ‹ Menu already goes back to it
+  // v64: pages opened from the menu say "‹ Back" too and go back to where you were, not to the menu (the ☰ stays)
+  if (MENU_PAGES.includes(id)) { const bk = $(id).querySelector(".topbar .back"); if (bk) bk.textContent = "Back"; }
   viaMenu = false;
   if (reading) stopReading(); stack.push(id); showOnly(id); $(id).scrollTop = 0; try { history.pushState({ r: stack.length }, ""); } catch (e) {} }
 function back() {
@@ -2636,7 +2647,6 @@ function back() {
   if (leaving === "reviewScreen") { curHow = null; contOk = true; catPicked = false; updateCounts(); }
   if (leaving === "settingsScreen") { saveSettings(); $("settingsScreen").querySelectorAll("details.setsec").forEach(d => d.open = false); }  // Settings opens folded next time
   showOnly(stack.length ? stack[stack.length - 1] : tab);
-  if ($(leaving).dataset.via === "menu") { $(leaving).dataset.via = ""; openMenu(); }
   if (!stack.length) endSession();
   if (!stack.length && tab === "wordsScreen") renderWords();
 }
@@ -3646,9 +3656,9 @@ let prebuilding = null;  // the region being built, while it runs
 async function prebuildPanel() {
   const box = $("prebuildPanel"); if (!box) return; box.innerHTML = "";
   const st = () => store.get("radical-prebuild", { tw: 0, cn: 0, made: 0, had: 0, failed: [] });
-  const words = (await fetch("lists/prebuild.txt").then(r => r.ok ? r.text() : "").catch(() => "")).split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#"));
+  const words = (await getFile("lists/prebuild.txt").then(r => r.ok ? r.text() : "").catch(() => "")).split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#"));
   const line = el("p", "note"), msg = el("p", "note"), N = words.length;
-  const paint = () => { const s = st(); line.textContent = `Taiwan ${s.tw.toLocaleString()} of ${N.toLocaleString()} · Mainland ${s.cn.toLocaleString()} of ${N.toLocaleString()}. Made ${s.made.toLocaleString()}, had ${s.had.toLocaleString()}${s.failed.length ? `, ${s.failed.length} failed (tried again at the end)` : ""}.`; };
+  const paint = () => { const s = st(); line.textContent = `Built here: Taiwan ${s.tw.toLocaleString()} of ${N.toLocaleString()} · Mainland ${s.cn.toLocaleString()} of ${N.toLocaleString()}. Made ${s.made.toLocaleString()}, had ${s.had.toLocaleString()}${s.failed.length ? `, ${s.failed.length} failed (tried again at the end)` : ""}.`; };
   const run = async r => {
     if (prebuilding) return; prebuilding = r; draw();
     const conv = r === "tw" ? toTrad : (x => x), one = async ws => {
@@ -3669,16 +3679,26 @@ async function prebuildPanel() {
     } catch (e) { msg.textContent = e.message + " Tap again to carry on."; }
     prebuilding = null; if (box.isConnected) draw();
   };
+  // v64: the running tally from the server: every stored card on the list, however it was made (studying or this button)
+  const stored = el("p", "note tally", "Stored: …");
+  const count = async () => { try { const t = await ownerPost({ action: "cardtally" }); stored.textContent = `Stored: Taiwan ${t.tw.toLocaleString()} of ${t.of.toLocaleString()} · Mainland ${t.cn.toLocaleString()} of ${t.of.toLocaleString()} · ${t.all.toLocaleString()} cards in all.`; } catch (e) { stored.textContent = "Stored: " + e.message; } };
+  const recount = async b => {
+    b.disabled = true; let from = 0;
+    try { for (;;) { const r = await ownerPost({ action: "cardtally", op: "recount", from }); b.textContent = `Recounting… ${Math.min(r.total, from + 200)} of ${r.total}`; if (r.next == null) break; from = r.next; } } catch (e) { stored.textContent = e.message; }
+    b.textContent = "Recount"; b.disabled = false; count();
+  };
   const draw = () => {
     box.innerHTML = ""; paint();
-    box.append(el("p", "note", "Cards for the 5,000 most common words, shared with everyone. Their sentences explain for free. Very roughly $100 to $200 a region. Keep this page open; it picks up where it stopped."), line);
+    const rc = btn("Recount", "btn ghost small", () => recount(rc));
+    box.append(stored, el("p", "note", "Studying fills this in for free. Recount once to include cards made before v64."), rc);
+    box.append(el("p", "note", "Or build them all now (very roughly $100 to $200 a region). Keep this page open; it picks up where it stopped."), line);
     const row = el("div", "row");
     if (prebuilding) row.append(btn(`Stop (${prebuilding === "tw" ? "Taiwan" : "Mainland"} running…)`, "btn ghost small", () => { prebuilding = null; msg.textContent = "Stopping after this batch…"; }));
     else row.append(btn("Build Taiwan", "btn small", () => run("tw")), btn("Build Mainland", "btn small", () => run("cn")));
     box.append(row, msg);
   };
   if (!N) { box.append(el("p", "note", "Couldn't load the word list.")); return; }
-  draw();
+  draw(); count();
 }
 function signOut() {
   setSession(null); store.set("radical-synced", 0); store.set("radical-owner", null);
@@ -4399,6 +4419,7 @@ function setDayEnd(h) {
 }
 function localDay(t = Date.now()) { const d = new Date(t - dayEndAt(t) * 36e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 function midnight(t = Date.now()) { const h = dayEndAt(t), d = new Date(t - h * 36e5); d.setHours(0, 0, 0, 0); return d.getTime() + h * 36e5; }  // the start of the app's day
+const hourShort = h => { const x = (h + 24) % 24; return `${x % 12 || 12}${x < 12 ? "a" : "p"}`; };  // as on the dial
 const hourName = h => { const x = (h + 24) % 24; return x === 0 ? "midnight" : `${x % 12 || 12} ${x < 12 ? "am" : "pm"}`; };
 // Reading cards use w.srs; writing cards keep their own schedule in w.wsrs, so writing a word badly
 // doesn't push back a word you read fine (and the other way round).
@@ -4443,7 +4464,9 @@ function nextIvl(s, g, slip) {
 const isLearned = w => !!w.skip || ["srs", "wsrs", "lsrs"].some(k => w[k] && w[k].ivl >= 21);
 function logDay(field, n = 1) {
   if (!n) return;
-  const d = store.get("radical-days", {}), k = localDay(); d[k] = d[k] || {}; d[k][field] = (d[k][field] || 0) + n;
+  const d = store.get("radical-days", {}), k = localDay(); d[k] = d[k] || {};
+  if (field === "q" && !d[k].q && typeof cardsDone === "function") setTimeout(cardsDone, 0);  // v64: the day's cards just got done
+  d[k][field] = (d[k][field] || 0) + n;
   if (field === "w" && !d[k].rq && d[k].w >= readGoal()) d[k].rq = 1;  // v48: the day's reading target met
   const keys = Object.keys(d).sort(); while (keys.length > 400) delete d[keys.shift()];
   store.set("radical-days", d);
@@ -4519,6 +4542,23 @@ function paintReadGoal() {
 }
 // v57: the ring swells and settles, and a dozen gold sparks fly off its rim. v60: slower (about 5 seconds), with
 // three soft rising notes (quieter than Mastered's sweep).
+// v64: the day's cards are done: 練 gets the reading ring's gold burst and notes (a gold ring that comes and goes), and
+// after day 5 of use the store's own rating sheet may ask once.
+function cardsDone() {
+  if (performance.now() < 4000) return;  // never on load
+  const tz = document.querySelector('#tabbar [data-tab="wordsScreen"] .tz');
+  if (tz && !tz.querySelector(".cardring")) {
+    tz.insertAdjacentHTML("beforeend", '<svg class="readring met cardring" viewBox="0 0 40 40" aria-hidden="true"><circle class="rr1" cx="20" cy="20" r="19" pathLength="100" stroke-dasharray="100 0"/></svg>');
+    const ring = tz.querySelector(".cardring"); ringBurst(ring); setTimeout(() => ring.remove(), 5600);
+  }
+  setTimeout(askRating, 6000);
+}
+function askRating() {
+  if (store.get("radical-rated", false) || !(NATIVE && window.Capacitor && Capacitor.isPluginAvailable && Capacitor.isPluginAvailable("InAppReview"))) return;
+  if (Object.values(store.get("radical-days", {})).filter(dayUsed).length < 5 || !$("reviewScreen").hidden && revSide === null) return;
+  const r = plug("InAppReview"); if (!r) return;
+  store.set("radical-rated", true); r.requestReview().catch(() => {});  // Apple decides whether it shows; asked once
+}
 function ringBurst(ring) {
   play("ring");
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -4714,7 +4754,7 @@ function renderTrack() {
     + `<tr><th>Words mastered</th><td>${num(lYear(y))}</td><td>${cell(lYear(y - 1))}</td><td>${num(Object.keys(learned).length)}</td></tr></tbody></table>`;
   box.append(yt);
   if (session) { const am = el("div", "amwrap"); box.append(am); aiMeter(am); }  // v61: the AI meter
-  if (session) box.append(friendsBox());  // signed out: no Friends box (it needs an account)
+  box.append(friendsBox());  // signed out: the heading and a sign-in line (v64)
   checkMilestones();
 }
 // Recognized (v) and mastered (v2) words over time, rebuilt from the two dated lists.
@@ -4787,7 +4827,7 @@ const whoLine = x => { const r = x.real || ""; return x.name && r && x.name !== 
 function paintFriends(b) {
   const f = store.get("radical-friends", null);
   b.innerHTML = '<span class="trl">Friends</span>';
-  if (!session) return;
+  if (!session) { const p = btn("Sign in to see your friends' progress", "linkbtn frsign", () => signInSheet({ then: () => typeof renderTrack === "function" && renderTrack(), why: "follow your friends" })); b.append(p); return; }
   if (!f) { b.append(el("p", "trs frerr", "Getting your code…")); return; }
   // Requests first: Accept connects you; Decline waits five seconds (Undo) before it's sent
   (f.requests || []).forEach(x => {
@@ -5820,7 +5860,7 @@ const THEMES = ["Food", "Travel", "Family", "Work", "Feelings", "Time"];  // bef
 // common characters, each with a word, and words two characters shared came once (Top 1,000 gave about 880).
 let commonList = null, commonRows = null;
 function loadCommon() {
-  if (!commonList) commonList = fetch("lists/topwords.txt").then(r => r.ok ? r.text() : "").catch(() => "")
+  if (!commonList) commonList = getFile("lists/topwords.txt").then(r => r.ok ? r.text() : "").catch(() => "")
     .then(t => commonRows = t.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#")).map((word, i) => ({ word, rank: i + 1 })))
     .then(rows => { remapTop(rows); return rows; });
   return commonList;
@@ -5835,7 +5875,7 @@ function remapTop(rows) {
 }
 // The character list (lists/common.tsv) is still used for "In a common word" on one-character cards.
 let charList = null;
-const loadChars = () => charList || (charList = fetch("lists/common.tsv").then(r => r.ok ? r.text() : "").catch(() => "")
+const loadChars = () => charList || (charList = getFile("lists/common.tsv").then(r => r.ok ? r.text() : "").catch(() => "")
   .then(t => t.split("\n").filter(l => l && !l.startsWith("#")).map(l => { const [c, word] = l.trim().split("\t"); return { c, word }; })));
 function commonSize() {
   const t = store.get("radical-common", null); if (t) return t.size || 0;
@@ -6402,7 +6442,7 @@ const isEnglish = t => !/\p{Script=Han}/u.test(t) && /[A-Za-z]/.test(t);
 const enLoads = {};
 async function enMatches(text) {
   const k = text.toLowerCase().trim().replace(/\s+/g, " ").replace(/^(to|a|an|the) /, ""), f = /^[a-z]/.test(k) ? k[0] : "_";
-  if (!enLoads[f]) enLoads[f] = fetch(`data/en-${f}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  if (!enLoads[f]) enLoads[f] = getFile(`data/en-${f}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({}));
   const d = await enLoads[f], got = d[k] || (/s$/.test(k) && d[k.slice(0, -1)]) || (/es$/.test(k) && d[k.slice(0, -2)]) || [];
   const ws = [...new Set(got.map(x => conv(x[0])))];
   await ensure(ws.join(""));
@@ -7018,7 +7058,7 @@ function showFront() {
   }
   const w = rq[0];
   const m0 = howOf(w);
-  prog.innerHTML = `${rDone + 1}/${rDone + rq.length}${w[srsKey(w)] ? "" : ' <span class="ptag">new</span>'}${(curHow || revHow) === "mix" ? ` <span class="ptag">${{ read: "Read", write: "Write", listen: "Listen" }[m0]}</span>` : ""}${inList(w) ? "" : ` <span class="ptag">${esc(keyName(keyOf(w)))}</span>`}`;
+  prog.innerHTML = `${rDone + 1}/${rDone + rq.length}${w[srsKey(w)] ? "" : ' <span class="ptag">new</span>'}${(curHow || revHow) === "mix" ? ` <span class="ptag">${{ read: "Read", write: "Write", listen: "Listen" }[m0]}</span>` : ""}${inList(w) ? "" : ` <span class="ptag pdeck">${esc(keyName(keyOf(w)))}</span>`}`;
   revSide = null;
   $("revScript").replaceChildren(scriptToggle(async () => {  // 繁/简 for the whole set; the card you're on is redrawn
     const back = revSide; await ensure(rq.map(x => conv(x.word) + conv(x.context || "") + exList(x).map(e => conv(e.example)).join("")).join(""));
@@ -7108,7 +7148,10 @@ function showFront() {
   showFront.reveal = reveal;
   if (!listen) big.after(hintBox);
   box.append(form);
-  revBar("", null, "", null, [btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know")), btn("Show answer", "btn ghost", () => reveal("show"))], "guessacts three");
+  // v64: Listen cards keep a 🔊 in the bar, so the word can be played again with the keyboard up (it keeps the focus)
+  const replay = listen ? btn("", "btn ghost replay", () => sayPaced(conv(w.word))) : null;
+  if (replay) { replay.innerHTML = SPK; replay.setAttribute("aria-label", "Play again"); ["pointerdown", "mousedown"].forEach(t => replay.addEventListener(t, e => e.preventDefault())); }
+  revBar("", null, "", null, [...(replay ? [replay] : []), btn("Check", "btn", () => reveal("check")), btn("I know it", "btn ghost", () => reveal("know")), btn("Show answer", "btn ghost", () => reveal("show"))], replay ? "guessacts three play" : "guessacts three");
   const py = $("gPy"), mean = $("gMean");
   // Tones: a number typed after a syllable (xun4) marks it at once (xùn); 5 clears the mark. The tone boxes on the
   // right edge (1 ˉ 2 ˊ 3 ˇ 4 ˋ) do the same for the syllable before the cursor; they appear once there's a vowel.
@@ -7154,10 +7197,12 @@ function kbFit() {
   const kb = vv ? innerHeight - vv.height : 0, typing = focused && kb > 120;
   scr.classList.toggle("typing", typing);
   const big = live && st.card.querySelector(".revchars");
-  if (!typing) { scr.style.height = ""; scr.style.bottom = ""; if (big) big.style.removeProperty("--cs"); return; }
+  const bar = $("revBar");
+  if (!typing) { scr.style.height = ""; scr.style.bottom = ""; scr.style.paddingBottom = ""; bar.style.bottom = ""; if (big) big.style.removeProperty("--cs"); return; }
   scr.style.height = vv.height + "px"; scr.style.bottom = "auto"; window.scrollTo(0, 0);
+  bar.style.bottom = Math.max(0, innerHeight - vv.height - vv.offsetTop) + "px"; scr.style.paddingBottom = bar.offsetHeight + 12 + "px";
   const topH = scr.querySelector(".topbar").offsetHeight, form = st.card.querySelector("form.guess"), hint = st.card.querySelector(".cluespot");
-  const rest = (form ? form.offsetHeight : 0) + (hint ? hint.offsetHeight : 0) + 56;
+  const rest = (form ? form.offsetHeight : 0) + (hint ? hint.offsetHeight : 0) + bar.offsetHeight + 56;
   if (big) {
     big.style.removeProperty("--cs");
     const natural = (big.querySelector("svg,.fontglyph,.slotbox") || big).getBoundingClientRect().height || 140;
@@ -7254,7 +7299,7 @@ function writeFront(w) {
       }
     });
   };
-  // Show this one: the finished character goes on the pad at once, in its colors, and locks (no ✓, since you didn't
+  // Show this character: the finished character goes on the pad at once, in its colors, and locks (no ✓, since you didn't
   // write it); all its strokes count as hinted. ▶ Watch it drawn plays the stroke order, as often as you like.
   const showChar = () => {
     if (!writer || showing) return;
@@ -7269,13 +7314,16 @@ function writeFront(w) {
     coach.innerHTML = lead ? lead.replace(/ · $/, "") : "";
     setBar(false, more);  // the last one waits for See answer, the same as writing it yourself
   };
-  // The bottom bar: slim while you write (Show this one for the character on the pad, Show answer for the whole
+  // The bottom bar: slim while you write (Show this character for the one on the pad, Show whole word for the whole
   // word); after a character, just the way forward (the pad shows what happened).
   function setBar(writing, more) {
     if (writing) {
-      revBar("", "Show this one", "⟳", showChar, [], "guessacts");  // the coach line already says what to do
-      const all = btn("", "btn ghost small flipbtn", () => reveal("show")); all.innerHTML = "<i>⤓</i>Show answer";
-      $("revBar").querySelector(".revbartop").append(all);
+      // v64: names that say which; a one-character word has only Show answer (the two would be the same)
+      if (chars.length > 1) revBar("", "Show this character", "⟳", showChar, [], "guessacts");  // the coach line already says what to do
+      else revBar("", null, "", null, [], "guessacts");
+      const all = btn("", "btn ghost small flipbtn", () => reveal("show")); all.innerHTML = chars.length > 1 ? "<i>⤓</i>Show whole word" : "<i>⤓</i>Show answer";
+      const top = $("revBar").querySelector(".revbartop") || $("revBar").appendChild(el("div", "revbartop", '<span class="rl"></span>'));
+      top.append(all); top.classList.toggle("two", chars.length > 1);
     } else revBar("", null, "", null, [btn(more ? "Next character ›" : "See answer", "btn", () => more ? nextChar() : reveal("write"))], "guessacts one");
   }
   nextChar();
@@ -7660,8 +7708,8 @@ async function showTour(fromMenu) {
   await ensure(TOURS.map(p => p.chars).join("") + conv(TOURS.map(p => p.chars).join("")));
   const sheet = el("div", "sheet tour"), card = el("div", "sheetcard tourcard");
   let i = 0, stop = () => {};
-  const close = () => { stop(); if ("speechSynthesis" in window) speechSynthesis.cancel(); sheet.remove(); store.set("radical-tour-seen", true); if (fromMenu === true) openMenu(); else if (!store.get("radical-goal-asked", false)) setTimeout(askGoal, 300); };
-  const last = fromMenu === true ? "Back to menu" : fromMenu ? "Done" : "Start reading";
+  const close = () => { stop(); if ("speechSynthesis" in window) speechSynthesis.cancel(); sheet.remove(); store.set("radical-tour-seen", true); if (!fromMenu && !store.get("radical-goal-asked", false)) setTimeout(askGoal, 300); };
+  const last = fromMenu ? "Done" : "Start reading";
   const paint = () => {
     stop(); card.innerHTML = "";
     const p = TOURS[i], page = el("div", "tourpage"), stage = el("div", "tstage");
@@ -7704,7 +7752,7 @@ function setSums() {
     modes: goal.map(m => HOW_NAME[m]).join(", ") + (store.get("radical-badge", true) ? "" : " · no red number"),
     sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
     speech: `${PACES.find(x => x[0] === sayPace)[1]} · speed ${Math.round(rate * 100)}%`,
-    daily: `${{ cards: `${dailyMax()} cards`, read: `${readGoal()} words` }[streakRule()] || `${dailyMax()} cards ${streakRule() === "both" ? "and" : "or"} ${readGoal()} words`} · ends ${hourName(dayEndNow())}`,
+    daily: `${{ cards: `${dailyMax()} cards`, read: `${readGoal()} words` }[streakRule()] || `${dailyMax()} cards ${streakRule() === "both" ? "&" : "or"} ${readGoal()} words`} · ${hourShort(dayEndNow())}`,  // v64: short, so it fits a phone
     tiles: trackTiles().map(k => TILES[k][0]).join(", ") };
   document.querySelectorAll("[data-sum]").forEach(x => x.textContent = S[x.dataset.sum] || "");
 }
