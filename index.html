@@ -219,7 +219,7 @@ p.busy{margin:-4px 4px 0}
 .minibar>*{flex:none}
 .minibar .enbtn{white-space:nowrap;padding:0 7px}
 .minibar .enbtn [lang=zh]{font-family:var(--font-zh);font-size:.9rem;font-weight:600}
-.minibar .enbtn[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 12%,var(--surface));border-color:var(--accent)}
+.minibar .enbtn[aria-pressed="true"]{background:color-mix(in srgb,var(--idea) 12%,var(--surface));border-color:var(--idea);color:var(--idea)}  /* v69: one on-look with ENG and 解 */
 .minext{font-size:.95rem}.minext.busy{opacity:.5}
 .minipop,.minidial{display:grid;gap:8px;padding:2px 2px 4px}
 .minipop .sizerow,.minidial .sizerow{display:flex;align-items:center;gap:8px}
@@ -328,7 +328,8 @@ p.busy{margin:-4px 4px 0}
 .odo i{font-style:normal;height:1.25em}
 @keyframes odo{from{transform:translateY(-1.25em)}to{transform:translateY(0)}}
 @media (prefers-reduced-motion:reduce){.revscore .sc.glow{animation:none}.odo>span{animation:none;transform:none}}
-.sc.ok{color:var(--on)}.sc.part{color:var(--part,#E2B33C)}.sc.no{color:var(--no,#E5533D)}
+.sc.ok{color:var(--on)}
+.btn.small.wasright{background:transparent;color:var(--on);border:1.5px solid var(--on);border-radius:8px;box-shadow:none;text-shadow:none;font-weight:600}.sc.part{color:var(--part,#E2B33C)}.sc.no{color:var(--no,#E5533D)}
 /* The answer flourish: 對, 半 or 錯 blooms in the middle of the screen like ink spreading, then fades (never blocks a tap). */
 .bloom{position:fixed;left:50%;top:42%;z-index:60;pointer-events:none;font-family:var(--font-zh);font-weight:700;font-size:min(46vw,240px);line-height:1;transform:translate(-50%,-50%);opacity:0;animation:bloom 2s cubic-bezier(.2,.7,.3,1) forwards}
 .bloom.ok{color:var(--on)}.bloom.part{color:var(--part,#E2B33C)}.bloom.no{color:var(--no,#E5533D)}
@@ -549,7 +550,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .trans{margin:-2px 0 4px;padding:8px 12px;border-left:3px solid var(--accent);font-size:.96rem;background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:0 8px 8px 0}
 .loading{color:var(--muted);font-size:.92rem}
 .exbtn{white-space:nowrap}.exbtn [lang=zh]{font-family:var(--font-zh);font-size:.9rem;font-weight:600}
-.exbtn.on,.enbtn.on{border-color:var(--idea);color:var(--idea)}
+.exbtn.on,.enbtn.on{border-color:var(--idea);color:var(--idea);background:color-mix(in srgb,var(--idea) 12%,var(--surface))}
 .linectl{flex-wrap:nowrap}
 .explain{margin:-2px 0 6px;padding:9px 12px;border-left:3px solid var(--idea);font-size:.92rem;line-height:1.5;background:color-mix(in srgb,var(--idea) 7%,transparent);border-radius:0 8px 8px 0;display:grid;gap:6px}
 .explain p,.explain ul{margin:0}.explain ul{padding-left:1.1em;display:grid;gap:3px}
@@ -1436,7 +1437,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="lookhead"><h2 class="revtitle">Review <span class="note" id="lookProg"></span></h2>
       <button type="button" class="switch small" id="shuffleSw" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Shuffle</button></div>
     <div id="lookCard" class="revcard lookcard"></div>
-    <div class="looknav"><button type="button" class="btn ghost" id="lookPrev">‹ Previous</button><button type="button" class="btn" id="lookNext">Next ›</button></div>
+    <div class="looknav"><button type="button" class="btn ghost" id="lookPrev">‹ Previous card</button><button type="button" class="btn" id="lookNext">Next card ›</button></div>
   </div>
 </section>
 
@@ -2826,7 +2827,7 @@ function buildLine(lineText, onTap, withEN = true) {
   // 解 Explain: the sentence's structure, its grammar points and any word used in a less obvious sense. The button says
   // "解 Explain" until it has been used a few times, then just 解.
   if (/\p{Script=Han}/u.test(lineText)) {
-    const ex = el("button", "enbtn exbtn", store.get("radical-explain-uses", 0) >= 3 ? '<span lang="zh">解</span>' : '<span lang="zh">解</span> Explain');
+    const ex = el("button", "enbtn exbtn", '<span lang="zh">解</span>');
     ex.type = "button"; ex.title = "Explain this sentence's grammar"; ex.onclick = e => { e.stopPropagation(); explainLine(lineText, line, ex); };
     ctl.append(ex);
   }
@@ -2968,7 +2969,7 @@ function miniReader(text, mark, en, opts = {}) {
     if (next && next.classList.contains("trans")) { next.remove(); enb.textContent = "ENG"; enb.classList.remove("on"); return; }
     const t = el("p", "trans", esc(en)); t.lang = "en"; line.after(t); enb.textContent = "Hide"; enb.classList.add("on");
   };
-  const exb = el("button", "enbtn exbtn", store.get("radical-explain-uses", 0) >= 3 ? '<span lang="zh">解</span>' : '<span lang="zh">解</span> Explain');
+  const exb = el("button", "enbtn exbtn", '<span lang="zh">解</span>');
   exb.type = "button"; exb.title = "Explain this sentence's grammar"; exb.hidden = !/\p{Script=Han}/u.test(text);
   exb.onclick = e => { e.stopPropagation(); explainLine(text.split(/\n+/)[0], lastLine(), exb); };
   // 字: text size, the same setting as the reader's 字字.
@@ -3596,7 +3597,7 @@ function aiOutSheet(auto, why) {
     : ["Today's AI is used up.", `It comes back tomorrow. ${keep}`];
   card.append(el("h3", "", h), el("p", "", p));
   if (why === "trial" && payOn() && !unlocked()) card.append(btn("Get Radical", "btn", () => { close(); payCard(); }));
-  card.append(btn("OK", "btn ghost", close)); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
+  card.append(btn("Close", "btn ghost", close)); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
 // Heads-ups: 2 days before a free trial ends (the web's, or Apple's on a subscription), and the card once a day for
 // anyone without Radical when the app opens
@@ -3843,7 +3844,7 @@ function noticeCard(n, preview) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard noticecard"), close = () => sheet.remove();
   card.append(el("span", "trl", `Notes from David${preview ? " · preview" : ""}`), noteBody(n.text));
   if (n.deck) card.append(noteDeckBtn(n.deck, close));
-  card.append(btn("OK", "btn wide", close));
+  card.append(btn("Close", "btn ghost wide", close));
   if (!preview) card.append(btn("All notes", "btn ghost small", () => { close(); openNotes(); }));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
@@ -3936,7 +3937,7 @@ $("aiTally").onclick = () => {
     + `<p><b>By person, this month</b></p>` + rows(a.byPerson, p => `<tr><td>${esc(p.who)}</td><td>${p.calls} · ${money(p.month)}${p.today ? ` (today ${money(p.today)})` : ""}</td></tr>`)
     + (a.fails && Object.keys(a.fails).length ? `<p><b>Failed calls, this month</b></p>` + rows(Object.entries(a.fails).sort((x, y) => y[1] - x[1]), ([k, n]) => `<tr><td>${esc(k)}</td><td>${n}</td></tr>`) : "")
     + `<p class="note">Costs are estimated from token counts and list prices.</p>`;
-  const row = el("div", "row"); row.append(btn("Close", "btn", () => sheet.remove())); card.append(row); sheet.append(card);
+  const row = el("div", "row"); row.append(btn("Close", "btn ghost", () => sheet.remove())); card.append(row); sheet.append(card);
   sheet.onclick = ev => { if (ev.target === sheet) sheet.remove(); };
   document.body.append(sheet);
 };
@@ -4489,6 +4490,8 @@ function logDay(field, n = 1) {
   store.set("radical-days", d);
   if (field === "c" && typeof updateRing === "function") updateRing();
   if (field === "w" && typeof paintReadGoal === "function") paintReadGoal();
+  // v69: a words-read milestone shows the moment you cross it in Read, not later on a card's finish screen
+  if (field === "w" && store.get("radical-milestones", null)) { clearTimeout(logDay.mt); logDay.mt = setTimeout(() => { if (!$("readScreen").hidden) checkMilestones(true, ["rw"]); }, 1200); }
 }
 // ---- this week, from the progress record: the last 7 days of the app's own calendar (today included).
 // A day counts as used when anything happened: cards, reading or words added.
@@ -4667,7 +4670,7 @@ function pickTile(i) {
 async function showTileList(k, st) {
   const items = newestFirst(st[k]);
   const sheet = el("div", "sheet tilelist"), card = el("div", "sheetcard");
-  const head = el("div", "tlhead"); head.append(el("h3", "", `${TILES[k][0]} · ${num(items.length)}`), btn("Done", "btn ghost small", () => sheet.remove()));
+  const head = el("div", "tlhead"); head.append(el("h3", "", `${TILES[k][0]} · ${num(items.length)}`), btn("Close", "btn ghost small", () => sheet.remove()));
   const grid = el("div", "tlwords");
   card.append(head, grid);
   if (!items.length) grid.append(el("p", "note", "None yet."));
@@ -4735,7 +4738,7 @@ function renderTrack() {
     const c = el(key > today ? "span" : "button", `calday ${cls}${key === today ? " today" : ""}`, cls.startsWith("half") ? `<span class="hd">${k}</span>` : String(k)); grid.append(c);
     if (key <= today) { c.type = "button"; c.onclick = () => showDay(c, key, v); }
   }
-  cal.append(head, grid, dayLine, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<span class="kdi"><i class="kd hit"></i> goal met</span> ${halves || streakRule() === "both" ? '<span class="kdi"><i class="kd half"></i> reading done</span> <span class="kdi"><i class="kd half cards"></i> cards done</span> ' : ""}<span class="kdi"><i class="kd on"></i> studied</span> <span class="kdi"><i class="kd off"></i> rest day</span>`));
+  cal.append(head, grid, dayLine, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<span class="kdi"><i class="kd hit"></i> goal met</span> ${halves || streakRule() === "both" ? '<span class="kdi"><i class="kd half"></i> reading</span> <span class="kdi"><i class="kd half cards"></i> cards</span> ' : ""}<span class="kdi"><i class="kd on"></i> studied</span> <span class="kdi"><i class="kd off"></i> rest day</span>`));
   box.append(cal);
   // your three boxes (tap: what's in it; touch and hold: change it): a number and one word each, under "Words" when all
   // three count words
@@ -5017,7 +5020,7 @@ function reportSheet(x, done) {
 let qrLib = null;
 function showQR(code) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard qrcard"), box = el("div", "qrbox");
-  card.append(el("h3", "", "Scan to add me"), box, el("p", "frcode", esc(code)), el("p", "note", "Opens Radical and connects you both."), btn("Done", "btn wide", () => sheet.remove()));
+  card.append(el("h3", "", "Scan to add me"), box, el("p", "frcode", esc(code)), el("p", "note", "Opens Radical and connects you both."), btn("Close", "btn ghost wide", () => sheet.remove()));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
   document.body.append(sheet);
   if (!qrLib) qrLib = new Promise((ok, no) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"; s.onload = ok; s.onerror = () => { qrLib = null; no(); }; document.head.append(s); });
@@ -5064,7 +5067,7 @@ function shareSheet(k) {
   const sendTo = (b, to, followers, who) => busy(b, async () => { const d = await makeShared(k, to, followers); if (d) { b.textContent = "Sent ✓"; play("right"); toast(`${esc(name)} sent to ${esc(who)}`, 2500); } });
   if (f.builder && f.builder.me) { const b = btn(`All followers (${num(f.builder.followers || 0)})`, "btn outl wide", () => sendTo(b, [], true, "your followers")); card.append(b); }
   fr.forEach(x => { const b = btn(x.name, "btn outl wide", () => sendTo(b, [x.code], false, x.name)); card.append(b); });
-  card.append(msg, btn("Done", "btn ghost wide", close));
+  card.append(msg, btn("Close", "btn ghost wide", close));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
 }
@@ -5132,10 +5135,10 @@ function sharedLines(x) {
 const MILESTONES = [["fw", [25, 50, 100, 250, 500, 1000, 2000, 5000], n => `${num(n)} words recognized`], ["lw", [25, 50, 100, 250, 500, 1000, 2000, 5000], n => `${num(n)} words mastered`], ["rw", [1000, 5000, 10000, 25000, 50000, 100000, 250000], n => `${num(n)} words read`],
   ["s", [7, 14, 30, 60, 100, 200, 365], n => `A ${num(n)}-day streak`], ["c", [100, 500, 1000, 2500, 5000, 10000], n => `${num(n)} cards reviewed`]];
 function milestoneValues() { const d = store.get("radical-days", {}), keys = Object.keys(d), st = wordStages(); return { fw: st.familiar.size, lw: st.learned.size, rw: keys.reduce((a, k) => a + (d[k].w || 0), 0), c: keys.reduce((a, k) => a + (d[k].c || 0), 0), s: streakStats().now }; }
-function checkMilestones(show = true) {
+function checkMilestones(show = true, keys = null) {  // v69: keys limits which kinds are checked (reading in Read, cards at a session end)
   const got = store.get("radical-milestones", null), v = milestoneValues(), fresh = [];
   const have = got || {}, quietW = !have.w0;  // word milestones arrived in v41: what's already passed is recorded quietly
-  MILESTONES.forEach(([key, steps, text]) => steps.forEach(n => { const id = key + n; if (v[key] >= n && !have[id]) { have[id] = localDay(); if (!(quietW && key !== "s" && key !== "c")) fresh.push(text(n)); } }));
+  MILESTONES.filter(([key]) => !keys || keys.includes(key)).forEach(([key, steps, text]) => steps.forEach(n => { const id = key + n; if (v[key] >= n && !have[id]) { have[id] = localDay(); if (!(quietW && key !== "s" && key !== "c")) fresh.push(text(n)); } }));
   have.w0 = 1;
   store.set("radical-milestones", have);
   if (got && show && fresh.length) milestone(fresh[fresh.length - 1]);
@@ -6289,8 +6292,7 @@ function openSets() {
   const newDeck = btn("＋ New deck", "setchip wide", () => { close(); nameDeck("", n => { if (!decks.names.includes(n)) { decks.names.push(n); decks.made[deckKey(n)] = localDay(); } saveDecks(); setList(deckKey(n)); renderWords(); }, openSets); });
   const rh = el("span", "trl", "Ready-made");
   const head = el("div", "sheethead"); head.append(el("h3", "", "Word Decks"), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Close");
-  card.append(head, el("span", "trl", "Yours"), table, bar, newDeck, rh, setsGrid(close));
-  card.append(btn("Close", "btn ghost wide", close));
+  card.append(head, el("span", "trl", "Yours"), table, bar, newDeck, rh, setsGrid(close));  // v69: the ✕ in the header is the one way out
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
   document.body.append(sheet);
 }
@@ -6764,7 +6766,7 @@ function showLook() {
       btn("Back to my words", "btn ghost", () => history.back()));
     box.append(end); return;
   }
-  $("lookNext").disabled = false; $("lookNext").textContent = look.i === n - 1 ? "Finish ›" : "Next ›";
+  $("lookNext").disabled = false; $("lookNext").textContent = look.i === n - 1 ? "Finish ›" : "Next card ›";
   $("lookProg").textContent = `· Card ${look.i + 1} of ${n}`;
   const w = look.order[look.i];
   const paint = () => {
@@ -7089,7 +7091,7 @@ function showFront() {
     if (missed.length) acts.append(btn(`Go over the ones you missed (${missed.length})`, "btn ghost wide", () => { history.back(); setTimeout(() => openLook(missed), 60); }));
     acts.append(btn("Done", more ? "btn ghost wide" : "btn wide", () => history.back()));
     fin.append(acts); box.append(fin);
-    play("reward"); setTimeout(() => checkMilestones(), 1800);
+    play("reward"); setTimeout(() => checkMilestones(true, MILESTONES.map(m => m[0]).filter(k => k !== "rw")), 1800);
     return;
   }
   const w = rq[0];
@@ -7419,7 +7421,7 @@ function showBack(w, how, st) {
     // learners disagreeing sends it to the owners to confirm or flip (it never changes for everyone on one say-so)
     if (rm.ai && rm.ok !== true) {
       const yn = el("div", "askrow");
-      yn.append(btn("I was right", "linkbtn small", () => { okGuess(w, guess.mean); dispute(w, guess.mean); redo(true); }));
+      yn.append(btn("I was right", "btn small wasright", () => { okGuess(w, guess.mean); dispute(w, guess.mean); redo(true); }));
       results.lastElementChild.append(yn);
     }
     const score = [rp.ok, rm.ok].map(x => x === true ? 2 : x === "part" ? 1 : 0).reduce((a, b) => a + b, 0);
@@ -7842,7 +7844,7 @@ async function restoreBackup(j) {
     card.append(row); sheet.append(card); document.body.append(sheet);
   } else alertSheet(done);
 }
-function alertSheet(msg) { const sheet = el("div", "sheet"), card = el("div", "sheetcard"); card.append(el("p", "", esc(msg)), btn("OK", "btn wide", () => sheet.remove())); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); }; document.body.append(sheet); }
+function alertSheet(msg) { const sheet = el("div", "sheet"), card = el("div", "sheetcard"); card.append(el("p", "", esc(msg)), btn("Close", "btn ghost wide", () => sheet.remove())); sheet.append(card); sheet.onclick = e => { if (e.target === sheet) sheet.remove(); }; document.body.append(sheet); }
 
 // ================= documents: PDFs and Wikipedia articles, read a page (or section) at a time
 let doc = store.get("radical-doc", null), pdfFile = null;
