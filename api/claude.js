@@ -375,9 +375,11 @@ module.exports = async (req, res) => {
   };
   // A stored answer, or a new one made, stored and returned (null = unreadable, not stored)
   const kept = async (kind, key, make) => {
+    // v68: a blank answer (empty text, {} or []) is never kept or served; it would stick for everyone.
+    const blank = d => d == null || (typeof d === "string" ? !d.trim() : typeof d === "object" && !Object.keys(d).length);
     const x = await answers.get(kind, key);
-    if (x) { res.setHeader("x-radical-stored", "1"); return x.data; }
-    const d = await make(); if (d != null) await answers.put(kind, key, d);
+    if (x && !blank(x.data)) { res.setHeader("x-radical-stored", "1"); return x.data; }
+    const d = await make(); if (!blank(d)) await answers.put(kind, key, d);
     return d;
   };
   const cn = body.region === "cn" || body.r === "cn", rk = cn ? "cn" : "tw";  // mainland (cards and Word Sets carry it in the URL as r=cn)
