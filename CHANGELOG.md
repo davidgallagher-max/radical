@@ -2,6 +2,27 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v64
+
+Cards:
+
+- 對 半 錯 in the score and the answer flourish are green, yellow and red again (v62's coloring had turned them into part colors).
+- While you type an answer, Check · I know it · Show answer sit just above the keyboard, and the tab bar steps aside.
+- Listen cards have a 🔊 in that bar, so you can hear the word again without closing the keyboard.
+- Finishing the day's cards gives 練 the reading ring's gold burst and three notes.
+- Write cards: "Show this character" and "Show whole word" on longer words; a one-character word has just "Show answer".
+- A long deck name in the card header shortens instead of pushing "Flash card" off the left edge.
+
+The rest:
+
+- Settings: options you haven't picked are white, like the rest of the text. The Daily goal summary fits a phone ("30 cards or 200 words · 2a").
+- Pages opened from the menu say "‹ Back" and go back to where you were, not to the menu. The menu ☰ stays on them.
+- Track, signed out: Friends shows its heading and "Sign in to see your friends' progress".
+- Basecamp has its own color in each theme, picked to stand apart from the theme's main color (gold in Scholar's Ink, jade in Lacquer & Gold, amber in Observatory, blue in Bauhaus, magenta in Aurora, teal in Risograph).
+- The 5,000 most common words aren't pre-built in bulk: the first card anyone makes for one of them is free for them and shared with everyone, and Explain on its sentences is free too. Admin tools shows a running count of stored cards (Taiwan, Mainland, all), with Recount for cards made before v64.
+- iPhone: a list or data file the installed app doesn't have yet comes from the website (Admin tools said "Couldn't load the word list" on an older build).
+- iPhone: once you've used Radical on 5 days, finishing the day's cards may bring up Apple's own rating sheet, once. Needs the next TestFlight build.
+
 ## v63
 
 Pricing, reworked (still switched off until launch).
