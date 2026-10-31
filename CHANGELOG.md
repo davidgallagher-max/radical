@@ -2,6 +2,26 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v65
+
+Read:
+
+- Picking words: hold a character to pick it, then keep holding and drag along the line to take in more. A quick sideways swipe still works, and a tap still picks the word. The ‹ › arrows, ⌫ and "Select just this" are gone. Tap a character in the strip under the line to see it big.
+
+Cards:
+
+- Typing an answer in the iPhone app: the tab bar steps aside, Check · I know it · Show answer sit on the keyboard, and the characters shrink to fit. Tap anywhere outside the boxes to close the keyboard. iOS's ⌃ ⌄ ✓ strip over the keyboard goes away with the next TestFlight build.
+
+Decks:
+
+- The deck sheet (+ Add, Add words' Into, a word's deck chip) lists ready-made decks too, and you can tick several. A word filed into a ready-made deck shows and studies there; the deck's own word list doesn't change.
+
+The rest:
+
+- Settings: the arrows no longer sit on the summaries; a long one ends in "…". Account shows just your email, or "Signed out". The labels above each choice in Daily goal are white.
+- Explore: topic chips show Chinese and English, no pinyin.
+- Track calendar: no 達標. The key's squares look like the days, and the split squares are explained ("reading done", "cards done") whenever the month has one. Tapping a day shows its square and the same words as the key.
+
 ## v64
 
 Cards:
