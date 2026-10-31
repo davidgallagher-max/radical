@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v70
+
+- Cards: Check accepts any dictionary sense of the word and small differences in form ("running" for "to run", "colours" for "color"), so far fewer answers wait on the AI; when it does ask, it's one try of up to 5 seconds, then you call it with ✓ / ✗.
+- The server writes its usage log and meter at the same time after a check (they were one after the other).
+- Owners see how long each AI check took and where the time went.
+
 ## v69
 
 Read:
