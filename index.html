@@ -1754,7 +1754,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v69";
+const APP_VERSION = "v70";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -7078,6 +7078,17 @@ function checkChars(given, w) {
 // Meaning: generous. Any meaning phrase, or a shared content word, counts.
 const STOP = new Set("to a an the of and or in on at for with be is it one's oneself something someone sb sth".split(" "));
 const norm = t => t.toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z' ]/g, " ").replace(/\s+/g, " ").trim().replace(/^(to|a|an|the) /, "");
+// v70: a rough English stem (US spelling, no -ing/-ed/-es/-s/-ly) so small differences in form still match
+const stem = x => [[/(ies|ied)$/, "y"], [/(.)\1(ing|ed)$/, "$1"], [/(ing|ed|ly)$/, ""], [/([^s])(es|s)$/, "$1"], [/our$/, "or"], [/ise$/, "ize"], [/e$/, ""]]
+  .reduce((w, [re, to]) => { const v = w.replace(re, to); return v.length >= 3 ? v : w; }, x);
+const stemAll = t => t.split(" ").filter(x => x && !STOP.has(x)).map(stem).join(" ");
+// v70: everything the word can mean: your card, the shared card and every dictionary sense (CL: lines left out), so
+// the phone itself accepts most right answers and only real misses go to the AI judge
+function meaningsOf(w) {
+  const c = cardOf(w), ds = [...new Set([w.word, toSimp(w.word)])].flatMap(x => { const f = [...x][0]; return (words[f] || []).filter(e => e[0] === x); });
+  return [wMeaning(w), c && c.meaning, w.meaning, ...ds.map(e => String(e[3] || ""))].filter(Boolean).join("/")
+    .split(/[\/;]/).map(x => x.trim()).filter(x => x && !/^CL:|^variant of|^see /i.test(x)).join("; ");
+}
 // v63: a guess tidied the way the server stores meaning checks ("The sea." = "sea"); guesses judged right (or that you
 // said were right) are kept on the word, so the quick match takes them next time without asking
 const tidyGuess = g => String(g || "").toLowerCase().replace(/[\p{P}\p{S}]+/gu, " ").replace(/\b(a|an|the|to)\b/g, " ").replace(/\s+/g, " ").trim().slice(0, 120);
@@ -7090,10 +7101,12 @@ function checkMeaning(given, target) {
   if (!given.trim()) return { ok: null };
   if (!target) return { ok: null };
   const g = norm(given), phrases = target.split(/[;,/]|\bor\b/).map(norm).filter(Boolean);
-  if (phrases.some(p => p === g || (g.length > 2 && (p.includes(g) || g.includes(p))))) return { ok: true, note: "Correct." };
+  const gs = stemAll(g);
+  if (phrases.some(p => p === g || stemAll(p) === gs || (g.length > 2 && (p.includes(g) || g.includes(p))))) return { ok: true, note: "Correct." };
   // Content words anywhere in the answer count as close, including those in brackets: "(often a text message)".
-  const words = new Set([...phrases.join(" ").split(" "), ...norm(target.replace(/[()]/g, " ")).split(" ")].filter(x => x.length > 2 && !STOP.has(x)));
-  if (g.split(" ").some(x => x.length > 2 && !STOP.has(x) && (words.has(x) || words.has(x.replace(/s$/, "")) || words.has(x + "s")))) return { ok: true, note: "Close enough." };
+  // v70: compared by stem, so "running" meets "to run", "studied" meets "study", "colour" meets "color".
+  const words = new Set([...phrases.join(" ").split(" "), ...norm(target.replace(/[()]/g, " ")).split(" ")].filter(x => x.length > 2 && !STOP.has(x)).map(stem));
+  if (g.split(" ").some(x => x.length > 2 && !STOP.has(x) && words.has(stem(x)))) return { ok: true, note: "Close enough." };
   return { ok: false, note: "Compare with the answer." };
 }
 
@@ -7216,15 +7229,20 @@ function showFront() {
     let st;
     if (how === "check") {
       if (listen && /\p{Script=Han}/u.test(py.value)) await ensure(py.value);  // readings of the typed characters, for sound credit
-      const g = mean.value.trim(), local = (w.okGuess || []).includes(tidyGuess(g)) ? { ok: true, note: "Correct." } : checkMeaning(g, wMeaning(w));
+      const g = mean.value.trim(), local = (w.okGuess || []).includes(tidyGuess(g)) ? { ok: true, note: "Correct." } : checkMeaning(g, meaningsOf(w));
       // The quick match failed: ask the AI judge. If it can't answer (slow, offline, an error), you decide (✓ / ✗).
       if (g && local.ok === false) st = { aiMean: { ok: null, ask: true } };
       if (g && local.ok === false && online() && navigator.onLine !== false) {
         judging = true; const cb = $("revBar").querySelector(".guessacts .btn"); if (cb) { cb.disabled = true; cb.textContent = "Checking…"; }
         // v43: two tries of 8 seconds before it asks you; a failure is reported (owners see why in the AI breakdown)
-        const ask = () => Promise.race([claude({ action: "judge", word: w.word, meaning: wMeaning(w), guess: g, pattern: isPattern(w.word) }), new Promise((_, no) => setTimeout(() => no(new Error("took over 8s")), 8000))]);
+        // v70: one try of 5 seconds (was two of 8), with every sense of the word; then you call it (✓ / ✗)
+        const t0 = performance.now(), ask = () => Promise.race([claude({ action: "judge", word: w.word, meaning: meaningsOf(w).slice(0, 300), guess: g, pattern: isPattern(w.word) }), new Promise((_, no) => setTimeout(() => no(new Error("took over 5s")), 5000))]);
         let r = null, why = "";
-        for (let i = 0; i < 2 && !r; i++) { try { r = await ask(); } catch (e) { why = e.message || "error"; if (/limit|Sign in/i.test(why)) break; } }
+        try { r = await ask(); } catch (e) { why = e.message || "error"; }
+        if (store.get("radical-owner", false)) {  // v70: owners see where the time went
+          const t = r && r.t, sec = ms => (ms / 1000).toFixed(1);
+          toast(r ? `Check ${sec(performance.now() - t0)}s${t && t.ai != null ? ` · server ${sec(t.total)}s: AI ${sec(t.ai)}, before ${sec(t.pre || 0)}, logging ${sec((t.logged || 0) - (t.pre || 0) - t.ai)}` : ` · stored answer${t ? `, server ${sec(t.total)}s` : ""}`}` : `Check failed after ${sec(performance.now() - t0)}s: ${esc(why)}`, 4000, true);
+        }
         if (r) {
           const ok = r.verdict === "right" ? true : r.verdict === "close" ? "part" : false;
           if (ok === true) okGuess(w, g);  // v63: next time the phone accepts it with no call
