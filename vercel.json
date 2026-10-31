@@ -51,7 +51,8 @@
   "git": {
     "deploymentEnabled": {
       "main": true,
-      "*": false
+      "*": false,
+      "**": false
     }
   }
 }
