@@ -2067,7 +2067,25 @@ document.addEventListener("click", e => { const b = e.target.closest("[data-say]
 // ================= sound kit: guzheng and woodblock, made in the browser.
 // Each moment has a few variations and plays one at random, never the same one twice in a row.
 let actx;
-const ctx = () => { actx ||= new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); return actx; };
+const ctx = () => {
+  if (actx && actx.state === "closed") actx = null;
+  actx ||= new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state !== "running") actx.resume().catch(() => {});  // iOS also has "interrupted" (after the app's audio session changes)
+  return actx;
+};
+// v67: sound may only start from a tap. Wake the player on every tap while it isn't running (first use, after the app
+// comes back, after an interruption); if it won't resume, swap in a fresh one so chimes fired later (a scroll) still play.
+function audioWake() {
+  if (!soundOn) return;
+  try {
+    let c = ctx();
+    if (c.state === "running") return;
+    if (c.state === "interrupted") { try { c.close(); } catch (e) {} actx = null; c = ctx(); }
+    const b = c.createBufferSource(); b.buffer = c.createBuffer(1, 1, 22050); b.connect(c.destination); b.start(0);
+    setTimeout(() => { if (actx === c && c.state !== "running") { try { c.close(); } catch (e) {} actx = null; } }, 300);  // the next tap makes a fresh one
+  } catch (e) {}
+}
+["pointerup", "touchend", "click"].forEach(t => addEventListener(t, audioWake, { capture: true, passive: true }));
 const master = () => { const c = ctx(); if (!c._m) {
   const comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
   c._m = c.createGain(); c._m.gain.value = 1.1; c._m.connect(comp).connect(c.destination);
