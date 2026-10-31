@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v67
+
+- iPhone app: the chimes play again (the new build's play-on-silent change could leave the sound player stopped; a tap now wakes it). The voice was never affected.
+
 ## v66
 
 - Cards: up to four characters sit on one row beside the 🗑, and while you type they shrink until the Pinyin and Meaning boxes clear the button bar (three characters used to wrap onto two rows and push the boxes under it).

@@ -137,6 +137,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v66 notes (fix): `.revcard:has(>.cardbin)>.revchars` gets its own `--cs` (100vw - 100px), so up to four characters fit one row beside the bin; `kbFit` shrinks `--cs` in a loop until the form and hint clear `#revBar`, counting real rows (`rowsOf`).
 
+- v67 notes (fix): `ctx()` resumes any state but running (iOS has "interrupted" after the shell's AVAudioSession changes); `audioWake()` on every pointerup/touchend/click (capture) plays a silent buffer when the context isn't running, swaps an interrupted one for a fresh one at once, and drops one still stopped after 300ms so the next tap makes a new one.
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)
