@@ -1754,7 +1754,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v74";
+const APP_VERSION = "v75";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -7302,6 +7302,8 @@ function showFront() {
       if (k === "meaning") hintBox.innerHTML = `<p>${tag} <b>Meaning:</b> ${esc(d.d.split(/;/).slice(0, 2).join(";"))}</p>`;
     };
     node.addEventListener("click", clue);
+    // v75: with the keyboard up, a tap here keeps the focus in the box, so one tap gives the clue and the keyboard stays
+    ["pointerdown", "mousedown"].forEach(t => node.addEventListener(t, e => { if (document.activeElement && document.activeElement.matches("#gPy,#gMean")) e.preventDefault(); }));
     node.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clue(); } });
   });
   let judging = false;
@@ -7431,7 +7433,7 @@ setInterval(() => { if ($("reviewScreen").classList.contains("typing")) kbFit();
 // Tapping the card anywhere outside a text box or button closes the keyboard.
 $("reviewScreen").addEventListener("pointerdown", e => {
   const a = document.activeElement;
-  if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && !e.target.closest("input,textarea,button,a,label,.tonebox,[role=button]")) a.blur();
+  if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && !e.target.closest("input,textarea,button,a,label,.tonebox,.cluechar,[role=button]")) a.blur();
 });
 // Put tone t (1-4, or 5 for none) on the syllable just before the cursor. Syllables are split properly, so
 // "xunxi" + 2 gives "xunxí"; a syllable that already has a mark gets the new one instead.
