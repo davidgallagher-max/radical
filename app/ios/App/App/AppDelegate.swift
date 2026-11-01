@@ -54,10 +54,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 // v79: the page's chimes (guzheng and woodblock) play here, not in web audio. WebKit keeps its own audio session for
 // web audio, which either obeys the silent switch or interrupts music; native audio uses the app's session
-// (.playback, mixed with others), so chimes sound on silent and play over someone's music.
+// (.playback, mixed with others), so chimes sound on silent; someone's music dips under a chime and comes back.
 // The page renders each chime once (OfflineAudioContext), sends it as a WAV with load, then plays it by id.
 @objc(ChimePlugin)
-public class ChimePlugin: CAPPlugin, CAPBridgedPlugin {
+public class ChimePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelegate {
     public let identifier = "ChimePlugin"
     public let jsName = "Chime"
     public let pluginMethods: [CAPPluginMethod] = [
@@ -79,16 +79,31 @@ public class ChimePlugin: CAPPlugin, CAPBridgedPlugin {
         DispatchQueue.main.async {
             guard let data = self.sounds[id], let p = try? AVAudioPlayer(data: data) else { call.reject("not loaded"); return }
             let s = AVAudioSession.sharedInstance()
-            // WebKit (speech, web audio) can change the shared session; put it back before each chime.
-            if s.category != .playback || !s.categoryOptions.contains(.mixWithOthers) {
-                try? s.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            // Other audio (music, a podcast) dips while a chime plays (v79, David). WebKit can also change the
+            // shared session, so set it before each chime.
+            if s.category != .playback || !s.categoryOptions.contains(.duckOthers) {
+                try? s.setCategory(.playback, mode: .default, options: [.mixWithOthers, .duckOthers])
             }
             try? s.setActive(true)
             self.playing.removeAll { !$0.isPlaying }
             self.playing.append(p)
+            p.delegate = self
             p.prepareToPlay()
             p.play()
             call.resolve()
+        }
+    }
+}
+
+extension ChimePlugin {
+    // The last chime finished: bring the other audio back up (ducking lasts while the session is active).
+    public func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            self.playing.removeAll { !$0.isPlaying }
+            guard self.playing.isEmpty else { return }
+            let s = AVAudioSession.sharedInstance()
+            try? s.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try? s.setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
 }
