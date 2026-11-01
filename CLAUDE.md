@@ -155,6 +155,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v75 notes (fix): the review screen's tap-to-close-keyboard (`pointerdown` blur) skips `.cluechar`, and clue characters preventDefault on pointerdown/mousedown while `#gPy`/`#gMean` has focus.
 
+- v76 notes: `saySentence(text, pace)` (one utterance, k .8 Slower / .65 Step) for the card sentence speaker (`miniReader`) and Listen's In a sentence. `assignModes` in Mix: a word with `srs`, not `skip`, and no `wsrs`/`lsrs` adds those modes to its draw (`fresh`). Server `makeCard(word, trad)`: for cn, a stored `tw|<trad>` card goes through `CN_FROM_TW` (FAST_MODEL; `FLIPS` lists words whose meaning flips) and is stored as the cn card with `from: "tw"`; else the full `CARD_PROMPT`. The page adds `&t=<toTrad(word)>` to cn card GETs when it differs; `prebuild` takes `trad` beside `words`.
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)

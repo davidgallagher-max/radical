@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v76
+
+- Card sentences play as one smooth sentence. Slower and Step by step just lower the speed, with no gaps between words.
+- Mix: once you've had a word on a reading card, its Write and Listen cards can come up too. New words still start on reading.
+- Mainland cards are made from the Taiwan card when one is stored, using the fast AI model for about a quarter of the cost. It converts the characters and readings, redoes the character parts where the Simplified form differs, and rewrites a sentence only if a word in it means something different, or rude, on the mainland. Admin tools' Pre-build for Mainland now copies over the stored Taiwan cards this way.
+
 ## v75
 
 - Reading cards: with the keyboard up, one tap on a character gives its clue and sound. The keyboard stays up.
