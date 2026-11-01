@@ -29,7 +29,7 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const USER_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const num = (name, d) => { const v = +process.env[name]; return v > 0 ? v : d; };
 
-module.exports = ({ getJSON, putJSON, isOwner }) => {
+module.exports = ({ getJSON, putJSON, isOwner, idForEmail }) => {
   const bonusUntil = () => DAY.test(process.env.RADICAL_BONUS_UNTIL || "") ? process.env.RADICAL_BONUS_UNTIL : "";
   const allow = today => {
     const b = bonusUntil() && today <= bonusUntil() ? 2 : 1;
@@ -83,9 +83,14 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
   // the app, so a gift is granted here and the app reads it from the account.
   async function gift(user, body) {
     if (!isOwner(user)) return { error: "Owners only." };
-    const code = String(body.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
-    const c = code && await getJSON(`codes/${code}.json`).catch(() => null);
-    if (!c || !c.id) return { error: "No one has that friend code." };
+    // v77: by friend code or by email (a new address gets its account now, so the gift waits for their first sign-in)
+    const raw = String(body.code || "").trim(); let c;
+    if (raw.includes("@")) { const id = idForEmail && await idForEmail(raw).catch(() => null); if (!id) return { error: "That email didn't work." }; c = { id }; }
+    else {
+      const code = raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
+      c = code && await getJSON(`codes/${code}.json`).catch(() => null);
+      if (!c || !c.id) return { error: "No one has that friend code." };
+    }
     const e = await read(c.id);
     if (body.op === "ungift") {
       if (!e.unlock || e.unlock.src !== "gift") return { error: e.unlock ? "They bought it; that can't be taken back here." : "They don't have a gift." };
@@ -95,7 +100,7 @@ module.exports = ({ getJSON, putJSON, isOwner }) => {
       e.unlock = { at: new Date().toISOString(), src: "gift", by: user.email };
     }
     await putJSON(path(c.id), e);
-    return { ok: true };
+    return { ok: true, to: c.id, email: raw.includes("@") ? raw.toLowerCase() : "" };
   }
   async function act(user, body, today) {
     if (body.op === "trial") return trial(user, body.from, today);

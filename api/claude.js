@@ -7,7 +7,7 @@
 // Accounts, sync and the AI cost log live in _account.js.
 const account = require("./_account.js");
 const topics = require("./_topics.js")(account.storage);
-const pay = require("./_pay.js")({ ...account.storage, isOwner: account.isOwner });
+const pay = require("./_pay.js")({ ...account.storage, isOwner: account.isOwner, idForEmail: account.idForEmail });
 const answers = require("./_answers.js")(account.storage);  // v63: every AI answer, kept and shared
 const POOL_MAX = 3;  // v63: extra example sentences per word, shared, on top of the card's 3
 
@@ -284,6 +284,19 @@ module.exports = async (req, res) => {
       if (!account.status().ok) return res.status(500).json({ error: "The account service isn't set up yet." });
       res.setHeader("Cache-Control", "no-store");
       const out = await pay.act(user, body, today);
+      // v77: a gift can send the friend a short note (the owner ticks it each time); never to a typed address unless
+      // the gift went to that address
+      if (body.op === "gift" && body.notify && out.ok && !out.already && process.env.RESEND_API_KEY) {
+        const to = out.email || await account.emailOf(out.to).catch(() => "");
+        const prof = await account.storage.getJSON(`users/${user.id}/profile.json`).catch(() => null), from = (prof && prof.first) || "A friend";
+        if (to) {
+          const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "content-type": "application/json" },
+            body: JSON.stringify({ from: "Radical <gifts@upslopelabs.com>", to: [to], reply_to: user.email, subject: "You've got Radical, free for good",
+              text: `${from} gave you Radical Lifetime. Sign in with this email in the app and it's yours.` }) }).catch(() => null);
+          out.mailed = !!(r && r.ok);
+        }
+      }
+      delete out.to; delete out.email;
       return res.status(out.error ? 400 : 200).json(out);
     }
     // v54: Delete account, from Settings. Gone for good: words, friends, usage, the sign-in.

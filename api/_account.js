@@ -516,6 +516,24 @@ async function demoSignIn(email, code) {
   return vj;
 }
 
+// ---- v77: an account id for an email, for owners' gifts. A person who hasn't signed up yet gets their account made
+// now (confirmed, nothing is emailed), so the gift is there the first time they sign in with that address.
+async function idForEmail(email) {
+  const want = String(email || "").trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(want)) return null;
+  const admin = { ...keyHeaders(SB_SECRET()), "content-type": "application/json" };
+  await fetch(`${SB_URL()}/auth/v1/admin/users`, { method: "POST", headers: admin, body: JSON.stringify({ email: want, email_confirm: true }) }).catch(() => {});  // already there is fine
+  const g = await fetch(`${SB_URL()}/auth/v1/admin/generate_link`, { method: "POST", headers: admin, body: JSON.stringify({ type: "magiclink", email: want }) });
+  const gj = await g.json().catch(() => ({}));
+  return g.ok ? (gj.id || (gj.user && gj.user.id) || null) : null;
+}
+
+async function emailOf(id) {
+  const r = await fetch(`${SB_URL()}/auth/v1/admin/users/${encodeURIComponent(id)}`, { headers: keyHeaders(SB_SECRET()) }).catch(() => null);
+  const j = r && r.ok ? await r.json().catch(() => ({})) : {};
+  return j.email || (j.user && j.user.email) || "";
+}
+
 // ---- the owners' notice (v44): one short message everyone sees once after the splash. notice.json = { id, text, until }.
 async function notice() { if (!status().ok) return null; const n = await getJSON("notice.json").catch(() => null); return n && n.text && !(n.until && n.until < day()) ? n : null; }
 // v46: every message also goes into notes.json (newest last, at most 50): the menu's Notes from David. Editing a live
@@ -547,6 +565,6 @@ async function setNotice(user, body) {
   await putJSON("notice.json", n); await putJSON("notes.json", { list: [...keep, n].slice(-50) }); return { notice: n };
 }
 
-module.exports = { deleteAccount, demoSignIn, notice, notes, getDeck, setNotice, anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, logFail, DAILY_CAP, capFor, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };
+module.exports = { deleteAccount, demoSignIn, idForEmail, emailOf, notice, notes, getDeck, setNotice, anonTake, friends, status, config, userOf, ensureBucket, sync, merge, spentToday, logUse, logFail, DAILY_CAP, capFor, costOf, isOwner, mayUseAI, usage, dayOf, ownerEmails, saveFeedback };
 // v59: the topic decks (api/_topics.js) keep their files in the same bucket
 module.exports.storage = { getJSON, putJSON, removeFiles, list };
