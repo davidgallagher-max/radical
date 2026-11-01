@@ -4,7 +4,7 @@
 <script>/* v54, iPhone app only: a newer page fetched from the web (see liveUpdate) runs instead of the one in the app. */
 (function () {
   if (/^https?:$/.test(location.protocol) || window.__radicalLive) return;
-  var BUNDLED = /*BUNDLED*/"", SHELL = 4, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
+  var BUNDLED = /*BUNDLED*/"", SHELL = 5, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
   try { ls.setItem("radical-shell", SHELL); var v = ls.getItem("radical-live-v"); } catch (e) { return; }
   if (!v || num(v) <= num(BUNDLED) || v === ls.getItem("radical-live-bad")) return;
   if (ls.getItem("radical-live-tried") === v && ls.getItem("radical-live-ok") !== v) { ls.setItem("radical-live-bad", v); return; }  // it never started last time
@@ -1754,7 +1754,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v78";
+const APP_VERSION = "v79";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2100,7 +2100,9 @@ let actx;
 // v78: WebKit gives web audio its own audio session ("auto" = ambient, which the silent switch mutes), whatever the
 // app shell set. "transient" is for short sounds: it plays with the switch on silent and only dips other audio.
 try { if (navigator.audioSession && navigator.audioSession.type !== "transient") navigator.audioSession.type = "transient"; } catch (e) {}
+let renderC = null;  // v79: set while a chime is drawn offline for the app (see chimes below)
 const ctx = () => {
+  if (renderC) return renderC;
   if (actx && actx.state === "closed") actx = null;
   actx ||= new (window.AudioContext || window.webkitAudioContext)();
   if (actx.state !== "running") actx.resume().catch(() => {});  // iOS also has "interrupted" (after the app's audio session changes)
@@ -2158,7 +2160,37 @@ const KIT = {
   reward: [0, 1, 2].map(o => () => { for (let k = 0; k < 6; k++) zheng(k * .075, pen(o + 3 + k), .45, 1, 2); zheng(.5, pen(o + 10), .7, 1, 2.8); })
 };
 // Rating tick: one short woodblock knock, low for Again, middle for Hard, bright for Good and Easy.
-function tick(g) { if (!soundOn) return; try { woodblock(0, g === "again" ? 380 : g === "hard" ? 700 : 1250, .55); } catch (e) {} }
+const TICKS = { again: () => woodblock(0, 380, .55), hard: () => woodblock(0, 700, .55), good: () => woodblock(0, 1250, .55) };
+function tick(g) { if (!soundOn) return; const k = g === "again" || g === "hard" ? g : "good"; if (chimeGo(`tick.${k}`)) return; try { TICKS[k](); } catch (e) {} }
+// v79: in the iPhone app each chime is drawn once offline and handed to the app shell (Chime plugin, SHELL 5), which plays
+// it on silent and over music; web audio can't do both. Until a chime is loaded (or on the web) it plays here as before.
+const CHIME_LEN = { tap: 1.3, right: 2.2, wrong: 1.3, half: 1.5, master: 4.6, ring: 5.4, today: 6.2, reward: 3.4, tick: .4 };
+const chimeOn = new Set();
+let chimeP = null;
+const chimeGo = id => { if (!chimeP || !chimeOn.has(id)) return false; chimeP.play({ id }).catch(() => chimeOn.delete(id)); return true; };
+function wavB64(d, sr) {
+  let n = d.length; while (n > sr * .2 && Math.abs(d[n - 1]) < 1e-3) n--;  // drop the silent tail
+  const b = new DataView(new ArrayBuffer(44 + n * 2)), str = (o, t) => [...t].forEach((c, i) => b.setUint8(o + i, c.charCodeAt(0)));
+  str(0, "RIFF"); b.setUint32(4, 36 + n * 2, true); str(8, "WAVEfmt "); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true);
+  b.setUint32(24, sr, true); b.setUint32(28, sr * 2, true); b.setUint16(32, 2, true); b.setUint16(34, 16, true); str(36, "data"); b.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) b.setInt16(44 + i * 2, Math.max(-1, Math.min(1, d[i])) * 32767, true);
+  const u = new Uint8Array(b.buffer); let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+async function chimeDraw(fn, secs) {
+  const O = window.OfflineAudioContext || window.webkitOfflineAudioContext, sr = 44100, oc = new O(1, Math.ceil(sr * secs), sr);
+  renderC = oc; try { fn(); } finally { renderC = null; }
+  return wavB64((await oc.startRendering()).getChannelData(0), sr);
+}
+async function chimesLoad() {
+  const P = plug("Chime"); if (!P || !P.load || !(window.OfflineAudioContext || window.webkitOfflineAudioContext)) return;
+  const jobs = [...Object.entries(KIT).flatMap(([k, list]) => list.map((fn, i) => [`${k}.${i}`, fn, CHIME_LEN[k] || 3])),
+    ...Object.entries(TICKS).map(([k, fn]) => [`tick.${k}`, fn, CHIME_LEN.tick])];
+  for (const [id, fn, secs] of jobs) {
+    try { await P.load({ id, data: await chimeDraw(fn, secs) }); chimeOn.add(id); chimeP = P; } catch (e) { if (!chimeP) return; }  // no plugin in this shell: stay on web audio
+    await new Promise(r => setTimeout(r, 30));
+  }
+}
 const lastPlayed = {};
 let soundOn = store.get("radical-sound", true);
 function play(kind) {
@@ -2166,7 +2198,7 @@ function play(kind) {
   try {
     const list = KIT[kind]; let k;
     do { k = Math.floor(Math.random() * list.length); } while (list.length > 1 && k === lastPlayed[kind]);
-    lastPlayed[kind] = k; list[k]();
+    lastPlayed[kind] = k; if (!chimeGo(`${kind}.${k}`)) list[k]();
   } catch (e) {}
 }
 
@@ -8692,7 +8724,7 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   // The splash takes a tap from the very first moment: a tap hides it even while the app is still loading behind it
   // (the reader shows "Drawing…" until the characters arrive), so a slow connection never looks like a frozen app.
   window.__radicalStarted = true;
-  setTimeout(liveUpdate, 8000); fetchTopics(); nativeKeyboard();
+  setTimeout(liveUpdate, 8000); fetchTopics(); nativeKeyboard(); setTimeout(chimesLoad, 2500);
   payInit().then(() => { if ((tab === "readScreen" && !payFree("read")) || (tab === "wikiScreen" && !payFree("explore"))) setTab("trackScreen"); }).catch(() => {});  // v61
   const sp0 = $("splash");
   let harped = false, done = false;

@@ -33,7 +33,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         playThroughSilent()
     }
 
-    private func playThroughSilent() {
+    func playThroughSilent() {
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
     }
@@ -49,5 +49,53 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                                           sessionRole: connectingSceneSession.role)
         config.delegateClass = SceneDelegate.self
         return config
+    }
+}
+
+// v79: the page's chimes (guzheng and woodblock) play here, not in web audio. WebKit keeps its own audio session for
+// web audio, which either obeys the silent switch or interrupts music; native audio uses the app's session
+// (.playback, mixed with others), so chimes sound on silent and play over someone's music.
+// The page renders each chime once (OfflineAudioContext), sends it as a WAV with load, then plays it by id.
+@objc(ChimePlugin)
+public class ChimePlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "ChimePlugin"
+    public let jsName = "Chime"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "load", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "play", returnType: CAPPluginReturnPromise)
+    ]
+    private var sounds: [String: Data] = [:]
+    private var playing: [AVAudioPlayer] = []
+
+    @objc func load(_ call: CAPPluginCall) {
+        guard let id = call.getString("id"), let b64 = call.getString("data"), let data = Data(base64Encoded: b64) else {
+            call.reject("bad sound"); return
+        }
+        DispatchQueue.main.async { self.sounds[id] = data; call.resolve() }
+    }
+
+    @objc func play(_ call: CAPPluginCall) {
+        guard let id = call.getString("id") else { call.reject("no id"); return }
+        DispatchQueue.main.async {
+            guard let data = self.sounds[id], let p = try? AVAudioPlayer(data: data) else { call.reject("not loaded"); return }
+            let s = AVAudioSession.sharedInstance()
+            // WebKit (speech, web audio) can change the shared session; put it back before each chime.
+            if s.category != .playback || !s.categoryOptions.contains(.mixWithOthers) {
+                try? s.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            }
+            try? s.setActive(true)
+            self.playing.removeAll { !$0.isPlaying }
+            self.playing.append(p)
+            p.prepareToPlay()
+            p.play()
+            call.resolve()
+        }
+    }
+}
+
+// The app's web view; registers the plugins that live in this file.
+class MainViewController: CAPBridgeViewController {
+    override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(ChimePlugin())
     }
 }
