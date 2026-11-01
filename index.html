@@ -537,6 +537,8 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .tspark{position:absolute;left:var(--cx);top:var(--cy);width:var(--z);height:var(--z);margin:calc(var(--z) / -2);border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c),0 0 2px #fff;opacity:0;animation:tspark var(--t) cubic-bezier(.15,.7,.3,1) var(--d) both}
 @keyframes tspark{0%{opacity:1;transform:translate(0,0) scale(1.4)}60%{opacity:.95}100%{opacity:0;transform:translate(var(--x),calc(var(--y) + var(--g))) scale(.4)}}
 .thalo{position:absolute;left:var(--cx);top:var(--cy);width:40px;height:40px;margin:-20px;border-radius:50%;border:2px solid var(--gold2);box-shadow:0 0 30px var(--gold2),inset 0 0 20px var(--gold3);animation:thalo 1.8s ease-out both}
+.tlabel{position:absolute;left:0;right:0;width:max-content;margin:0 auto;padding:8px 20px;border-radius:999px;background:color-mix(in srgb,var(--bg) 88%,transparent);box-shadow:0 0 0 1px var(--gold3),0 0 24px rgba(0,0,0,.5);top:calc(var(--cy) + min(26vw, 120px));text-align:center;font-family:var(--font-brand);font-size:1.6rem;font-weight:800;letter-spacing:.02em;color:var(--gold2);text-shadow:0 0 18px var(--gold3),0 1px 0 rgba(0,0,0,.4);animation:tlabel 3.4s ease-out both}
+@keyframes tlabel{0%{opacity:0;transform:translateY(8px) scale(.94)}12%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0}}
 @keyframes thalo{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(9)}}
 .rtick{position:absolute;right:-8px;width:4px;height:8px;margin-top:-6px;border:solid var(--gold2);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);opacity:.7;pointer-events:none}
 .line.flow{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-start;--colw:var(--cell,38px)}
@@ -766,7 +768,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .calday{aspect-ratio:1;display:grid;place-items:center;border-radius:8px;font-size:.92rem;color:var(--muted);border:1px solid transparent}
 .calday.on{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--fg)}
 .calday.hit{background:var(--accent);color:var(--bg);font-weight:700}
-.calday.off{border:1px dashed color-mix(in srgb,var(--muted) 45%,transparent)}
+.calday.off{}.calrule{font-size:.92rem;opacity:.8;margin-top:2px}
 .calday.future{opacity:.35}.calday.blank{visibility:hidden}
 .calday.today{box-shadow:inset 0 0 0 2px var(--fg)}
 button.calday{font:inherit;font-size:.92rem;padding:0;cursor:pointer;background:none}
@@ -1552,6 +1554,8 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     <div class="panel" id="hitsPanel"></div>
     <h3 class="sec">Meaning checks to review</h3>
     <div class="panel" id="judgePanel"></div>
+    <h3 class="sec">Sounds</h3>
+    <div class="panel" id="soundPanel"></div>
     <h3 class="sec">Pre-built cards</h3>
     <div class="panel" id="prebuildPanel"></div>
     <div id="labWrap" hidden><h3 class="sec">Color lab</h3><div class="panel lab" id="labPanel"></div></div>
@@ -1756,7 +1760,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v82";
+const APP_VERSION = "v83";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2169,7 +2173,9 @@ function tick(g) { if (!soundOn) return; const k = g === "again" || g === "hard"
 const CHIME_LEN = { tap: 1.3, right: 2.2, wrong: 1.3, half: 1.5, master: 4.6, ring: 5.4, today: 6.2, reward: 3.4, tick: .4 };
 const chimeOn = new Set();
 let chimeP = null;
-const chimeGo = id => { if (!chimeP || !chimeOn.has(id)) return false; chimeP.play({ id }).catch(() => chimeOn.delete(id)); return true; };
+// v83: what happened, for Admin tools' Sounds line (the iPhone can't be debugged from here)
+const chimeLog = { shell: null, plugin: null, loaded: 0, err: "", plays: 0, playErr: "", ms: 0 };
+const chimeGo = id => { if (!chimeP || !chimeOn.has(id)) return false; chimeLog.plays++; chimeP.play({ id }).catch(e => { chimeLog.playErr = String(e && e.message || e); chimeOn.delete(id); }); return true; };
 function wavB64(d, sr) {
   let n = d.length; while (n > sr * .2 && Math.abs(d[n - 1]) < 1e-3) n--;  // drop the silent tail
   const b = new DataView(new ArrayBuffer(44 + n * 2)), str = (o, t) => [...t].forEach((c, i) => b.setUint8(o + i, c.charCodeAt(0)));
@@ -2185,13 +2191,27 @@ async function chimeDraw(fn, secs) {
   return wavB64((await oc.startRendering()).getChannelData(0), sr);
 }
 async function chimesLoad() {
-  const P = plug("Chime"); if (!P || !P.load || !(window.OfflineAudioContext || window.webkitOfflineAudioContext)) return;
+  const P = plug("Chime"); chimeLog.shell = store.get("radical-shell", null); chimeLog.plugin = !!P;
+  if (!P || !P.load) return;
+  if (!(window.OfflineAudioContext || window.webkitOfflineAudioContext)) { chimeLog.err = "no OfflineAudioContext"; return; }
+  const t0 = Date.now();
   const jobs = [...Object.entries(KIT).flatMap(([k, list]) => list.map((fn, i) => [`${k}.${i}`, fn, CHIME_LEN[k] || 3])),
     ...Object.entries(TICKS).map(([k, fn]) => [`tick.${k}`, fn, CHIME_LEN.tick])];
   for (const [id, fn, secs] of jobs) {
-    try { await P.load({ id, data: await chimeDraw(fn, secs) }); chimeOn.add(id); chimeP = P; } catch (e) { if (!chimeP) return; }  // no plugin in this shell: stay on web audio
+    try { await P.load({ id, data: await chimeDraw(fn, secs) }); chimeOn.add(id); chimeP = P; chimeLog.loaded++; }
+    catch (e) { chimeLog.err = `${id}: ${String(e && e.message || e).slice(0, 120)}`; if (!chimeP) return; }  // no plugin in this shell: stay on web audio
     await new Promise(r => setTimeout(r, 30));
   }
+  chimeLog.ms = Date.now() - t0;
+}
+// Admin tools: how the chimes are playing on this phone, and a test
+function soundPanel() {
+  const box = $("soundPanel"); if (!box) return; box.innerHTML = "";
+  const L = chimeLog, line = el("p", "note");
+  const paint = () => line.textContent = !NATIVE ? "Web: chimes use web audio (the silent switch mutes them)."
+    : `App shell ${L.shell ?? "?"} · plugin ${L.plugin ? "found" : "missing"} · ${L.loaded} of 24 loaded${L.ms ? ` in ${(L.ms / 1000).toFixed(1)}s` : ""} · ${L.plays} played natively${L.err ? ` · load error: ${L.err}` : ""}${L.playErr ? ` · play error: ${L.playErr}` : ""}`;
+  paint();
+  box.append(line, btn("Play a chime", "btn ghost small", () => { play("right"); setTimeout(paint, 400); }));
 }
 const lastPlayed = {};
 let soundOn = store.get("radical-sound", true);
@@ -3955,7 +3975,7 @@ function aiTally() {
   if (store.get("radical-owner", false)) { b.hidden = false; paintTally(last); }
   fetchUsage().then(j => { b.hidden = !(j && j.owner); if (j && j.owner) paintTally(j.all); });
 }
-function openAdmin() { paintTally(store.get("radical-ai-tally", null)); noticePanel(); topicPanel(true); giftPanel(); hitsPanel(); judgePanel(); prebuildPanel(); buildLab(); go("adminScreen"); aiTally(); }
+function openAdmin() { paintTally(store.get("radical-ai-tally", null)); noticePanel(); topicPanel(true); giftPanel(); hitsPanel(); judgePanel(); soundPanel(); prebuildPanel(); buildLab(); go("adminScreen"); aiTally(); }
 // v44: the owners' notice: everyone sees it once (per notice), a moment after the splash. Owners write it here.
 // v46: asked fresh every time (never a stored answer; the minute in the address lets the CDN share it for a minute),
 // on start and on every return to the app (at most once a minute), and it waits for as long as a sheet, cards or
@@ -4737,7 +4757,7 @@ function cardsDone() {
 // plays with reduced motion too; the sparks don't.
 function todayBurst() {
   play("today");
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { toast("Daily goal met", 2500, true); return; }
   const fm = document.querySelector("#reviewScreen:not([hidden]) .finish .finmark"), r = fm && fm.getBoundingClientRect();
   const cx = r && r.width ? r.left + r.width / 2 : innerWidth / 2, cy = r && r.height ? r.top + r.height / 2 : innerHeight * .4;
   const layer = el("div", "tburst"); layer.setAttribute("aria-hidden", "true"); layer.style.cssText = `--cx:${cx}px;--cy:${cy}px`;
@@ -4748,6 +4768,7 @@ function todayBurst() {
     sp.style.cssText = `--x:${Math.round(Math.cos(a) * d)}px;--y:${Math.round(Math.sin(a) * d)}px;--g:${Math.round(40 + Math.random() * 90)}px;--z:${(3 + Math.random() * 5).toFixed(1)}px;--t:${(1.6 + Math.random() * 1.4).toFixed(2)}s;--d:${(i < 40 ? Math.random() * .15 : .45 + Math.random() * .2).toFixed(2)}s;--c:var(--gold${1 + (i % 4)})`;
     layer.append(sp);
   }
+  layer.append(el("b", "tlabel", "Daily goal met"));  // v83: the burst says what it's for
   document.body.append(layer); setTimeout(() => layer.remove(), 3600);
 }
 function askRating() {
@@ -4767,7 +4788,8 @@ function ringBurst(ring, quiet) {
   }
   setTimeout(() => { ring.classList.remove("burst"); tz.querySelectorAll(".rspark").forEach(x => x.remove()); }, 5400);
 }
-const streakDay = (v, day) => day < STREAK_FROM ? dayUsed(v) : goalMet(v, day);
+// v83 (David): only a full goal-met day counts, on every day (before, days ahead of the goal rule counted any study)
+const streakDay = (v, day) => goalMet(v, day);
 // ---- streak: days used in a row, with rest days. Any 14 days in a row may have up to 3 days off; a 4th day off in
 // the same 14 ends the streak. Rest days don't add to the count. Today never breaks it (the day isn't over yet).
 const REST_DAYS = 3, REST_WINDOW = 14;
@@ -4915,7 +4937,7 @@ function renderTrack() {
     const c = el(key > today ? "span" : "button", `calday ${cls}${key === today ? " today" : ""}`, cls.startsWith("half") ? `<span class="hd">${k}</span>` : String(k)); grid.append(c);
     if (key <= today) { c.type = "button"; c.onclick = () => showDay(c, key, v); }
   }
-  cal.append(head, grid, dayLine, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<span class="kdi"><i class="kd hit"></i> goal met</span> ${halves || streakRule() === "both" ? '<span class="kdi"><i class="kd half"></i> reading</span> <span class="kdi"><i class="kd half cards"></i> cards</span> ' : ""}<span class="kdi"><i class="kd on"></i> studied</span> <span class="kdi"><i class="kd off"></i> rest day</span>`));
+  cal.append(head, grid, dayLine, el("p", "trs", `${usedMonth} day${usedMonth === 1 ? "" : "s"} this month`), el("p", "trs", `<span class="kdi"><i class="kd hit"></i> goal met</span> ${halves || streakRule() === "both" ? '<span class="kdi"><i class="kd half"></i> reading</span> <span class="kdi"><i class="kd half cards"></i> cards</span> ' : ""}<span class="kdi"><i class="kd on"></i> studied</span>`), el("p", "trs calrule", `Streak: ${REST_DAYS} rest days allowed in any ${REST_WINDOW}.`));
   box.append(cal);
   // your three boxes (tap: what's in it; touch and hold: change it): a number and one word each, under "Words" when all
   // three count words
