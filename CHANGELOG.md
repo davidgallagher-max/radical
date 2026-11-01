@@ -2,6 +2,11 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v77
+
+- Meaning check: a number counts as its word, so "1" is right for 一 and "10,000" for 萬.
+- Admin tools, Gift: a full-width box that takes a friend code or an email. Someone who hasn't joined gets the gift when they first sign in with that email. "Send them an email" (on by default) sends a short note: "<your first name> gave you Radical Lifetime. Sign in with this email in the app and it's yours."
+
 ## v76
 
 - Card sentences play as one smooth sentence. Slower and Step by step just lower the speed, with no gaps between words.

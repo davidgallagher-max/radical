@@ -157,6 +157,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v76 notes: `saySentence(text, pace)` (one utterance, k .8 Slower / .65 Step) for the card sentence speaker (`miniReader`) and Listen's In a sentence. `assignModes` in Mix: a word with `srs`, not `skip`, and no `wsrs`/`lsrs` adds those modes to its draw (`fresh`). Server `makeCard(word, trad)`: for cn, a stored `tw|<trad>` card goes through `CN_FROM_TW` (FAST_MODEL; `FLIPS` lists words whose meaning flips) and is stored as the cn card with `from: "tw"`; else the full `CARD_PROMPT`. The page adds `&t=<toTrad(word)>` to cn card GETs when it differs; `prebuild` takes `trad` beside `words`.
 
+- v77 notes: `norm` runs `numWords` (digits to `NUMW` words) and keeps digits. Gift: `.giftin` box takes a friend code or an email; `account.idForEmail(email)` (admin create, confirmed, then generate_link for the id; nothing is emailed) and `account.emailOf(id)`; `pay.gift` returns `to`/`email`, and claude.js's `entitle` sends the note through Resend from gifts@upslopelabs.com (reply-to the owner, first name from profile.json) when `notify` (`.giftmail` tick), replying `mailed`.
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)
