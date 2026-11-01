@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v82
+
+- About: the Today line now reads "Today: our daily picks to help you remember. But any card you study counts toward your daily goal."
+
 ## v81
 
 - Meaning check: the answer side uses the same check as the front (every meaning of the word), and brackets come off before splitting, so "it" is right for 它 ("it (for animals or things, not people)").

@@ -1501,7 +1501,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <h3 class="abouthead">Static flashcards? Bogus. Get radical.</h3>
       <p>Every character is drawn stroke by stroke and colored by what each part does: meaning, sound, or picture. Read real Chinese, tap any word, and it becomes a card that brings it to life in real sentences.</p>
       <p><b>Words, not characters.</b> A character alone rarely means much. Radical counts the words you know, because words are what you read.</p>
-      <p><b>Today</b> is your day's cards: what's due, then new words, up to your Cards a day. Any card you study counts it down.</p>
+      <p><b>Today:</b> our daily picks to help you remember. But any card you study counts toward your daily goal.</p>
       <div class="aboutpic" aria-hidden="true"><div class="revhead"><b>Flash cards</b><span class="pbadge fcbadge">12</span></div><div class="pills cats"><button aria-pressed="true">Today <span>12</span></button><button>New <span>40</span></button><button>Learning <span>85</span></button></div></div>
       <p>Designed, built and shipped by Upslope Labs, your polyglot friends in the Mile High City.</p>
       <p class="note aboutcred">Make Me a Hanzi · CC-CEDICT · OpenCC · Hanzi Writer · Wikipedia (CC BY-SA)</p>
@@ -1756,7 +1756,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v81";
+const APP_VERSION = "v82";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
