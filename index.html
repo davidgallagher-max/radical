@@ -1657,7 +1657,13 @@ const store = {
 };
 const rawSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 // v54: the iPhone app's native parts (Capacitor plugins), or null on the web.
-const plug = n => { const C = NATIVE && window.Capacitor; if (!C) return null; try { return (C.Plugins && C.Plugins[n]) || (C.registerPlugin ? C.registerPlugin(n) : null); } catch (e) { return null; } };
+// A plugin from the native shell. If the bridge knows it (PluginHeaders) but Plugins lacks it, call it through nativePromise.
+const plug = n => { const C = NATIVE && window.Capacitor; if (!C) return null; try {
+  if (C.Plugins && C.Plugins[n]) return C.Plugins[n];
+  const h = (C.PluginHeaders || []).find(x => x && x.name === n);
+  if (h && C.nativePromise) { const o = {}; (h.methods || []).forEach(m => o[m.name] = a => C.nativePromise(n, m.name, a || {})); return o; }
+  return C.registerPlugin ? C.registerPlugin(n) : null;
+} catch (e) { return null; } };
 // Flash cards and the word page stay upright; reading can turn sideways.
 function nativeOrient(id) {
   const o = plug("ScreenOrientation"); if (!o) return;
@@ -1760,7 +1766,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v83";
+const APP_VERSION = "v84";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2205,11 +2211,14 @@ async function chimesLoad() {
   chimeLog.ms = Date.now() - t0;
 }
 // Admin tools: how the chimes are playing on this phone, and a test
+const bridgeInfo = () => { const C = window.Capacitor; if (!C) return "none"; try {
+  return `plugins ${Object.keys(C.Plugins || {}).join(", ") || "none"}; headers ${(C.PluginHeaders || []).map(x => x.name).join(", ") || "none"}; promise ${C.nativePromise ? "yes" : "no"}${window.__radicalLive ? `; live ${window.__radicalLive}` : ""}`;
+} catch (e) { return "error"; } };
 function soundPanel() {
   const box = $("soundPanel"); if (!box) return; box.innerHTML = "";
   const L = chimeLog, line = el("p", "note");
   const paint = () => line.textContent = !NATIVE ? "Web: chimes use web audio (the silent switch mutes them)."
-    : `App shell ${L.shell ?? "?"} · plugin ${L.plugin ? "found" : "missing"} · ${L.loaded} of 24 loaded${L.ms ? ` in ${(L.ms / 1000).toFixed(1)}s` : ""} · ${L.plays} played natively${L.err ? ` · load error: ${L.err}` : ""}${L.playErr ? ` · play error: ${L.playErr}` : ""}`;
+    : `App shell ${L.shell ?? "?"} · plugin ${L.plugin ? "found" : "missing"} · ${L.loaded} of 24 loaded${L.ms ? ` in ${(L.ms / 1000).toFixed(1)}s` : ""} · ${L.plays} played natively${L.err ? ` · load error: ${L.err}` : ""}${L.playErr ? ` · play error: ${L.playErr}` : ""}${L.plugin ? "" : ` · bridge: ${bridgeInfo()}`}`;
   paint();
   box.append(line, btn("Play a chime", "btn ghost small", () => { play("right"); setTimeout(paint, 400); }));
 }
