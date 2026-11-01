@@ -5,6 +5,7 @@ What changed in each version, in plain words. Newest first.
 ## v84
 
 - Chimes on the iPhone: the app now finds the native chime player even when the page loaded from a live update doesn't list it, so chimes can play on silent. Admin tools, Sounds shows what the app can see when the player is still missing.
+- iPhone app (new build): the app now actually starts with the view that registers the chime player. It was built in v79 but never used, so chimes kept going through web audio.
 
 ## v83
 
