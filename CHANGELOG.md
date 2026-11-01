@@ -2,6 +2,11 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v80
+
+- Taiwan and Mainland cards fill each other: every new card also makes its twin in the other region (Traditional with Taiwan wording, or Simplified with mainland wording) on the cheap model, so studying in one region builds the other.
+- Admin tools, Pre-built cards: "Copy cards to the other region" does the same once for every card made before this.
+
 ## v79
 
 - iPhone app: the chimes and woodblock now play from the app itself, so they sound with the phone on silent and dip music while they play instead of stopping it. Needs the new TestFlight build; until then the app sounds as before.
