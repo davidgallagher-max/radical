@@ -59,6 +59,20 @@ Return ONLY the JSON object with the same keys, no other text.
 
 ${JSON.stringify(card)}`;
 
+// v80: and the other way: the Taiwan card made from a mainland one
+const TW_FROM_CN = card => `Here is a study card made for a learner of Mandarin as spoken in mainland China (Putonghua, Simplified characters). Make the same card for a learner of Taiwan Mandarin (Traditional characters, Taiwan readings).
+
+Rules:
+- "word": the Traditional form. "simplified": the Simplified form, or empty string if identical. Keep "meaning" and "usage" unless the Taiwan meaning or usage differs.
+- "pinyin": the standard Taiwan reading (e.g. 垃圾 lèsè, 星期 xīngqí, 頭髮 tóufǎ), tone marks.
+- "chars": one entry per character of the word, with "char" in Traditional. If the Traditional form is the same character, keep its parts and mnemonic. If it is different, write new parts and a new mnemonic for the Traditional form.
+- "examples": keep each sentence and its English, written in Traditional characters with Taiwan pinyin. Mainland places and things are fine. Change a word only where Taiwan speakers say it differently (出租车 → 計程車, 自行车 → 腳踏車, 土豆 meaning potato → 馬鈴薯), or where it means something different, or something rude or sexual, in Taiwan (watch for: ${FLIPS}).
+- "related": the same words in Traditional with Taiwan pinyin.
+
+Return ONLY the JSON object with the same keys, no other text.
+
+${JSON.stringify(card)}`;
+
 const WORDS_PROMPT = (text, cn) => `A learner of ${MAND(cn)} pasted the text below to add words to a vocabulary list. It may be a tidy list, a messy list with pinyin and English mixed in, or sentences.
 Pick out the Chinese vocabulary items they most likely want to study: words and set phrases, not whole sentences, and skip particles and very basic words (的, 了, 我, 是) unless the text is clearly just a list.
 Keep the learner's own pinyin and English when given; otherwise give ${cn ? "standard mainland" : "Taiwan"} pinyin with tone marks and a short English meaning.
@@ -435,7 +449,53 @@ module.exports = async (req, res) => {
     }
     return parseJSON(await askClaude(CARD_MODEL, CARD_PROMPT(word, cn), 1600));
   };
+  // v80: every card gets its twin in the other region (Taiwan <-> mainland) from the fast model, so studying in one
+  // fills the other. Paid by us (logged as "twin"), not from the learner's allowance; made once, then stored.
+  const HAN = /^\p{Script=Han}+$/u;
+  const twinKey = (key, data, t) => {
+    const [from, word] = String(key).split("|"); if (!word || !data || typeof data !== "object") return null;
+    const to = from === "tw" ? "cn" : "tw";
+    let w = to === "cn" ? String(data.simplified || "").trim() || word : (HAN.test(String(t || "")) ? String(t) : String(data.word || "").trim() || word);
+    if (!HAN.test(w)) return null;
+    return { to, word: w, key: `${to}|${w.slice(0, 40)}` };
+  };
+  const makeTwin = async (key, data, t) => {
+    const k = twinKey(key, data, t); if (!k) return "skip";
+    if (await answers.get("card", k.key)) return "had";
+    const r = await askAI(FAST_MODEL, k.to === "cn" ? CN_FROM_TW(data) : TW_FROM_CN(data), 2000);
+    await account.logUse(who, "twin", FAST_MODEL, r.usage, user && user.email, today).catch(() => {});
+    const c = parseJSON(r.text);
+    if (!c || !Array.isArray(c.examples) || !c.examples.length || !c.pinyin) return "failed";
+    c.word = k.to === "tw" ? k.word : String(data.word || "").trim() || k.word; c.from = key.split("|")[0];
+    cardExamples(c);
+    const listed = answers.onList(k.to, k.word);
+    await answers.put("card", k.key, c, listed ? { pre: true } : {}); if (listed) await answers.mark(k.key);
+    return "made";
+  };
   try {
+    // v80: the page asks for the twin right after a new card reaches it (so the learner doesn't wait for it)
+    if (body.action === "twin") {
+      if (!user) return res.status(401).json({ error: "Sign in first (Settings, Account).", signin: true });
+      res.setHeader("Cache-Control", "no-store");
+      const word = String(body.word || "").trim().slice(0, 40), src = HAN.test(word) && await answers.get("card", `${rk}|${word}`);
+      if (!src) return res.status(200).json({ out: "none" });
+      return res.status(200).json({ out: await makeTwin(`${rk}|${word}`, src.data, body.t).catch(() => "failed") });
+    }
+    // v80: owners copy every stored card across (Admin tools), a page of files at a time, at most 4 new twins a call
+    if (body.action === "twinall") {
+      if (!account.isOwner(user)) return res.status(403).json({ error: "Owners only." });
+      res.setHeader("Cache-Control", "no-store");
+      const files = (await account.storage.list("answers/card").catch(() => [])).filter(x => x.endsWith(".json")).sort();
+      let at = Math.max(0, +body.from || 0); const jobs = [], stop = at + 60;
+      while (at < files.length && at < stop && jobs.length < 4) {
+        const x = await account.storage.getJSON(`answers/card/${files[at++]}`).catch(() => null);
+        if (!x || !x.key) continue;
+        const k = twinKey(x.key, x.data); if (!k || await answers.get("card", k.key)) continue;
+        jobs.push(makeTwin(x.key, x.data).catch(() => "failed"));
+      }
+      const outs = await Promise.all(jobs);
+      return res.status(200).json({ next: at < files.length ? at : null, total: files.length, made: outs.filter(o => o === "made").length, failed: outs.filter(o => o === "failed").length });
+    }
     if (body.action === "card") {
       const word = String(body.word || "").trim().slice(0, 40);
       if (!word) return res.status(400).json({ error: "No word given." });

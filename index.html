@@ -1754,7 +1754,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v79";
+const APP_VERSION = "v80";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3446,6 +3446,9 @@ async function claude(payload, why) {
   if (r.status === 429 && data.aiout) aiOutSheet(AUTO_AI.includes(payload.action), data.aiout);
   if (!r.ok) throw new Error(data.error || `Something went wrong (${r.status}).`);
   if (free && r.headers.get("x-vercel-cache") !== "HIT" && !r.headers.get("x-radical-stored")) store.set("radical-free-ai", store.get("radical-free-ai", 0) + 1);  // a shared answer costs nothing
+  // v80: a card just made: ask for its twin in the other region (Taiwan <-> mainland) in the background
+  if (payload.action === "card" && token && r.headers.get("x-vercel-cache") !== "HIT" && !r.headers.get("x-radical-stored"))
+    fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", ...auth }, body: JSON.stringify({ action: "twin", region, word: payload.word, t: toTrad(payload.word) }) }).catch(() => {});
   return data;
 }
 // ================= account: sign in with your email and a 6-digit code (Supabase), then your words sync
@@ -3847,10 +3850,21 @@ async function prebuildPanel() {
     try { for (;;) { const r = await ownerPost({ action: "cardtally", op: "recount", from }); b.textContent = `Recounting… ${Math.min(r.total, from + 200)} of ${r.total}`; if (r.next == null) break; from = r.next; } } catch (e) { stored.textContent = e.message; }
     b.textContent = "Recount"; b.disabled = false; count();
   };
+  // v80: every stored card gets its twin in the other region, a few per call
+  const twinMsg = el("p", "note");
+  const twinAll = async b => {
+    b.disabled = true; let from = 0, made = 0, failed = 0;
+    try { for (;;) { const r = await ownerPost({ action: "twinall", from }); made += r.made || 0; failed += r.failed || 0;
+      twinMsg.textContent = `Copying… ${Math.min(r.total, r.next ?? r.total)} of ${r.total} checked, ${made} made${failed ? `, ${failed} failed` : ""}.`; if (r.next == null) break; from = r.next; }
+      twinMsg.textContent = `Done: ${made} made${failed ? `, ${failed} failed (run again to retry)` : ""}.`; } catch (e) { twinMsg.textContent = e.message + " Tap again to carry on."; }
+    b.disabled = false; count();
+  };
   const draw = () => {
     box.innerHTML = ""; paint();
     const rc = btn("Recount", "btn ghost small", () => recount(rc));
     box.append(stored, el("p", "note", "Studying fills this in for free. Recount once to include cards made before v64."), rc);
+    const tw = btn("Copy cards to the other region", "btn ghost small", () => twinAll(tw));
+    box.append(el("p", "note", "New cards copy themselves across (Taiwan ⇄ Mainland). Run this once for older ones; cheap model."), tw, twinMsg);
     box.append(el("p", "note", "Or build them all now (very roughly $100 to $200 a region). Keep this page open; it picks up where it stopped."), line);
     const row = el("div", "row");
     if (prebuilding) row.append(btn(`Stop (${prebuilding === "tw" ? "Taiwan" : "Mainland"} running…)`, "btn ghost small", () => { prebuilding = null; msg.textContent = "Stopping after this batch…"; }));
