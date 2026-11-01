@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v79
+
+- iPhone app: the chimes and woodblock now play from the app itself, so they sound with the phone on silent and play over music without stopping it. Needs the new TestFlight build; until then the app sounds as before.
+
 ## v78
 
 - Sounds (chimes, woodblock) should play with the iPhone on silent; other audio only dips while they play. Needs an iPhone check.
