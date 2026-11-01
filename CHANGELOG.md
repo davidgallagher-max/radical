@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v81
+
+- Meaning check: the answer side uses the same check as the front (every meaning of the word), and brackets come off before splitting, so "it" is right for 它 ("it (for animals or things, not people)").
+- Practice: the red number moved off the Today pill to beside Flash cards at the top (cards left for today's goal; any cards count). The Today pill keeps its plain count, which counts down too. About has one line on what Today is, with a small picture of the Flash cards box.
+- "I was right" shows under every meaning that wasn't marked right, as a small grey link (before, only after the AI judged it).
+
 ## v80
 
 - Taiwan and Mainland cards fill each other: every new card also makes its twin in the other region (Traditional with Taiwan wording, or Simplified with mainland wording) on the cheap model, so studying in one region builds the other.

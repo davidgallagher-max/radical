@@ -165,6 +165,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v80 notes: twins. Server `TW_FROM_CN` (beside `CN_FROM_TW`), `twinKey(key, data, t)` (tw -> `cn|<simplified or word>`; cn -> `tw|<t or card.word>`), `makeTwin` (FAST_MODEL via `askAI`, logged as `twin`, not charged to the learner; `from` = source region; pre-built and marked when on the target list). Action `twin` {word, t, region} (signed in): the page fires it from `claude()` after a card that wasn't stored or CDN-served. Owner action `twinall` {from}: scans `answers/card` files (60 a call, at most 4 new twins), returns {next, total, made, failed}; Admin Pre-built cards has "Copy cards to the other region" (`twinAll`, `twinMsg`).
 
+- v81 notes: `checkMeaning` strips `(...)` before splitting on ; , / or; `showBack` checks `okGuess` then `checkMeaning(guess, meaningsOf(w))` (was `wMeaning`). "I was right" (`.wasright`, `btn ghost small`, grey underlined link) on any typed meaning not ok and not asking. The red number is `.fcbadge` (dueCount, follows `radical-badge`) in `.revhead` beside Flash cards; the Today pill's count is plain. About has a Today line and `.aboutpic` (a static copy of the Flash cards head and three pills).
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)
