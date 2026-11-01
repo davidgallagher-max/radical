@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v78
+
+- Sounds (chimes, woodblock) should play with the iPhone on silent; other audio only dips while they play. Needs an iPhone check.
+
 ## v77
 
 - Meaning check: a number counts as its word, so "1" is right for 一 and "10,000" for 萬.
