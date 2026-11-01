@@ -329,7 +329,7 @@ p.busy{margin:-4px 4px 0}
 @keyframes odo{from{transform:translateY(-1.25em)}to{transform:translateY(0)}}
 @media (prefers-reduced-motion:reduce){.revscore .sc.glow{animation:none}.odo>span{animation:none;transform:none}}
 .sc.ok{color:var(--on)}
-.btn.small.wasright{background:transparent;color:var(--on);border:1.5px solid var(--on);border-radius:8px;box-shadow:none;text-shadow:none;font-weight:600}.sc.part{color:var(--part,#E2B33C)}.sc.no{color:var(--no,#E5533D)}
+.btn.small.wasright{background:none;color:var(--muted);border:0;border-radius:0;box-shadow:none;text-shadow:none;font-weight:400;font-size:.92rem;padding:4px 0;min-height:0;text-decoration:underline;text-underline-offset:3px}.sc.part{color:var(--part,#E2B33C)}.sc.no{color:var(--no,#E5533D)}
 /* The answer flourish: 對, 半 or 錯 blooms in the middle of the screen like ink spreading, then fades (never blocks a tap). */
 .bloom{position:fixed;left:50%;top:42%;z-index:60;pointer-events:none;font-family:var(--font-zh);font-weight:700;font-size:min(46vw,240px);line-height:1;transform:translate(-50%,-50%);opacity:0;animation:bloom 2s cubic-bezier(.2,.7,.3,1) forwards}
 .bloom.ok{color:var(--on)}.bloom.part{color:var(--part,#E2B33C)}.bloom.no{color:var(--no,#E5533D)}
@@ -918,7 +918,7 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .pills.topicsize{align-items:center;margin:8px 0}.pills.topicsize .tslabel{color:var(--muted);font-size:.92rem;margin-right:4px}.pills.topicsize button{flex:0 1 64px;padding:6px 10px}
 .pills button{all:unset;cursor:pointer;box-sizing:border-box;flex:1 1 auto;text-align:center;white-space:nowrap;padding:8px 12px;border-radius:999px;font-size:.92rem;font-weight:600;color:var(--fg);background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
 .pills button span{color:var(--muted);font-weight:500;font-size:.92rem;margin-left:2px}
-.pills button span.pbadge,.pills button[aria-pressed="true"] span.pbadge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;margin-left:4px;border-radius:10px;background:#E5372F;color:#fff;font-size:.78rem;font-weight:700;opacity:1;vertical-align:1px}
+.revhead .fcbadge{flex:none;width:auto;display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 7px;margin-left:-2px;border-radius:11px;background:#E5372F;color:#fff;font-size:.8rem;font-weight:700;vertical-align:3px;font-family:var(--ui,inherit)}.pills button span.pbadge,.pills button[aria-pressed="true"] span.pbadge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;margin-left:4px;border-radius:10px;background:#E5372F;color:#fff;font-size:.78rem;font-weight:700;opacity:1;vertical-align:1px}
 .pills button[aria-pressed="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--bg));box-shadow:inset 0 0 0 2px var(--accent);font-weight:700}
 /* v50: the deck row's chosen pill gets the full halo (Basecamp's, in the accent); other rows keep fill and edge only */
 .pills.lists button[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent),0 0 12px color-mix(in srgb,var(--accent) 45%,transparent)}
@@ -1260,7 +1260,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .daydial svg:focus-visible .ddknob{stroke:var(--accent);stroke-width:3}
 .about .abouthead{margin:0;font-size:1.25rem;line-height:1.3;color:var(--fg)}
 .about p b{color:var(--fg)}
-.about .aboutcred{font-size:.92rem;text-align:center}
+.about .aboutpic{pointer-events:none;margin:2px 0 14px;padding:12px 14px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);display:grid;gap:10px}.about .aboutcred{font-size:.92rem;text-align:center}
 /* ---- a phone on its side: the tab bar becomes a column on the right (部, the three tabs, ☰) and each tab's header
    steps aside, so the text gets the height. Reading puts the color key and controls in one row; Explore and the
    flash card panel go two columns. Pages that open on top (cards, word page) keep their own layout. */
@@ -1501,6 +1501,8 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <h3 class="abouthead">Static flashcards? Bogus. Get radical.</h3>
       <p>Every character is drawn stroke by stroke and colored by what each part does: meaning, sound, or picture. Read real Chinese, tap any word, and it becomes a card that brings it to life in real sentences.</p>
       <p><b>Words, not characters.</b> A character alone rarely means much. Radical counts the words you know, because words are what you read.</p>
+      <p><b>Today</b> is your day's cards: what's due, then new words, up to your Cards a day. Any card you study counts it down.</p>
+      <div class="aboutpic" aria-hidden="true"><div class="revhead"><b>Flash cards</b><span class="pbadge fcbadge">12</span></div><div class="pills cats"><button aria-pressed="true">Today <span>12</span></button><button>New <span>40</span></button><button>Learning <span>85</span></button></div></div>
       <p>Designed, built and shipped by Upslope Labs, your polyglot friends in the Mile High City.</p>
       <p class="note aboutcred">Make Me a Hanzi · CC-CEDICT · OpenCC · Hanzi Writer · Wikipedia (CC BY-SA)</p>
       <p class="note aboutcred"><a href="https://upslopelabs.com/radical/privacy" target="_blank" rel="noopener">Privacy policy</a> · <a href="mailto:privacy@upslopelabs.com">privacy@upslopelabs.com</a></p>
@@ -1754,7 +1756,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v80";
+const APP_VERSION = "v81";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -5949,7 +5951,9 @@ function renderStrip(sizes) {
   const strip = $("revStrip"); strip.innerHTML = "";
   // No words yet: Word Sets takes this spot (there's nothing to practice).
   if (!myWords.length) { strip.append(setsPanel()); return; }
-  const box = el("div", "revpanel"), head = el("div", "revhead", "<b>Flash cards</b>");
+  // v81: the red number (the same as 練's: cards left toward today's goal, any cards count) sits by the title, not on the Today pill
+  const due = store.get("radical-badge", true) ? dueCount() : 0;
+  const box = el("div", "revpanel"), head = el("div", "revhead", `<b>Flash cards</b>${due ? `<span class="pbadge fcbadge" title="Cards left for today's goal">${due}</span>` : ""}`);
   const tn = btn("", "todaynum", () => setTab("trackScreen")); tn.id = "todayNum"; tn.hidden = true; head.append(tn);
   box.append(head);
   const lists = allLists();
@@ -5967,7 +5971,6 @@ function renderStrip(sizes) {
   }
   sec("Skill", pills("hows", [["read", "Read"], ["write", "Write"], ["listen", "Listen"], ["mix", "Mix"]], revHow, k => { revHow = k; store.set("radical-revhow", k); }));
   const cats = pills("cats", CATS.map(([k, label]) => [k, label, sizes[k], k !== "today" && k !== "all" && !sizes[k]]), revCat, k => { revCat = k; });
-  if (sizes.today) cats.firstChild.lastChild.className = "pbadge";  // Today's count in red, like the one on 練
   sec("Type", cats);
   const n = sizes[revCat], count = countFor(n);
   if (n) sec("How many", pills("counts" + (countChoices(n).length ? "" : " solo"), [...countChoices(n).map(c => [c, String(c)]), ["all", `All (${n})`]], count, k => { revCount = k; store.set("radical-revcount", k); }));
@@ -7238,7 +7241,8 @@ async function dispute(w, g) {
 function checkMeaning(given, target) {
   if (!given.trim()) return { ok: null };
   if (!target) return { ok: null };
-  const g = norm(given), phrases = target.split(/[;,/]|\bor\b/).map(norm).filter(Boolean);
+  // v81: brackets come off before splitting, so "it (for animals or things)" gives "it", not "it for animals"
+  const g = norm(given), phrases = target.replace(/\([^)]*\)/g, " ").split(/[;,/]|\bor\b/).map(norm).filter(Boolean);
   const gs = stemAll(g);
   if (phrases.some(p => p === g || stemAll(p) === gs || (g.length > 2 && (p.includes(g) || g.includes(p))))) return { ok: true, note: "Correct." };
   // Content words anywhere in the answer count as close, including those in brackets: "(often a text message)".
@@ -7620,7 +7624,7 @@ function showBack(w, how, st) {
   }
   if (guess) {
     const asChars = guess.listen && /\p{Script=Han}/u.test(guess.py);
-    const rp = asChars ? checkChars(guess.py, w) : checkPinyin(guess.py, wPinyin(w)), rm = (st && st.aiMean) || checkMeaning(guess.mean, wMeaning(w));
+    const rp = asChars ? checkChars(guess.py, w) : checkPinyin(guess.py, wPinyin(w)), rm = (st && st.aiMean) || ((w.okGuess || []).includes(tidyGuess(guess.mean)) ? { ok: true, note: "Correct." } : checkMeaning(guess.mean, meaningsOf(w)));  // v81: the same check as the front (it used only the card's meaning)
     if (rm.ask) { rm.note = "Couldn't check this one: was it right?"; asking = true; }
     const mark = (label, val, r) => val.trim() ? `<div class="res ${r.ok === true ? "ok" : r.ok === "part" ? "part" : r.ok === false ? "no" : ""}"><span>${label}</span><b${asChars && label !== "Meaning" ? ' lang="zh" class="reszh"' : ""}>${label !== "Meaning" && !asChars ? pyWordHTML(numToMarks(val)) : esc(val)}</b><em>${esc(r.note || "")}</em>${r.detail ? `<div class="resdetail">${r.detail}</div>` : ""}</div>` : `<div class="res"><span>${label}</span><em>left blank</em></div>`;
     const results = el("div", "results", mark(guess.listen ? "Answer" : "Pinyin", guess.py, rp) + mark("Meaning", guess.mean, rm));
@@ -7634,9 +7638,10 @@ function showBack(w, how, st) {
     }
     // v63: the AI said no (or close) and you disagree: it counts as right for you, and the stored check is told; enough
     // learners disagreeing sends it to the owners to confirm or flip (it never changes for everyone on one say-so)
-    if (rm.ai && rm.ok !== true) {
+    // v81: on every meaning not marked right (the quick match too), as a quiet link
+    if (guess.mean.trim() && rm.ok !== true && !rm.ask) {
       const yn = el("div", "askrow");
-      yn.append(btn("I was right", "btn small wasright", () => { okGuess(w, guess.mean); dispute(w, guess.mean); redo(true); }));
+      yn.append(btn("I was right", "btn ghost small wasright", () => { okGuess(w, guess.mean); dispute(w, guess.mean); redo(true); }));
       results.lastElementChild.append(yn);
     }
     const score = [rp.ok, rm.ok].map(x => x === true ? 2 : x === "part" ? 1 : 0).reduce((a, b) => a + b, 0);
