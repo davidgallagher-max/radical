@@ -2,6 +2,13 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v83
+
+- Streak: only days with the goal fully met count, back to the start. Studied-only days and half days are misses (the 3 rest days in any 14 still cover some).
+- Calendar: no "rest day" in the key and no dashed boxes for days off. A line at the bottom says "Streak: 3 rest days allowed in any 14."
+- The burst when you meet your daily goal now says "Daily goal met" in gold.
+- Admin tools, Sounds: shows how the chimes play on this phone (app shell, native player found, how many loaded, any error) and a Play a chime button, to find why chimes stay silent on silent.
+
 ## v82
 
 - About: the Today line now reads "Today: our daily picks to help you remember. But any card you study counts toward your daily goal."

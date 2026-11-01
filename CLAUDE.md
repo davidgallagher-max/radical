@@ -167,6 +167,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v81 notes: `checkMeaning` strips `(...)` before splitting on ; , / or; `showBack` checks `okGuess` then `checkMeaning(guess, meaningsOf(w))` (was `wMeaning`). "I was right" (`.wasright`, `btn ghost small`, grey underlined link) on any typed meaning not ok and not asking. The red number is `.fcbadge` (dueCount, follows `radical-badge`) in `.revhead` beside Flash cards; the Today pill's count is plain. About has a Today line and `.aboutpic` (a static copy of the Flash cards head and three pills).
 
+- v83 notes: `chimeLog` {shell, plugin, loaded, err, plays, playErr, ms} filled by `chimesLoad`/`chimeGo`; Admin tools `#soundPanel` (`soundPanel()`) shows it with Play a chime. `todayBurst` adds `.tlabel` "Daily goal met" (toast with reduced motion). `streakDay` = `goalMet` for every day (no `dayUsed` before `STREAK_FROM`).
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)
