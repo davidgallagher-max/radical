@@ -171,6 +171,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v84 notes (fix): `plug(n)` falls back to a `nativePromise` proxy built from `Capacitor.PluginHeaders` when `Capacitor.Plugins[n]` is missing (build 16 showed "plugin missing" for Chime). `bridgeInfo()` (plugins, headers, nativePromise, live version) shows on the Sounds line while the plugin is missing. Root cause: `SceneDelegate` set `rootViewController = CAPBridgeViewController()` (scenes ignore Main.storyboard), so `MainViewController` never ran; now it uses `MainViewController()`.
 
+- v85 notes: `pullToRefresh` also runs on `adminScreen` and repaints its panels (the `openAdmin` list without `go`).
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)
