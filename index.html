@@ -1766,7 +1766,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v84";
+const APP_VERSION = "v85";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -8707,7 +8707,7 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
 // syncs, recounts Today, the badge and the ring, looks for a newer version and a new Open Message, restarts AI calls
 // that are stuck (over twice their usual time) and retries failures still on screen. Calls that are only slow keep going.
 (function pullToRefresh() {
-  const TABS = ["readScreen", "wikiScreen", "wordsScreen", "trackScreen"], PULL = 70;
+  const TABS = ["readScreen", "wikiScreen", "wordsScreen", "trackScreen", "adminScreen"], PULL = 70;
   const ptr = el("div", "ptr"); ptr.setAttribute("aria-hidden", "true");
   document.body.append(ptr);
   const markUp = () => { if (ptr.firstChild) return; try { const m = goldMark(); m.classList.add("ptrmark"); ptr.append(m); } catch (e) { ptr.append(el("b", "ptrmark", "部")); } };
@@ -8734,6 +8734,7 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
       if (online()) await Promise.race([syncNow(true), new Promise(ok => setTimeout(ok, 8000))]).catch(() => {});
       updateCounts(); paintReadGoal(); checkGoalToday(); if (!$("trackScreen").hidden) renderTrack();
       showNotice();
+      if (!$("adminScreen").hidden) { paintTally(store.get("radical-ai-tally", null)); noticePanel(); topicPanel(true); giftPanel(); hitsPanel(); judgePanel(); soundPanel(); prebuildPanel(); aiTally(); }
       if (await newerVersion()) { location.reload(); return; }
     } catch (e) {}
     setTimeout(() => { busy = false; ptr.classList.remove("on", "spin"); show(0); if (restarted + retried) toast(`Trying ${restarted + retried === 1 ? "it" : "those"} again…`, 1800); }, 500);
