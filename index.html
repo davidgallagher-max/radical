@@ -7161,7 +7161,10 @@ function checkChars(given, w) {
 }
 // Meaning: generous. Any meaning phrase, or a shared content word, counts.
 const STOP = new Set("to a an the of and or in on at for with be is it one's oneself something someone sb sth".split(" "));
-const norm = t => t.toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z' ]/g, " ").replace(/\s+/g, " ").trim().replace(/^(to|a|an|the) /, "");
+// v77: numbers count as their words, so "1" meets "one" and "10,000" meets "ten thousand"
+const NUMW = { 0: "zero", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven", 12: "twelve", 20: "twenty", 30: "thirty", 40: "forty", 50: "fifty", 60: "sixty", 70: "seventy", 80: "eighty", 90: "ninety", 100: "hundred", 1000: "thousand", 10000: "ten thousand", 1000000: "million", 100000000: "hundred million" };
+const numWords = t => t.replace(/\d[\d,]*/g, d => { const n = +d.replace(/,/g, ""); return ` ${NUMW[n] || (n > 12 && n < 20 ? ["thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"][n - 13] : d)} `; });
+const norm = t => numWords(t.toLowerCase()).replace(/\(.*?\)/g, " ").replace(/[^a-z0-9' ]/g, " ").replace(/\s+/g, " ").trim().replace(/^(to|a|an|the) /, "");
 // v70: a rough English stem (US spelling, no -ing/-ed/-es/-s/-ly) so small differences in form still match
 const stem = x => [[/(ies|ied)$/, "y"], [/(.)\1(ing|ed)$/, "$1"], [/(ing|ed|ly)$/, ""], [/([^s])(es|s)$/, "$1"], [/our$/, "or"], [/ise$/, "ize"], [/e$/, ""]]
   .reduce((w, [re, to]) => { const v = w.replace(re, to); return v.length >= 3 ? v : w; }, x);
