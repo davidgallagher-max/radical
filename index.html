@@ -1754,7 +1754,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v77";
+const APP_VERSION = "v78";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2097,6 +2097,9 @@ document.addEventListener("click", e => { const b = e.target.closest("[data-say]
 // ================= sound kit: guzheng and woodblock, made in the browser.
 // Each moment has a few variations and plays one at random, never the same one twice in a row.
 let actx;
+// v78: WebKit gives web audio its own audio session ("auto" = ambient, which the silent switch mutes), whatever the
+// app shell set. "transient" is for short sounds: it plays with the switch on silent and only dips other audio.
+try { if (navigator.audioSession && navigator.audioSession.type !== "transient") navigator.audioSession.type = "transient"; } catch (e) {}
 const ctx = () => {
   if (actx && actx.state === "closed") actx = null;
   actx ||= new (window.AudioContext || window.webkitAudioContext)();
