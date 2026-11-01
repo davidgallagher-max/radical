@@ -40,6 +40,25 @@ Return ONLY a JSON object, no other text, with exactly these keys:
 }
 Give exactly 3 examples, each in a clearly different everyday context. Give 0 to 3 related words that share a character with the word. ${CHOICES(cn)}`;
 
+// v76: the mainland card made from the Taiwan one with the fast model (about a quarter of a full card's cost).
+// Meaning and sentences are kept (Taiwan places and Taiwan-style speech are fine); what changes is the script, the
+// readings, character parts for characters whose Simplified form is different, and any word that means something
+// else (or something crude) on the mainland.
+const FLIPS = "小姐 (can mean prostitute), 同志 (comrade vs gay), 窩心 (heartwarming vs upset), 土豆 (peanut vs potato), 機車 (scooter / annoying vs locomotive), 搞 (can be sexual), 幹/干 (a swear word in Taiwan), 雞 (can mean prostitute)";
+const CN_FROM_TW = card => `Here is a study card made for a learner of Taiwan Mandarin (Traditional characters, Taiwan readings). Make the same card for a learner of Mandarin as spoken in mainland China (Putonghua, Simplified characters).
+
+Rules:
+- Keep "word" exactly as given (Traditional). Keep "meaning" and "usage" unless the mainland meaning or usage differs.
+- "simplified": the Simplified form, or empty string if identical.
+- "pinyin": the standard mainland reading (e.g. 垃圾 lājī, 和 hé, 星期 xīngqī), tone marks.
+- "chars": one entry per character of the word, with "char" in Simplified. If the Simplified form is the same character, keep its parts and mnemonic. If it is different, write new parts and a new mnemonic for the Simplified form.
+- "examples": keep each sentence and its English, written in Simplified characters with mainland pinyin. Taiwan places and things are fine. Rewrite a sentence only if it uses a word that means something different, or something rude or sexual, on the mainland (watch for: ${FLIPS}).
+- "related": the same words in Simplified with mainland pinyin.
+
+Return ONLY the JSON object with the same keys, no other text.
+
+${JSON.stringify(card)}`;
+
 const WORDS_PROMPT = (text, cn) => `A learner of ${MAND(cn)} pasted the text below to add words to a vocabulary list. It may be a tidy list, a messy list with pinyin and English mixed in, or sentences.
 Pick out the Chinese vocabulary items they most likely want to study: words and set phrases, not whole sentences, and skip particles and very basic words (的, 了, 我, 是) unless the text is clearly just a list.
 Keep the learner's own pinyin and English when given; otherwise give ${cn ? "standard mainland" : "Taiwan"} pinyin with tone marks and a short English meaning.
@@ -388,6 +407,21 @@ module.exports = async (req, res) => {
     return d;
   };
   const cn = body.region === "cn" || body.r === "cn", rk = cn ? "cn" : "tw";  // mainland (cards and Word Sets carry it in the URL as r=cn)
+  // v76: a mainland card is made from the stored Taiwan card when there is one (fast model), else from scratch
+  const makeCard = async (word, trad) => {
+    if (cn) {
+      // v76: the Taiwan card is stored under the Traditional form (the page sends it as t when it differs)
+      trad = String(trad || "").trim().slice(0, 40); if (!/^\p{Script=Han}+$/u.test(trad)) trad = word;
+      const tw = await answers.get("card", `tw|${trad}`);
+      if (tw && tw.data && typeof tw.data === "object") {
+        try {
+          const c = parseJSON(await askClaude(FAST_MODEL, CN_FROM_TW(tw.data), 2000));
+          if (c && Array.isArray(c.examples) && c.examples.length && c.pinyin) { c.word = tw.data.word || word; c.from = "tw"; return c; }
+        } catch (e) { if (e.aiout) throw e; }
+      }
+    }
+    return parseJSON(await askClaude(CARD_MODEL, CARD_PROMPT(word, cn), 1600));
+  };
   try {
     if (body.action === "card") {
       const word = String(body.word || "").trim().slice(0, 40);
@@ -398,7 +432,7 @@ module.exports = async (req, res) => {
       else {
         // v64: a word on the 5,000 list costs the first learner nothing, and its card counts as pre-built
         const listed = answers.onList(rk, word); if (listed) rate = 0;
-        card = parseJSON(await askClaude(CARD_MODEL, CARD_PROMPT(word, cn), 1600));
+        card = await makeCard(word, body.t);
         if (!card) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
         cardExamples(card); await answers.put("card", `${rk}|${word}`, card, listed ? { pre: true } : {});
         if (listed) { await answers.mark(`${rk}|${word}`); card = { ...card, pre: true }; }
@@ -430,13 +464,15 @@ module.exports = async (req, res) => {
     if (body.action === "prebuild") {
       if (!account.isOwner(user)) return res.status(403).json({ error: "Owners only." });
       res.setHeader("Cache-Control", "no-store");
-      const words = (Array.isArray(body.words) ? body.words : []).map(w => String(w || "").trim().slice(0, 40)).filter(w => /\p{Script=Han}/u.test(w)).slice(0, 4);
+      const tr = Array.isArray(body.trad) ? body.trad : [];
+      const pairs = (Array.isArray(body.words) ? body.words : []).map((w, i) => [String(w || "").trim().slice(0, 40), tr[i]]).filter(([w]) => /\p{Script=Han}/u.test(w)).slice(0, 4);
+      const words = pairs.map(x => x[0]), trads = pairs.map(x => x[1]);
       let made = 0, had = 0; const failed = [];
-      await Promise.all(words.map(async word => {
+      await Promise.all(words.map(async (word, i) => {
         const key = `${rk}|${word}`, x = await answers.get("card", key);
         if (x) { had++; if (!x.pre) await answers.put("card", key, x.data, { pre: true }); await answers.mark(key); return; }
         try {
-          const card = parseJSON(await askClaude(CARD_MODEL, CARD_PROMPT(word, cn), 1600));
+          const card = await makeCard(word, trads[i]);
           if (!card) { failed.push(word); return; }
           cardExamples(card); await answers.put("card", key, card, { pre: true }); await answers.mark(key); made++;
         } catch (e) { failed.push(word); }

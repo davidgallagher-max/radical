@@ -3386,7 +3386,7 @@ async function claude(payload, why) {
   // v44: explanations too, so the second person to tap 解 on a sentence gets it at once.
   const get = ["card", "wordset", "explain"].includes(payload.action), rp = region === "cn" ? "&r=cn" : "";
   payload = { region, ...payload };
-  const url = payload.action === "card" ? `${API}/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}${rp}`
+  const url = payload.action === "card" ? `${API}/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}${rp}${region === "cn" && toTrad(payload.word) !== payload.word ? `&t=${encodeURIComponent(toTrad(payload.word))}` : ""}`
     : payload.action === "explain" ? `${API}/api/claude?v=1&action=explain&sentence=${encodeURIComponent(payload.sentence)}&trad=${payload.trad === false ? 0 : 1}${payload.cw ? `&cw=${encodeURIComponent(payload.cw)}` : ""}${rp}`
     : get ? `${API}/api/claude?v=1&action=wordset&theme=${encodeURIComponent(payload.theme)}${payload.n && payload.n !== 24 ? `&n=${payload.n}` : ""}${rp}` : API + "/api/claude";
   // v58: each call is listed in aiLive while it runs, so a pull to refresh can restart one that's stuck (aiRestart)
@@ -3785,7 +3785,7 @@ async function prebuildPanel() {
   const run = async r => {
     if (prebuilding) return; prebuilding = r; draw();
     const conv = r === "tw" ? toTrad : (x => x), one = async ws => {
-      const j = await ownerPost({ action: "prebuild", words: ws.map(conv), region: r });
+      const j = await ownerPost({ action: "prebuild", words: ws.map(conv), trad: ws.map(toTrad), region: r });
       const s = st(); s.made += j.made || 0; s.had += j.had || 0; const tried = ws.map(w => r + "|" + conv(w)); s.failed = [...new Set([...s.failed.filter(f => !tried.includes(f)), ...(j.failed || []).map(f => r + "|" + f)])]; store.set("radical-prebuild", s);
     };
     try {
