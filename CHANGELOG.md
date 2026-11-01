@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v84
+
+- Chimes on the iPhone: the app now finds the native chime player even when the page loaded from a live update doesn't list it, so chimes can play on silent. Admin tools, Sounds shows what the app can see when the player is still missing.
+
 ## v83
 
 - Streak: only days with the goal fully met count, back to the start. Studied-only days and half days are misses (the 3 rest days in any 14 still cover some).
