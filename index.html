@@ -2062,6 +2062,8 @@ function paceSeg(after) {
   return seg;
 }
 const slowerPace = p => p === "normal" ? "slower" : "step";
+// v76: a sentence is always one smooth utterance; Slower and Step by step only lower the speed (word gaps sounded robotic)
+const saySentence = (text, pace = sayPace) => { text = String(text || ""); if (text) speak(text, pace === "normal" ? undefined : { k: pace === "slower" ? .8 : .65 }); };
 function sayPaced(text, pace = sayPace) {
   text = String(text || ""); if (!text) return;
   if (pace === "normal") { speak(text); return; }
@@ -2982,12 +2984,12 @@ function miniReader(text, mark, en, opts = {}) {
   // The speaker: your pace every time (no slower-on-repeat here); while it speaks it shows ■ and the 慢–快 dial.
   const said = () => text.replace(/\n+/g, "，");
   const say = el("button", "saybtn sm minisay", SPK); say.type = "button"; say.setAttribute("aria-label", "Read the sentence aloud");
-  say.onclick = e => { e.stopPropagation(); sayPaced(said(), sayPace); };
+  say.onclick = e => { e.stopPropagation(); saySentence(said()); };
   const dial = el("div", "minidial"); dial.hidden = true;
   dial.innerHTML = `<span class="sizerow"><i lang="zh" aria-hidden="true">慢</i><input type="range" min="0.5" max="1.3" step="0.05" aria-label="Reading speed"><b lang="zh" aria-hidden="true">快</b></span>`;
   const sp = dial.querySelector("input");
   say._onSay = on => { dial.hidden = !on; if (on) sp.value = rate; };
-  sp.onchange = () => { setRate(sp.value); if (!say.classList.contains("saying")) return; sayPaced(said(), sayPace); setTimeout(() => { if (voiceBusy()) markSaying(say); }, 80); };
+  sp.onchange = () => { setRate(sp.value); if (!say.classList.contains("saying")) return; saySentence(said()); setTimeout(() => { if (voiceBusy()) markSaying(say); }, 80); };
   sp.oninput = () => { rate = +sp.value; };
   const lastLine = () => [...body.querySelectorAll(".line")].pop() || body;
   const enb = el("button", "enbtn", "ENG"); enb.type = "button"; enb.title = "Translate this sentence";
@@ -7262,7 +7264,7 @@ function showFront() {
     // In a sentence: plays the card's example sentence (never shown) so the word is heard in use; tapping again
     // plays it slower, then normal again. It's context, not a clue, so it doesn't cap the rating.
     const ex = (exNow(w) || {}).example || w.context || "";
-    if (ex && ex !== w.word) { const b = btn("In a sentence", "btn ghost insent", () => { const k = altSpeed("sent:" + ex); sayPaced(conv(ex), k < 1 ? slowerPace(sayPace) : sayPace); }); lp.append(b); }
+    if (ex && ex !== w.word) { const b = btn("In a sentence", "btn ghost insent", () => { const k = altSpeed("sent:" + ex); saySentence(conv(ex), k < 1 ? slowerPace(sayPace) : sayPace); }); lp.append(b); }
     // Mix (v42): can't listen right now (no headphones)? Not now turns this card into a Read card and keeps Listen out
     // for the rest of the session. The Listen schedule isn't touched.
     if ((curHow || revHow) === "mix") lp.append(btn("Not now", "linkbtn notnow", () => {
