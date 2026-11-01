@@ -153,6 +153,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v74 notes: `.payopt.best::after` shows `data-tag` (Lifetime "Best value", Yearly "Save N%" from `rcProducts` prices, floor, default 33). `.listenprompt` buttons preventDefault on pointerdown/mousedown while `#gPy`/`#gMean` has focus (keyboard stays, one tap plays). Quit (`#revEnd`) with `rDone` empties `rq` and sets `showFront.ended`, so the finish screen reads "Session ended".
 
+- v75 notes (fix): the review screen's tap-to-close-keyboard (`pointerdown` blur) skips `.cluechar`, and clue characters preventDefault on pointerdown/mousedown while `#gPy`/`#gMean` has focus.
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)

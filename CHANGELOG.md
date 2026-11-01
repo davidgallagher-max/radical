@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v75
+
+- Reading cards: with the keyboard up, one tap on a character gives its clue and sound. The keyboard stays up.
+
 ## v74
 
 - Pay card tags: Lifetime is Best value; Yearly says Save 33% (worked out from the store's prices).
