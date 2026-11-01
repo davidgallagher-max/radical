@@ -5857,7 +5857,10 @@ let noListen = false;  // Mix: Not now on a Listen card keeps Listen out until t
 function assignModes(q, how) {
   if (how !== "mix") return;
   const ms = noListen ? MODES.filter(m => m !== "listen") : MODES;
-  q.forEach(w => { const dm = ms.filter(m => modeDue(w, m)); cardMode.set(w, dm.length ? pick1(dm) : !w.srs ? "read" : pick1(ms)); });
+  // v76: once a word has had a reading card, its Write and Listen can start: they join its due modes in the draw
+  // (a word you've never seen still starts on Read; Known words don't start new modes)
+  const fresh = (w, m) => m !== "read" && w.srs && !w.skip && !w[KEYS[m]];
+  q.forEach(w => { const dm = ms.filter(m => modeDue(w, m) || fresh(w, m)); cardMode.set(w, dm.length ? pick1(dm) : !w.srs ? "read" : pick1(ms)); });
 }
 function buildQueue(cat, count, how = revHow) {
   let q = pool(cat, how).slice();
