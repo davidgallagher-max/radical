@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v89
+
+- Buying Lifetime while on Monthly or Yearly now warns first: the subscription keeps renewing until you cancel it (Apple only lets you do that), and Apple can refund the rest. Cancel subscription opens Apple's cancel sheet; Buy Lifetime goes ahead.
+
 ## v88
 
 - Settings, Your plan: one "Change or cancel" button. It opens the plan card, which has a "Cancel subscription" link to Apple for monthly and yearly plans.

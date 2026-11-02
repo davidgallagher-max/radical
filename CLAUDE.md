@@ -179,6 +179,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v88 notes: `planBox` subscribers get one "Change or cancel" (`payCard({ change: true })`); the card adds `.linkbtn.paycancel` "Cancel subscription" (`SUBS_URL`) when `opts.change` and the plan is monthly or yearly.
 
+- v89 notes: `lifeWarn(card, plans, cur, buy)` in `payCard`: tapping Lifetime with a live monthly/yearly `cur` shows `.lifewarn` (cancel via `Purchases.showManageSubscriptions()` when the plugin has it, else `SUBS_URL`; Buy Lifetime sets `b._warned` and buys; reportaproblem.apple.com line). Apple has no developer cancel and no proration from a subscription to a non-consumable.
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)
