@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v87
+
+- Reading counts only the top two thirds of the screen, where your eyes are, and the whole screen once you reach the end of a text.
+- New setting, Reading speed (Daily goal): Auto, Slow, Normal or Fast. Normal is 2 characters a second (was 2.5 for everyone). Auto starts slower and speeds up as you recognize more words, and goes faster on lines full of words you know.
+- The tick asks "Tap again to uncount from here on".
+
 ## v86
 
 - Reading counts only the rows actually on screen, between the reading bar and the tab bar, once they've been there about 2 seconds. Rows you scroll past without stopping are skipped, and a second where the page jumps more than a third of a screen counts nothing. Long Wikipedia paragraphs no longer count the parts below the screen.
