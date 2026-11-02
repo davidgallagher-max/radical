@@ -540,7 +540,10 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .tlabel{position:absolute;left:0;right:0;width:max-content;margin:0 auto;padding:8px 20px;border-radius:999px;background:color-mix(in srgb,var(--bg) 88%,transparent);box-shadow:0 0 0 1px var(--gold3),0 0 24px rgba(0,0,0,.5);top:calc(var(--cy) + min(26vw, 120px));text-align:center;font-family:var(--font-brand);font-size:1.6rem;font-weight:800;letter-spacing:.02em;color:var(--gold2);text-shadow:0 0 18px var(--gold3),0 1px 0 rgba(0,0,0,.4);animation:tlabel 3.4s ease-out both}
 @keyframes tlabel{0%{opacity:0;transform:translateY(8px) scale(.94)}12%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0}}
 @keyframes thalo{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(9)}}
-.rtick{position:absolute;right:-8px;width:4px;height:8px;margin-top:-6px;border:solid var(--gold2);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);opacity:.7;pointer-events:none}
+.rtick{position:absolute;right:-18px;width:24px;height:24px;margin-top:-12px;padding:0;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:1}
+.rtick::after{content:"";position:absolute;left:10px;top:6px;width:4px;height:8px;border:solid var(--gold2);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);opacity:.7}
+.rtick.confirm::after{opacity:1}
+.rtickask{position:absolute;right:24px;top:50%;transform:translateY(-50%);white-space:nowrap;font:600 .92rem/1 var(--ui,system-ui);color:var(--metal-ink,#1a1206);background:var(--gold2);border-radius:999px;padding:7px 12px;box-shadow:0 2px 10px rgba(0,0,0,.35)}
 .line.flow{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-start;--colw:var(--cell,38px)}
 .line.flow .cell{width:var(--colw);flex:none}
 .line.flow .glue{display:inline-flex;align-items:flex-end;flex:none}
@@ -1766,7 +1769,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v85";
+const APP_VERSION = "v86";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1883,10 +1886,10 @@ const readBefore = line => {
 // v69: one tick per row on screen, in the right margin, as the reading credit passes the end of that row; redrawn
 // when the rows change (text size, rotation, a narrower screen) through a ResizeObserver on each line.
 const markCounted = line => { line._counted = true; line.classList.add("counted"); paintTicks(line); };
-function paintTicks(line) {
-  if (!line.isConnected || !line.closest("#reader")) return;
-  const items = line.querySelectorAll(".cell,.glyph"); if (!items.length) return;
-  const top0 = line.getBoundingClientRect().top, rows = [];
+// v86: a line's visual rows (cells grouped by their top), each with its Chinese characters and where they sit in
+// the line's count ([start, end) in characters), so credit and ticks can go row by row.
+function rowsOf(line) {
+  const items = line.querySelectorAll(".cell,.glyph"), rows = [];
   let cur = null;
   items.forEach(x => {
     const r = x.getBoundingClientRect(); if (!r.height) return;
@@ -1894,13 +1897,67 @@ function paintTicks(line) {
     cur.bottom = Math.max(cur.bottom, r.bottom);
     cur.han += hanIn(x._ch || (x.classList.contains("cell") ? "" : x.textContent));
   });
+  let at = 0; rows.forEach(r => { r.start = at; at += r.han; r.end = at; });
+  const n = hanIn(line._text), last = [...rows].reverse().find(r => r.han);
+  if (last && last.end < n) last.end = n;  // whatever the cells missed belongs to the last row
+  return rows;
+}
+function paintTicks(line) {
+  if (!line.isConnected || !line.closest("#reader")) return;
+  const rows = rowsOf(line); if (!rows.length) return;
+  const top0 = line.getBoundingClientRect().top;
   const got = line._counted ? Infinity : line._got || 0;
-  let sum = 0; const want = [];
-  rows.forEach(r => { sum += r.han; if (r.han && sum <= got) want.push(Math.round((r.top + r.bottom) / 2 - top0)); });
-  const sig = want.join(","); if (line._tickSig === sig) return; line._tickSig = sig;
+  const want = rows.filter(r => r.han && r.end <= got).map(r => [Math.round((r.top + r.bottom) / 2 - top0), r.end]);
+  const sig = want.map(w => w.join(":")).join(","); if (line._tickSig === sig) return; line._tickSig = sig;
   line.querySelectorAll(":scope>.rtick").forEach(t => t.remove());
-  want.forEach(y => { const t = el("i", "rtick"); t.setAttribute("aria-hidden", "true"); t.style.top = y + "px"; line.append(t); });
+  want.forEach(([y, end]) => {
+    const t = el("button", "rtick"); t.type = "button"; t.setAttribute("aria-label", "Read to here"); t.style.top = y + "px";
+    // v86: tap a tick to say "I read up to here": everything after it that counted today comes off
+    t.addEventListener("pointerdown", e => e.stopPropagation());
+    t.onclick = e => { e.stopPropagation(); armConfirm(t, on => { t.innerHTML = on ? '<span class="rtickask">Uncount after this?</span>' : ""; }, () => uncountAfter(line, end), true); };
+    line.append(t);
+  });
   if (!line._tickRO && "ResizeObserver" in window) { line._tickRO = new ResizeObserver(() => { line._tickSig = null; paintTicks(line); }); line._tickRO.observe(line); }
+}
+// v86: take back today's credit for everything after a point in the text: the rest of this line from `pos`
+// characters on, and every later line on the page. Lines counted on an earlier day keep their ticks and that
+// day's numbers never change. The words come off today's Words read (synced as wx), and those rows can count
+// again when they're read.
+function uncountAfter(line, pos) {
+  const lines = [...document.querySelectorAll("#reader .line")], i = lines.indexOf(line); if (i < 0) return;
+  const today = localDay(), rl = readLines(); let words = 0, chars = 0, dropped = false;
+  lines.slice(i).forEach((l, j) => {
+    const keep = j === 0 ? pos : 0, n = hanIn(l._text), k = lineKey(l._text || "");
+    if (l._counted && rl[k] && rl[k] !== today) return;  // an earlier day's line stays counted
+    const known = partRead.get(k); partOf(l);
+    const got = l._counted ? n : l._got || 0; if (got <= keep) return;
+    const cred = known && known.day === today ? l._cred || known.cred || [] : l._counted ? credAll(l) : [];  // counted on another visit today: every word
+    cred.filter(c => c[0] > keep).forEach(c => { words++; chars += c[1]; });
+    l._cred = cred.filter(c => c[0] <= keep);
+    if (l._counted) { l._counted = false; l.classList.remove("counted"); if (rl[k]) { delete rl[k]; dropped = true; } }
+    l._dwell = null; skipTo(l, keep, true);
+    l._tickSig = null; paintTicks(l);
+  });
+  if (dropped) store.set("radical-read-lines", rl);
+  readBank = 0;
+  if (words || chars) unlogRead(words, chars);
+  toast(words ? `${words} word${words === 1 ? "" : "s"} uncounted` : "Nothing after this counted today", 2500);
+}
+// every word in a line, as [end, characters] (a line counted earlier today, on another visit)
+function credAll(l) {
+  const t = l._text || "", out = []; let at = 0;
+  for (const x of l._spans || []) { const c = hanIn(t.slice(x.start, x.end)); at += c; if (c) out.push([at, c]); }
+  return out;
+}
+function unlogRead(words, chars) {
+  const d = store.get("radical-days", {}), k = localDay(), t = d[k] = d[k] || {};
+  t.w = Math.max(0, (t.w || 0) - words); t.wx = (t.wx || 0) + words;
+  t.r = Math.max(0, (t.r || 0) - chars); t.rx = (t.rx || 0) + chars;
+  if (t.rq && t.w < readGoal()) { delete t.rq; t.rqg = readGoal(); }  // back under the target: today's reading isn't met yet
+  store.set("radical-days", d);
+  if (typeof paintReadGoal === "function") paintReadGoal();
+  if (typeof updateRing === "function") updateRing();
+  if (session && !readSync) readSync = setTimeout(() => { readSync = 0; syncNow(true); }, 30000);
 }
 // v56: a long paragraph is one line, so credit is paid into a line bit by bit (in reading order) and each word is
 // logged as the credit passes it: the count moves smoothly instead of waiting for a whole paragraph. A line is "in
@@ -1909,7 +1966,19 @@ const partRead = new Map();  // lineKey -> { got, wi, ci, day }: a part-read lin
 function partOf(line) {
   if (line._got != null) return;
   const p = partRead.get(lineKey(line._text || ""));
-  if (p && p.day === localDay()) { line._got = p.got; line._wi = p.wi; line._ci = p.ci; } else line._got = 0;
+  if (p && p.day === localDay()) { line._got = p.got; line._wi = p.wi; line._ci = p.ci; line._cred = p.cred ? p.cred.slice() : []; } else { line._got = 0; line._cred = []; }
+}
+const keepPart = (line, t) => partRead.set(lineKey(t), { got: line._got, wi: line._wi, ci: line._ci, cred: line._cred || [], day: localDay() });
+// v86: move a line's place to `pos` without credit: rows scrolled past unread, or (back) after an uncount
+function skipTo(line, pos, back) {
+  partOf(line);
+  const t = line._text || "", spans = line._spans || [];
+  if (!back && pos <= (line._got || 0)) return;
+  let i = 0, at = 0;
+  while (i < spans.length) { const c = hanIn(t.slice(spans[i].start, spans[i].end)); if (at + c > pos) break; at += c; i++; }
+  line._got = Math.min(hanIn(t), pos); line._wi = i; line._ci = at;
+  keepPart(line, t);
+  paintTicks(line);
 }
 function payLine(line, upTo) {
   partOf(line);
@@ -1918,10 +1987,10 @@ function payLine(line, upTo) {
   while (i < spans.length) {
     const x = spans[i], c = hanIn(t.slice(x.start, x.end));
     if (at + c > line._got) break;
-    at += c; chars += c; if (c) words++; i++;
+    at += c; chars += c; if (c) { words++; (line._cred = line._cred || []).push([at, c]); } i++;
   }
   line._wi = i; line._ci = at;
-  partRead.set(lineKey(t), { got: line._got, wi: i, ci: at, day: localDay() });
+  keepPart(line, t);
   if (chars) logDay("r", chars);
   if (words) logDay("w", words);
   if (line._got < n) paintTicks(line);
@@ -1936,10 +2005,20 @@ function countLine(line) {  // read aloud: the whole line at once
   if (readBefore(line)) { markCounted(line); return; }
   payLine(line, Infinity);
 }
-let lineSeen = null, readBank = 0;
+let lineSeen = null, readBank = 0, readTop = null;
 const readNoted = new Set();
+// v86: credit goes only to rows actually on screen (between the reading bar and the tab bar) that have stayed there
+// about 2 seconds, in reading order; a row scrolled past unread is skipped, not paid later; a second in which the
+// page moved more than a third of the screen pays nothing (skimming).
+const READ_DWELL = 2;
+function readBand() {
+  const H = innerHeight, bar = $("readBar"), tb = $("tabbar"); let top = 0, bottom = H;
+  if (bar) { const r = bar.getBoundingClientRect(); if (r.height && r.bottom > 0 && r.bottom < H / 2) top = r.bottom; }
+  if (tb) { const r = tb.getBoundingClientRect(); if (r.height && r.top > H / 2 && r.width > innerWidth / 2) bottom = r.top; }
+  return { top, bottom };
+}
 setInterval(() => {
-  if (document.hidden || $("readScreen").hidden) { readBank = 0; return; }
+  if (document.hidden || $("readScreen").hidden) { readBank = 0; readTop = null; return; }
   const lines = [...document.querySelectorAll("#reader .line")].filter(l => !l._counted);
   if (capReader()) { readBank = 0; return; }  // v61: today's free reading is used up
   const again = lines.filter(l => l._ready && readBefore(l)); again.forEach(markCounted);  // read already this month: no credit used
@@ -1947,12 +2026,30 @@ setInterval(() => {
     const k = lineKey((document.querySelector("#reader .line") || {})._text || "");
     if (!readNoted.has(k)) { readNoted.add(k); toast("Read before. Ticked lines don't count again this month.", 3500); }
   }
-  const open = lines.filter(l => !l._counted && l._ready && l._vis); open.forEach(partOf);
-  const cap = open.reduce((a, l) => a + hanIn(l._text) - (l._got || 0), 0);
-  readBank = Math.min(readBank + READ_PACE, cap);
+  const band = readBand(), st = $("readScreen").scrollTop, moved = readTop == null ? 0 : Math.abs(st - readTop); readTop = st;
+  const open = lines.filter(l => !l._counted && l._vis);
+  if (moved > (band.bottom - band.top) / 3) { readBank = 0; open.forEach(l => { l._dwell = null; }); return; }
+  const plan = []; let room = 0;
   for (const l of open) {
+    partOf(l);
+    const rows = rowsOf(l), prev = l._dwell || new Map(), now = new Map();
+    const seen = r => r.han && r.top >= band.top - 4 && r.bottom <= band.bottom + 4;
+    rows.forEach(r => { if (seen(r)) now.set(r.start, (prev.get(r.start) || 0) + 1); });
+    l._dwell = now;
+    let got = l._got || 0, skip = got;
+    for (const r of rows) {
+      if (!r.han || r.end <= got) continue;
+      if ((r.top + r.bottom) / 2 < band.top && !plan.some(p => p[0] === l)) { skip = got = r.end; continue; }  // scrolled past unread
+      if (seen(r) && now.get(r.start) >= READ_DWELL) { plan.push([l, r.end]); room += r.end - Math.max(got, r.start); got = r.end; continue; }
+      break;
+    }
+    if (skip > (l._got || 0)) skipTo(l, skip);
+  }
+  readBank = Math.min(readBank + READ_PACE, room);
+  for (const [l, end] of plan) {
     if (readBank <= 0) break;
-    const need = hanIn(l._text) - (l._got || 0), give = Math.min(need, readBank);
+    const need = end - (l._got || 0); if (need <= 0) continue;
+    const give = Math.min(need, readBank);
     readBank -= give; payLine(l, (l._got || 0) + give);
   }
 }, 1000);
@@ -1961,8 +2058,8 @@ function watchLines(reader) {
   if (lineSeen) lineSeen.disconnect();
   lineSeen = new IntersectionObserver(entries => entries.forEach(en => {
     const line = en.target, room = en.rootBounds ? en.rootBounds.height : innerHeight;
-    line._vis = en.isIntersecting && (en.intersectionRatio > .6 || en.intersectionRect.height > room * .4);
-    if (line._vis) { if (!line._t && !line._ready) line._t = setTimeout(() => { line._ready = true; }, 4000); }
+    line._vis = en.isIntersecting;  // v86: which rows are on screen is decided row by row in the reading tick
+    if (line._vis && en.intersectionRect.height > Math.min(room * .4, en.boundingClientRect.height * .6)) { if (!line._t && !line._ready) line._t = setTimeout(() => { line._ready = true; }, 2000); }
     else if (line._t) { clearTimeout(line._t); line._t = null; }
   }), { root: $("readScreen"), threshold: [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1] });
   reader.querySelectorAll(".line").forEach(l => lineSeen.observe(l));
@@ -4673,7 +4770,7 @@ function logDay(field, n = 1) {
   const d = store.get("radical-days", {}), k = localDay(); d[k] = d[k] || {};
   if (field === "q" && !d[k].q && typeof cardsDone === "function") { cardsDone.at = performance.now(); setTimeout(cardsDone, 0); }  // v64: the day's cards just got done
   d[k][field] = (d[k][field] || 0) + n;
-  if (field === "w" && !d[k].rq && d[k].w >= readGoal()) d[k].rq = 1;  // v48: the day's reading target met
+  if (field === "w" && !d[k].rq && d[k].w >= readGoal()) { d[k].rq = 1; d[k].rqg = readGoal(); }  // rqg: the target it met (v86: an uncount below it un-meets the day on every device)  // v48: the day's reading target met
   const keys = Object.keys(d).sort(); while (keys.length > 400) delete d[keys.shift()];
   store.set("radical-days", d);
   if (field === "c" && typeof updateRing === "function") updateRing();
@@ -4732,7 +4829,7 @@ const goalHalf = (v, day) => { if (!v || day < STREAK_FROM) return ""; const p =
 // a day, or the last card removed from a session), not only when a card is rated or a line is read.
 function checkGoalToday() {
   const d = store.get("radical-days", {}), k = localDay(), t = d[k] || {};
-  if (!t.rq && (t.w || 0) > 0 && t.w >= readGoal()) { d[k] = { ...t, rq: 1 }; store.set("radical-days", d); }
+  if (!t.rq && (t.w || 0) > 0 && t.w >= readGoal()) { d[k] = { ...t, rq: 1, rqg: readGoal() }; store.set("radical-days", d); }
   const done = doneToday();
   if (!t.q && done.size && (done.size >= dailyMax() || !todayList(goal).length)) logDay("q");
 }

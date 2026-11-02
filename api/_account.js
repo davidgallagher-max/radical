@@ -114,10 +114,20 @@ function merge(a, b) {
   const familiar = { ...(a.familiar || {}) };  // familiar words (right on two different days), merged the same way
   for (const [w, d] of Object.entries(b.familiar || {})) if (!familiar[w] || String(d) < String(familiar[w])) familiar[w] = d;
   for (const w of Object.keys(familiar)) if (deleted[w] && !byWord.has(w)) delete familiar[w];
-  const days = {};
-  for (const src of [a.days || {}, b.days || {}]) for (const [d, v] of Object.entries(src)) {
+  const days = {}, sides = [a.days || {}, b.days || {}];
+  for (const src of sides) for (const [d, v] of Object.entries(src)) {
     days[d] = days[d] || {};
     for (const [f, n] of Object.entries(v || {})) days[d][f] = Math.max(days[d][f] || 0, +n || 0);
+  }
+  // v86: words and characters read can be uncounted (wx, rx only grow): the larger total read before any uncount,
+  // less everything uncounted; a day whose reading target was met (rq at target rqg) and then fell under it isn't met
+  for (const [d, t] of Object.entries(days)) {
+    for (const [f, x] of [["w", "wx"], ["r", "rx"]]) {
+      if (!t[x]) continue;
+      const gross = Math.max(...sides.map(s => { const v = s[d] || {}; return (+v[f] || 0) + (+v[x] || 0); }));
+      t[f] = Math.max(0, gross - t[x]);
+    }
+    if (t.rq && t.wx && t.rqg && (t.w || 0) < t.rqg) delete t.rq;
   }
   // v43: your deck names (and Mine's name): the newer copy wins
   // v44: plus when each was last used ({ key: day })
