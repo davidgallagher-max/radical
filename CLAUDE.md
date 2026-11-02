@@ -177,6 +177,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v87 notes: `readBand()` ends two thirds of the way down the reading area unless `#readScreen` is scrolled to its end. Pace: `READ_PACE` is gone; `readPace(line, row)` from `radical-read-speed` (`readSpeed()`: auto | slow 1.5 | normal 2 | fast 3, `READ_PACES`; Settings Daily goal `#readSpeedSeg`, in `SETTING_KEYS`); Auto = 1.5 + 1.5 x min(1, recognized/3000), times .75 to 1.25 by the share of the row's words in `knownWords()` (familiar + learned, cached 60s). The tick adds the pace of the first row it will pay.
 
+- v88 notes: `planBox` subscribers get one "Change or cancel" (`payCard({ change: true })`); the card adds `.linkbtn.paycancel` "Cancel subscription" (`SUBS_URL`) when `opts.change` and the plan is monthly or yearly.
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)

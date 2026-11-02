@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v88
+
+- Settings, Your plan: one "Change or cancel" button. It opens the plan card, which has a "Cancel subscription" link to Apple for monthly and yearly plans.
+
 ## v87
 
 - Reading counts only the top two thirds of the screen, where your eyes are, and the whole screen once you reach the end of a text.
