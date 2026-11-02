@@ -1617,6 +1617,9 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <div class="seg uiseg" id="ruleSeg" role="group" aria-label="A streak day needs"><button type="button" data-r="cards">Cards</button><button type="button" data-r="read">Reading</button><button type="button" data-r="either">Either</button><button type="button" data-r="both">Both</button></div>
       <div class="row" style="justify-content:space-between"><span>Count rereading</span><button type="button" class="switch small" id="rereadSw" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span></button></div>
       <p class="note">Lines read again within a month count toward your target.</p>
+      <p class="note">Reading speed</p>
+      <div class="seg uiseg" id="readSpeedSeg" role="group" aria-label="Reading speed"><button type="button" data-p="auto">Auto</button><button type="button" data-p="slow">Slow</button><button type="button" data-p="normal">Normal</button><button type="button" data-p="fast">Fast</button></div>
+      <p class="note">Auto speeds up as you recognize more words.</p>
       <p class="note">Day ends at</p>
       <div class="daydial" id="dayDial"></div>
     </div></details>
@@ -1769,7 +1772,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v86";
+const APP_VERSION = "v87";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1857,7 +1860,28 @@ let readToken = 0, reading = false;
 // about 4 seconds and the credit covers it. A quick look at an article gives about nothing. A line read aloud counts
 // when it's spoken. Only Chinese characters are counted.
 const hanIn = t => (String(t || "").match(/\p{Script=Han}/gu) || []).length;
-const READ_PACE = 2.5;
+// v87: characters a second. Slow 1.5, Normal 2, Fast 3; Auto (default) starts at 1.5 and climbs with the words you've
+// recognized (2 at 1,000, 3 at 3,000), then goes a quarter faster on a row of words you know and a quarter slower on a
+// row of words you don't (readPace).
+const READ_PACES = { slow: 1.5, normal: 2, fast: 3 };
+const readSpeed = () => { const v = store.get("radical-read-speed", "auto"); return v in READ_PACES ? v : "auto"; };
+let knownAt = 0, knownSet = new Set();
+function knownWords() {
+  if (Date.now() - knownAt > 60000) { const st = wordStages(); knownSet = new Set([...st.familiar.keys(), ...st.learned.keys()]); knownAt = Date.now(); }
+  return knownSet;
+}
+function readPace(line, row) {
+  const v = readSpeed(); if (v !== "auto") return READ_PACES[v];
+  const known = knownWords(), base = 1.5 + 1.5 * Math.min(1, known.size / 3000);
+  if (!line || !row) return base;
+  const t = line._text || ""; let at = 0, n = 0, k = 0;
+  for (const x of line._spans || []) {
+    const w = t.slice(x.start, x.end), c = hanIn(w), s0 = at; at += c;
+    if (!c || at <= row.start || s0 >= row.end) continue;
+    n++; if (known.has(w) || known.has(toSimp(w)) || known.has(toTrad(w))) k++;
+  }
+  return n ? base * (.75 + .5 * k / n) : base;
+}
 const lineKey = t => { let h = 0; for (const c of String(t)) h = (h * 31 + c.codePointAt(0)) | 0; return h.toString(36) + "." + String(t).length; };
 // v60: a line counts once a month, not once a day: "radical-read-lines" is { lineKey: day it was last counted },
 // kept 30 days and synced with the account so the phone and the web don't count the same line twice. With Count
@@ -1914,7 +1938,7 @@ function paintTicks(line) {
     const t = el("button", "rtick"); t.type = "button"; t.setAttribute("aria-label", "Read to here"); t.style.top = y + "px";
     // v86: tap a tick to say "I read up to here": everything after it that counted today comes off
     t.addEventListener("pointerdown", e => e.stopPropagation());
-    t.onclick = e => { e.stopPropagation(); armConfirm(t, on => { t.innerHTML = on ? '<span class="rtickask">Uncount after this?</span>' : ""; }, () => uncountAfter(line, end), true); };
+    t.onclick = e => { e.stopPropagation(); armConfirm(t, on => { t.innerHTML = on ? '<span class="rtickask">Tap again to uncount from here on</span>' : ""; }, () => uncountAfter(line, end), true); };
     line.append(t);
   });
   if (!line._tickRO && "ResizeObserver" in window) { line._tickRO = new ResizeObserver(() => { line._tickSig = null; paintTicks(line); }); line._tickRO.observe(line); }
@@ -2015,6 +2039,10 @@ function readBand() {
   const H = innerHeight, bar = $("readBar"), tb = $("tabbar"); let top = 0, bottom = H;
   if (bar) { const r = bar.getBoundingClientRect(); if (r.height && r.bottom > 0 && r.bottom < H / 2) top = r.bottom; }
   if (tb) { const r = tb.getBoundingClientRect(); if (r.height && r.top > H / 2 && r.width > innerWidth / 2) bottom = r.top; }
+  // v87: eyes stay in the upper part and the page scrolls up to them: only the top two thirds counts, except at the
+  // end of the text, where nothing more can scroll up
+  const sc = $("readScreen"), end = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 8;
+  if (!end) bottom = top + (bottom - top) * 2 / 3;
   return { top, bottom };
 }
 setInterval(() => {
@@ -2040,12 +2068,12 @@ setInterval(() => {
     for (const r of rows) {
       if (!r.han || r.end <= got) continue;
       if ((r.top + r.bottom) / 2 < band.top && !plan.some(p => p[0] === l)) { skip = got = r.end; continue; }  // scrolled past unread
-      if (seen(r) && now.get(r.start) >= READ_DWELL) { plan.push([l, r.end]); room += r.end - Math.max(got, r.start); got = r.end; continue; }
+      if (seen(r) && now.get(r.start) >= READ_DWELL) { plan.push([l, r.end, r]); room += r.end - Math.max(got, r.start); got = r.end; continue; }
       break;
     }
     if (skip > (l._got || 0)) skipTo(l, skip);
   }
-  readBank = Math.min(readBank + READ_PACE, room);
+  readBank = Math.min(readBank + (plan.length ? readPace(plan[0][0], plan[0][2]) : 0), room);
   for (const [l, end] of plan) {
     if (readBank <= 0) break;
     const need = end - (l._got || 0); if (need <= 0) continue;
@@ -8164,7 +8192,7 @@ function setSums() {
 document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "change"].forEach(ev => x.addEventListener(ev, () => setTimeout(setSums, 50))));
 // ---- settings that go in a backup file and (v58) sync with the account.
 const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules", "radical-day-ends",
-  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-tiles", "radical-common", "radical-region"];
+  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-read-speed", "radical-tiles", "radical-common", "radical-region"];
 const SYNC_SETTINGS = SETTING_KEYS.filter(k => k !== "radical-decks");  // v58: decks sync on their own
 // Restore a backup file (v58: the Backup page is gone; a backup chosen with the add box's file icon comes here):
 // words and History merge with what's here (nothing added since is lost; a word's newer copy wins); the learned list
@@ -8769,6 +8797,11 @@ paintTileSel();
 // The red number on 練 can be turned off (Settings, Learning focus). Today still counts the same.
 $("badgeSw").setAttribute("aria-checked", store.get("radical-badge", true));
 $("rereadSw").setAttribute("aria-checked", store.get("radical-reread", false));
+// v87: Reading speed (Auto, Slow, Normal, Fast): how fast reading credit builds (readPace)
+document.querySelectorAll("#readSpeedSeg [data-p]").forEach(b => {
+  b.setAttribute("aria-pressed", b.dataset.p === readSpeed());
+  b.onclick = () => { store.set("radical-read-speed", b.dataset.p); document.querySelectorAll("#readSpeedSeg [data-p]").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+});
 $("rereadSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-reread", on); e.currentTarget.setAttribute("aria-checked", on); setSums(); };
 $("badgeSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-badge", on); e.currentTarget.setAttribute("aria-checked", on); updateCounts(); setSums(); };
 // Asked once: on a first launch after the walkthrough, and once to everyone who had the app before goals.
