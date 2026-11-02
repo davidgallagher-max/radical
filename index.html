@@ -969,7 +969,7 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .havekey{float:right;color:var(--accent)}
 .setchip.have::after{content:" ✓";color:var(--accent)}.setchip.top.have small::after{content:" ✓";color:var(--accent)}.setchip.top.have::after{content:none}
 .signcard p{margin:0}.signcard input{font:inherit;font-size:1.05rem;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);width:100%;box-sizing:border-box}
-.linkbtn{all:unset;cursor:pointer;justify-self:center;padding:8px;color:var(--accent);font-weight:600}.linkbtn.frsign{justify-self:start;padding:6px 0;font-weight:500}
+.linkbtn{all:unset;cursor:pointer;justify-self:center;padding:8px;color:var(--accent);font-weight:600}.linkbtn.paycancel{display:block;text-align:center;color:var(--muted);font-weight:500;text-decoration:underline}.linkbtn.frsign{justify-self:start;padding:6px 0;font-weight:500}
 .wdot .settag{color:var(--accent);opacity:.85}
 .wdot .newtag{font-size:.83rem;font-weight:600;color:var(--muted);margin-right:6px;letter-spacing:.02em}
 .goalpills{margin:10px 0 4px}.goalpills button{padding:10px 12px;font-size:1rem}
@@ -1772,7 +1772,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v87";
+const APP_VERSION = "v88";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3821,6 +3821,7 @@ function payCard(opts = {}) {
     plans.append(...rows.map(opt));
     terms.innerHTML = `Subscriptions renew until you cancel in your Apple account, at least a day before the renewal date. <a href="${EULA_URL}" target="_blank" rel="noopener">Terms</a> · <a href="${WEB}/privacy" target="_blank" rel="noopener">Privacy</a>`;
     card.append(plans, terms);
+    if (opts.change && /^radical_(month|year)$/.test(cur)) { const c = el("a", "linkbtn paycancel", "Cancel subscription"); c.href = SUBS_URL; c.target = "_blank"; c.rel = "noopener"; card.append(c); }
     // Local prices and Apple's free trial on the subscriptions, once the store answers
     rcProducts().then(({ list, trial }) => {
       plans.querySelectorAll(".payopt").forEach(b => { const id = b.dataset.id, p = list.find(x => x.identifier === id);
@@ -3870,8 +3871,7 @@ function planBox() {
   box.append(el("p", "planhead", `<span class="planlab">Your plan</span><b>${name}</b>`), el("p", "note planline", line));
   const row = el("div", "row");
   if (/^radical_(month|year)$/.test(cur)) {
-    row.append(btn("Change plan", "btn small", () => payCard({ change: true })));
-    if (rcAvail()) { const a = el("a", "btn ghost small", "Cancel or manage"); a.href = SUBS_URL; a.target = "_blank"; a.rel = "noopener"; row.append(a); }
+    row.append(btn("Change or cancel", "btn small", () => payCard({ change: true })));  // v88: one button; Cancel subscription sits on the card
   } else if (cur !== LIFE) row.append(btn(cur === TRIAL_ITEM ? "Choose a plan" : "Get Radical", "btn small", () => payCard()));
   if (rcAvail()) { const rs = btn("Restore purchases", "btn ghost small"); rs.onclick = async () => { rs.disabled = true; try { toast(await payRestore() ? "Restored." : "No purchase found.", 2000); } catch (e) { toast(esc(e.message || "That didn't work."), 2500); } rs.disabled = false; planBox(); }; row.append(rs); }
   box.append(row);
