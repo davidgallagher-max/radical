@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v86
+
+- Reading counts only the rows actually on screen, between the reading bar and the tab bar, once they've been there about 2 seconds. Rows you scroll past without stopping are skipped, and a second where the page jumps more than a third of a screen counts nothing. Long Wikipedia paragraphs no longer count the parts below the screen.
+- Tap a gold tick to say "I read up to here": after Uncount after this?, everything that counted today after that row comes off today's words read, and it can count again when you read it. Lines counted on earlier days stay counted. If that takes you under your target, today's reading goal isn't met until you read more. The uncount syncs to your other devices.
+- The character and word data and the scripts that build it are now also in a public repository, radical-data, as their share-alike licenses ask.
+
 ## v85
 
 - Pull to refresh works on Admin tools too, and redraws its numbers.
