@@ -185,6 +185,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v91 notes (fix): `zhPy` wraps each word and its pinyin in `.zp` (inline-block, nowrap) joined by spaces; `.explain>*` min-width 0 with overflow-wrap anywhere, so the grid box can't widen the reader.
 
+- v92 notes: `.trans` uses the `.explain` font size (min(1.61rem, max(.92rem, cell*.43))).
+
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)

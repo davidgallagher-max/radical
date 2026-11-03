@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v92
+
+- The ENG translation grows with 字 at the same rate as the 解 explanation's English (up to 1.75 times).
+
 ## v91
 
 - Fix: a long 解 explanation no longer pushes the page wider than the screen. Each Chinese word stays with its pinyin and the box wraps between them.
