@@ -2,6 +2,18 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v90
+
+- Reading ticks: today's are gold, earlier days' faint grey. Tap any tick: "Read today (or yesterday, or the date). Clear from here down?" Yes clears that row and everything after it on the page, so those lines can count again. Only today's words come off; past days never change.
+- Rows you scroll past without reading no longer get a tick.
+- Punctuation from Kindle and other copies (? , ... ! : ; ") becomes Chinese punctuation, and every mark now takes its own square instead of squeezing into the character before it.
+- Every text gets a name: type one in the new Name box, or get a short English title from the AI service. The name sits above the text with what it was and when (Pasted text · Nov 3, 9:05 pm). Tap it to rename. History shows the names too.
+- Listen starts slower (0.65, was 0.85) and its slider goes down to 0.35. A speed you saved before moves down to match.
+- Rare characters with no stroke data (芃) are tappable, show their pinyin, and can be saved. They're drawn in the plain font.
+- Chinese names stay together: a surname and two characters (童胤恆), or a surname and one character when it comes up twice in the text.
+- The 解 explanation in Read draws its Chinese in color, at a size that grows with 字, with pinyin after each word.
+- The Pinyin button under card sentences drops its 拼.
+
 ## v89
 
 - Buying Lifetime while on Monthly or Yearly now warns first: the subscription keeps renewing until you cancel it (Apple only lets you do that), and Apple can refund the rest. Cancel subscription opens Apple's cancel sheet; Buy Lifetime goes ahead.
