@@ -575,6 +575,8 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .explain b[lang=zh]{font-family:var(--font-zh);font-weight:600;color:var(--fg)}
 .explain .zhw{font-family:var(--font-zh);font-size:max(1.3em,calc(var(--cell,38px) * .62));line-height:1.2;color:var(--fg)}
 .explain .expy{color:var(--muted);font-size:.92em;margin:0 .15em 0 .1em;white-space:nowrap}
+.explain>*,.explain li{min-width:0;overflow-wrap:anywhere}
+.explain .zp{display:inline-block;white-space:nowrap;max-width:100%}
 .explain .exw{color:var(--muted)}
 .explain.err{border-left-color:var(--sound)}
 
@@ -1784,7 +1786,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v90";
+const APP_VERSION = "v91";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -4651,7 +4653,7 @@ function zhPy(text) {
   return String(text || "").split(/(\p{Script=Han}+)/u).map((part, i) => {
     if (!(i % 2)) return esc(part);
     return segment(part).map(t => { const py = (t.syl || []).filter(Boolean).join("");
-      return `<span class="zhw" lang="zh">${esc(t.chars.join(""))}</span>${py ? `<span class="expy">(${esc(py)})</span>` : ""}`; }).join("");
+      return `<span class="zp"><span class="zhw" lang="zh">${esc(t.chars.join(""))}</span>${py ? `<span class="expy">(${esc(py)})</span>` : ""}</span>`; }).join(" ");
   }).join("");
 }
 const explainText = r => [r.structure, ...(r.points || []).flatMap(x => [x.pattern, x.note]), ...(r.words || []).flatMap(x => [x.word, x.note])].join("");
