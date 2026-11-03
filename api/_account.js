@@ -147,8 +147,16 @@ function merge(a, b) {
   const reads = {}, since = new Date(Date.now() - 31 * 864e5).toISOString().slice(0, 10);
   for (const src of [a.reads, b.reads]) if (src && typeof src === "object") for (const [k, d] of Object.entries(src))
     if (/^-?[0-9a-z]{1,8}\.\d{1,6}$/.test(k) && typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= since && (!reads[k] || reads[k] < d)) reads[k] = d;
+  // v90: lines cleared from a tick ({ lineKey: ms }): the latest mark wins by time; positive = cleared, negative =
+  // read again after the clear. While cleared, a read from the day of the clear or before drops out of reads, so the
+  // line can count again when it's really read.
+  const unread = {}, old = Date.now() - 31 * 864e5;
+  for (const src of [a.unread, b.unread]) if (src && typeof src === "object") for (const [k, v] of Object.entries(src))
+    if (/^-?[0-9a-z]{1,8}\.\d{1,6}$/.test(k) && Number.isFinite(+v) && Math.abs(+v) > old && (!unread[k] || Math.abs(unread[k]) < Math.abs(+v))) unread[k] = +v;
+  for (const [k, v] of Object.entries(unread)) if (v > 0 && reads[k] && reads[k] <= new Date(v + 14 * 36e5).toISOString().slice(0, 10)) delete reads[k];
+  const uk = Object.keys(unread); if (uk.length > 8000) uk.sort((x, y) => unread[x] < unread[y] ? -1 : 1).slice(0, uk.length - 8000).forEach(k => delete unread[k]);
   const rk = Object.keys(reads); if (rk.length > 8000) rk.sort((x, y) => reads[x] < reads[y] ? -1 : 1).slice(0, rk.length - 8000).forEach(k => delete reads[k]);
-  return { words, deleted, learned, familiar, days, reads, ...(decks ? { decks } : {}), ...(settings ? { settings } : {}) };
+  return { words, deleted, learned, familiar, days, reads, unread, ...(decks ? { decks } : {}), ...(settings ? { settings } : {}) };
 }
 async function sync(user, incoming) {
   const path = `users/${user.id}/data.json`;

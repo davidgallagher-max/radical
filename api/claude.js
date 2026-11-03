@@ -108,6 +108,10 @@ function cardExamples(card) {
   return card;
 }
 
+// v90: a short English name for a text the reader added without one
+const TITLE_PROMPT = (text) => `Give this Chinese text a short English title (2 to 6 words) that says what it is about, so a learner knows at a glance. Title case. Return only the title, no quotes.
+
+${text}`;
 const TRANSLATE_PROMPT = (sentence) => `Translate this Chinese into natural English. Return only the translation, nothing else.
 
 ${sentence}`;
@@ -715,6 +719,13 @@ module.exports = async (req, res) => {
       const zh = await kept("tozh", `t|${simp ? 1 : 0}|${cnU ? "cn" : "tw"}|${text}`, async () => { const z = await askClaude(FAST_MODEL, TOZH_TEXT_PROMPT(text, simp, cnU), 2500); return /\p{Script=Han}/u.test(z) ? z : null; });
       if (!zh) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       return res.status(200).json({ zh });
+    }
+    if (body.action === "title") {
+      const text = String(body.text || "").trim().slice(0, 500);
+      if (!text) return res.status(400).json({ error: "No text given." });
+      const title = await kept("title", text, async () => { const t = (await askClaude(FAST_MODEL, TITLE_PROMPT(text), 40)).trim().replace(/^["'“]|["'”.]$/g, "").slice(0, 60); return t || null; });
+      if (!title) return res.status(502).json({ error: "No title came back." });
+      return res.status(200).json({ title });
     }
     if (body.action === "translate") {
       const sentence = String(body.sentence || "").trim().slice(0, 600);

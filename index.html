@@ -406,6 +406,10 @@ p.busy{margin:-4px 4px 0}
 .reader .cell{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 @keyframes peekin{from{opacity:0;transform:translateY(8px)}}
 .srcform{position:relative;display:flex}
+.srcname{width:100%;box-sizing:border-box;margin:0 0 8px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:1rem}
+.texthead{margin-bottom:6px}.texthead .tname{all:unset;cursor:pointer;font-weight:600;font-size:1.05rem;line-height:1.35}
+.texthead .tname[lang=zh]{font-family:var(--font-zh)}
+.texthead input{width:100%;box-sizing:border-box;padding:6px 10px;border-radius:8px;border:1px solid var(--accent);background:var(--bg);color:var(--fg);font:inherit;font-size:1.05rem}
 #srcIn{font-family:var(--font-zh);font-size:1.05rem;line-height:1.4;height:46px;min-height:46px;max-height:46px;resize:none;overflow:hidden;white-space:nowrap;padding:11px 50px 11px 14px;border-radius:12px}
 #srcIn::placeholder{color:var(--muted);opacity:.75}
 .srcgo{position:absolute;right:6px;top:6px;width:34px;height:34px;border-radius:50%;border:0;background:var(--accent);cursor:pointer;display:grid;place-items:center;padding:0}
@@ -542,8 +546,12 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 @keyframes thalo{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(9)}}
 .rtick{position:absolute;right:-18px;width:24px;height:24px;margin-top:-12px;padding:0;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:1}
 .rtick::after{content:"";position:absolute;left:10px;top:6px;width:4px;height:8px;border:solid var(--gold2);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);opacity:.7}
-.rtick.confirm::after{opacity:1}
-.rtickask{position:absolute;right:24px;top:50%;transform:translateY(-50%);white-space:nowrap;font:600 .92rem/1 var(--ui,system-ui);color:var(--metal-ink,#1a1206);background:var(--gold2);border-radius:999px;padding:7px 12px;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.rtick.old::after{border-color:var(--muted);opacity:.45}
+.rtick.on::after{opacity:1}
+.rtickask{position:absolute;right:10px;z-index:3;transform:translateY(-50%);display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 20px);font:600 .92rem/1.25 var(--ui,system-ui);color:var(--fg);background:var(--card,var(--bg));border:1px solid var(--gold2);border-radius:14px;padding:8px 10px 8px 12px;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.rtickask button{font:600 .92rem/1 var(--ui,system-ui);border-radius:999px;padding:7px 14px;cursor:pointer}
+.rtickask .rty{background:var(--gold2);color:var(--metal-ink,#1a1206);border:0}
+.rtickask .rtn{background:none;color:var(--fg);border:1px solid var(--line,rgba(127,127,127,.4))}
 .line.flow{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-start;--colw:var(--cell,38px)}
 .line.flow .cell{width:var(--colw);flex:none}
 .line.flow .glue{display:inline-flex;align-items:flex-end;flex:none}
@@ -562,9 +570,11 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .exbtn{white-space:nowrap}.exbtn [lang=zh]{font-family:var(--font-zh);font-size:.9rem;font-weight:600}
 .exbtn.on,.enbtn.on{border-color:var(--idea);color:var(--idea);background:color-mix(in srgb,var(--idea) 12%,var(--surface))}
 .linectl{flex-wrap:nowrap}
-.explain{margin:-2px 0 6px;padding:9px 12px;border-left:3px solid var(--idea);font-size:.92rem;line-height:1.5;background:color-mix(in srgb,var(--idea) 7%,transparent);border-radius:0 8px 8px 0;display:grid;gap:6px}
+.explain{margin:-2px 0 6px;padding:9px 12px;border-left:3px solid var(--idea);font-size:min(1.61rem,max(.92rem,calc(var(--cell,38px) * .43)));line-height:1.5;background:color-mix(in srgb,var(--idea) 7%,transparent);border-radius:0 8px 8px 0;display:grid;gap:6px}
 .explain p,.explain ul{margin:0}.explain ul{padding-left:1.1em;display:grid;gap:3px}
 .explain b[lang=zh]{font-family:var(--font-zh);font-weight:600;color:var(--fg)}
+.explain .zhw{font-family:var(--font-zh);font-size:max(1.3em,calc(var(--cell,38px) * .62));line-height:1.2;color:var(--fg)}
+.explain .expy{color:var(--muted);font-size:.92em;margin:0 .15em 0 .1em;white-space:nowrap}
 .explain .exw{color:var(--muted)}
 .explain.err{border-left-color:var(--sound)}
 
@@ -1331,6 +1341,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
         <button type="button" class="tool" id="wikiBtn"><span class="ti">探</span>Explore</button>
         <button type="button" class="tool" id="histBtn"><span class="ti">歷</span>History</button>
       </div>
+      <input type="text" id="srcName" class="srcname" maxlength="60" placeholder="Name it (optional)" aria-label="Name this text" autocomplete="off">
       <form class="srcform" id="srcForm">
         <textarea id="srcIn" rows="1" lang="zh" placeholder="今天讀什麼？" aria-label="Paste or type Chinese" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
         <button type="submit" class="srcgo" aria-label="Read this text"><i></i></button>
@@ -1364,7 +1375,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
         <button type="button" class="sizebtn" id="sizeBtn" aria-expanded="false" aria-controls="sizePop" aria-label="Text size"><i lang="zh">字</i><b lang="zh">字</b></button>
       </div>
       <div class="sizepop" id="speedPop" hidden>
-        <span class="sizerow"><i lang="zh" aria-hidden="true">慢</i><input type="range" id="speedIn" min="0.5" max="1.3" step="0.05" aria-label="Reading speed"><b lang="zh" aria-hidden="true">快</b></span>
+        <span class="sizerow"><i lang="zh" aria-hidden="true">慢</i><input type="range" id="speedIn" min="0.35" max="1.2" step="0.05" aria-label="Reading speed"><b lang="zh" aria-hidden="true">快</b></span>
       </div>
       <div class="sizepop" id="sizePop" hidden>
         <span class="sizerow"><i lang="zh" aria-hidden="true">字</i><input type="range" id="sizeIn" min="26" max="64" step="2" value="38" aria-label="Text size"><b lang="zh" aria-hidden="true">字</b></span>
@@ -1380,6 +1391,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
         <button type="button" data-lv="easy" aria-pressed="false">Easiest</button>
       </div>
     </div>
+    <div class="docbar texthead" id="textHead" hidden><div class="doctitle" id="textTitle"></div></div>
       <section class="reader nopy" id="reader" aria-label="Your text, drawn"></section>
     </div>
   </div>
@@ -1602,7 +1614,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     </div></details>
     <details class="setsec"><summary><b>Speech</b><span class="sum" data-sum="speech"></span></summary>
     <div class="panel">
-      <div class="rate"><span>Slower</span><input type="range" id="rate" min="0.5" max="1.3" step="0.05"><span>Faster</span></div>
+      <div class="rate"><span>Slower</span><input type="range" id="rate" min="0.35" max="1.2" step="0.05"><span>Faster</span></div>
       <div id="paceHost"></div>
       <div class="row voices"><button type="button" class="btn ghost small" id="voiceTW">▶ Taiwan voice</button><button type="button" class="btn ghost small" id="voiceCN">▶ Mainland voice</button></div>
       <p class="note" id="voiceName"></p>
@@ -1772,7 +1784,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v89";
+const APP_VERSION = "v90";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1811,7 +1823,7 @@ const isHan = c => /\p{Script=Han}/u.test(c);
 const SPK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
 const sayHTML = (t, sm) => `<button type="button" class="saybtn${sm ? " sm" : ""}" data-say="${esc(t)}" aria-label="Play ${esc(t)}">${SPK}</button>`;
 // Taiwan Mandarin is read with a Taiwan voice, Mainland with a Beijing voice (the 普通话 / 國語 setting, v42).
-let twVoice = null, cnVoice = null, rate = store.get("radical-rate", 0.85);
+let twVoice = null, cnVoice = null, rate = store.get("radical-rate", 0.65);
 function pickVoice() {
   const vs = speechSynthesis.getVoices(), find = re => vs.find(v => re.test(v.lang));
   twVoice = find(/zh[-_]TW/i) || find(/zh[-_]Hant/i) || null;
@@ -1895,6 +1907,7 @@ function readLines() {
 }
 function markRead(k) {
   const m = readLines(), today = localDay(); m[k] = today;
+  const un = store.get("radical-read-unread", null); if (un && un[k] > 0) { un[k] = -Date.now(); store.set("radical-read-unread", un); }  // read again after a clear
   const keys = Object.keys(m);
   for (const x of keys) if (dayGap(m[x], today) >= READ_DAYS) delete m[x];
   const left = Object.keys(m); if (left.length > READ_MAX) left.sort((a, b) => m[a] < m[b] ? -1 : 1).slice(0, left.length - READ_MAX).forEach(x => delete m[x]);
@@ -1930,42 +1943,72 @@ function paintTicks(line) {
   if (!line.isConnected || !line.closest("#reader")) return;
   const rows = rowsOf(line); if (!rows.length) return;
   const top0 = line.getBoundingClientRect().top;
-  const got = line._counted ? Infinity : line._got || 0;
-  const want = rows.filter(r => r.han && r.end <= got).map(r => [Math.round((r.top + r.bottom) / 2 - top0), r.end]);
+  // v90: only rows that earned credit get a tick (rows scrolled past unread don't), and a tick's day decides its
+  // color: today's gold, an earlier day's faint grey
+  const got = line._counted ? Infinity : line._got || 0, today = localDay();
+  const skipped = r => !line._counted && (line._skip || []).some(([a, b]) => a < r.end && b > r.start);
+  const lineDay = line._counted ? readLines()[lineKey(line._text || "")] || today : null;
+  const dayOf = r => lineDay || (line._old && r.end <= line._old.upTo ? line._old.day : today);
+  const want = rows.filter(r => r.han && r.end <= got && !skipped(r)).map(r => [Math.round((r.top + r.bottom) / 2 - top0), r.start, dayOf(r)]);
   const sig = want.map(w => w.join(":")).join(","); if (line._tickSig === sig) return; line._tickSig = sig;
   line.querySelectorAll(":scope>.rtick").forEach(t => t.remove());
-  want.forEach(([y, end]) => {
-    const t = el("button", "rtick"); t.type = "button"; t.setAttribute("aria-label", "Read to here"); t.style.top = y + "px";
-    // v86: tap a tick to say "I read up to here": everything after it that counted today comes off
+  want.forEach(([y, start, day]) => {
+    const t = el("button", "rtick" + (day !== today ? " old" : "")); t.type = "button"; t.setAttribute("aria-label", "Read " + dayWord(day)); t.style.top = y + "px";
     t.addEventListener("pointerdown", e => e.stopPropagation());
-    t.onclick = e => { e.stopPropagation(); armConfirm(t, on => { t.innerHTML = on ? '<span class="rtickask">Tap again to uncount from here on</span>' : ""; }, () => uncountAfter(line, end), true); };
+    t.onclick = e => { e.stopPropagation(); tickAsk(line, t, y, start, day); };
     line.append(t);
   });
   if (!line._tickRO && "ResizeObserver" in window) { line._tickRO = new ResizeObserver(() => { line._tickSig = null; paintTicks(line); }); line._tickRO.observe(line); }
 }
-// v86: take back today's credit for everything after a point in the text: the rest of this line from `pos`
-// characters on, and every later line on the page. Lines counted on an earlier day keep their ticks and that
-// day's numbers never change. The words come off today's Words read (synced as wx), and those rows can count
-// again when they're read.
-function uncountAfter(line, pos) {
+// v90: tap a tick: "Read <day>. Clear from here down?" Yes clears that row and everything after it on the page.
+const dayWord = d => { const g = dayGap(d, localDay()); if (g <= 0) return "today"; if (g === 1) return "yesterday";
+  return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
+function tickAsk(line, t, y, start, day) {
+  document.querySelectorAll(".rtickask").forEach(x => x._close());
+  const box = el("div", "rtickask"); box.style.top = y + "px";
+  box.append(el("span", "", `Read ${dayWord(day)}. Clear from here down?`));
+  const yes = el("button", "rty", "Yes"), no = el("button", "rtn", "No"); yes.type = no.type = "button"; box.append(yes, no);
+  const away = e => { if (!box.contains(e.target)) close(); };
+  const close = () => { box.remove(); t.classList.remove("on"); document.removeEventListener("pointerdown", away, true); };
+  box._close = close;
+  box.addEventListener("pointerdown", e => e.stopPropagation()); box.onclick = e => e.stopPropagation();
+  yes.onclick = () => { close(); clearFrom(line, start); };
+  no.onclick = close;
+  t.classList.add("on"); line.append(box);
+  setTimeout(() => document.addEventListener("pointerdown", away, true), 0);
+}
+// Clear from the start of a row (`pos` characters into the line) to the end of the page: the ticks go, those lines
+// leave the month's record (so they count again when really read), and whatever counted TODAY comes off today's
+// Words read (synced as wx). Earlier days' totals never change, so a streak can't be undone.
+function clearFrom(line, pos) {
   const lines = [...document.querySelectorAll("#reader .line")], i = lines.indexOf(line); if (i < 0) return;
-  const today = localDay(), rl = readLines(); let words = 0, chars = 0, dropped = false;
+  const today = localDay(), rl = readLines(), un = store.get("radical-read-unread", {}); let words = 0, chars = 0, dropped = false;
   lines.slice(i).forEach((l, j) => {
     const keep = j === 0 ? pos : 0, n = hanIn(l._text), k = lineKey(l._text || "");
-    if (l._counted && rl[k] && rl[k] !== today) return;  // an earlier day's line stays counted
     const known = partRead.get(k); partOf(l);
-    const got = l._counted ? n : l._got || 0; if (got <= keep) return;
-    const cred = known && known.day === today ? l._cred || known.cred || [] : l._counted ? credAll(l) : [];  // counted on another visit today: every word
-    cred.filter(c => c[0] > keep).forEach(c => { words++; chars += c[1]; });
-    l._cred = cred.filter(c => c[0] <= keep);
-    if (l._counted) { l._counted = false; l.classList.remove("counted"); if (rl[k]) { delete rl[k]; dropped = true; } }
-    l._dwell = null; skipTo(l, keep, true);
+    const got = l._counted ? n : l._got || 0;
+    if (got <= keep && !l._counted) return;
+    const oldDay = l._counted && rl[k] && rl[k] !== today ? rl[k] : null;
+    if (oldDay) {  // an earlier day's line: nothing comes off today; the rows before the tap keep their grey ticks
+      l._cred = []; l._skip = []; l._old = keep ? { upTo: keep, day: oldDay } : null;
+    } else {
+      const cred = known && known.day === today ? l._cred || known.cred || [] : l._counted ? credAll(l) : [];  // counted on another visit today: every word
+      cred.filter(c => c[0] > keep).forEach(c => { words++; chars += c[1]; });
+      l._cred = cred.filter(c => c[0] <= keep);
+      if (l._old && l._old.upTo > keep) l._old = keep ? { upTo: keep, day: l._old.day } : null;
+    }
+    if (l._counted) { l._counted = false; l.classList.remove("counted"); }
+    if (rl[k]) { delete rl[k]; dropped = true; }
+    un[k] = Date.now();
+    l._dwell = null; l._ready = false; skipTo(l, keep, true);
     l._tickSig = null; paintTicks(l);
   });
   if (dropped) store.set("radical-read-lines", rl);
+  store.set("radical-read-unread", un);
+  if (session && !readSync) readSync = setTimeout(() => { readSync = 0; syncNow(true); }, 30000);
   readBank = 0;
   if (words || chars) unlogRead(words, chars);
-  toast(words ? `${words} word${words === 1 ? "" : "s"} uncounted` : "Nothing after this counted today", 2500);
+  toast(words ? `Cleared. ${words} word${words === 1 ? "" : "s"} off today.` : "Cleared", 2500);
 }
 // every word in a line, as [end, characters] (a line counted earlier today, on another visit)
 function credAll(l) {
@@ -1990,14 +2033,19 @@ const partRead = new Map();  // lineKey -> { got, wi, ci, day }: a part-read lin
 function partOf(line) {
   if (line._got != null) return;
   const p = partRead.get(lineKey(line._text || ""));
-  if (p && p.day === localDay()) { line._got = p.got; line._wi = p.wi; line._ci = p.ci; line._cred = p.cred ? p.cred.slice() : []; } else { line._got = 0; line._cred = []; }
+  if (p && p.day === localDay()) { line._got = p.got; line._wi = p.wi; line._ci = p.ci; line._cred = p.cred ? p.cred.slice() : []; line._skip = p.skip ? p.skip.map(x => x.slice()) : []; line._old = p.old || null; }
+  else { line._got = 0; line._cred = []; line._skip = []; line._old = null; }
 }
-const keepPart = (line, t) => partRead.set(lineKey(t), { got: line._got, wi: line._wi, ci: line._ci, cred: line._cred || [], day: localDay() });
+const keepPart = (line, t) => partRead.set(lineKey(t), { got: line._got, wi: line._wi, ci: line._ci, cred: line._cred || [], skip: line._skip || [], old: line._old || null, day: localDay() });
 // v86: move a line's place to `pos` without credit: rows scrolled past unread, or (back) after an uncount
 function skipTo(line, pos, back) {
   partOf(line);
   const t = line._text || "", spans = line._spans || [];
   if (!back && pos <= (line._got || 0)) return;
+  const from = line._got || 0;
+  // v90: remember what was skipped (no tick there, and the line never counts as fully read); going back drops it
+  if (back) line._skip = (line._skip || []).filter(([a]) => a < pos).map(([a, b]) => [a, Math.min(b, pos)]);
+  else (line._skip = line._skip || []).push([from, Math.min(hanIn(t), pos)]);
   let i = 0, at = 0;
   while (i < spans.length) { const c = hanIn(t.slice(spans[i].start, spans[i].end)); if (at + c > pos) break; at += c; i++; }
   line._got = Math.min(hanIn(t), pos); line._wi = i; line._ci = at;
@@ -2018,7 +2066,8 @@ function payLine(line, upTo) {
   if (chars) logDay("r", chars);
   if (words) logDay("w", words);
   if (line._got < n) paintTicks(line);
-  if (line._got >= n) {
+  if (line._got >= n && (line._skip || []).length) { line._tickSig = null; paintTicks(line); }  // v90: rows were skipped: not read through
+  else if (line._got >= n) {
     markCounted(line); markRead(lineKey(t));
     readNoted.add(lineKey((document.querySelector("#reader .line") || {})._text || ""));  // read here just now: no "read before" note on a redraw
   }
@@ -2545,6 +2594,8 @@ function ensure(chars) {
   const needW = new Set(han.filter(c => !(c in words)).map(c => c.codePointAt(0) % SHARDS));
   return Promise.all([...[...need].map(loadShard), ...[...needW].map(loadWords)]);
 }
+// a character's first reading: the stroke data's, or (no stroke data, like 芃) the dictionary's
+const sylOf = c => { if (cache[c]) return cache[c].p[0]; const e = lookup(c); return e ? (region === "tw" && e[2] ? e[2] : e[1]).split(" ")[0] : ""; };
 function lookup(str) { const first = [...str][0]; return (words[first] || []).find(e => e[0] === str) || null; }
 function token(entry, chars) {
   if (!entry) return { chars, syl: null, mean: null };
@@ -2557,9 +2608,31 @@ function token(entry, chars) {
 // only such characters, joins into one word, with a place ending (河, 島, 州...) if one follows.
 const SOUNDCH = new Set([..."阿埃艾奧奥巴拜班貝贝彼畢毕波伯博布查達达戴丹德迪蒂杜敦俄厄恩菲費费芬弗蓋盖戈格哈赫亨胡霍基吉賈贾傑杰喀卡凱凯坎柯科克肯庫库拉萊莱蘭兰朗勞劳勒雷黎里莉列琳盧卢魯鲁倫伦羅罗洛呂吕馬马麥麦曼梅蒙米密莫墨默姆穆納纳奈尼紐纽諾诺歐欧帕潘佩彭皮珀普奇齊齐契恰喬乔欽钦薩萨塞瑟森莎斯絲丝索塔泰坦湯汤特提圖图托瓦威維维韋韦溫温沃烏乌伍希錫锡謝谢辛休雅亞亚耶伊尤約约贊赞扎詹茲兹佐澤泽爾尔茨蘇苏蕾娜妮婭娅薇蓮莲"]);
 const PLACE_END = new Set([..."河湖島岛州市灣湾港城江堡省峰海鎮镇山"]);
+// v90: Chinese names (童胤恆) fall apart the same way. A common surname followed by two loose characters that aren't
+// little grammar words joins into one name; a surname and ONE character (童恆) only when that pair comes up twice in
+// the text (`nameHint`, from render), since 高 or 張 plus one character is often just a word.
+const SURNAMES = new Set([..."王李張张劉刘陳陈楊杨黃黄趙赵吳吴周徐孫孙馬马朱胡郭何林高羅罗鄭郑梁謝谢宋唐許许韓韩馮冯鄧邓曹彭曾蕭萧肖田董潘袁蔡蔣蒋余於于杜葉叶程蘇苏魏呂吕丁任沈姚盧卢姜崔鍾钟譚谭陸陆汪范金石廖賈贾夏韋韦傅方鄒邹熊白孟秦邱江尹薛閻阎段雷侯龍龙史陶黎賀贺顧顾毛郝龔龚邵萬万錢钱嚴严覃武戴莫孔向湯汤常溫温康施文牛樊葛邢安齊齐易喬乔伍龐庞顏颜倪莊庄聶聂章魯鲁岳翟殷詹申歐欧耿關关蘭兰焦俞左柳甘祝包寧宁尚符舒阮柯紀纪梅童凌畢毕單单季裴霍涂成苗谷盛曲翁冉駱骆藍蓝路游辛靳管柴蒙鮑鲍華华喻祁蒲房滕屈饒饶解牟艾尤陽阳時时穆農农司卓古吉繆缪簡简車车項项連连蘆芦麥麦褚婁娄竇窦戚岑景黨党宮宫費费卜冷晏席衛卫米杭"]);
+const SURNAMES2 = new Set(["歐陽", "欧阳", "司馬", "司马", "諸葛", "诸葛", "上官", "司徒", "東方", "东方", "夏侯", "皇甫", "公孫", "公孙", "慕容", "令狐", "長孫", "长孙", "宇文", "尉遲", "尉迟"]);
+const NAME_STOP = new Set([..."的了是在不也就都很和與与把被說说會会要有我你他她它們们這这那個个一二三十上下中大小來来去到得地著着過过嗎吗呢吧啊又還还再才只已對对從从給给跟為为以而但或並并之其所此每各些多少好看想讓让叫向"]);
+let nameHint = new Set();
+const isSur = t => t && (t.chars.length === 1 ? SURNAMES.has(t.chars[0]) : t.chars.length === 2 && SURNAMES2.has(t.chars.join("")));
+const loose = t => t && t.chars.length === 1 && isHan(t.chars[0]) && !NAME_STOP.has(t.chars[0]) && !SURNAMES2.has(t.chars[0]);
+function hintNames(text) {  // surname + one character pairs that come up at least twice in the whole text
+  const seen = new Map(), out = new Set(), ch = [...text];
+  for (let i = 0; i + 1 < ch.length; i++) if (SURNAMES.has(ch[i]) && isHan(ch[i + 1]) && !NAME_STOP.has(ch[i + 1])) { const p = ch[i] + ch[i + 1]; seen.set(p, (seen.get(p) || 0) + 1); }
+  for (const [p, n] of seen) if (n >= 2 && !lookup(p)) out.add(p);
+  return out;
+}
 function joinNames(toks) {
   const out = [];
   for (let i = 0; i < toks.length;) {
+    if (isSur(toks[i])) {
+      const sur = toks[i].chars, two = loose(toks[i + 1]) && loose(toks[i + 2]), pair = loose(toks[i + 1]) && nameHint.has(sur.join("") + toks[i + 1].chars[0]);
+      if (two || pair) {
+        const n = two ? 3 : 2, cs = toks.slice(i, i + n).flatMap(x => x.chars);
+        const t = token(null, cs); t.mean = "Likely a name"; t.name = true; out.push(t); i += n; continue;
+      }
+    }
     let j = i, n = 0, singles = 0;
     while (j < toks.length && toks[j].chars.every(c => SOUNDCH.has(c))) { n += toks[j].chars.length; singles += toks[j].chars.length === 1; j++; }
     if (n >= 3 && singles >= 2) {
@@ -2598,7 +2671,8 @@ function segment(line) {
       return d.p.find(p => p.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase() === base && tone(p) !== 5) || s;
     });
   });
-  out.forEach(t => { if (!t.syl) t.syl = t.chars.map(c => cache[c] ? cache[c].p[0] : ""); });
+  // a character with no stroke data takes its reading from the dictionary (芃 péng)
+  out.forEach(t => { if (!t.syl) t.syl = t.chars.map(sylOf); });
   // Tone changes people actually say: 一 and 不 before certain tones.
   const flat = out.flatMap(t => t.chars.map((c, k) => ({ t, k, c })));
   flat.forEach((x, n) => {
@@ -2642,6 +2716,9 @@ function svgFor(ch, grid, light) {
     g.append(path);
   });
   svg.append(g);
+  // v90: a rare character with no stroke data (芃) is drawn from the font in plain ink, so it still shows everywhere
+  if (!d && isHan(ch)) { const tx = document.createElementNS(NS, "text"); tx.setAttribute("x", "512"); tx.setAttribute("y", "870"); tx.setAttribute("text-anchor", "middle");
+    tx.setAttribute("font-size", "900"); tx.setAttribute("fill", "var(--fg)"); tx.setAttribute("class", "nostroke"); tx.style.fontFamily = "var(--font-zh)"; tx.textContent = ch; svg.append(tx); }
   if (light && d && palette !== "font") addLight(svg, d);
   return svg;
 }
@@ -2808,7 +2885,7 @@ function drawn(text, size = 34, mark) {
 // hidden inside so copying, searching and textContent still work. Drawn lazily as it nears the screen. Controls
 // stay plain: one-character buttons (解 拼 繁 简), heading and menu marks, the tab bar and the brand. The Original
 // look keeps the font.
-const INK_SKIP = ".sc,.bloom,.resmark,#tabbar,#splash,#menu,.about,.ti,.uizh,.noink,.ink,svg,textarea,input,select,option,script,style,[contenteditable],.mi,.tz,.minihead,.topbrand,.railbrand,#reader,.line,.cell,.drawn,.revchars,.bigview,.tpchars,.tlcell,.tc,.fontglyph,.sizepop,#sizePop";
+const INK_SKIP = ".sc,.bloom,.resmark,#tabbar,#splash,#menu,.about,.ti,.uizh,.noink,.ink,svg,textarea,input,select,option,script,style,[contenteditable],.mi,.tz,.minihead,.topbrand,.railbrand,#reader>.note,#reader>.simpnote,#reader>.loading,.line,.cell,.drawn,.revchars,.bigview,.tpchars,.tlcell,.tc,.fontglyph,.sizepop,#sizePop";
 const INK_RUN = /\p{Script=Han}+/gu;
 const inkIO = new IntersectionObserver(es => es.forEach(e => {
   if (!e.isIntersecting) return; inkIO.unobserve(e.target);
@@ -2933,6 +3010,7 @@ async function render() {
   if (!Object.keys(cache).length) reader.innerHTML = '<p class="loading">Drawing…</p>';
   await ensure(text);
   if (token !== renderToken) return;
+  nameHint = hintNames(text); paintTextHead();
   reader.innerHTML = ""; unpick(); if (reading) stopReading();  // new text on screen: the voice stops with it
   if (!text.trim()) { $("addPanel").open = true; reader.innerHTML = '<p class="note">Add Chinese text above, or try Explore.</p>'; return; }
   // Every character is a drawing, so very long texts are shown in parts.
@@ -2983,7 +3061,31 @@ function rotTip() {
 }
 addEventListener("resize", () => { if (innerWidth > innerHeight && innerHeight < 600 && inReader()) { if (!store.get("radical-rotate-seen", false)) store.set("radical-rotate-seen", true); hideToast(); } });
 // One line of reading text, drawn on the grid. `onTap(group, tok, lineText)` decides what tapping a word does.
+// v90: half-width punctuation between Chinese (Kindle copies, some websites) becomes the full-width marks Chinese
+// text uses, so each takes its own square instead of squeezing into a character's: 嗎? → 嗎？, 方,她 → 方，她,
+// ... → ……, "…" → “…”. English sentences are left alone.
+const ZHP = "\\p{Script=Han}，。！？；：、…“”‘’「」『』（）《》〈〉";
+const FULLP = { "?": "？", "!": "！", ",": "，", ":": "：", ";": "；", "(": "（", ")": "）" };
+function fullPunct(t) {
+  if (!/[?!,:;.()"\u2026]/.test(t) || !/\p{Script=Han}/u.test(t)) return t;
+  const zh = new RegExp(`[${ZHP}]`, "u");
+  t = t.replace(new RegExp(`([${ZHP}]) *(?:\\.{3,}|\u2026+) *|(?:\\.{3,}|\u2026+) *(?=[${ZHP}])`, "gu"), (m, a) => (a || "") + "……");
+  t = t.replace(/ *([?!,:;()]) */g, (m, p, at, all) => {
+    const before = all.slice(0, at).replace(/ +$/, ""), after = all.slice(at + m.length);
+    const pc = [...before].pop() || "", nc = [...after][0] || "";
+    const near = p === "(" ? zh.test(nc) : p === ")" ? zh.test(pc) : zh.test(pc) || (zh.test(nc) && !/[A-Za-z0-9]/.test(pc));
+    if (!near || (p === ":" && /\d/.test(pc) && /\d/.test(nc))) return m;
+    return FULLP[p];
+  });
+  t = t.replace(/(\p{Script=Han}) *\.(?=$| |"|\p{Script=Han})/gu, "$1。");
+  if (t.includes('"')) { let open = true; t = t.replace(/"/g, (m, at, all) => {
+    const pc = [...all.slice(0, at)].pop() || "", nc = [...all.slice(at + 1)][0] || "";
+    if (!zh.test(pc) && !zh.test(nc)) return m;
+    const r = open ? "“" : "”"; open = !open; return r; }); }
+  return t;
+}
 function buildLine(lineText, onTap, withEN = true) {
+  lineText = fullPunct(lineText);
   // v42: a line with English in it flows (cells at the column width, English at its own width, breaking between
   // words) instead of snapping English onto whole squares, which left holes. Pure Chinese keeps the exact grid.
   const flowing = /[A-Za-z]{2}/.test(lineText);
@@ -3024,10 +3126,10 @@ function buildLine(lineText, onTap, withEN = true) {
     const group = el("span", "word" + (tok.chars.length > 1 ? " multi" : ""));
     const start = pos; pos += tok.chars.join("").length; spans.push({ start, end: pos, group });
     tok.chars.forEach((ch, k) => {
-      if (cache[ch]) {
+      if (cache[ch] || isHan(ch)) {  // v90: a character with no stroke data is still a cell: tappable, with its pinyin
         const d = cache[ch], b = el("button", "cell"); b.type = "button";
         b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", `${ch} ${tok.syl[k] || ""}`);
-        const py = el("span", "py" + (tok.chars.length === 1 && d.p.length > 1 ? " multi" : ""), pyHTML(tok.syl[k]));
+        const py = el("span", "py" + (tok.chars.length === 1 && d && d.p.length > 1 ? " multi" : ""), pyHTML(tok.syl[k]));
         b.append(py, glyphFor(ch, false));
         b._ch = ch; b._syl = tok.syl[k]; b._at = start + tok.chars.slice(0, k).join("").length;
         b.onclick = e => { e.stopPropagation(); if (b._held) { b._held = false; return; } onTap(group, tok, lineText, b); };
@@ -3135,7 +3237,9 @@ function spanLatin(line, col) {
   line.querySelectorAll(":scope > .glyph.latin").forEach(x => x.style.gridColumn = `span ${Math.max(1, Math.ceil(lw(x) / col))}`);
   // A glued group (English with the punctuation after it, or a bracket and the character inside it) takes the
   // squares its pieces need together; the bit left over from rounding up goes after the last piece, not between them.
-  line.querySelectorAll(":scope > .glue").forEach(glue => {
+  // v90: groups inside a word (嗎？ is the word 嗎 plus its mark) count too: .word is display:contents, so they sit on
+  // the grid all the same; before, they got one square and the mark squeezed into the character's
+  line.querySelectorAll(".glue").forEach(glue => {
     const u = [...glue.children], width = u.reduce((n, x) => n + (isL(x) ? lw(x) : col), 0);
     glue.style.gridColumn = `span ${Math.max(u.length > 1 ? 2 : 1, Math.ceil(width / col - .02))}`;
     glue.style.gridTemplateColumns = u.map((x, i) => i === u.length - 1 ? "minmax(0,1fr)" : isL(x) ? "max-content" : col.toFixed(1) + "px").join(" ");
@@ -3170,7 +3274,7 @@ function miniReader(text, mark, en, opts = {}) {
   const box = el("div", "mini" + (store.get("radical-py", false) ? "" : " nopy")); box.lang = "zh";
   const body = el("div", "minibody"), gloss = el("div", "peek inline"); gloss.hidden = true;
   // v42: the same controls as a line in Read (speaker, EN, 解 Explain), then 拼 Pinyin, ↻ and 字, all one style.
-  const pyb = el("button", "enbtn minipy", '<span lang="zh">拼</span> Pinyin'); pyb.type = "button"; pyb.setAttribute("aria-pressed", !box.classList.contains("nopy"));
+  const pyb = el("button", "enbtn minipy", "Pinyin"); pyb.type = "button"; pyb.setAttribute("aria-pressed", !box.classList.contains("nopy"));
   pyb.onclick = e => { e.stopPropagation(); const on = box.classList.toggle("nopy") === false; pyb.setAttribute("aria-pressed", on); };
   // The speaker: your pace every time (no slower-on-repeat here); while it speaks it shows ■ and the 慢–快 dial.
   const said = () => text.replace(/\n+/g, "，");
@@ -3423,6 +3527,8 @@ $("sizeBtn").onclick = e => { e.stopPropagation(); sizeOpen($("sizePop").hidden)
 ["pointerdown", "input"].forEach(ev => $("sizePop").addEventListener(ev, sizeIdle));
 document.addEventListener("click", e => { if (!$("sizePop").hidden && !e.target.closest("#sizePop,#sizeBtn")) sizeOpen(false); });
 // Reading speed: the same setting as Settings → Speech speed. Dragging changes it; letting go restarts the sentence.
+// v90: Listen starts slower (0.65, was 0.85) and the slider goes down to 0.35; a speed saved before moves down the same share, once
+if (!store.get("radical-rate-v90", false)) { if (store.get("radical-rate", null) != null) { rate = Math.max(.35, Math.round(rate * .65 / .85 * 100) / 100); store.set("radical-rate", rate); } store.set("radical-rate-v90", true); }
 const setRate = v => { rate = +v; store.set("radical-rate", rate); if ($("rate")) $("rate").value = rate; if ($("speedIn")) $("speedIn").value = rate; };
 $("speedIn").addEventListener("input", e => setRate(e.target.value));
 $("speedIn").addEventListener("change", () => { if (readAloud.restart) readAloud.restart(); });
@@ -3489,9 +3595,12 @@ function saveHistory() {
 }
 const histKey = h => h.kind + ":" + (h.doc ? (h.doc.url || h.title || "") : h.words ? (h.title || "") + h.words.join("") : (h.text || "").slice(0, 200));
 function record(entry) {
-  const h = { id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: localDay(), ...entry, t: Date.now() };
+  const h = { id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: localDay(), made: Date.now(), ...entry, t: Date.now() };
   if (h.doc) h.doc = JSON.parse(JSON.stringify({ ...h.doc, simp: undefined }));
-  const key = histKey(h); histGone(textHistory.filter(x => histKey(x) === key).map(x => x.id));
+  const key = histKey(h);
+  // v90: opening it again keeps its name, its English title and when it was first added
+  const was = textHistory.find(x => histKey(x) === key);
+  if (was) { for (const f of ["name", "en", "made", "at"]) if (was[f] && !entry[f]) h[f] = was[f]; } histGone(textHistory.filter(x => histKey(x) === key).map(x => x.id));
   textHistory = [h, ...textHistory.filter(x => histKey(x) !== key)].slice(0, 100);
   saveHistory(); scheduleSync(); return h.id;
 }
@@ -3501,9 +3610,11 @@ function remember(text) {
   if (textHistory.some(h => h.text === text || (h.doc && h.doc.pages.includes(text)))) return;
   record({ kind: "typed", text });
 }
-function setText(text, keepDoc, kind = "typed", title = "") {
+function setText(text, keepDoc, kind = "typed", title = "", fromHist) {
   if (!keepDoc && doc) closeDoc();
-  $("src").value = text; store.set("radical-text", text); record({ kind, text, ...(title ? { title } : {}) }); $("addPanel").open = false;
+  const name = fromHist ? "" : takeName();
+  $("src").value = text; const id = record({ kind, text, ...(title ? { title } : {}), ...(name ? { name } : {}) }); store.set("radical-text", text); $("addPanel").open = false;
+  if (!fromHist && !name && !title) autoTitle(id, text);
   stack.length = 0; setTab("readScreen"); $("readScreen").scrollTop = 0;
   onNewText(); render();
 }
@@ -3514,7 +3625,38 @@ function histDocPage() {
   h.doc.i = doc.i; doc.pages.forEach((p, k) => { if (p != null && h.doc.pages[k] == null) h.doc.pages[k] = p; });
   clearTimeout(histTimer); histTimer = setTimeout(saveHistory, 800);
 }
-function recordDoc(kind) { if (doc) doc._hid = record({ kind, title: doc.title, doc }); }
+function recordDoc(kind) { if (!doc) return; const name = takeName(); doc._hid = record({ kind, title: doc.title, doc, ...(name ? { name } : {}) }); paintTextHead(); if (name) showDocBar(); }
+// v90: every text gets a name: the one typed in the Name box, else a short English title from the AI service
+// (signed in; one small call, kept with the text), else its first characters. Under it: what it was and when.
+function takeName() { const n = $("srcName"); const v = n ? n.value.trim().slice(0, 60) : ""; if (n) n.value = ""; return v; }
+async function autoTitle(id, text) {
+  if (!/\p{Script=Han}/u.test(text) || !(await accessToken().catch(() => null))) return;
+  try {
+    const r = await claude({ action: "title", text: text.trim().slice(0, 500) });
+    const h = textHistory.find(x => x.id === id); if (!h || h.name || !r.title) return;
+    h.en = String(r.title).slice(0, 60); saveHistory(); scheduleSync(); paintTextHead();
+  } catch (e) {}
+}
+const TKINDS = { typed: "Pasted text", wiki: "Wikipedia", photo: "Photo", pdf: "PDF", file: "File" };
+const madeOf = h => h.made || parseInt(String(h.id || "").slice(1, 9), 36) || h.t || Date.now();
+const whenOf = h => new Date(madeOf(h)).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(/ ([AP])M$/, (m, x) => " " + x.toLowerCase() + "m");
+const histName = h => h.name || h.en || (h.doc ? h.title : h.title || [...(h.text || "").split("\n")[0]].slice(0, 14).join("") + ([...(h.text || "")].length > 14 ? "…" : ""));
+const curHist = () => doc ? textHistory.find(x => x.id === doc._hid) : textHistory.find(x => !x.doc && x.kind !== "list" && x.text === $("src").value);
+function paintTextHead() {
+  const head = $("textHead"); if (!head) return;
+  const h = !doc && curHist();
+  head.hidden = !h; if (!h) return;
+  const t = $("textTitle"), name = histName(h);
+  const nb = el("button", "tname", esc(name)); nb.type = "button"; if (!h.name && !h.en) nb.lang = "zh"; nb.title = "Rename";
+  nb.onclick = () => {
+    const inp = el("input"); inp.type = "text"; inp.maxLength = 60; inp.value = h.name || h.en || ""; inp.placeholder = "Name this text";
+    let done = false;
+    const save = () => { if (done) return; done = true; const v = inp.value.trim(); if (v) h.name = v; else delete h.name; saveHistory(); scheduleSync(); paintTextHead(); };
+    inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); save(); } if (e.key === "Escape") { done = true; paintTextHead(); } };
+    inp.onblur = save; nb.replaceWith(inp); inp.focus(); inp.select();
+  };
+  t.replaceChildren(nb, el("span", "src", esc(`${TKINDS[h.kind] || "Text"} · ${whenOf(h)}`)));
+}
 function openHistory(h) {
   if (h.kind === "list") { const ws = (h.words || []).map(findWord).filter(Boolean); if (ws.length) openLook(ws); return; }
   if (h.doc) {
@@ -3523,7 +3665,7 @@ function openHistory(h) {
     h.t = Date.now(); textHistory = [h, ...textHistory.filter(x => x !== h)]; saveHistory(); scheduleSync();
     stack.length = 0; setTab("readScreen"); showDocPage(doc.i || 0); return;
   }
-  setText(h.text, false, h.kind, h.title || "");
+  setText(h.text, false, h.kind, h.title || "", true);
 }
 function renderHistory() {
   const list = $("histList"); list.innerHTML = "";
@@ -3538,9 +3680,9 @@ function renderHistory() {
   if (!shown.length) list.append(el("p", "note", "Nothing yet."));
   shown.forEach(h => {
     const row = el("div", "hitem");
-    const first = h.doc ? h.title : h.kind === "list" ? (h.title || "Word list") : (h.title || (h.text || "").split("\n")[0]);
+    const first = h.kind === "list" ? (h.title || "Word list") : histName(h);
     const size = h.doc ? `${h.doc.pages.length} page${h.doc.pages.length === 1 ? "" : "s"}${h.doc.pages.length > 1 && h.doc.i ? `, on ${h.doc.i + 1}` : ""}` : h.kind === "list" ? `${(h.words || []).length} words` : `${[...(h.text || "")].length} characters`;
-    const load = el("button", "load", `<span class="hk">${HKINDS[h.kind] || "Text"}</span><span class="ht" lang="zh">${esc(first)}</span><span class="note">${esc(h.at)} · ${size}</span>`);
+    const load = el("button", "load", `<span class="hk">${HKINDS[h.kind] || "Text"}</span><span class="ht" lang="zh">${esc(first)}</span><span class="note">${esc(h.made || h.id ? whenOf(h) : h.at)} · ${size}</span>`);
     load.type = "button"; load.onclick = () => openHistory(h);
     const del = btn("Delete", "btn ghost small", () => { histGone([h.id]); textHistory = textHistory.filter(x => x !== h); saveHistory(); renderHistory(); scheduleSync(); });
     row.append(load, del); list.append(row);
@@ -3675,7 +3817,7 @@ async function signIn(email, code) {
 const PAY_RULE = "daily", PAY_WORDS = 50, FREE_READ = 100;
 const PAY_LOCKS = { daily: ["cards", "ai", "add"], reading: ["cards", "ai", "add"], teaser: ["read", "explore", "cards", "ai", "add"], words: [] };
 const DEMO_AI = { allow: { kind: "paid", base: 2.5, day: .5 }, meter: { chg: .38, dchg: .02 } };  // the still meter on the tour and the card
-const AUTO_AI = ["card", "topics", "rate", "wordset", "example"];  // calls the app makes on its own: no card or sheet for them
+const AUTO_AI = ["card", "topics", "rate", "wordset", "example", "title"];  // calls the app makes on its own: no card or sheet for them
 const SUBS_URL = "https://apps.apple.com/account/subscriptions", EULA_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 const LIFE = "radical_unlock", TRIAL_ITEM = "radical_trial";  // Lifetime ($79.99; the id is from before v63) and, v71, the $0 item that starts the trial without a subscription
 let payCfg = store.get("radical-pay", null), ent = store.get("radical-ent", null) || { unlock: null, sub: null, trialFrom: "" }, rcReady = null;
@@ -4112,7 +4254,7 @@ function aiBreakdown(me) {
   card.append(t, el("p", "note", note), btn("Close", "btn ghost", close));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
-const AI_NAMES = { wordset: "Word Decks", card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
+const AI_NAMES = { title: "Text names", wordset: "Word Decks", card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
   zhquery: "Explore search", tozh: "English to Chinese", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
 function tallyText(a) { return `AI today: ${a.today.calls} call${a.today.calls === 1 ? "" : "s"} · ${money(a.today.cost)} · this month ${money(a.month.cost)} (all users)`; }
 // v45: everything only owners see lives on one page, Admin tools, behind one menu entry.
@@ -4367,7 +4509,7 @@ async function syncNow(quietErrors) {
     const token = await accessToken(); if (!token) return null;
     const settings = settingsOut(), hist = histOut(), cur = curOut();
     const r = await fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, familiar, decks, days: store.get("radical-days", {}), reads: readLines(), summary: store.get("radical-friends", null) ? friendSummary() : undefined, settings, hist, cur } }) });
+      body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, familiar, decks, days: store.get("radical-days", {}), reads: readLines(), unread: store.get("radical-read-unread", {}), summary: store.get("radical-friends", null) ? friendSummary() : undefined, settings, hist, cur } }) });
     const m = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(m.error || `Sync failed (${r.status}).`);
     if (!Array.isArray(m.words)) throw new Error("Sync failed: nothing came back.");  // never let an empty answer wipe your words
@@ -4389,7 +4531,10 @@ function applyMerged(m) {
   learned = m.learned || learned; store.set("radical-learned", learned);
   if (m.familiar) { familiar = m.familiar; store.set("radical-familiar", familiar); }
   if (m.days) store.set("radical-days", m.days);
-  if (m.reads && typeof m.reads === "object") { const r = readLines(); for (const [k, d] of Object.entries(m.reads)) if (!r[k] || r[k] < d) r[k] = d; store.set("radical-read-lines", r); }
+  if (m.reads && typeof m.reads === "object") { const r = readLines(); for (const [k, d] of Object.entries(m.reads)) if (!r[k] || r[k] < d) r[k] = d;
+    // v90: lines cleared from a tick ({ lineKey: day }) stay cleared on every device unless read on a later day
+    if (m.unread && typeof m.unread === "object") { for (const [k, v] of Object.entries(m.unread)) if (v > 0 && r[k] && r[k] <= new Date(v + 14 * 36e5).toISOString().slice(0, 10)) delete r[k]; store.set("radical-read-unread", m.unread); }
+    store.set("radical-read-lines", r); }
   if (m.decks && (+m.decks.t || 0) >= (+decks.t || 0)) { decks = { mine: m.decks.mine || "Mine", names: Array.isArray(m.decks.names) ? m.decks.names : [], used: m.decks.used && typeof m.decks.used === "object" ? m.decks.used : decks.used || {}, made: m.decks.made && typeof m.decks.made === "object" ? m.decks.made : decks.made || {}, ids: m.decks.ids && typeof m.decks.ids === "object" ? m.decks.ids : decks.ids || {}, t: +m.decks.t || 0 }; store.set("radical-decks", decks); }
   store.set("radical-words", myWords); resetSigs(); updateCounts();
   if (!$("wordsScreen").hidden) renderWords();
@@ -4501,11 +4646,20 @@ function signInSheet(o = {}) {
 }
 // Explanations are kept once made (the same sentence never costs twice); at most 300 are kept, oldest dropped first.
 const explainCache = store.get("radical-explain", {});
+// v90: every Chinese word in an explanation is drawn at reading size (it grows with 字) with its pinyin after it
+function zhPy(text) {
+  return String(text || "").split(/(\p{Script=Han}+)/u).map((part, i) => {
+    if (!(i % 2)) return esc(part);
+    return segment(part).map(t => { const py = (t.syl || []).filter(Boolean).join("");
+      return `<span class="zhw" lang="zh">${esc(t.chars.join(""))}</span>${py ? `<span class="expy">(${esc(py)})</span>` : ""}`; }).join("");
+  }).join("");
+}
+const explainText = r => [r.structure, ...(r.points || []).flatMap(x => [x.pattern, x.note]), ...(r.words || []).flatMap(x => [x.word, x.note])].join("");
 function explainHTML(r) {
-  const zh = t => `<b lang="zh">${esc(t)}</b>`;
-  let h = r.structure ? `<p class="exs">${esc(r.structure)}</p>` : "";
-  if ((r.points || []).length) h += `<ul class="exp">${r.points.map(x => `<li>${zh(x.pattern)} ${esc(x.note)}</li>`).join("")}</ul>`;
-  if ((r.words || []).length) h += `<p class="exw">${r.words.map(x => `${zh(x.word)} ${esc(x.note)}`).join(" · ")}</p>`;
+  const zh = zhPy;
+  let h = r.structure ? `<p class="exs">${zh(r.structure)}</p>` : "";
+  if ((r.points || []).length) h += `<ul class="exp">${r.points.map(x => `<li>${zh(x.pattern)} ${zh(x.note)}</li>`).join("")}</ul>`;
+  if ((r.words || []).length) h += `<p class="exw">${r.words.map(x => `${zh(x.word)} ${zh(x.note)}`).join(" · ")}</p>`;
   return h || `<p class="exs">Nothing tricky here: it reads the way it looks.</p>`;
 }
 async function explainLine(text, line, b) {
@@ -4516,7 +4670,7 @@ async function explainLine(text, line, b) {
   const after = line.nextElementSibling && line.nextElementSibling.classList.contains("trans") ? line.nextElementSibling : line;
   after.after(box); b.classList.add("on");
   store.set("radical-explain-uses", store.get("radical-explain-uses", 0) + 1);
-  if (explainCache[text]) { box.innerHTML = explainHTML(explainCache[text]); return; }
+  if (explainCache[text]) { await ensure(explainText(explainCache[text])); box.innerHTML = explainHTML(explainCache[text]); return; }
   box.innerHTML = '<p class="exs loading">Explaining…</p>'; b.disabled = true;
   try {
     // v63: a sentence on a pre-built card names its word, so the server can explain it for free
@@ -4525,6 +4679,7 @@ async function explainLine(text, line, b) {
     explainCache[text] = { structure: r.structure, points: r.points, words: r.words };
     const keys = Object.keys(explainCache); while (keys.length > 300) delete explainCache[keys.shift()];
     store.set("radical-explain", explainCache);
+    await ensure(explainText(explainCache[text]));
     box.innerHTML = explainHTML(explainCache[text]);
   } catch (e) { box.innerHTML = `<p class="exs">${esc(e.message)}</p>`; box.classList.add("err"); failRetry(box, () => explainLine(text, line, b)); }
   b.disabled = false;
@@ -5723,9 +5878,9 @@ function updateCounts() {
 let wordState = null;
 async function openWord(word, opts = {}) {
   await ensure(word);
-  const chars = [...word].filter(c => cache[c]);
-  if (!chars.length) return;
-  wordState = { word, chars, ...opts };
+  const chars = [...word].filter(c => cache[c]), han = [...word].filter(c => cache[c] || isHan(c));  // v90: han includes characters with no stroke data
+  if (!han.length) return;
+  wordState = { word, chars, han, ...opts };
   // Say where Back goes: to the reading, the word list, or the flash cards.
   const from = stack.length ? stack[stack.length - 1] : tab;
   $("wordBack").textContent = { readScreen: "Reading", wordsScreen: "Practice", reviewScreen: "Flash cards", wikiScreen: "Explore", lookScreen: "Review" }[from] || "Back";
@@ -5737,18 +5892,19 @@ async function openWord(word, opts = {}) {
 function onLeaveWord() { animToken++; document.querySelectorAll(".cell[aria-pressed=true]").forEach(x => { if (!x.closest("#reader")) x.setAttribute("aria-pressed", "false"); }); }
 function wordFacts() {
   const s = wordState, saved = findWord(s.word), d = lookup(s.word);
-  let syl = s.syl && s.syl.length === s.chars.length ? s.syl : null;
+  const H = s.han || s.chars;
+  let syl = s.syl && s.syl.length === H.length ? s.syl : null;
   // Your saved pinyin (Taiwan readings) wins over the mainland dictionary, except in Mainland mode.
-  if (!syl && saved && wPinyin(saved) && region === "tw") { const p = sylls(patternPy(wPinyin(saved)).replace(/\s+/g, "")); if (p.length === s.chars.length) syl = p; }
-  if (!syl && d) { const p = (region === "tw" && d[2] || d[1]).split(" "); if (p.length === s.chars.length) syl = p; }
-  if (!syl || syl.length !== s.chars.length) syl = s.chars.map(c => cache[c].p[0]);
-  const mean = (saved && wMeaning(saved)) || s.mean || (d && d[3]) || (s.chars.length === 1 ? cache[s.chars[0]].d : "");
+  if (!syl && saved && wPinyin(saved) && region === "tw") { const p = sylls(patternPy(wPinyin(saved)).replace(/\s+/g, "")); if (p.length === H.length) syl = p; }
+  if (!syl && d) { const p = (region === "tw" && d[2] || d[1]).split(" "); if (p.length === H.length) syl = p; }
+  if (!syl || syl.length !== H.length) syl = H.map(sylOf);
+  const mean = (saved && wMeaning(saved)) || s.mean || (d && d[3]) || (H.length === 1 ? (cache[H[0]] ? cache[H[0]].d : "") : "");
   return { saved, syl, mean };
 }
 function renderWordPages() {
   const s = wordState, pager = $("pager"), tabs = $("wtabs");
   pager.innerHTML = ""; tabs.innerHTML = "";
-  const labels = s.labels = [s.word, ...(s.chars.length > 1 ? s.chars : ["components"])];
+  const labels = s.labels = [s.word, ...(s.chars.length > 1 ? s.chars : s.chars.length ? ["components"] : [])];
   labels.forEach((l, i) => {
     const t = el("button", "", esc(l)); t.type = "button";
     t.onclick = () => pager.scrollTo({ left: i * pager.clientWidth, behavior: "smooth" });
@@ -5761,7 +5917,7 @@ function renderWordPages() {
   $("wordScript").replaceChildren(scriptToggle(async () => {
     const i = Math.round($("pager").scrollLeft / Math.max(1, $("pager").clientWidth)), w2 = conv(wordState.word);
     await ensure(w2 + (wordState.context ? conv(wordState.context) : ""));
-    wordState.word = w2; wordState.chars = [...w2].filter(c => cache[c]); if (wordState.context) wordState.context = conv(wordState.context);
+    wordState.word = w2; wordState.chars = [...w2].filter(c => cache[c]); wordState.han = [...w2].filter(c => cache[c] || isHan(c)); if (wordState.context) wordState.context = conv(wordState.context);
     wordState.syl = null; renderWordPages(); $("pager").scrollLeft = i * $("pager").clientWidth; markTab(i);
   }));
 }
@@ -5780,16 +5936,16 @@ function goPage(i) { const p = $("pager"); p.scrollTo({ left: i * p.clientWidth,
 function wordPage() {
   const s = wordState, { saved, syl, mean } = wordFacts();
   const page = el("div", "wpage");
-  const all = [...s.word].filter(c => cache[c] || isSlot(c));  // a pattern keeps its slot, drawn as a dotted box
+  const all = [...s.word].filter(c => cache[c] || isSlot(c) || isHan(c));  // a pattern keeps its slot, drawn as a dotted box
   const size = Math.min(Math.floor((Math.min(innerWidth, 760) - 48) / Math.min(4, all.length)) - 4, 150);  // up to 4 a row
   const row = el("div", "wchars");
   let k = 0;
   all.forEach(ch => {
     if (isSlot(ch)) { const sb = slotBox(); sb.style.width = sb.style.height = size + "px"; row.append(sb); return; }
-    const i = k++;
+    const i = cache[ch] ? k++ : -1;  // no stroke data: no character page to open
     const b = el("button"); b.type = "button"; b.setAttribute("aria-label", `Open ${ch}`);
     const svg = glyphFor(ch, true); svg.style.width = svg.style.height = size + "px"; svg.style.fontSize = Math.round(size * .8) + "px";
-    b.append(svg); b.onclick = () => goPage(i + 1); holdToEnlarge(b, ch); row.append(b);
+    b.append(svg); if (i >= 0) { b.onclick = () => goPage(i + 1); holdToEnlarge(b, ch); } row.append(b);
   });
   page.append(row);
   // Once: say that holding a character enlarges it.
@@ -5804,7 +5960,7 @@ function wordPage() {
   // One line, and it's the way forward: no separate arrow repeating the next character.
   const nav = el("div", "pnav"), go1 = el("button", "nx swipehint", `Swipe for parts and writing<i></i>`);
   go1.type = "button"; go1.onclick = () => goPage(1); nav.append(el("span"), go1);
-  page.append(nav);
+  if (s.chars.length) page.append(nav);
   if (saved) page.append(savedCard(saved));
   return page;
 }
@@ -8247,7 +8403,8 @@ function showDocBar() {
   $("docbar").hidden = !doc;
   if (!doc) return;
   // Title on its own full line: Chinese in bold, English in bold brackets, then the source underneath.
-  const t = doc.en ? `<b lang="zh">${esc(doc.title)}</b> <b>(${esc(doc.en)})</b>` : `<b>${esc(doc.title)}</b>`;
+  const hh = typeof textHistory !== "undefined" && textHistory.find(x => x.id === doc._hid), dn = (hh && hh.name) || doc.title;  // v90: a name you gave it wins
+  const t = doc.en ? `<b lang="zh">${esc(dn)}</b> <b>(${esc(doc.en)})</b>` : `<b>${esc(dn)}</b>`;
   $("docTitle").innerHTML = t + `<span class="src">${doc.url ? `<a href="${esc(doc.url)}" target="_blank" rel="noopener">${esc(doc.credit || "Source")}</a>` : ""}<span id="docLevel"></span></span>`;
   showDocLevel();
   $("docbar").querySelector(".docnav").hidden = doc.pages.length < 2;
