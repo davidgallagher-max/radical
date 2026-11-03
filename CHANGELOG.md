@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v91
+
+- Fix: a long 解 explanation no longer pushes the page wider than the screen. Each Chinese word stays with its pinyin and the box wraps between them.
+
 ## v90
 
 - Reading ticks: today's are gold, earlier days' faint grey. Tap any tick: "Read today (or yesterday, or the date). Clear from here down?" Yes clears that row and everything after it on the page, so those lines can count again. Only today's words come off; past days never change.
