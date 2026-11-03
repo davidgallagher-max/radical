@@ -565,7 +565,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .line.flow .linectl{margin-left:6px}
 .linectl{display:inline-flex;gap:5px;align-items:center;align-self:center;grid-column:span 5;justify-self:start;padding-left:4px}
 .enbtn{font-size:.78rem;font-weight:600;letter-spacing:.04em;color:var(--accent);background:var(--surface);border:1px solid var(--line);border-radius:14px;height:28px;padding:0 9px;cursor:pointer}
-.trans{margin:-2px 0 4px;padding:8px 12px;border-left:3px solid var(--accent);font-size:.96rem;background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:0 8px 8px 0}
+.trans{margin:-2px 0 4px;padding:8px 12px;border-left:3px solid var(--accent);font-size:min(1.61rem,max(.92rem,calc(var(--cell,38px) * .43)));background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:0 8px 8px 0}
 .loading{color:var(--muted);font-size:.92rem}
 .exbtn{white-space:nowrap}.exbtn [lang=zh]{font-family:var(--font-zh);font-size:.9rem;font-weight:600}
 .exbtn.on,.enbtn.on{border-color:var(--idea);color:var(--idea);background:color-mix(in srgb,var(--idea) 12%,var(--surface))}
@@ -1786,7 +1786,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v91";
+const APP_VERSION = "v92";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
