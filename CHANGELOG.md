@@ -2,6 +2,15 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v93
+
+- Reading: checkmarks keep coming when you read slowly and scroll. A row that sat on screen 2 seconds keeps earning credit after it scrolls up; only rows you scroll past without stopping are skipped.
+- Pasted books keep their paragraphs: odd line breaks and Kindle-style indents start a new paragraph.
+- Tap a sentence's 。！？ (lightly shaded) for a speaker, ENG and 解 for just that sentence. The paragraph's own buttons stay.
+- Open buttons say Hide ENG and Hide 解.
+- The text's name at the top of Read sits in an outlined box, so it looks tappable.
+- Rare characters with no stroke data (芃) use a lighter, brush-style font to match the drawn ones.
+
 ## v92
 
 - The ENG translation grows with 字 at the same rate as the 解 explanation's English (up to 1.75 times).

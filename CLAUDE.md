@@ -185,6 +185,8 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 
 - v91 notes (fix): `zhPy` wraps each word and its pinyin in `.zp` (inline-block, nowrap) joined by spaces; `.explain>*` min-width 0 with overflow-wrap anywhere, so the grid box can't widen the reader.
 
+- v93 notes: reading tick: rows that dwell `READ_DWELL` s in `readBand()` go into `line._owed` (Set of row starts; cleared in `clearFrom`) and stay payable after scrolling up; only never-owed rows above the band are skipped (plan entries `[l, end, row, skip]`, paid/skipped in order, a line stops at its first unpaid row). `paraBreaks(t)` in `setText` (new text only): \r, U+2028/9/85 -> \n, an inner indent of 2+ U+3000 or 4+ spaces starts a paragraph; `render` also splits on those. `sentenceMarks(line, text)` (reader lines only) marks each non-final sentence end glyph `.sentend`; tap -> `sentenceBar(line, g, sent)`: `.sentpop` (absolute under the mark's row) with speaker (`saySentence`), ENG (`translateLine` into the pop), 解 (`explainLine`), ✕. Open buttons read "Hide ENG" / "Hide 解". `.texthead .tname` is outlined like `.btn.outl`. No-stroke `<text>`: Kai/Song stack, weight 300, size 840, y 850.
+
 - v92 notes: `.trans` uses the `.explain` font size (min(1.61rem, max(.92rem, cell*.43))).
 
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
