@@ -407,7 +407,10 @@ p.busy{margin:-4px 4px 0}
 @keyframes peekin{from{opacity:0;transform:translateY(8px)}}
 .srcform{position:relative;display:flex}
 .srcname{width:100%;box-sizing:border-box;margin:0 0 8px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:1rem}
-.texthead{margin-bottom:6px}.texthead .tname{all:unset;cursor:pointer;font-weight:600;font-size:1.05rem;line-height:1.35}
+.sentend{cursor:pointer;border-radius:6px;background:color-mix(in srgb,var(--accent) 12%,transparent)}.sentend.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}
+.sentpop{position:absolute;left:0;right:0;z-index:4;background:var(--bg);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.35),inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent);padding:8px 10px}
+.sentrow{display:flex;gap:8px;align-items:center}.sentrow .sentx{margin-left:auto}.sentpop .trans,.sentpop .explain{margin:8px 0 2px}
+.texthead{margin-bottom:6px}.texthead .tname{all:unset;cursor:pointer;display:inline-block;max-width:100%;box-sizing:border-box;padding:6px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 8%,transparent);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600;font-size:1.05rem;line-height:1.35}
 .texthead .tname[lang=zh]{font-family:var(--font-zh)}
 .texthead input{width:100%;box-sizing:border-box;padding:6px 10px;border-radius:8px;border:1px solid var(--accent);background:var(--bg);color:var(--fg);font:inherit;font-size:1.05rem}
 #srcIn{font-family:var(--font-zh);font-size:1.05rem;line-height:1.4;height:46px;min-height:46px;max-height:46px;resize:none;overflow:hidden;white-space:nowrap;padding:11px 50px 11px 14px;border-radius:12px}
@@ -1786,7 +1789,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v92";
+const APP_VERSION = "v93";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2002,7 +2005,7 @@ function clearFrom(line, pos) {
     if (l._counted) { l._counted = false; l.classList.remove("counted"); }
     if (rl[k]) { delete rl[k]; dropped = true; }
     un[k] = Date.now();
-    l._dwell = null; l._ready = false; skipTo(l, keep, true);
+    l._dwell = null; l._owed = null; l._ready = false; skipTo(l, keep, true);
     l._tickSig = null; paintTicks(l);
   });
   if (dropped) store.set("radical-read-lines", rl);
@@ -2108,28 +2111,34 @@ setInterval(() => {
   const band = readBand(), st = $("readScreen").scrollTop, moved = readTop == null ? 0 : Math.abs(st - readTop); readTop = st;
   const open = lines.filter(l => !l._counted && l._vis);
   if (moved > (band.bottom - band.top) / 3) { readBank = 0; open.forEach(l => { l._dwell = null; }); return; }
+  // v93: a row that sat in the band READ_DWELL seconds is owed its credit even after it scrolls up (a slow reader
+  // falls behind the pace and catches up); only rows that never sat there are skipped as skimmed
   const plan = []; let room = 0;
   for (const l of open) {
     partOf(l);
-    const rows = rowsOf(l), prev = l._dwell || new Map(), now = new Map();
+    const rows = rowsOf(l), prev = l._dwell || new Map(), now = new Map(), owed = l._owed || (l._owed = new Set());
     const seen = r => r.han && r.top >= band.top - 4 && r.bottom <= band.bottom + 4;
-    rows.forEach(r => { if (seen(r)) now.set(r.start, (prev.get(r.start) || 0) + 1); });
+    rows.forEach(r => { if (seen(r)) { const d = (prev.get(r.start) || 0) + 1; now.set(r.start, d); if (d >= READ_DWELL) owed.add(r.start); } });
     l._dwell = now;
-    let got = l._got || 0, skip = got;
+    let got = l._got || 0;
     for (const r of rows) {
       if (!r.han || r.end <= got) continue;
-      if ((r.top + r.bottom) / 2 < band.top && !plan.some(p => p[0] === l)) { skip = got = r.end; continue; }  // scrolled past unread
-      if (seen(r) && now.get(r.start) >= READ_DWELL) { plan.push([l, r.end, r]); room += r.end - Math.max(got, r.start); got = r.end; continue; }
+      if (owed.has(r.start)) { plan.push([l, r.end, r]); room += r.end - Math.max(got, r.start); got = r.end; continue; }
+      if ((r.top + r.bottom) / 2 < band.top) { plan.push([l, r.end, r, true]); got = r.end; continue; }  // scrolled past unread
       break;
     }
-    if (skip > (l._got || 0)) skipTo(l, skip);
   }
-  readBank = Math.min(readBank + (plan.length ? readPace(plan[0][0], plan[0][2]) : 0), room);
-  for (const [l, end] of plan) {
-    if (readBank <= 0) break;
+  const firstPay = plan.find(p => !p[3]);
+  readBank = Math.min(readBank + (firstPay ? readPace(firstPay[0], firstPay[2]) : 0), room);
+  const stuck = new Set();
+  for (const [l, end, , skip] of plan) {
+    if (stuck.has(l)) continue;
+    if (skip) { if (end > (l._got || 0)) skipTo(l, end); continue; }
     const need = end - (l._got || 0); if (need <= 0) continue;
+    if (readBank <= 0) { stuck.add(l); continue; }
     const give = Math.min(need, readBank);
     readBank -= give; payLine(l, (l._got || 0) + give);
+    if (give < need) stuck.add(l);
   }
 }, 1000);
 function watchLines(reader) {
@@ -2720,7 +2729,9 @@ function svgFor(ch, grid, light) {
   svg.append(g);
   // v90: a rare character with no stroke data (芃) is drawn from the font in plain ink, so it still shows everywhere
   if (!d && isHan(ch)) { const tx = document.createElementNS(NS, "text"); tx.setAttribute("x", "512"); tx.setAttribute("y", "870"); tx.setAttribute("text-anchor", "middle");
-    tx.setAttribute("font-size", "900"); tx.setAttribute("fill", "var(--fg)"); tx.setAttribute("class", "nostroke"); tx.style.fontFamily = "var(--font-zh)"; tx.textContent = ch; svg.append(tx); }
+    tx.setAttribute("font-size", "840"); tx.setAttribute("fill", "var(--fg)"); tx.setAttribute("class", "nostroke"); tx.setAttribute("y", "850");
+    tx.style.fontFamily = '"Kaiti TC","Kaiti SC","STKaiti","BiauKai","DFKai-SB","Songti TC","Songti SC",serif'; tx.style.fontWeight = "300";  // v93: brush-like and lighter, to sit with the drawn characters
+    tx.textContent = ch; svg.append(tx); }
   if (light && d && palette !== "font") addLight(svg, d);
   return svg;
 }
@@ -3017,7 +3028,7 @@ async function render() {
   if (!text.trim()) { $("addPanel").open = true; reader.innerHTML = '<p class="note">Add Chinese text above, or try Explore.</p>'; return; }
   // Every character is a drawing, so very long texts are shown in parts.
   if (doc && doc.lv) reader.append(el("p", "simpnote", `${doc.lv === "easy" ? "Easiest" : "Easier"} version, rephrased by Radical.`));
-  const LIMIT = 1500, all = text.split(/\n+/).filter(l => l.trim());
+  const LIMIT = 1500, all = text.split(/[\n\r\u2028\u2029]+/).filter(l => l.trim());
   let shownChars = 0, lines = [];
   for (const l of all) { if (shownChars && shownChars + l.length > renderLimit) break; lines.push(l); shownChars += l.length; }
   lines.forEach(lineText => reader.append(buildLine(lineText, readerTap)));
@@ -3142,7 +3153,7 @@ function buildLine(lineText, onTap, withEN = true) {
     });
     if (group.childNodes.length) line.append(group);
   }
-  flush(); gluePunct(line);
+  flush(); gluePunct(line); if (onTap === readerTap) sentenceMarks(line, lineText);
   line._text = lineText; line._spans = spans.filter(x => x.group.classList.contains("glyph") || x.group.querySelector(".cell")).sort((a, b) => a.start - b.start);
   const ctl = el("span", "linectl");
   const say = el("button", "saybtn sm", SPK); say.type = "button"; say.setAttribute("aria-label", "Read this line aloud");
@@ -3210,6 +3221,43 @@ function latinWidth(t) {
   return ctx.measureText(t).width;
 }
 const latinRoom = () => cellPx() * 3;
+// v93: in a paragraph of several sentences, each sentence's end mark (。！？) is lightly marked; tapping it opens a
+// small bar under that row with the speaker, ENG and 解 for just that sentence (the paragraph's own buttons stay).
+const CLOSERS = /[」』”"’）)\]】〕》〉]/;
+function sentenceMarks(line, text) {
+  const t = [...text], ends = [];
+  for (let i = 0; i < t.length; i++) {
+    if (!/[。！？!?]/.test(t[i]) || /[。！？!?]/.test(t[i + 1] || "")) continue;
+    let j = i + 1; while (j < t.length && CLOSERS.test(t[j])) j++;
+    ends.push({ i, j });
+  }
+  const tailEmpty = e => !t.slice(e.j).join("").trim();
+  if (ends.length < 2 && !(ends.length === 1 && !tailEmpty(ends[0]))) return;  // one sentence: the line's buttons do it
+  const marks = [...line.querySelectorAll(".glyph:not(.latin)")].filter(g => /[。！？!?]/.test(g.textContent));
+  let from = 0, k = 0;
+  ends.forEach(e => {
+    // each end mark in the text matches the mark glyphs in order (a run like ！？ counts once, at its last mark)
+    while (k < marks.length && marks[k].textContent !== t[e.i] ) k++;
+    const g = marks[k++], sent = t.slice(from, e.j).join("").trim(); from = e.j;
+    if (!g || tailEmpty(e) || !/\p{Script=Han}/u.test(sent)) return;
+    g.classList.add("sentend"); g.setAttribute("role", "button"); g.setAttribute("aria-label", "This sentence");
+    g.onclick = ev => { ev.stopPropagation(); sentenceBar(line, g, sent); };
+  });
+}
+function sentenceBar(line, g, sent) {
+  const old = line.querySelector(":scope>.sentpop"); if (old) { old.remove(); line.querySelectorAll(".sentend.on").forEach(x => x.classList.remove("on")); if (old._g === g) return; }
+  const pop = el("div", "sentpop"); pop._g = g; g.classList.add("on");
+  const row = el("div", "sentrow"), say = el("button", "saybtn sm", SPK); say.type = "button"; say.setAttribute("aria-label", "Read this sentence aloud");
+  say.onclick = e => { e.stopPropagation(); if (sayPace === "step") sayPaced(sent, "step"); else saySentence(sent, sayPace); };
+  const en = btn("ENG", "enbtn"); en.title = "Translate this sentence"; en.onclick = e => { e.stopPropagation(); translateLine(sent, row, en); };
+  const ex = el("button", "enbtn exbtn", '<span lang="zh">解</span>'); ex.type = "button"; ex.title = "Explain this sentence's grammar";
+  ex.onclick = e => { e.stopPropagation(); explainLine(sent, row, ex); };
+  const x = btn("✕", "enbtn sentx"); x.setAttribute("aria-label", "Close"); x.onclick = e => { e.stopPropagation(); pop.remove(); g.classList.remove("on"); };
+  row.append(say, en, ex, x); pop.append(row);
+  pop.addEventListener("click", e => e.stopPropagation()); pop.addEventListener("pointerdown", e => e.stopPropagation());
+  const lr = line.getBoundingClientRect(), gr = g.getBoundingClientRect();
+  pop.style.top = Math.round(gr.bottom - lr.top + 2) + "px"; line.append(pop);
+}
 function gluePunct(line) {
   const units = []; let openNext = false;
   for (const item of line.querySelectorAll(".cell, .glyph")) {
@@ -3295,7 +3343,7 @@ function miniReader(text, mark, en, opts = {}) {
     if (!en) { translateLine(text.split(/\n+/)[0], lastLine(), enb); return; }  // no English on the card: ask, as in Read
     const line = lastLine(), next = line.nextElementSibling;
     if (next && next.classList.contains("trans")) { next.remove(); enb.textContent = "ENG"; enb.classList.remove("on"); return; }
-    const t = el("p", "trans", esc(en)); t.lang = "en"; line.after(t); enb.textContent = "Hide"; enb.classList.add("on");
+    const t = el("p", "trans", esc(en)); t.lang = "en"; line.after(t); enb.textContent = "Hide ENG"; enb.classList.add("on");
   };
   const exb = el("button", "enbtn exbtn", '<span lang="zh">解</span>');
   exb.type = "button"; exb.title = "Explain this sentence's grammar"; exb.hidden = !/\p{Script=Han}/u.test(text);
@@ -3612,8 +3660,12 @@ function remember(text) {
   if (textHistory.some(h => h.text === text || (h.doc && h.doc.pages.includes(text)))) return;
   record({ kind: "typed", text });
 }
+// v93: pasted books keep their paragraphs: odd line breaks (\r, U+2028/9) become \n, and an indent of two
+// ideographic spaces (or four plain ones) inside a line starts a new paragraph, as Kindle and most e-books indent
+const paraBreaks = t => String(t).replace(/\r\n?|[\u2028\u2029\u0085]/g, "\n").replace(/([^\s])[ \t]*(?:\u3000{2,}|[ \t]{4,})(?=[^\s])/g, "$1\n\u3000\u3000");
 function setText(text, keepDoc, kind = "typed", title = "", fromHist) {
   if (!keepDoc && doc) closeDoc();
+  if (!fromHist) text = paraBreaks(text);
   const name = fromHist ? "" : takeName();
   $("src").value = text; const id = record({ kind, text, ...(title ? { title } : {}), ...(name ? { name } : {}) }); store.set("radical-text", text); $("addPanel").open = false;
   if (!fromHist && !name && !title) autoTitle(id, text);
@@ -4667,7 +4719,7 @@ function explainHTML(r) {
 async function explainLine(text, line, b) {
   const box0 = [line.nextElementSibling, line.nextElementSibling && line.nextElementSibling.nextElementSibling].find(x => x && x.classList.contains("explain"));
   if (box0) { const failed = box0.classList.contains("err"); box0.remove(); b.classList.remove("on"); b.innerHTML = b._label; if (!failed) return; }
-  b._label = b._label || b.innerHTML; b.textContent = "Hide";  // v44: like ENG, it says Hide while open
+  b._label = b._label || b.innerHTML; b.textContent = "Hide 解";  // v44: like ENG, it says Hide while open
   const box = el("div", "explain"); box.lang = "en";
   const after = line.nextElementSibling && line.nextElementSibling.classList.contains("trans") ? line.nextElementSibling : line;
   after.after(box); b.classList.add("on");
@@ -4694,13 +4746,13 @@ async function translateLine(text, line, b) {
     if (!failed) return;
   }
   const box = el("p", "trans"); line.after(box);
-  if (transCache[text]) { box.textContent = transCache[text]; b.textContent = "Hide"; b.classList.add("on"); return; }
+  if (transCache[text]) { box.textContent = transCache[text]; b.textContent = "Hide ENG"; b.classList.add("on"); return; }
   box.textContent = "Translating…"; b.disabled = true;
   try {
     const { translation } = await claude({ action: "translate", sentence: text });
     if (!String(translation || "").trim()) throw new Error("No translation came back. Tap ENG to try again.");  // v68: never show or keep a blank
     transCache[text] = translation; store.set("radical-trans", transCache);
-    box.textContent = translation; b.textContent = "Hide"; b.classList.add("on");
+    box.textContent = translation; b.textContent = "Hide ENG"; b.classList.add("on");
   } catch (e) { box.textContent = e.message; box.classList.add("err"); }
   b.disabled = false;
 }
