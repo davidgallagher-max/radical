@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Builds the iPhone app's web folder (app/www) from the site, then copies it into the Xcode project.
-# Run from anywhere:  bash scripts/build_app.sh   (needs node; data is built first if it isn't there)
+# Builds the app's web folder (app/www) from the site, then copies it into the native project.
+# Run from anywhere:  bash scripts/build_app.sh [ios|android]   (default ios; needs node; data is built first if it isn't there)
 set -e
+PLATFORM=${1:-ios}
 cd "$(dirname "$0")/.."
 [ -d data ] || bash scripts/get_data.sh
 VERSION=$(grep -o 'const APP_VERSION = "v[0-9]*"' index.html | grep -o 'v[0-9]*')
@@ -17,5 +18,5 @@ sed -i.bak -E \
   -e "s#/\*BUNDLED\*/\"\"#/*BUNDLED*/\"$VERSION\"#" app/www/index.html
 rm app/www/index.html.bak
 grep -q "vendor/full.js" app/www/index.html && grep -q "/\*BUNDLED\*/\"$VERSION\"" app/www/index.html || { echo "index.html rewrite failed"; exit 1; }
-cd app && npx cap sync ios
-echo "app/www ready ($VERSION) and copied into ios/"
+cd app && npx cap sync "$PLATFORM"
+echo "app/www ready ($VERSION) and copied into $PLATFORM/"

@@ -1,0 +1,135 @@
+# The Android app, built on GitHub's Linux machines (no Mac minutes).
+# - Every run: a debug build launched on an Android emulator, with screenshots and the page's console log saved to the
+#   run (Artifacts), plus the Play bundle (radical.aab).
+# - The bundle is signed with the upload key when the repo secrets ANDROID_UPLOAD_KEY (the keystore, base64) and
+#   ANDROID_UPLOAD_PASSWORD are set; Google Play only takes a signed one.
+# - Run it by hand with "Send to Google Play" ticked: the bundle goes to the Internal testing track as a draft. Needs
+#   PLAY_SERVICE_ACCOUNT_JSON (a Play Console service account). Google takes the very first bundle only by hand
+#   (download radical.aab from the run and upload it in Play Console).
+# Changes to index.html don't need a new build: the app picks up the web page itself (live updates).
+name: Android app
+
+on:
+  workflow_dispatch:
+    inputs:
+      play:
+        description: "Send to Google Play (Internal testing, draft)"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths: ["app/android/**", "app/package.json", "app/package-lock.json", "app/capacitor.config.json", ".github/workflows/android.yml", "scripts/build_app.sh"]
+
+concurrency:
+  group: android
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    env:
+      RADICAL_VERSION_CODE: ${{ github.run_number }}
+      RADICAL_VERSION_NAME: "1.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install the app's packages
+        working-directory: app
+        run: npm ci
+
+      - name: Build the character and word data
+        run: bash scripts/get_data.sh
+
+      - name: Build the app's web folder
+        run: bash scripts/build_app.sh android
+
+      - name: The upload key
+        env:
+          KEY_B64: ${{ secrets.ANDROID_UPLOAD_KEY }}
+          KEY_PASS: ${{ secrets.ANDROID_UPLOAD_PASSWORD }}
+        run: |
+          if [ -n "$KEY_B64" ] && [ -n "$KEY_PASS" ]; then
+            printf '%s' "$KEY_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            { echo "RADICAL_KEYSTORE=$RUNNER_TEMP/upload.jks"; echo "RADICAL_KEYSTORE_PASSWORD=$KEY_PASS"; echo "RADICAL_KEY_PASSWORD=$KEY_PASS"; echo "RADICAL_KEY_ALIAS=upload"; } >> "$GITHUB_ENV"
+            echo "Signing with the upload key."
+          else
+            echo "::warning::No upload key in the repo secrets: the bundle is unsigned and Google Play won't take it."
+          fi
+
+      - name: Build the debug app and the Play bundle
+        working-directory: app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug bundleRelease
+          mkdir -p ../../out
+          cp app/build/outputs/apk/debug/app-debug.apk ../../out/radical-debug.apk
+          cp app/build/outputs/bundle/release/app-release.aab ../../out/radical.aab
+          rm -f "$RUNNER_TEMP/upload.jks"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-app
+          path: out/
+
+      - name: Send to Google Play (Internal testing, draft)
+        if: ${{ inputs.play }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.upslopelabs.radical
+          releaseFiles: out/radical.aab
+          track: internal
+          status: draft
+
+  emulator:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-app
+          path: out
+
+      - name: Let the emulator use KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Launch on an emulator and take screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            mkdir -p shots
+            adb install -r out/radical-debug.apk
+            adb logcat -c
+            adb shell monkey -p com.upslopelabs.radical -c android.intent.category.LAUNCHER 1
+            sleep 8;  adb exec-out screencap -p > shots/1-launch.png
+            sleep 20; adb exec-out screencap -p > shots/2-after-20s.png
+            adb shell input tap 540 1600; sleep 6; adb exec-out screencap -p > shots/3-after-tap.png
+            adb logcat -d -s Capacitor/Console:* Capacitor:* chromium:* AndroidRuntime:E > shots/console.txt || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator-screenshots
+          path: shots/

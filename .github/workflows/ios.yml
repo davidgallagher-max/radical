@@ -14,7 +14,7 @@ on:
         default: false
   push:
     branches: [main]
-    paths: ["app/**", ".github/workflows/ios.yml", "scripts/build_app.sh"]
+    paths: ["app/**", "!app/android/**", ".github/workflows/ios.yml", "scripts/build_app.sh"]
 
 concurrency:
   group: ios
