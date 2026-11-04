@@ -127,6 +127,7 @@ jobs:
             sleep 20; adb exec-out screencap -p > shots/2-after-20s.png
             adb shell input tap 540 1600; sleep 6; adb exec-out screencap -p > shots/3-after-tap.png
             adb logcat -d -s Capacitor/Console:* Capacitor:* chromium:* AndroidRuntime:E > shots/console.txt || true
+            echo '--- console.txt ---'; tail -n 200 shots/console.txt || true
 
       - uses: actions/upload-artifact@v4
         if: always()
