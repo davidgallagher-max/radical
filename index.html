@@ -1819,7 +1819,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v96";
+const APP_VERSION = "v97";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2162,6 +2162,7 @@ setInterval(() => {
     for (const r of rows) {
       if (!r.han || r.end <= got) continue;
       if (owed.has(r.start)) {
+        if ((r.top + r.bottom) / 2 > band.bottom) break;  // v96: scrolled back below the band: it waits until it's back up
         const end = capLine ? Math.min(r.end, readCap.at) : r.end; if (end <= got) break;
         plan.push([l, end, r]); room += end - Math.max(got, r.start); got = end; if (end < r.end) break; continue;
       }
@@ -7516,6 +7517,9 @@ new MutationObserver(() => {
 $("revQuit").onclick = () => history.back();
 $("revEnd").onclick = () => {
   if (!rq.length) { history.back(); return; }
+  // v96: a card answered but not rated yet counts with its suggested rating when you quit
+  const auto = revSide && rq[0] && typeof showBack.autoRate === "function" ? showBack.autoRate : null;
+  if (auto) { auto(); if (!rq.length) return; }
   const sheet = el("div", "sheet"), card = el("div", "sheetcard");
   card.innerHTML = rDone ? `<h3>End this session?</h3><p>${rDone} of ${rDone + rq.length} done · ${scoreText(rScore)}</p><p class="note">Your ratings so far are saved.</p>`
     : `<h3>End this session?</h3><p>Nothing rated yet.</p>`;
@@ -8161,12 +8165,14 @@ function showBack(w, how, st) {
   // (Check, See answer, Next character) can't rate the card by accident.
   const shownAt = Date.now();
   // I know it on a word that's new in this mode: Easy becomes Known (back in 2 to 6 months, not in a few days).
+  showBack.autoRate = null;
   const knowNew = how === "know" && !hinted && !(w[k] && w[k].reps);
   if (knowNew) suggest = "easy";
   [["again", "Again"], ["hard", "Hard"], ["good", "Good"], ["easy", knowNew ? "Known" : "Easy"]].forEach(([g, label]) => {
     const b = el("button", `btn ghost ${g}${g === suggest ? " suggest" : ""}`, label); b.type = "button";
-    b.onclick = () => {
-      if (Date.now() - shownAt < 500 && !quiet) return;
+    if (g === suggest && how !== "show") showBack.autoRate = () => { showBack.autoRate = null; b.onclick(true); };  // v96: Quit takes it
+    b.onclick = force => {
+      if (force !== true && Date.now() - shownAt < 500 && !quiet) return;
       revHist.push({ w, k, out: revOutcome.get(w), srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, ok2: w.ok2, learned: learned[w.word], rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore, mw: rScore.mw.slice() } });
       const sc = rScore, out = revOutcome.get(w) || (g === "again" ? "missed" : g === "hard" ? "shaky" : "right");
       sc[out]++;
