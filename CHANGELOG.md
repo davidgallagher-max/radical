@@ -2,6 +2,13 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v95
+
+- Crossing the reading target bursts like finishing cards ("Reading goal met"), then the gold ring shrinks into the ring around 讀.
+- Auto reading pace is about 15% faster than v94.
+- A one-time bubble under the first green 。 says it can be tapped; How it works mentions it too.
+- Fix: the tappable 。！？ really show in green now.
+
 ## v94
 
 - Reading credit is gentler: it starts slower, stops while you look a word up, and never passes the word you tapped until you scroll on. Rows you read and scrolled past catch up at twice the pace.
