@@ -2,6 +2,14 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v96
+
+- The Android app for Google Play: the same app as on iPhone, built on GitHub (no Mac needed), with its own icon and launch screen. A GitHub run also tries it on an Android emulator and saves screenshots.
+- Speech on Android goes through the phone's own voices (Android's web view has none of its own).
+- Buying on Android uses Google Play: its prices, its 14-day free trial on Monthly and Yearly, its subscriptions page and refund link. The separate free-trial item stays iPhone only (Google has no $0 items).
+- The server accepts the Android app and reads Google Play's subscription names.
+- The privacy page's "Deleting your data" section has its own link (/radical/privacy#delete), for Google Play's delete-account link.
+
 ## v95
 
 - Crossing the reading target bursts like finishing cards ("Reading goal met"), then the gold ring shrinks into the ring around 讀.
