@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v94
+
+- Reading credit is gentler: it starts slower, stops while you look a word up, and never passes the word you tapped until you scroll on. Rows you read and scrolled past catch up at twice the pace.
+- Closing marks after a character (！」，) take half a square, so 軍！」 no longer jumps to the next row and leaves a gap.
+- Tappable 。！？ are tinted green instead of boxed.
+
 ## v93
 
 - Reading: checkmarks keep coming when you read slowly and scroll. A row that sat on screen 2 seconds keeps earning credit after it scrolls up; only rows you scroll past without stopping are skipped.
