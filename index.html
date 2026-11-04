@@ -407,7 +407,7 @@ p.busy{margin:-4px 4px 0}
 @keyframes peekin{from{opacity:0;transform:translateY(8px)}}
 .srcform{position:relative;display:flex}
 .srcname{width:100%;box-sizing:border-box;margin:0 0 8px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:1rem}
-.sentend{cursor:pointer;border-radius:6px;background:color-mix(in srgb,var(--accent) 12%,transparent)}.sentend.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}
+.sentend{cursor:pointer;color:var(--accent)}.sentend.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}
 .sentpop{position:absolute;left:0;right:0;z-index:4;background:var(--bg);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.35),inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent);padding:8px 10px}
 .sentrow{display:flex;gap:8px;align-items:center}.sentrow .sentx{margin-left:auto}.sentpop .trans,.sentpop .explain{margin:8px 0 2px}
 .texthead{margin-bottom:6px}.texthead .tname{all:unset;cursor:pointer;display:inline-block;max-width:100%;box-sizing:border-box;padding:6px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 8%,transparent);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600;font-size:1.05rem;line-height:1.35}
@@ -1789,7 +1789,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v93";
+const APP_VERSION = "v94";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1889,7 +1889,7 @@ function knownWords() {
 }
 function readPace(line, row) {
   const v = readSpeed(); if (v !== "auto") return READ_PACES[v];
-  const known = knownWords(), base = 1.5 + 1.5 * Math.min(1, known.size / 3000);
+  const known = knownWords(), base = 1.2 + 1.3 * Math.min(1, known.size / 3000);  // v94: starts slower
   if (!line || !row) return base;
   const t = line._text || ""; let at = 0, n = 0, k = 0;
   for (const x of line._spans || []) {
@@ -2109,6 +2109,11 @@ setInterval(() => {
     if (!readNoted.has(k)) { readNoted.add(k); toast("Read before. Ticked lines don't count again this month.", 3500); }
   }
   const band = readBand(), st = $("readScreen").scrollTop, moved = readTop == null ? 0 : Math.abs(st - readTop); readTop = st;
+  if (picked && picked.line && picked.line.closest && picked.line.closest("#reader")) return;  // v94: looking a word up: the clock stops
+  if (readCap) {  // the cap ends once the looked-up word has scrolled above the band (or after two minutes)
+    const r = readCap.cell.isConnected ? readCap.cell.getBoundingClientRect() : null;
+    if (!r || (r.top + r.bottom) / 2 < band.top || Date.now() - readCap.t > 120000) readCap = null;
+  }
   const open = lines.filter(l => !l._counted && l._vis);
   if (moved > (band.bottom - band.top) / 3) { readBank = 0; open.forEach(l => { l._dwell = null; }); return; }
   // v93: a row that sat in the band READ_DWELL seconds is owed its credit even after it scrolls up (a slow reader
@@ -2121,15 +2126,22 @@ setInterval(() => {
     rows.forEach(r => { if (seen(r)) { const d = (prev.get(r.start) || 0) + 1; now.set(r.start, d); if (d >= READ_DWELL) owed.add(r.start); } });
     l._dwell = now;
     let got = l._got || 0;
+    const capLine = readCap && readCap.line === l, after = readCap && !capLine && (readCap.line.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING);
+    if (after) continue;  // lines after a looked-up word wait for it
     for (const r of rows) {
       if (!r.han || r.end <= got) continue;
-      if (owed.has(r.start)) { plan.push([l, r.end, r]); room += r.end - Math.max(got, r.start); got = r.end; continue; }
+      if (owed.has(r.start)) {
+        const end = capLine ? Math.min(r.end, readCap.at) : r.end; if (end <= got) break;
+        plan.push([l, end, r]); room += end - Math.max(got, r.start); got = end; if (end < r.end) break; continue;
+      }
       if ((r.top + r.bottom) / 2 < band.top) { plan.push([l, r.end, r, true]); got = r.end; continue; }  // scrolled past unread
       break;
     }
   }
   const firstPay = plan.find(p => !p[3]);
-  readBank = Math.min(readBank + (firstPay ? readPace(firstPay[0], firstPay[2]) : 0), room);
+  // v94: rows already scrolled past (read, then moved on) catch up at twice the pace
+  const behind = firstPay && (firstPay[2].top + firstPay[2].bottom) / 2 < band.top;
+  readBank = Math.min(readBank + (firstPay ? readPace(firstPay[0], firstPay[2]) * (behind ? 2 : 1) : 0), room);
   const stuck = new Set();
   for (const [l, end, , skip] of plan) {
     if (stuck.has(l)) continue;
@@ -3172,8 +3184,12 @@ function buildLine(lineText, onTap, withEN = true) {
   return line;
 }
 // In the reader: first tap picks a word (highlight + peek strip), second tap opens it.
+// v94: a word looked up in Read holds the reading credit back: nothing is paid while it's picked or its page is open,
+// and afterwards the credit can't pass that word until it has scrolled up out of the reading band
+let readCap = null;
 function readerTap(group, tok, lineText, cell) {
   const line = group.closest(".line"), cells = [...line.querySelectorAll(".cell")], i = cells.indexOf(cell);
+  if (line.closest("#reader")) { const gc = [...group.querySelectorAll(".cell")], lastC = gc[gc.length - 1] || cell; readCap = { line, cell: lastC, at: hanIn((line._text || "").slice(0, (lastC._at || 0) + [...(lastC._ch || "")].join("").length)), t: Date.now() }; }
   if (picked && picked.line === line && i >= picked.a && i <= picked.b) { picked.open(); return; }  // second tap opens
   const gc = [...group.querySelectorAll(".cell")];
   pickSpan(line, cells.indexOf(gc[0]), cells.indexOf(gc[gc.length - 1]), tok);
@@ -3290,9 +3306,11 @@ function spanLatin(line, col) {
   // v90: groups inside a word (嗎？ is the word 嗎 plus its mark) count too: .word is display:contents, so they sit on
   // the grid all the same; before, they got one square and the mark squeezed into the character's
   line.querySelectorAll(".glue").forEach(glue => {
-    const u = [...glue.children], width = u.reduce((n, x) => n + (isL(x) ? lw(x) : col), 0);
-    glue.style.gridColumn = `span ${Math.max(u.length > 1 ? 2 : 1, Math.ceil(width / col - .02))}`;
-    glue.style.gridTemplateColumns = u.map((x, i) => i === u.length - 1 ? "minmax(0,1fr)" : isL(x) ? "max-content" : col.toFixed(1) + "px").join(" ");
+    // v94: a closing mark after something (軍！」) takes half a square, so the group doesn't jump rows and leave a gap
+    const half = (x, i) => i > 0 && !isL(x) && CLOSE.test(x.textContent);
+    const u = [...glue.children], width = u.reduce((n, x, i) => n + (isL(x) ? lw(x) : half(x, i) ? col / 2 : col), 0);
+    glue.style.gridColumn = `span ${Math.max(1, Math.ceil(width / col - .02))}`;
+    glue.style.gridTemplateColumns = u.map((x, i) => i === u.length - 1 ? "minmax(0,1fr)" : isL(x) ? "max-content" : (half(x, i) ? col / 2 : col).toFixed(1) + "px").join(" ");
   });
 }
 // Once lines are on screen: recount English and numbers against the real column width, so they don't take more
