@@ -1,9 +1,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Radical</title>
-<script>/* v54, iPhone app only: a newer page fetched from the web (see liveUpdate) runs instead of the one in the app. */
+<script>/* v54, the app only: a newer page fetched from the web (see liveUpdate) runs instead of the one in the app.
+   v96: Android's page is https://localhost, so the app is told apart by Capacitor (there before any page script). */
 (function () {
-  if (/^https?:$/.test(location.protocol) || window.__radicalLive) return;
+  var C = window.Capacitor, app = !/^https?:$/.test(location.protocol) || !!(C && C.isNativePlatform && C.isNativePlatform());
+  if (!app || window.__radicalLive) return;
   var BUNDLED = /*BUNDLED*/"", SHELL = 5, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
   try { ls.setItem("radical-shell", SHELL); var v = ls.getItem("radical-live-v"); } catch (e) { return; }
   if (!v || num(v) <= num(BUNDLED) || v === ls.getItem("radical-live-bad")) return;
@@ -1673,6 +1675,8 @@ const $ = id => document.getElementById(id);
 // v54: in the iPhone app the page is local (capacitor://localhost); the server and shared links stay on the web.
 const NATIVE = !/^https?:$/.test(location.protocol) || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const WEB = NATIVE ? "https://radical-tawny.vercel.app" : location.origin, API = NATIVE ? WEB : "";
+// v96: the Android app (Google Play); the rest of NATIVE is the iPhone app
+const ANDROID = NATIVE && !!(window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform() === "android");
 // v64: a data or list file the app was built without (a live update can need one) comes from the website instead
 const getFile = path => { const web = () => fetch(`${WEB}/${path}`); return fetch(path).then(r => r.ok || !NATIVE ? r : web(), e => { if (NATIVE) return web(); throw e; }); };
 let storeHook = null;  // v58: settings and the open text note when they change, so they sync (see syncLive)
@@ -1703,6 +1707,30 @@ function nativeBadge() {
 // v65: no ⌃ ⌄ ✓ strip over the iPhone keyboard (needs the Keyboard plugin, in the app since SHELL 4); tapping off
 // a box closes the keyboard instead.
 function nativeKeyboard() { const k = plug("Keyboard"); if (k && k.setAccessoryBarVisible) Promise.resolve().then(() => k.setAccessoryBarVisible({ isVisible: false })).catch(() => {}); }
+// v96: Android's WebView has no speech voices, so speech goes to the TextToSpeech plugin behind the same
+// speechSynthesis calls the page makes everywhere else (speak, readAloud, saySentence).
+if (ANDROID) (function () {
+  const T = plug("TextToSpeech"); if (!T) return;
+  let voices = [], q = [], gen = 0;
+  const ss = { speaking: false, pending: false, paused: false, onvoiceschanged: null, getVoices: () => voices,
+    speak(u) { q.push(u); if (!ss.speaking) next(); else ss.pending = true; },
+    cancel() { gen++; q = []; ss.speaking = ss.pending = false; Promise.resolve().then(() => T.stop()).catch(() => {}); },
+    pause() {}, resume() {}, addEventListener() {}, removeEventListener() {} };
+  function next() {
+    const u = q.shift(); if (!u) { ss.speaking = ss.pending = false; return; }
+    ss.speaking = true; ss.pending = q.length > 0; const my = gen, vi = u.voice ? voices.indexOf(u.voice) : -1;
+    const fire = (k, e) => { try { if (typeof u[k] === "function") u[k](e || {}); } catch (x) {} };
+    fire("onstart");
+    T.speak({ text: u.text, lang: u.lang || "zh-CN", rate: u.rate || 1, pitch: u.pitch || 1, volume: u.volume == null ? 1 : u.volume, ...(vi >= 0 ? { voice: vi } : {}) })
+      .then(() => { if (my === gen) { fire("onend"); next(); } }, e => { if (my === gen) { fire("onerror", { error: String((e && e.message) || e) }); next(); } });
+  }
+  window.SpeechSynthesisUtterance = function (t) { this.text = t || ""; this.lang = ""; this.rate = 1; this.pitch = 1; this.volume = 1; this.voice = null; };
+  try { Object.defineProperty(window, "speechSynthesis", { value: ss, configurable: true, writable: true }); } catch (e) { window.speechSynthesis = ss; }
+  Promise.resolve().then(() => T.getSupportedVoices()).then(r => {
+    voices = ((r && r.voices) || []).map(v => ({ name: v.name, lang: String(v.lang || "").replace("_", "-"), voiceURI: v.voiceURI, localService: v.localService, default: v.default }));
+    if (typeof ss.onvoiceschanged === "function") ss.onvoiceschanged();
+  }).catch(() => {});
+})();
 function askBadge() {
   const b = plug("Badge"); if (!b || store.get("radical-badge-asked", false) || !store.get("radical-badge", true)) return;
   store.set("radical-badge-asked", true); b.requestPermissions().catch(() => {});
@@ -1791,7 +1819,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v95";
+const APP_VERSION = "v96";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1842,6 +1870,7 @@ function pickVoice() {
   if ($("voiceTW")) { $("voiceTW").textContent = twVoice ? `▶ ${short(twVoice)} · Taiwan` : "▶ Taiwan voice"; $("voiceCN").textContent = cnVoice ? `▶ ${short(cnVoice)} · Mainland` : "▶ Mainland voice"; }
   if ($("voiceName")) $("voiceName").textContent = any
     ? `Taiwan uses ${short(twVoice)}; Mainland uses ${short(cnVoice)}.` + (!find(/zh[-_]TW/i) && !find(/zh[-_]Hant/i) ? " This phone has no Taiwan voice; the Mainland one reads both." : "")
+    : ANDROID ? "No Chinese voice on this phone. In Settings, search Text-to-speech, then add Chinese voice data."
     : "No Chinese voice on this device. On iPhone: Settings → Accessibility → Spoken Content → Voices → Chinese.";
 }
 if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
@@ -2396,7 +2425,7 @@ async function chimeDraw(fn, secs) {
   return wavB64((await oc.startRendering()).getChannelData(0), sr);
 }
 async function chimesLoad() {
-  const P = plug("Chime"); chimeLog.shell = store.get("radical-shell", null); chimeLog.plugin = !!P;
+  const P = ANDROID ? null : plug("Chime"); chimeLog.shell = store.get("radical-shell", null); chimeLog.plugin = !!P;  // v96: Android plays web audio (no silent switch to get around)
   if (!P || !P.load) return;
   if (!(window.OfflineAudioContext || window.webkitOfflineAudioContext)) { chimeLog.err = "no OfflineAudioContext"; return; }
   const t0 = Date.now();
@@ -3907,7 +3936,12 @@ const PAY_RULE = "daily", PAY_WORDS = 50, FREE_READ = 100;
 const PAY_LOCKS = { daily: ["cards", "ai", "add"], reading: ["cards", "ai", "add"], teaser: ["read", "explore", "cards", "ai", "add"], words: [] };
 const DEMO_AI = { allow: { kind: "paid", base: 2.5, day: .5 }, meter: { chg: .38, dchg: .02 } };  // the still meter on the tour and the card
 const AUTO_AI = ["card", "topics", "rate", "wordset", "example", "title"];  // calls the app makes on its own: no card or sheet for them
-const SUBS_URL = "https://apps.apple.com/account/subscriptions", EULA_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+// v96: on Android the store is Google Play: its subscriptions page, its terms, its refunds
+const STORE = ANDROID ? "Google Play" : "Apple";
+const SUBS_URL = ANDROID ? "https://play.google.com/store/account/subscriptions?package=com.upslopelabs.radical" : "https://apps.apple.com/account/subscriptions";
+const EULA_URL = ANDROID ? "https://play.google.com/about/play-terms/" : "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+const REFUND_URL = ANDROID ? "https://support.google.com/googleplay/answer/2479637" : "https://reportaproblem.apple.com";
+const pid = x => String(x || "").split(":")[0];  // Google Play names a subscription "<product>:<base plan>"
 const LIFE = "radical_unlock", TRIAL_ITEM = "radical_trial";  // Lifetime ($79.99; the id is from before v63) and, v71, the $0 item that starts the trial without a subscription
 let payCfg = store.get("radical-pay", null), ent = store.get("radical-ent", null) || { unlock: null, sub: null, trialFrom: "" }, rcReady = null;
 const rcAvail = () => NATIVE && !!(window.Capacitor && Capacitor.isPluginAvailable && Capacitor.isPluginAvailable("Purchases"));
@@ -3959,13 +3993,13 @@ function readCI(ci) {
   if (!ci || !payCfg) return;
   // v73: after an owner's test reset, purchases made before it don't count on this phone
   const rs = payTest() ? +store.get("radical-pay-reset", 0) : 0, after = t => !rs || (Date.parse(t || 0) || 0) >= rs;
-  const tr = (ci.nonSubscriptionTransactions || []).find(t => t.productIdentifier === TRIAL_ITEM && after(t.purchaseDate));
+  const tr = (ci.nonSubscriptionTransactions || []).find(t => pid(t.productIdentifier) === TRIAL_ITEM && after(t.purchaseDate));
   if (tr) setEnt({ trialFrom: localDay(Date.parse(tr.purchaseDate) || Date.now()) });
   let a = ci.entitlements && ci.entitlements.active && ci.entitlements.active[payCfg.entitlement];
   if (a && !after(a.originalPurchaseDate || a.latestPurchaseDate)) a = null;
   if (!a) { setEnt({ unlock: ent.unlock && ent.unlock.src === "gift" ? ent.unlock : null, sub: null }); return; }
-  if (a.productIdentifier === LIFE) setEnt({ unlock: { src: "store", product: LIFE } });
-  else setEnt({ sub: { product: a.productIdentifier, until: a.expirationDate ? Date.parse(a.expirationDate) : 0, ...(a.periodType === "TRIAL" ? { trial: true } : {}) } });
+  if (pid(a.productIdentifier) === LIFE) setEnt({ unlock: { src: "store", product: LIFE } });
+  else setEnt({ sub: { product: pid(a.productIdentifier), until: a.expirationDate ? Date.parse(a.expirationDate) : 0, ...(a.periodType === "TRIAL" ? { trial: true } : {}) } });
 }
 async function entitleCall(body) {
   const token = await accessToken(); if (!token) return null;
@@ -3986,7 +4020,8 @@ async function payRefresh(op = "get") {
 async function payInit() {
   try { const j = await (await fetch(API + "/api/claude?action=config", { cache: "no-store" })).json(); if (j && j.pay) { payCfg = j.pay; store.set("radical-pay", j.pay); } } catch (e) {}
   if (!payCfg || !(payCfg.on || payTest())) return;
-  if (rcAvail() && payCfg.ios) rcReady = (async () => { const P = plug("Purchases"); await P.configure({ apiKey: payCfg.ios, appUserID: (session && session.id) || undefined }); return P; })().catch(() => null);
+  const rcKey = ANDROID ? payCfg.android : payCfg.ios;
+  if (rcAvail() && rcKey) rcReady = (async () => { const P = plug("Purchases"); await P.configure({ apiKey: rcKey, appUserID: (session && session.id) || undefined }); return P; })().catch(() => null);
   await payRefresh();
   payHeadsUp();
 }
@@ -3995,16 +4030,19 @@ function rcAccount(id) { if (rcReady) rcReady.then(P => P && (id ? P.logIn({ app
 async function rcProducts() {
   const P = rcReady && await rcReady; if (!P) throw new Error("Purchases aren't available here.");
   const subs = (payCfg.subs || []).map(x => x.id);
-  const [a, b] = await Promise.all([P.getProducts({ productIdentifiers: subs, type: "SUBSCRIPTION" }), P.getProducts({ productIdentifiers: [LIFE, TRIAL_ITEM], type: "NON_SUBSCRIPTION" })]);
-  const list = [...(a.products || []), ...(b.products || [])];
+  const [a, b] = await Promise.all([P.getProducts({ productIdentifiers: subs, type: "SUBSCRIPTION" }), P.getProducts({ productIdentifiers: ANDROID ? [LIFE] : [LIFE, TRIAL_ITEM], type: "NON_SUBSCRIPTION" })]);
+  // v96: Google Play's ids carry the base plan ("radical_month:monthly"); the card looks them up by product id
+  const list = [...(a.products || []), ...(b.products || [])].map(p => ({ ...p, identifier: pid(p.identifier), raw: p }));
   let trial = null;
-  try { const el = await P.checkTrialOrIntroductoryPriceEligibility({ productIdentifiers: subs }); trial = subs.some(id => el[id] && el[id].status === 2); } catch (e) {}  // 2 = eligible
+  // Google Play offers its free trial only to people who can still have it, so a free phase on the product means yes
+  if (ANDROID) trial = list.some(p => subs.includes(p.identifier) && ((p.defaultOption && p.defaultOption.freePhase) || (p.introPrice && +p.introPrice.price === 0)));
+  else try { const el = await P.checkTrialOrIntroductoryPriceEligibility({ productIdentifiers: subs }); trial = subs.some(id => el[id] && el[id].status === 2); } catch (e) {}  // 2 = eligible
   return { P, list, trial };
 }
 async function payBuy(id) {
   const { P, list } = await rcProducts(), product = list.find(x => x.identifier === id);
   if (!product) throw new Error("The store didn't answer. Try again in a minute.");
-  try { readCI((await P.purchaseStoreProduct({ product })).customerInfo); }
+  try { readCI((await P.purchaseStoreProduct({ product: product.raw || product })).customerInfo); }
   catch (e) { if (e && (e.userCancelled || (e.code && /cancel/i.test(String(e.code))))) return false; throw e; }
   if (session) await (id === TRIAL_ITEM && ent.trialFrom ? entitleCall({ op: "trial", from: ent.trialFrom }) : entitleCall({ op: "check" })).then(j => j && setEnt(j)).catch(() => {});
   return true;
@@ -4021,14 +4059,14 @@ async function payRestore() {
 function lifeWarn(card, plans, cur, buy) {
   card.querySelector(".lifewarn")?.remove();
   const w = el("div", "lifewarn"), n = planName(cur);
-  w.append(el("p", "", `You're on <b>${n}</b>. Cancel it so it won't renew, and you can ask Apple to refund the rest.`));
+  w.append(el("p", "", `You're on <b>${n}</b>. Cancel it so it won't renew, and you can ask ${STORE} to refund the rest.`));
   const row = el("div", "row");
   row.append(btn("Cancel subscription", "btn outl small", async () => {
     const P = plug("Purchases");
     try { if (P && typeof P.showManageSubscriptions === "function") { await P.showManageSubscriptions(); return; } } catch (e) {}
     window.open(SUBS_URL, "_blank", "noopener");
   }), btn("Buy Lifetime", "btn small", () => { w.remove(); buy(); }));
-  w.append(row, el("p", "note", `Refunds: <a href="https://reportaproblem.apple.com" target="_blank" rel="noopener">reportaproblem.apple.com</a>`));
+  w.append(row, el("p", "note", `Refunds: <a href="${REFUND_URL}" target="_blank" rel="noopener">${REFUND_URL.replace(/^https:\/\/|\/.*$/g, "")}</a>`));
   plans.after(w); w.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 function payCard(opts = {}) {
@@ -4044,7 +4082,7 @@ function payCard(opts = {}) {
     const y = subOf("radical_year"), mo = subOf("radical_month"), life = (payCfg && payCfg.lifetime) || "$79.99";
     // v72: four matching boxes in this order; nothing is picked until you tap one
     const rows = [];
-    if (!ent.trialFrom && !ent.sub && !unlocked()) rows.push([TRIAL_ITEM, "Free trial", "$0", `${days} days, then you choose. Nothing renews.`]);
+    if (!ANDROID && !ent.trialFrom && !ent.sub && !unlocked()) rows.push([TRIAL_ITEM, "Free trial", "$0", `${days} days, then you choose. Nothing renews.`]);
     rows.push(["radical_month", "Monthly", mo.price, "a month"], ["radical_year", "Yearly", y.price, "a year"], [LIFE, "Lifetime", life, "once, yours for good"]);
     const opt = ([id, name, price, sub]) => {
       // v74: Lifetime is the best value (Chinese takes years); Yearly shows what it saves against Monthly
@@ -4066,7 +4104,7 @@ function payCard(opts = {}) {
       return b;
     };
     plans.append(...rows.map(opt));
-    terms.innerHTML = `Subscriptions renew until you cancel in your Apple account, at least a day before the renewal date. <a href="${EULA_URL}" target="_blank" rel="noopener">Terms</a> · <a href="${WEB}/privacy" target="_blank" rel="noopener">Privacy</a>`;
+    terms.innerHTML = `Subscriptions renew until you cancel in your ${ANDROID ? "Google Play" : "Apple"} account, at least a day before the renewal date. <a href="${EULA_URL}" target="_blank" rel="noopener">Terms</a> · <a href="${WEB}/privacy" target="_blank" rel="noopener">Privacy</a>`;
     card.append(plans, terms);
     if (opts.change && /^radical_(month|year)$/.test(cur)) { const c = el("a", "linkbtn paycancel", "Cancel subscription"); c.href = SUBS_URL; c.target = "_blank"; c.rel = "noopener"; card.append(c); }
     // Local prices and Apple's free trial on the subscriptions, once the store answers

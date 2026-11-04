@@ -211,7 +211,8 @@ function parseItems(text, key) {
 
 const ANON_ACTIONS = new Set(["explain", "translate", "words", "zhquery", "simplify", "ocr", "notes", "tozh"]);
 // v54: the iPhone app's page runs at capacitor://localhost, so it may call here across origins (only that origin).
-const APP_ORIGINS = new Set(["capacitor://localhost", "ionic://localhost"]);
+// v96: the Android app's page runs at https://localhost.
+const APP_ORIGINS = new Set(["capacitor://localhost", "ionic://localhost", "https://localhost"]);
 module.exports = async (req, res) => {
   const T0 = Date.now(), lap = {}, clock = k => { lap[k] = Date.now() - T0; };  // v70: where a request's time goes (judge reports it)
   const origin = String(req.headers.origin || "");

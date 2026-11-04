@@ -23,6 +23,8 @@
 //   REVENUECAT_WEBHOOK_AUTH    the Authorization value set on RevenueCat's webhook, Secret type
 //   RADICAL_AI_MONTH, RADICAL_AI_DAY, RADICAL_AI_TRIAL, RADICAL_AI_TRIAL_DAY, RADICAL_BONUS_UNTIL   (above)
 const UNLOCK = "radical_unlock", TRIAL = "radical_trial", ENTITLEMENT = "unlock", TRIAL_DAYS = 14, SANDBOX_DAYS = 30;  // radical_unlock is Lifetime ($79.99)
+// v96: Google Play names a subscription "<product>:<base plan>"; bare() keeps the product id
+const bare = p => String(p || "").split(":")[0];
 const SUBS = { radical_month: { price: "$4.99", per: "month" }, radical_year: { price: "$39.99", per: "year" } };
 const LIFETIME = "$79.99";
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -65,8 +67,8 @@ module.exports = ({ getJSON, putJSON, isOwner, idForEmail }) => {
     }
     const tr = ((s.non_subscriptions || {})[TRIAL] || []).filter(t => after(t.purchase_date))[0];
     if (tr && tr.purchase_date) { const t = earlier(e.trialFrom, tr.purchase_date.slice(0, 10)); if (t !== e.trialFrom) { e.trialFrom = t; changed = true; } }
-    for (const [pid, sub] of Object.entries(s.subscriptions || {})) if (SUBS[pid] && sub.expires_date && Date.parse(sub.expires_date) > Date.now() && !sub.refunded_at && after(sub.original_purchase_date || sub.purchase_date)
-      && (!e.sub || +e.sub.until < Date.parse(sub.expires_date))) { e.sub = { product: pid, until: Date.parse(sub.expires_date), ...(sub.period_type === "trial" ? { trial: true } : {}) }; changed = true; }
+    for (const [key, sub] of Object.entries(s.subscriptions || {})) { const pid = bare(key); if (SUBS[pid] && sub.expires_date && Date.parse(sub.expires_date) > Date.now() && !sub.refunded_at && after(sub.original_purchase_date || sub.purchase_date)
+      && (!e.sub || +e.sub.until < Date.parse(sub.expires_date))) { e.sub = { product: pid, until: Date.parse(sub.expires_date), ...(sub.period_type === "trial" ? { trial: true } : {}) }; changed = true; } }
     if (changed) await putJSON(path(user.id), e);
     return get(user);
   }
@@ -123,7 +125,7 @@ module.exports = ({ getJSON, putJSON, isOwner, idForEmail }) => {
       log.events.push({ id: ev.id, type: ev.type, product: ev.product_id, store: ev.store, env: ev.environment, at: ev.purchased_at_ms || ev.event_timestamp_ms, price: ev.price, currency: ev.currency, reason: ev.cancel_reason, period: ev.period_type });
       log.events = log.events.slice(-200);
       await putJSON(`users/${id}/purchases.json`, log);
-      const e = await read(id), pid = SUBS[ev.new_product_id] ? ev.new_product_id : ev.product_id;
+      const e = await read(id), pid = SUBS[bare(ev.new_product_id)] ? bare(ev.new_product_id) : bare(ev.product_id);
       if (e.resetAt && ev.environment === "SANDBOX" && ev.type === "RENEWAL") continue;  // v73: a test subscription bought before an owner's reset
       if (ev.product_id === UNLOCK && ["INITIAL_PURCHASE", "NON_RENEWING_PURCHASE", "TRANSFER"].includes(ev.type) && !(ev.transferred_from || []).includes(id))
         e.unlock = { at: new Date(+ev.purchased_at_ms || Date.now()).toISOString(), src: "store", product: UNLOCK, store: ev.store,
@@ -132,7 +134,7 @@ module.exports = ({ getJSON, putJSON, isOwner, idForEmail }) => {
       else if (ev.product_id === UNLOCK && ev.type === "CANCELLATION" && e.unlock && e.unlock.src === "store") e.unlock = null;  // a refund
       else if (SUBS[pid] && ["INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION"].includes(ev.type) && ev.expiration_at_ms)
         e.sub = { product: pid, until: +ev.expiration_at_ms, ...(ev.period_type === "TRIAL" ? { trial: true } : {}) };
-      else if (SUBS[ev.product_id] && (ev.type === "EXPIRATION" || (ev.type === "CANCELLATION" && ev.cancel_reason === "CUSTOMER_SUPPORT"))) e.sub = null;  // ended or refunded
+      else if (SUBS[bare(ev.product_id)] && (ev.type === "EXPIRATION" || (ev.type === "CANCELLATION" && ev.cancel_reason === "CUSTOMER_SUPPORT"))) e.sub = null;  // ended or refunded
       // a plain CANCELLATION (auto-renew off) keeps the subscription until it runs out
       else continue;
       await putJSON(path(id), e);
