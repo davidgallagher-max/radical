@@ -2,6 +2,11 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v97
+
+- Quit after checking a card counts that card with its suggested rating, so it doesn't come back next time. A card you haven't answered stays unrated.
+- Reading ticks never land on lines below the screen: a row waits until it's back in view.
+
 ## v96
 
 - The Android app for Google Play: the same app as on iPhone, built on GitHub (no Mac needed), with its own icon and launch screen. A GitHub run also tries it on an Android emulator and saves screenshots.
