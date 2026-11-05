@@ -1819,7 +1819,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v98";
+const APP_VERSION = "v99";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2115,6 +2115,12 @@ function countLine(line) {  // read aloud: the whole line at once
   payLine(line, Infinity);
 }
 let lineSeen = null, readBank = 0, readTop = null;
+// v99: nothing counts until you touch the page (a tap, a scroll, the wheel or a key) after opening a text or coming
+// back to Read, so a page left open on the screen earns nothing
+const readArm = { key: null, on: false };
+{ const arm = () => { readArm.on = true; }, sc = document.getElementById("readScreen");
+  if (sc) ["pointerdown", "touchstart", "wheel"].forEach(t => sc.addEventListener(t, arm, { passive: true, capture: true }));
+  addEventListener("keydown", () => { if (sc && !sc.hidden) arm(); }, true); }
 const readNoted = new Set();
 // v86: credit goes only to rows actually on screen (between the reading bar and the tab bar) that have stayed there
 // about 2 seconds, in reading order; a row scrolled past unread is skipped, not paid later; a second in which the
@@ -2131,9 +2137,12 @@ function readBand() {
   return { top, bottom };
 }
 setInterval(() => {
-  if (document.hidden || $("readScreen").hidden) { readBank = 0; readTop = null; return; }
+  if (document.hidden || $("readScreen").hidden) { readBank = 0; readTop = null; readArm.on = false; return; }
   const lines = [...document.querySelectorAll("#reader .line")].filter(l => !l._counted);
   if (capReader()) { readBank = 0; return; }  // v61: today's free reading is used up
+  const k0 = (document.querySelector("#reader .line") || {})._text || "";
+  if (k0 !== readArm.key) { readArm.key = k0; readArm.on = false; }  // a new text (or page) waits for a touch
+  if (!readArm.on) { readBank = 0; readTop = null; return; }
   const again = lines.filter(l => l._ready && readBefore(l)); again.forEach(markCounted);  // read already this month: no credit used
   if (again.length && !store.get("radical-reread", false)) {  // say so once per text this visit
     const k = lineKey((document.querySelector("#reader .line") || {})._text || "");
@@ -6981,7 +6990,7 @@ function openSets() {
   const table = el("div", "decktable"), bar = el("div", "deckbar"); bar.hidden = true;
   const paintBar = () => {
     bar.replaceChildren(); bar.hidden = !picked.size; if (!picked.size) return;
-    const keys = rows.map(r => r.k).filter(k => picked.has(k)), own = keys.filter(k => isDeck(k)), made = keys.filter(k => k !== "mine" && k !== "all" && !isDeck(k)), gone = own;  // v52: ready-made decks are always there (no Remove)
+    const keys = rows.map(r => r.k).filter(k => picked.has(k)), own = keys.filter(k => isDeck(k)), made = keys.filter(k => k !== "mine" && k !== "all" && !isDeck(k)), gone = [...own, ...made.filter(k => k === "top" || isLevel(k))];  // v52: topic decks are always there (no Remove); v99: Top and levels can go
     bar.append(btn(keys.length > 1 ? `Study ${keys.length} together` : "Study", "btn small", () => { close(); setList(keys.length > 1 ? groupKey(keys) : keys[0]); renderWords(); }));
     if (keys.length === 1 && made.length && keys[0] !== "top" && !isLevel(keys[0]) && moreSize(keys[0]) <= 100 && myWords.filter(w => w.set === keys[0]).length < 100) bar.append(btn("＋ More words", "btn ghost small", () => { close(); chooseSet(() => addThemeSet(keys[0], true), true, null, `add to ${keys[0]}`); }));
     if (keys.length === 1 && keys[0] !== "top" && !isLevel(keys[0])) bar.append(btn("Share", "btn ghost small", () => { close(); shareSheet(keys[0]); }));
@@ -6989,7 +6998,7 @@ function openSets() {
     // Your decks: words leave them. Ready-made: unstudied words go, studied ones stay.
     if (gone.length) { const rm = btn("", "btn ghost small"), mine = mineName(), word = made.length && !own.length ? "Remove" : "Delete";
       const say = on => rm.textContent = on ? (made.length ? `${word}? Studied words go to ${mine}` : `Delete? Words go to ${mine}`) : gone.length > 1 ? `${word} ${gone.length}` : word;
-      say(false); rm.onclick = () => armConfirm(rm, say, () => { close(); made.forEach(removeList); if (own.length) deleteDeck(own); }); bar.append(rm); }
+      say(false); rm.onclick = () => armConfirm(rm, say, () => { close(); made.filter(k => gone.includes(k)).forEach(removeList); if (own.length) deleteDeck(own); }); bar.append(rm); }
   };
   {  // v52: All decks, first: every word, each once
     const row = el("div", "deckrow allrow" + (curList === "all" ? " on" : "")), main = el("button", "dmain", `<span class="dname">All decks <span class="dcount">(${num(myWords.length)})</span></span><span class="dused"></span>`);
