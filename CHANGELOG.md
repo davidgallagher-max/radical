@@ -2,6 +2,13 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v98
+
+- Level decks replace Top 100 to 2,000: TOCFL 1 to 7 (Taiwan's official list) and HSK 1 to 6 and 7–9 (the new HSK), in Word Decks, Taiwan's first. Most common words come first in each level, and words you already have count in it. The first-start question now opens a level. A Top list you already have stays.
+- Reading ticks no longer skip rows you read while looking up a word.
+- ENG works on very long paragraphs.
+- Tap ，；： for just that phrase (speaker, ENG, 解), like tapping 。 for a sentence.
+
 ## v97
 
 - Quit after checking a card counts that card with its suggested rating, so it doesn't come back next time. A card you haven't answered stays unrated.
