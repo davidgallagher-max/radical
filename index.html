@@ -1819,7 +1819,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v99";
+const APP_VERSION = "v100";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -5927,7 +5927,7 @@ function todayList(ms, at) {
   const k = KEYS[ms[0]], dues = ws => ws.filter(w => ms.some(m => dueAt(w, m))).sort((a, b) => first(a) - first(b)), news = ws => ws.filter(w => !w.skip && !w[k] && !ms.some(m => dueAt(w, m)));
   // v46: the picked list first; when it runs short, Today fills from your other lists (due, then new), so a small deck
   // never shrinks the day below Cards a day.
-  const lw = listWords(), other = myWords.filter(w => !inList(w));
+  const lw = listWords(), other = myWords.filter(w => !inList(w) && !paused(w));
   const done = at ? new Set() : doneToday();
   // v43: Today is what's left of your day: words you've practiced today don't count again (a missed one repeats in
   // its round, nothing comes back later the same day), and it fills with new words only, never Known or Learning ones.
@@ -5962,7 +5962,10 @@ const isDeck = L => typeof L === "string" && L.startsWith("d:"), deckKey = n => 
 // v44: several of your decks studied together: "g:" + their keys, one per line
 const isGroup = L => typeof L === "string" && L.startsWith("g:"), groupKey = ks => "g:" + ks.join("\n"), groupKeys = L => isGroup(L) ? L.slice(2).split("\n") : [L];
 function saveDecks() { decks.t = Date.now(); store.set("radical-decks", decks); if (typeof scheduleSync === "function") scheduleSync(); }
-const inList = (w, L = curList) => L === "all" ? true : isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common || inDeck(w, RM + "top") || topHas(w) : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L || inDeck(w, RM + L) || isLevel(L) && levelHas(w, L);
+// v100: a removed level's (or Top's) studied words keep their tag and progress but are paused: they show nowhere and
+// never come up, until the level is added again (or they're in one of your decks, or in another open level)
+const paused = w => !!(w.set && isLevel(w.set) && !levelsOn().includes(w.set) || w.common && !commonSize()) && !wDecks(w).length && !levelsOn().some(L => levelHas(w, L));
+const inList = (w, L = curList) => paused(w) ? false : L === "all" ? true : isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common || inDeck(w, RM + "top") || topHas(w) : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L || inDeck(w, RM + L) || isLevel(L) && levelHas(w, L);
 const listWords = () => myWords.filter(w => inList(w));
 // v69: a word you saved before picking Top (in Basecamp or a deck) still counts in Top, so Top 500 shows 500
 let topSetOf = null;
@@ -5979,7 +5982,7 @@ function allLists() {
   if (isGroup(curList)) out.unshift([curList, groupName(curList)]);
   new Set([...decks.names, ...myWords.flatMap(ownDecks)]).forEach(n => out.push([deckKey(n), cut(n)]));
   if (size) out.push(["top", `Top ${num(size)}`]);
-  [...new Set([...myWords.filter(w => w.set).map(w => w.set), ...Object.keys(setCache), ...levelsOn(), ...myWords.flatMap(wDecks).filter(isRm).map(rmKey).filter(k => k !== "top")])].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
+  [...new Set([...myWords.filter(w => w.set && !isLevel(w.set)).map(w => w.set), ...Object.keys(setCache), ...levelsOn(), ...myWords.flatMap(wDecks).filter(isRm).map(rmKey).filter(k => k !== "top")])].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
   if (myWords.length) out.push(["all", "All decks"]);  // v52: every word, each once (last, so a real deck comes first)
   return out;
 }
@@ -6642,7 +6645,7 @@ function startCommon(size, from = 1) {
 // a word joins your words only when you first study it (Start on New or All, or Today while the deck is picked),
 // like Top's. Words already joined (w.set) from before v52 stay as they are.
 let setCache = store.get("radical-setwords", {});
-const hasSet = t => !!setCache[t] || myWords.some(w => w.set === t) || levelsOn().includes(t);
+const hasSet = t => isLevel(t) ? levelsOn().includes(t) : !!setCache[t] || myWords.some(w => w.set === t);
 const isReady = L => L === "top" || hasSet(L);
 const setUpcoming = t => {
   if (!levelData[t] || setCache[t]) return (setCache[t] || []).filter(x => !findWord(x.word) && !(deleted || {})[x.word]);
@@ -6675,7 +6678,9 @@ const LEVELS = { tocfl: { file: "lists/tocfl.txt", name: n => `TOCFL ${n}`, shor
 const LEVEL_N = [1, 2, 3, 4, 5, 6, 7];
 const isLevel = L => typeof L === "string" && /^(HSK|TOCFL) \d/.test(L), levelSys = L => L.startsWith("HSK") ? "hsk" : "tocfl";
 const levelSystems = () => region === "tw" ? ["tocfl", "hsk"] : ["hsk", "tocfl"];
-const levelsOn = () => (store.get("radical-levels", []) || []).filter(isLevel);
+let levelsMemo = null;
+const levelsOn = () => levelsMemo || (levelsMemo = (store.get("radical-levels", []) || []).filter(isLevel));
+const setLevels = a => { levelsMemo = null; store.set("radical-levels", a); };
 let levelData = {}, levelSets = {}, levelLoads = {};
 function loadLevels(sys) {
   return levelLoads[sys] || (levelLoads[sys] = getFile(LEVELS[sys].file).then(r => r.ok ? r.text() : "").catch(() => "").then(t => {
@@ -6689,7 +6694,7 @@ function loadLevels(sys) {
 const levelHas = (w, L) => !!(levelSets[L] && levelSets[L].has(toSimp(w.word)));
 // Open a level: keep it in your decks, pick it and fill Today's new words from it.
 function openLevel(L) {
-  store.set("radical-levels", [...new Set([...levelsOn(), L])]);
+  setLevels([...new Set([...levelsOn(), L])]);
   loadLevels(levelSys(L)).then(() => { setList(L); setTab("wordsScreen"); feedCommon(); renderWords(); });
 }
 // At start: load the systems of the levels you have, so their words and counts are there.
@@ -6698,7 +6703,7 @@ function levelsInit() {
   sys.forEach(x => loadLevels(x).then(() => { updateCounts(); if (!$("wordsScreen").hidden) renderWords(); }));
 }
 // v46: a topic deck's size (Word Decks: 12, 24 or 50); + More words asks for the next size up and adds what's new.
-const TOPIC_SIZES = [12, 24, 50], topicSize = () => TOPIC_SIZES.includes(store.get("radical-topic-size", 24)) ? store.get("radical-topic-size", 24) : 24;
+const topicSize = () => 50;  // v100: every topic deck is 50 words (the 12 / 24 / 50 row is gone)
 const moreSize = t => { const n = Math.max(myWords.filter(w => w.set === t).length, (setCache[t] || []).length); return [24, 50, 100].find(x => x > n + 4) || 100; };
 // A themed set: ask for it, keep the words the dictionary knows (in your script), skip ones you have or removed.
 // Already there: just switch to it.
@@ -6853,16 +6858,12 @@ function setsGrid(close) {
       b.innerHTML = `<small>${n === 1 ? sys.toUpperCase() : "&nbsp;"}</small>${LEVELS[sys].short(n)}`; b.setAttribute("aria-label", L); b.setAttribute("aria-pressed", curList === L); row.append(b); });
   });
   const th = el("div", "setrow three");
-  // v46: how many words a new topic deck gets
-  const sz = el("div", "pills topicsize"); sz.setAttribute("role", "group"); sz.append(el("span", "tslabel", "Words"));
-  TOPIC_SIZES.forEach(n => { const b = el("button", "", String(n)); b.type = "button"; b.setAttribute("aria-pressed", topicSize() === n);
-    b.onclick = () => { store.set("radical-topic-size", n); sz.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); }; sz.append(b); });
   catThemes().forEach(x => { const t = x.theme, b = btn(t, "setchip", hasSet(t) ? () => { if (close) close(); addThemeSet(t); } : pick(() => addThemeSet(t), true, `start ${t}`)); b.setAttribute("aria-pressed", curList === t);
     // v59: NEW for 14 days after it's published; Until <day> while it's being retired (only for decks you haven't opened)
     const tag = x.until && !hasSet(t) ? `Until ${untilName(x.until)}` : topicIsNew(x) ? "New" : "";
     if (tag) { b.classList.add("tagged"); b.innerHTML = `<small class="chiptag${tag === "New" ? " new" : ""}">${esc(tag)}</small>${esc(t)}`; }
     th.append(b); });
-  g.append(top, sz, th, btn("＋ Deck from a topic", "setchip wide", () => { if (close) close(); makeSet(close ? openSets : null); }));
+  g.append(top, th, btn("＋ Deck from a topic", "setchip wide", () => { if (close) close(); makeSet(close ? openSets : null); }));
   return g;
 }
 // No words yet: Word Sets in the Flash cards spot.
@@ -6906,9 +6907,19 @@ function renameDeck(L, n) {
 }
 // Deleting your decks keeps every word: they leave those decks (a word in no deck is in Basecamp).
 function deleteDeck(Ls) {
+  deckGoes(Ls);
   const old = new Set([].concat(Ls).map(L => L.slice(2))); decks.names = decks.names.filter(x => !old.has(x));
   [].concat(Ls).forEach(L => { delete decks.used[L]; delete decks.made[L]; Object.keys(decks.ids).forEach(i => { if (decks.ids[i] === L) delete decks.ids[i]; }); });
-  myWords.forEach(w => { if (wDecks(w).some(x => old.has(x))) setDecks(w, wDecks(w).filter(x => !old.has(x))); }); saveWords(); saveDecks(); setList("mine"); renderWords();
+  // v100: words only in these decks go with them (nothing moves to Basecamp); words in another deck or a list stay there
+  myWords.forEach(w => { if (wDecks(w).some(x => old.has(x))) setDecks(w, wDecks(w).filter(x => !old.has(x))); });
+  myWords = myWords.filter(w => !(w._goes && !wDecks(w).length)); myWords.forEach(w => delete w._goes);
+  saveWords(); saveDecks(); setList("mine"); renderWords();
+}
+// How many words deleting these decks takes with it (marks them for deleteDeck)
+function deckGoes(Ls) {
+  const old = new Set([].concat(Ls).map(L => L.slice(2))); let n = 0;
+  myWords.forEach(w => { const ds = wDecks(w); w._goes = ds.some(x => old.has(x)) && ds.every(x => old.has(x)) && !w.set && !w.common; if (w._goes) n++; });
+  return n;
 }
 // v52: the one deck sheet, everywhere. Tick as many decks as you like (tap again to untick), or Basecamp alone (it
 // clears the decks; a deck clears it). Nothing changes until Save; Cancel or ✕ leaves it as it was. `start` is the
@@ -6968,10 +6979,11 @@ function dropWord(w) { const i = myWords.indexOf(w); if (i < 0) return; myWords.
 function removeList(L) {
   const filed = w => inDeck(w, RM + L), own = w => (L === "top" ? w.common : w.set === L);  // v65: words you filed here stay, untagged
   myWords.forEach(w => { if (filed(w)) setDecks(w, wDecks(w).filter(n => n !== RM + L)); });
-  myWords = myWords.filter(w => !(own(w) && !practiced(w)));
-  myWords.forEach(w => { if (own(w)) { delete w.common; delete w.set; } });
+  const keep = L === "top" || isLevel(L);  // v100: a level's (or Top's) words all stay, tagged and paused, so adding it back restores it
+  if (!keep) myWords = myWords.filter(w => !(own(w) && !practiced(w)));
+  if (!keep) myWords.forEach(w => { if (own(w)) { delete w.common; delete w.set; } });  // v100: a level's or Top's studied words stay tagged, paused
   if (L === "top") store.set("radical-common", { size: 0 });
-  if (isLevel(L)) store.set("radical-levels", levelsOn().filter(x => x !== L));
+  if (isLevel(L)) setLevels(levelsOn().filter(x => x !== L));
   saveWords(); setList("mine"); renderWords();
 }
 // With words: one slim line under Add ("Word Sets ›" and the list you're on), opening a sheet.
@@ -6983,7 +6995,7 @@ function openSets() {
   const cur = new Set(groupKeys(curList)), picked = new Set();
   const cut = t => t.length > DECK_MAX ? t.slice(0, DECK_MAX - 1) + "…" : t;
   // v45: every deck you have, yours and the ready-made ones you've added
-  const ready = [...(commonSize() ? ["top"] : []), ...new Set([...myWords.filter(w => w.set).map(w => w.set), ...Object.keys(setCache), ...levelsOn()])];
+  const ready = [...(commonSize() ? ["top"] : []), ...new Set([...myWords.filter(w => w.set && !isLevel(w.set)).map(w => w.set), ...Object.keys(setCache), ...levelsOn()])];
   const rows = [["mine", mineName()], ...decks.names.map(n => [deckKey(n), n]), ...ready.map(k => [k, keyName(k)])]
     .map(([k, n], i) => { const used = [decks.used[k] || "", madeOn(k), lastStudied(k)].sort().pop(); return { k, n, i, count: myWords.filter(w => inList(w, k)).length + (isLevel(k) ? upcoming(k).length : 0), used }; })  // v98: a level counts all its words
     .sort((a, b) => b.used.localeCompare(a.used) || a.i - b.i);
@@ -6997,7 +7009,8 @@ function openSets() {
     if (keys.length === 1 && isDeck(keys[0])) bar.append(iconBtn(PEN, "Rename", "btn ghost small", () => { close(); const k = keys[0]; nameDeck(k.slice(2), n => renameDeck(k, n), openSets); }));
     // Your decks: words leave them. Ready-made: unstudied words go, studied ones stay.
     if (gone.length) { const rm = btn("", "btn ghost small"), mine = mineName(), word = made.length && !own.length ? "Remove" : "Delete";
-      const say = on => rm.textContent = on ? (made.length ? `${word}? Studied words go to ${mine}` : `Delete? Words go to ${mine}`) : gone.length > 1 ? `${word} ${gone.length}` : word;
+      const n = own.length ? deckGoes(own) : 0, words = n === 1 ? "1 word goes too" : `${num(n)} words go too`;
+      const say = on => rm.textContent = on ? (own.length ? (n ? `Delete? ${words}` : "Delete?") : `${word}?`) : gone.length > 1 ? `${word} ${gone.length}` : word;
       say(false); rm.onclick = () => armConfirm(rm, say, () => { close(); made.filter(k => gone.includes(k)).forEach(removeList); if (own.length) deleteDeck(own); }); bar.append(rm); }
   };
   {  // v52: All decks, first: every word, each once
