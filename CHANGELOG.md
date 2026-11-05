@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v100
+
+- Topic decks are always 50 words; the 12 / 24 / 50 row is gone.
+- Removing a level (or Top) no longer moves anything to Basecamp: its words keep their progress and pause, out of Today and every list, until you add the level again. A word that's also in an open level or one of your decks keeps showing there.
+- Deleting your own deck deletes its words too, except words that are also in another deck. The confirm says how many go. To keep some, take them out of the deck first.
+
 ## v99
 
 - Reading doesn't count until you touch the page (a tap or a scroll) after opening a text or coming back to Read, so a page left on the screen earns no ticks.
