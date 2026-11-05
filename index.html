@@ -409,7 +409,7 @@ p.busy{margin:-4px 4px 0}
 @keyframes peekin{from{opacity:0;transform:translateY(8px)}}
 .srcform{position:relative;display:flex}
 .srcname{width:100%;box-sizing:border-box;margin:0 0 8px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:1rem}
-.glyph.sentend{cursor:pointer;color:var(--accent)}.glyph.sentend.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}
+.glyph.sentend{cursor:pointer;color:var(--accent)}.glyph.phrase{cursor:pointer}.glyph.phrase.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}.glyph.sentend.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}
 .senttip{position:absolute;z-index:4;width:max-content;white-space:nowrap;padding:6px 12px;border-radius:12px;background:var(--accent);color:var(--bg);font-weight:600;font-size:.92rem;box-shadow:0 4px 16px rgba(0,0,0,.35);animation:tlabel 4.5s ease-out both}
 .sentpop{position:absolute;left:0;right:0;z-index:4;background:var(--bg);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.35),inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent);padding:8px 10px}
 .sentrow{display:flex;gap:8px;align-items:center}.sentrow .sentx{margin-left:auto}.sentpop .trans,.sentpop .explain{margin:8px 0 2px}
@@ -964,7 +964,7 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .cmhead .cmnow{flex:1;text-align:right;color:var(--muted);font-weight:500;font-size:.92rem;font-variant-numeric:tabular-nums}
 .cmchev{width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);flex:none}
 .setgrid{display:grid;gap:8px}
-.setrow{display:grid;gap:8px}.setrow.four{grid-template-columns:repeat(4,minmax(0,1fr))}.setrow.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.setrow{display:grid;gap:8px}.setrow.four{grid-template-columns:repeat(4,minmax(0,1fr))}.setrow.three{grid-template-columns:repeat(3,minmax(0,1fr))}.setrow.seven{grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.levels{display:grid;gap:8px}.setrow.seven .setchip.top small{font-size:.6rem;letter-spacing:.02em}
 .setchip{all:unset;box-sizing:border-box;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:10px 4px;border-radius:999px;font-size:.92rem;font-weight:600;color:var(--fg);background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);font-variant-numeric:tabular-nums}
 .setchip[aria-pressed="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--bg));box-shadow:inset 0 0 0 1.5px var(--accent)}
 .setchip.wide{color:var(--accent)}
@@ -1819,7 +1819,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v97";
+const APP_VERSION = "v98";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2140,7 +2140,8 @@ setInterval(() => {
     if (!readNoted.has(k)) { readNoted.add(k); toast("Read before. Ticked lines don't count again this month.", 3500); }
   }
   const band = readBand(), st = $("readScreen").scrollTop, moved = readTop == null ? 0 : Math.abs(st - readTop); readTop = st;
-  if (picked && picked.line && picked.line.closest && picked.line.closest("#reader")) return;  // v94: looking a word up: the clock stops
+  // v94: looking a word up: the clock stops. v98: rows on screen still count as seen (owed), so they aren't skipped later
+  const looking = !!(picked && picked.line && picked.line.closest && picked.line.closest("#reader"));
   if (readCap) {  // the cap ends once the looked-up word has scrolled above the band (or after two minutes)
     const r = readCap.cell.isConnected ? readCap.cell.getBoundingClientRect() : null;
     if (!r || (r.top + r.bottom) / 2 < band.top || Date.now() - readCap.t > 120000) readCap = null;
@@ -2156,6 +2157,7 @@ setInterval(() => {
     const seen = r => r.han && r.top >= band.top - 4 && r.bottom <= band.bottom + 4;
     rows.forEach(r => { if (seen(r)) { const d = (prev.get(r.start) || 0) + 1; now.set(r.start, d); if (d >= READ_DWELL) owed.add(r.start); } });
     l._dwell = now;
+    if (looking) continue;
     let got = l._got || 0;
     const capLine = readCap && readCap.line === l, after = readCap && !capLine && (readCap.line.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING);
     if (after) continue;  // lines after a looked-up word wait for it
@@ -2170,6 +2172,7 @@ setInterval(() => {
       break;
     }
   }
+  if (looking) return;
   const firstPay = plan.find(p => !p[3]);
   // v94: rows already scrolled past (read, then moved on) catch up at twice the pace
   const behind = firstPay && (firstPay[2].top + firstPay[2].bottom) / 2 < band.top;
@@ -3274,23 +3277,27 @@ const latinRoom = () => cellPx() * 3;
 // small bar under that row with the speaker, ENG and 解 for just that sentence (the paragraph's own buttons stay).
 const CLOSERS = /[」』”"’）)\]】〕》〉]/;
 function sentenceMarks(line, text) {
-  const t = [...text], ends = [];
+  // v98: ，；： are tappable too (not tinted): the phrase since the last mark
+  const t = [...text], SE = /[。！？!?]/, PH = /[，；：]/, ends = [];
   for (let i = 0; i < t.length; i++) {
-    if (!/[。！？!?]/.test(t[i]) || /[。！？!?]/.test(t[i + 1] || "")) continue;
+    if (PH.test(t[i])) { ends.push({ i, j: i + 1, ph: true }); continue; }
+    if (!SE.test(t[i]) || SE.test(t[i + 1] || "")) continue;
     let j = i + 1; while (j < t.length && CLOSERS.test(t[j])) j++;
     ends.push({ i, j });
   }
-  const tailEmpty = e => !t.slice(e.j).join("").trim();
-  if (ends.length < 2 && !(ends.length === 1 && !tailEmpty(ends[0]))) return;  // one sentence: the line's buttons do it
-  const marks = [...line.querySelectorAll(".glyph:not(.latin)")].filter(g => /[。！？!?]/.test(g.textContent));
-  let from = 0, k = 0;
+  const tailEmpty = e => !t.slice(e.j).join("").trim(), sents = ends.filter(e => !e.ph);
+  const oneSent = sents.length < 2 && !(sents.length === 1 && !tailEmpty(sents[0]));  // one sentence: the line's buttons do it
+  const marks = [...line.querySelectorAll(".glyph:not(.latin)")].filter(g => /[。！？!?，；：]/.test(g.textContent));
+  let from = 0, pfrom = 0, k = 0;
   ends.forEach(e => {
-    // each end mark in the text matches the mark glyphs in order (a run like ！？ counts once, at its last mark)
-    while (k < marks.length && marks[k].textContent !== t[e.i] ) k++;
-    const g = marks[k++], sent = t.slice(from, e.j).join("").trim(); from = e.j;
-    if (!g || tailEmpty(e) || !/\p{Script=Han}/u.test(sent)) return;
+    // each mark in the text matches the mark glyphs in order (a run like ！？ counts once, at its last mark)
+    while (k < marks.length && marks[k].textContent !== t[e.i]) k++;
+    const g = marks[k++], part = t.slice(e.ph ? pfrom : from, e.j).join("").trim(); pfrom = e.j; if (!e.ph) from = e.j;
+    if (!g || !/\p{Script=Han}/u.test(part)) return;
+    if (e.ph) { g.classList.add("phrase"); g.setAttribute("role", "button"); g.setAttribute("aria-label", "This phrase"); g.onclick = ev => { ev.stopPropagation(); sentenceBar(line, g, part); }; return; }
+    if (oneSent || tailEmpty(e)) return;
     g.classList.add("sentend"); g.setAttribute("role", "button"); g.setAttribute("aria-label", "This sentence");
-    g.onclick = ev => { ev.stopPropagation(); sentenceBar(line, g, sent); };
+    g.onclick = ev => { ev.stopPropagation(); sentenceBar(line, g, part); };
   });
 }
 // v95: once ever, a small bubble under the first green 。 that comes into view says it can be tapped
@@ -3308,7 +3315,7 @@ function sentTip(reader) {
   io.observe(g);
 }
 function sentenceBar(line, g, sent) {
-  const old = line.querySelector(":scope>.sentpop"); if (old) { old.remove(); line.querySelectorAll(".sentend.on").forEach(x => x.classList.remove("on")); if (old._g === g) return; }
+  const old = line.querySelector(":scope>.sentpop"); if (old) { old.remove(); line.querySelectorAll(".sentend.on,.phrase.on").forEach(x => x.classList.remove("on")); if (old._g === g) return; }
   const pop = el("div", "sentpop"); pop._g = g; g.classList.add("on");
   const row = el("div", "sentrow"), say = el("button", "saybtn sm", SPK); say.type = "button"; say.setAttribute("aria-label", "Read this sentence aloud");
   say.onclick = e => { e.stopPropagation(); if (sayPace === "step") sayPaced(sent, "step"); else saySentence(sent, sayPace); };
@@ -3819,7 +3826,7 @@ const AI_WHY = { explain: "use Explain", translate: "see the English", words: "f
   notes: "read class notes", tozh: "read it in Chinese", card: "make cards", wordset: "start a Word Deck", example: "get new sentences", judge: "check meanings", friends: "add friends" };
 function deviceId() { let id = store.get("radical-device", ""); if (!id) { id = Math.random().toString(36).slice(2) + Date.now().toString(36); store.set("radical-device", id); } return id; }
 // v58: how long each AI action normally takes; a call running over twice that counts as stuck
-const aiLive = new Set(), AI_NORMAL = { card: 2e4, notes: 4e4, ocr: 25e3, wordset: 2e4, words: 15e3, explain: 12e3, topics: 15e3, simplify: 2e4, example: 12e3 };
+const aiLive = new Set(), AI_NORMAL = { card: 2e4, notes: 4e4, ocr: 25e3, wordset: 2e4, words: 15e3, explain: 12e3, topics: 15e3, simplify: 2e4, example: 12e3, translate: 25e3 };
 const aiStuck = j => Date.now() - j.t0 > 2 * (AI_NORMAL[j.action] || 1e4);
 function aiRestart() { let n = 0; aiLive.forEach(j => { if (aiStuck(j) && j.ctrl) { j.again = true; j.ctrl.abort(); n++; } }); return n; }
 // Failures shown on screen can leave a way to try again: a pull to refresh runs it while the message is still showing
@@ -5946,7 +5953,7 @@ const isDeck = L => typeof L === "string" && L.startsWith("d:"), deckKey = n => 
 // v44: several of your decks studied together: "g:" + their keys, one per line
 const isGroup = L => typeof L === "string" && L.startsWith("g:"), groupKey = ks => "g:" + ks.join("\n"), groupKeys = L => isGroup(L) ? L.slice(2).split("\n") : [L];
 function saveDecks() { decks.t = Date.now(); store.set("radical-decks", decks); if (typeof scheduleSync === "function") scheduleSync(); }
-const inList = (w, L = curList) => L === "all" ? true : isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common || inDeck(w, RM + "top") || topHas(w) : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L || inDeck(w, RM + L);
+const inList = (w, L = curList) => L === "all" ? true : isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common || inDeck(w, RM + "top") || topHas(w) : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L || inDeck(w, RM + L) || isLevel(L) && levelHas(w, L);
 const listWords = () => myWords.filter(w => inList(w));
 // v69: a word you saved before picking Top (in Basecamp or a deck) still counts in Top, so Top 500 shows 500
 let topSetOf = null;
@@ -5963,7 +5970,7 @@ function allLists() {
   if (isGroup(curList)) out.unshift([curList, groupName(curList)]);
   new Set([...decks.names, ...myWords.flatMap(ownDecks)]).forEach(n => out.push([deckKey(n), cut(n)]));
   if (size) out.push(["top", `Top ${num(size)}`]);
-  [...new Set([...myWords.filter(w => w.set).map(w => w.set), ...Object.keys(setCache), ...myWords.flatMap(wDecks).filter(isRm).map(rmKey).filter(k => k !== "top")])].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
+  [...new Set([...myWords.filter(w => w.set).map(w => w.set), ...Object.keys(setCache), ...levelsOn(), ...myWords.flatMap(wDecks).filter(isRm).map(rmKey).filter(k => k !== "top")])].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
   if (myWords.length) out.push(["all", "All decks"]);  // v52: every word, each once (last, so a real deck comes first)
   return out;
 }
@@ -6388,7 +6395,7 @@ function assignModes(q, how) {
 }
 function buildQueue(cat, count, how = revHow) {
   let q = pool(cat, how).slice();
-  if (cat === "known" || cat === "all" || (cat === "new" && curList !== "top")) shuffle(q);  // Top's new words go in order
+  if (cat === "known" || cat === "all" || (cat === "new" && curList !== "top" && !isLevel(curList))) shuffle(q);  // Top's and a level's new words go in order
   q = count === "all" ? q : q.slice(0, count);
   assignModes(q, how);
   return q;
@@ -6626,16 +6633,60 @@ function startCommon(size, from = 1) {
 // a word joins your words only when you first study it (Start on New or All, or Today while the deck is picked),
 // like Top's. Words already joined (w.set) from before v52 stay as they are.
 let setCache = store.get("radical-setwords", {});
-const hasSet = t => !!setCache[t] || myWords.some(w => w.set === t);
+const hasSet = t => !!setCache[t] || myWords.some(w => w.set === t) || levelsOn().includes(t);
 const isReady = L => L === "top" || hasSet(L);
-const setUpcoming = t => (setCache[t] || []).filter(x => !findWord(x.word) && !(deleted || {})[x.word]);
-const upcoming = L => L === "top" ? topUpcoming() : setCache[L] ? setUpcoming(L) : [];
+const setUpcoming = t => {
+  if (!levelData[t] || setCache[t]) return (setCache[t] || []).filter(x => !findWord(x.word) && !(deleted || {})[x.word]);
+  const have = new Set(myWords.map(w => toSimp(w.word))); Object.keys(deleted || {}).forEach(x => have.add(toSimp(x)));  // a level can be 5,000 words
+  return levelData[t].filter(x => !have.has(x.s));
+};
+const upcoming = L => L === "top" ? topUpcoming() : setCache[L] || levelData[L] ? setUpcoming(L) : [];
 async function fillList(L, n) {
   if (n <= 0) return 0;
   if (L === "top") return fillTop(n);
+  if (isLevel(L)) await loadLevels(levelSys(L));
   const add = setUpcoming(L).slice(0, n); if (!add.length) return 0;
-  add.forEach(x => myWords.push({ word: x.word, pinyin: x.pinyin, meaning: x.meaning, added: localDay(), set: L }));
+  if (isLevel(L)) await ensure(add.map(x => x.word).join(""));
+  add.forEach(x => myWords.push({ ...(isLevel(L) ? dictInfo(x.word) : { pinyin: x.pinyin, meaning: x.meaning }), word: x.word, added: localDay(), set: L }));
   saveWords(); return add.length;
+}
+// A word's pinyin and a short meaning from the dictionary (characters loaded first with ensure).
+function dictInfo(word) {
+  const d = lookup(word) || lookup(toSimp(word)), e = {};
+  if (d) { e.pinyin = region === "tw" && d[2] || d[1]; e.meaning = String(d[3] || "").split(/[\/;]/).map(x => x.trim()).filter(Boolean).slice(0, 2).join("; "); }
+  if (!e.pinyin && [...word].every(c => cache[c])) e.pinyin = [...word].map(c => cache[c].p[0]).join(" ");
+  if (!e.meaning && cache[word]) e.meaning = cache[word].d;
+  return e;
+}
+// v98: level decks, HSK (new HSK 3.0: 1 to 6 and 7-9) and TOCFL (1 to 7), from lists/hsk.txt and lists/tocfl.txt
+// (scripts/build_levels.py). Like a topic deck, a word joins your words (w.set = "TOCFL 1") when first studied, in the
+// list's order (most common first). The levels you've opened are radical-levels; a word you already have that's in a
+// level counts in it. Taiwan shows TOCFL first, mainland HSK.
+const LEVELS = { tocfl: { file: "lists/tocfl.txt", name: n => `TOCFL ${n}`, short: n => String(n) }, hsk: { file: "lists/hsk.txt", name: n => n === 7 ? "HSK 7–9" : `HSK ${n}`, short: n => n === 7 ? "7–9" : String(n) } };
+const LEVEL_N = [1, 2, 3, 4, 5, 6, 7];
+const isLevel = L => typeof L === "string" && /^(HSK|TOCFL) \d/.test(L), levelSys = L => L.startsWith("HSK") ? "hsk" : "tocfl";
+const levelSystems = () => region === "tw" ? ["tocfl", "hsk"] : ["hsk", "tocfl"];
+const levelsOn = () => (store.get("radical-levels", []) || []).filter(isLevel);
+let levelData = {}, levelSets = {}, levelLoads = {};
+function loadLevels(sys) {
+  return levelLoads[sys] || (levelLoads[sys] = getFile(LEVELS[sys].file).then(r => r.ok ? r.text() : "").catch(() => "").then(t => {
+    const by = {};
+    t.split("\n").forEach(l => { const [n, w] = l.trim().split("\t"); if (!w || l.startsWith("#")) return; const k = LEVELS[sys].name(+n); const s = sys === "hsk" ? w : toSimp(w); (by[k] || (by[k] = [])).push({ word: conv(w), s }); });
+    Object.entries(by).forEach(([k, a]) => { levelData[k] = a; levelSets[k] = new Set(a.map(x => x.s)); });
+    if (!t) levelLoads[sys] = null;  // try again next time
+    return by;
+  }));
+}
+const levelHas = (w, L) => !!(levelSets[L] && levelSets[L].has(toSimp(w.word)));
+// Open a level: keep it in your decks, pick it and fill Today's new words from it.
+function openLevel(L) {
+  store.set("radical-levels", [...new Set([...levelsOn(), L])]);
+  loadLevels(levelSys(L)).then(() => { setList(L); setTab("wordsScreen"); feedCommon(); renderWords(); });
+}
+// At start: load the systems of the levels you have, so their words and counts are there.
+function levelsInit() {
+  const sys = new Set([...levelsOn(), ...myWords.map(w => w.set).filter(isLevel), ...(isLevel(curList) ? [curList] : [])].map(levelSys));
+  sys.forEach(x => loadLevels(x).then(() => { updateCounts(); if (!$("wordsScreen").hidden) renderWords(); }));
 }
 // v46: a topic deck's size (Word Decks: 12, 24 or 50); + More words asks for the next size up and adds what's new.
 const TOPIC_SIZES = [12, 24, 50], topicSize = () => TOPIC_SIZES.includes(store.get("radical-topic-size", 24)) ? store.get("radical-topic-size", 24) : 24;
@@ -6785,9 +6836,13 @@ function chooseSet(fn, needsAI, after, why) {
 function setsGrid(close) {
   const g = el("div", "setgrid"), size = commonSize();
   const pick = (fn, ai, why) => () => { if (close) close(); chooseSet(fn, ai, null, why); };
-  const top = el("div", "setrow four");
-  // v44: green is the one you're on; a ✓ marks the ones you have
-  COMMON_SIZES.forEach(n => { const b = btn("", "setchip top", size === n ? () => { if (close) close(); setList("top"); renderWords(); } : pick(() => startCommon(n), false, `start Top ${num(n)}`)); b.innerHTML = `<small>Top</small>${num(n)}`; b.setAttribute("aria-pressed", size === n && curList === "top"); top.append(b); });
+  // v98: the level decks (TOCFL and HSK, your region's first) replace Top 100 to 2,000. A Top list you have stays in your decks.
+  const top = el("div", "levels");
+  levelSystems().forEach(sys => {
+    const row = el("div", "setrow seven"); row.setAttribute("aria-label", sys.toUpperCase()); top.append(row);
+    LEVEL_N.forEach(n => { const L = LEVELS[sys].name(n), b = btn("", "setchip top", pick(() => openLevel(L), false, `start ${L}`));
+      b.innerHTML = `<small>${n === 1 ? sys.toUpperCase() : "&nbsp;"}</small>${LEVELS[sys].short(n)}`; b.setAttribute("aria-label", L); b.setAttribute("aria-pressed", curList === L); row.append(b); });
+  });
   const th = el("div", "setrow three");
   // v46: how many words a new topic deck gets
   const sz = el("div", "pills topicsize"); sz.setAttribute("role", "group"); sz.append(el("span", "tslabel", "Words"));
@@ -6804,7 +6859,7 @@ function setsGrid(close) {
 // No words yet: Word Sets in the Flash cards spot.
 function setsPanel() {
   const box = el("div", "revpanel setspanel");
-  box.append(el("div", "revhead", "<b>Word Decks</b>"), el("p", "note setsub", "The 100 you'll see most, or a topic."), setsGrid());
+  box.append(el("div", "revhead", "<b>Word Decks</b>"), el("p", "note setsub", "Pick your level, or a topic."), setsGrid());
   return box;
 }
 // Any theme you type. Cancel goes `back` (to Word Decks).
@@ -6907,6 +6962,7 @@ function removeList(L) {
   myWords = myWords.filter(w => !(own(w) && !practiced(w)));
   myWords.forEach(w => { if (own(w)) { delete w.common; delete w.set; } });
   if (L === "top") store.set("radical-common", { size: 0 });
+  if (isLevel(L)) store.set("radical-levels", levelsOn().filter(x => x !== L));
   saveWords(); setList("mine"); renderWords();
 }
 // With words: one slim line under Add ("Word Sets ›" and the list you're on), opening a sheet.
@@ -6918,17 +6974,17 @@ function openSets() {
   const cur = new Set(groupKeys(curList)), picked = new Set();
   const cut = t => t.length > DECK_MAX ? t.slice(0, DECK_MAX - 1) + "…" : t;
   // v45: every deck you have, yours and the ready-made ones you've added
-  const ready = [...(commonSize() ? ["top"] : []), ...new Set([...myWords.filter(w => w.set).map(w => w.set), ...Object.keys(setCache)])];
+  const ready = [...(commonSize() ? ["top"] : []), ...new Set([...myWords.filter(w => w.set).map(w => w.set), ...Object.keys(setCache), ...levelsOn()])];
   const rows = [["mine", mineName()], ...decks.names.map(n => [deckKey(n), n]), ...ready.map(k => [k, keyName(k)])]
-    .map(([k, n], i) => { const used = [decks.used[k] || "", madeOn(k), lastStudied(k)].sort().pop(); return { k, n, i, count: myWords.filter(w => inList(w, k)).length, used }; })
+    .map(([k, n], i) => { const used = [decks.used[k] || "", madeOn(k), lastStudied(k)].sort().pop(); return { k, n, i, count: myWords.filter(w => inList(w, k)).length + (isLevel(k) ? upcoming(k).length : 0), used }; })  // v98: a level counts all its words
     .sort((a, b) => b.used.localeCompare(a.used) || a.i - b.i);
   const table = el("div", "decktable"), bar = el("div", "deckbar"); bar.hidden = true;
   const paintBar = () => {
     bar.replaceChildren(); bar.hidden = !picked.size; if (!picked.size) return;
     const keys = rows.map(r => r.k).filter(k => picked.has(k)), own = keys.filter(k => isDeck(k)), made = keys.filter(k => k !== "mine" && k !== "all" && !isDeck(k)), gone = own;  // v52: ready-made decks are always there (no Remove)
     bar.append(btn(keys.length > 1 ? `Study ${keys.length} together` : "Study", "btn small", () => { close(); setList(keys.length > 1 ? groupKey(keys) : keys[0]); renderWords(); }));
-    if (keys.length === 1 && made.length && keys[0] !== "top" && moreSize(keys[0]) <= 100 && myWords.filter(w => w.set === keys[0]).length < 100) bar.append(btn("＋ More words", "btn ghost small", () => { close(); chooseSet(() => addThemeSet(keys[0], true), true, null, `add to ${keys[0]}`); }));
-    if (keys.length === 1 && keys[0] !== "top") bar.append(btn("Share", "btn ghost small", () => { close(); shareSheet(keys[0]); }));
+    if (keys.length === 1 && made.length && keys[0] !== "top" && !isLevel(keys[0]) && moreSize(keys[0]) <= 100 && myWords.filter(w => w.set === keys[0]).length < 100) bar.append(btn("＋ More words", "btn ghost small", () => { close(); chooseSet(() => addThemeSet(keys[0], true), true, null, `add to ${keys[0]}`); }));
+    if (keys.length === 1 && keys[0] !== "top" && !isLevel(keys[0])) bar.append(btn("Share", "btn ghost small", () => { close(); shareSheet(keys[0]); }));
     if (keys.length === 1 && isDeck(keys[0])) bar.append(iconBtn(PEN, "Rename", "btn ghost small", () => { close(); const k = keys[0]; nameDeck(k.slice(2), n => renameDeck(k, n), openSets); }));
     // Your decks: words leave them. Ready-made: unstudied words go, studied ones stay.
     if (gone.length) { const rm = btn("", "btn ghost small"), mine = mineName(), word = made.length && !own.length ? "Remove" : "Delete";
@@ -7002,13 +7058,16 @@ function offerCommon() {
   if (myWords.length || store.get("radical-common-asked", false) || commonSize()) return;
   if (document.querySelector(".sheet")) { setTimeout(offerCommon, 1500); return; }
   store.set("radical-common-asked", true);
-  const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard");
-  const lv = (label, size, from) => { const b = btn("", "btn wide lvbtn", () => { sheet.remove(); chooseSet(() => startCommon(size, from), false, null, `start Top ${num(size)}`); }); b.innerHTML = `${label} <small>· Top ${num(size)}</small>`; return b; };
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard"); let lvs = [];
+  // v98: each answer opens a level of your region's list (TOCFL for Taiwan, HSK for mainland)
+  const lv = (label, tw, cn) => { const L = () => region === "tw" ? LEVELS.tocfl.name(tw) : LEVELS.hsk.name(cn), b = btn("", "btn wide lvbtn", () => { sheet.remove(); chooseSet(() => openLevel(L()), false, null, `start ${L()}`); });
+    b._paint = () => { b.innerHTML = `${label} <small>· ${L()}</small>`; }; b._paint(); return b; };
+  card.addEventListener("click", () => setTimeout(() => lvs.forEach(b => b._paint())));  // the region pills change the list
   const topic = btn("or pick a topic ›", "linkbtn", () => { sheet.remove(); setTab("wordsScreen"); });
   if (!usedBefore && !store.get("radical-region-asked", false) && region !== regionGuess()) setRegion(regionGuess());  // a guess; one tap changes it
   store.set("radical-region-asked", true);
   card.append(regionPills(), el("h3", "", "How much Chinese do you know?"),
-    lv("Just starting", 100, 1), lv("A few hundred words", 1000, 300), lv("1,000+ words", 2000, 1000), topic, btn("Not now", "btn ghost wide", () => sheet.remove()));
+    ...(lvs = [lv("Just starting", 1, 1), lv("A few hundred words", 2, 2), lv("1,000+ words", 4, 3)]), topic, btn("Not now", "btn ghost wide", () => sheet.remove()));
   sheet.append(card); document.body.append(sheet);
 }
 // A character's most common word, for the answer side of a one-character card.
@@ -8512,7 +8571,7 @@ function setSums() {
 document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "change"].forEach(ev => x.addEventListener(ev, () => setTimeout(setSums, 50))));
 // ---- settings that go in a backup file and (v58) sync with the account.
 const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules", "radical-day-ends",
-  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-read-speed", "radical-tiles", "radical-common", "radical-region"];
+  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-read-speed", "radical-tiles", "radical-common", "radical-region", "radical-levels"];
 const SYNC_SETTINGS = SETTING_KEYS.filter(k => k !== "radical-decks");  // v58: decks sync on their own
 // Restore a backup file (v58: the Backup page is gone; a backup chosen with the add box's file icon comes here):
 // words and History merge with what's here (nothing added since is lost; a word's newer copy wins); the learned list
@@ -9226,7 +9285,7 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   // The splash takes a tap from the very first moment: a tap hides it even while the app is still loading behind it
   // (the reader shows "Drawing…" until the characters arrive), so a slow connection never looks like a frozen app.
   window.__radicalStarted = true;
-  setTimeout(liveUpdate, 8000); fetchTopics(); nativeKeyboard(); setTimeout(chimesLoad, 2500);
+  setTimeout(liveUpdate, 8000); fetchTopics(); levelsInit(); nativeKeyboard(); setTimeout(chimesLoad, 2500);
   payInit().then(() => { if ((tab === "readScreen" && !payFree("read")) || (tab === "wikiScreen" && !payFree("explore"))) setTab("trackScreen"); }).catch(() => {});  // v61
   const sp0 = $("splash");
   let harped = false, done = false;

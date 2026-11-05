@@ -25,4 +25,8 @@ The most common characters sets (`lists/common.tsv`) are ranked from **wordfreq*
 
 The Top word lists (`lists/topwords.txt`, since v42) are the 2,000 most common words in `lists/zhfreq.txt` (below) whose characters have stroke data, built by `scripts/build_topwords.py`, shared under CC BY-SA 4.0.
 
+The level decks come from two lists, rebuilt by hand with `scripts/build_levels.py` (words written all in Chinese characters, each once at its lowest level, most common first):
+- `lists/hsk.txt`: the new HSK (3.0, 2021) levels 1 to 6 and 7-9, from **Complete HSK Vocabulary** by Yanis Zafirópulos (https://github.com/drkameleon/complete-hsk-vocabulary), MIT License.
+- `lists/tocfl.txt`: levels 1 to 7 of the **臺灣華語文能力基準詞語表** (Taiwan Chinese Language Proficiency Benchmark Vocabulary List, 2022-11-14) published by Taiwan's National Academy for Educational Research (https://coct.naer.edu.tw), via the JSON copy at https://github.com/PSeitz/tocfl.
+
 The English index (typing an English word to add or read) is built from CC-CEDICT by `scripts/build_english.py`, ordered by how common each Chinese word is in `lists/zhfreq.txt`: the 40,000 most common words in wordfreq's Chinese data (same sources and license as above) that are in CC-CEDICT, shared under CC BY-SA 4.0.

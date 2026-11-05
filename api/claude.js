@@ -729,9 +729,9 @@ module.exports = async (req, res) => {
       return res.status(200).json({ title });
     }
     if (body.action === "translate") {
-      const sentence = String(body.sentence || "").trim().slice(0, 600);
+      const sentence = String(body.sentence || "").trim().slice(0, 4000);  // v98: a long Wikipedia paragraph fits (was 600, with 400 tokens of English)
       if (!sentence) return res.status(400).json({ error: "No sentence given." });
-      const translation = await kept("translate", sentence, () => askClaude(FAST_MODEL, TRANSLATE_PROMPT(sentence), 400));
+      const translation = await kept("translate", sentence, () => askClaude(FAST_MODEL, TRANSLATE_PROMPT(sentence), 2500));
       return res.status(200).json({ translation });
     }
     return res.status(400).json({ error: "Unknown action." });
