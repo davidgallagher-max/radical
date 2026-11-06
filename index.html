@@ -1828,7 +1828,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v101";
+const APP_VERSION = "v102";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2123,7 +2123,7 @@ function countLine(line) {  // read aloud: the whole line at once
   if (readBefore(line)) { markCounted(line); return; }
   payLine(line, Infinity);
 }
-let lineSeen = null, readBank = 0, readTop = null;
+let lineSeen = null, readBank = 0, readTop = null, readAllow = 0;  // v102: readAllow caps all credit at twice the pace
 // v99: nothing counts until you touch the page (a tap, a scroll, the wheel or a key) after opening a text or coming
 // back to Read, so a page left open on the screen earns nothing
 const readArm = { key: null, on: false };
@@ -2146,12 +2146,12 @@ function readBand() {
   return { top, bottom };
 }
 setInterval(() => {
-  if (document.hidden || $("readScreen").hidden) { readBank = 0; readTop = null; readArm.on = false; return; }
+  if (document.hidden || $("readScreen").hidden) { readBank = 0; readAllow = 0; readTop = null; readArm.on = false; return; }
   const lines = [...document.querySelectorAll("#reader .line")].filter(l => !l._counted);
   if (capReader()) { readBank = 0; return; }  // v61: today's free reading is used up
   const k0 = (document.querySelector("#reader .line") || {})._text || "";
   if (k0 !== readArm.key) { readArm.key = k0; readArm.on = false; }  // a new text (or page) waits for a touch
-  if (!readArm.on) { readBank = 0; readTop = null; return; }
+  if (!readArm.on) { readBank = 0; readAllow = 0; readTop = null; return; }
   const again = lines.filter(l => l._ready && readBefore(l)); again.forEach(markCounted);  // read already this month: no credit used
   if (again.length && !store.get("radical-reread", false)) {  // say so once per text this visit
     const k = lineKey((document.querySelector("#reader .line") || {})._text || "");
@@ -2165,44 +2165,58 @@ setInterval(() => {
     if (!r || (r.top + r.bottom) / 2 < band.top || Date.now() - readCap.t > 120000) readCap = null;
   }
   const open = lines.filter(l => !l._counted && l._vis);
-  if (moved > (band.bottom - band.top) / 3) { readBank = 0; open.forEach(l => { l._dwell = null; }); return; }
+  // v102: a fast move pays nothing that second, but rows keep the time they've already spent in the band
+  const flick = moved > (band.bottom - band.top) / 3; if (flick) readBank = 0;
   // v93: a row that sat in the band READ_DWELL seconds is owed its credit even after it scrolls up (a slow reader
   // falls behind the pace and catches up); only rows that never sat there are skipped as skimmed
   const plan = []; let room = 0;
+  // v102: twice the pace a second (up to two minutes' worth) is the most any reading can earn, however it's scrolled
+  if (!flick && !looking && open.length) readAllow = Math.min(readAllow + 2 * readPace(), 240 * readPace());
   for (const l of open) {
     partOf(l);
     const rows = rowsOf(l), prev = l._dwell || new Map(), now = new Map(), owed = l._owed || (l._owed = new Set());
     const seen = r => r.han && r.top >= band.top - 4 && r.bottom <= band.bottom + 4;
-    rows.forEach(r => { if (seen(r)) { const d = (prev.get(r.start) || 0) + 1; now.set(r.start, d); if (d >= READ_DWELL) owed.add(r.start); } });
+    // v102: dwell is kept for rows that left the band (keyed by row start), so a row scrolled off the top can be judged
+    // by its total time there: at least half the time its pace needs (min READ_DWELL) and it counts
+    rows.forEach(r => { const d0 = prev.get(r.start) || 0; if (seen(r) && !flick) { const d = d0 + 1; now.set(r.start, d); if (d >= READ_DWELL) owed.add(r.start); } else if (d0) now.set(r.start, d0); });
     l._dwell = now;
+    if (flick) continue;
     if (looking) continue;
     let got = l._got || 0;
     const capLine = readCap && readCap.line === l, after = readCap && !capLine && (readCap.line.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING);
     if (after) continue;  // lines after a looked-up word wait for it
     for (const r of rows) {
       if (!r.han || r.end <= got) continue;
+      const above = (r.top + r.bottom) / 2 < band.top, part = r.end - Math.max(got, r.start);
+      // v102: a row scrolled off the top counts at once if it sat in the band at least half the time its pace needs
+      if (above && !capLine && part <= readAllow && (now.get(r.start) || 0) >= Math.max(READ_DWELL, part / (2 * readPace(l, r)))) {
+        plan.push([l, r.end, r, false, part]); room += part; readAllow -= part; got = r.end; continue;
+      }
       if (owed.has(r.start)) {
         if ((r.top + r.bottom) / 2 > band.bottom) break;  // v96: scrolled back below the band: it waits until it's back up
         const end = capLine ? Math.min(r.end, readCap.at) : r.end; if (end <= got) break;
         plan.push([l, end, r]); room += end - Math.max(got, r.start); got = end; if (end < r.end) break; continue;
       }
-      if ((r.top + r.bottom) / 2 < band.top) { plan.push([l, r.end, r, true]); got = r.end; continue; }  // scrolled past unread
+      if (above) { plan.push([l, r.end, r, true]); got = r.end; continue; }  // scrolled past unread
       break;
     }
   }
-  if (looking) return;
-  const firstPay = plan.find(p => !p[3]);
+  if (looking || flick) return;
+  // v102: rows read and scrolled off the top pay at once; the bank only meters rows still on screen
+  for (const p of plan) if (p[4]) readBank += p[4];
+  const firstPay = plan.find(p => !p[3] && !p[4]);
   // v94: rows already scrolled past (read, then moved on) catch up at twice the pace
   const behind = firstPay && (firstPay[2].top + firstPay[2].bottom) / 2 < band.top;
   readBank = Math.min(readBank + (firstPay ? readPace(firstPay[0], firstPay[2]) * (behind ? 2 : 1) : 0), room);
   const stuck = new Set();
-  for (const [l, end, , skip] of plan) {
+  for (const [l, end, , skip, instant] of plan) {
     if (stuck.has(l)) continue;
     if (skip) { if (end > (l._got || 0)) skipTo(l, end); continue; }
     const need = end - (l._got || 0); if (need <= 0) continue;
     if (readBank <= 0) { stuck.add(l); continue; }
     const give = Math.min(need, readBank);
     readBank -= give; payLine(l, (l._got || 0) + give);
+    if (!instant) readAllow = Math.max(0, readAllow - give);
     if (give < need) stuck.add(l);
   }
 }, 1000);
@@ -3102,7 +3116,7 @@ async function render() {
     const rest = all.slice(lines.length).join("").length;
     reader.append(btn(`Show more (${rest} more characters)`, "btn ghost more", () => { renderLimit += LIMIT; render(); }));
   }
-  const endRow = el("div", "endrow"); endRow.append(btn("+ Add new words", "btn ghost small addnew", addNewWords), iconBtn(PEN, "Edit text", "btn ghost small editbtn endedit", editText), binBtn("btn ghost small", "", "Remove?", clearText));
+  const endRow = el("div", "endrow"); endRow.append(btn("+ Add new words", "btn ghost small addnew", addNewWords), iconBtn(PEN, "Edit text", "btn ghost small editbtn endedit", editText));  // v102: no bin (it only cleared the reader)
   reader.append(endRow);
   // Long documents: the same part navigation at the bottom, so you can move on without scrolling back up.
   if (doc && doc.pages && doc.pages.length > 1) {
@@ -7954,10 +7968,6 @@ function showFront() {
         const t0 = performance.now(), ask = () => Promise.race([claude({ action: "judge", word: w.word, meaning: meaningsOf(w).slice(0, 300), guess: g, pattern: isPattern(w.word) }), new Promise((_, no) => setTimeout(() => no(new Error("took over 5s")), 5000))]);
         let r = null, why = "";
         try { r = await ask(); } catch (e) { why = e.message || "error"; }
-        if (store.get("radical-owner", false)) {  // v70: owners see where the time went
-          const t = r && r.t, sec = ms => (ms / 1000).toFixed(1);
-          toast(r ? `Check ${sec(performance.now() - t0)}s${t && t.ai != null ? ` · server ${sec(t.total)}s: AI ${sec(t.ai)}, before ${sec(t.pre || 0)}, logging ${sec((t.logged || 0) - (t.pre || 0) - t.ai)}` : ` · stored answer${t ? `, server ${sec(t.total)}s` : ""}`}` : `Check failed after ${sec(performance.now() - t0)}s: ${esc(why)}`, 4000, true);
-        }
         if (r) {
           const ok = r.verdict === "right" ? true : r.verdict === "close" ? "part" : false;
           if (ok === true) okGuess(w, g);  // v63: next time the phone accepts it with no call

@@ -669,7 +669,10 @@ module.exports = async (req, res) => {
         let raw;
         try { raw = await askClaude(FAST_MODEL, JUDGE_PROMPT(word, meaning, guess, !!body.pattern), 200); }
         catch (e) { if (!e.aiout) await account.logFail(who, "judge", "server: " + e.message, today); throw e; }
-        const out = parseJSON(raw), verdict = out && ["right", "close", "wrong"].includes(out.verdict) ? out.verdict : null;
+        // v102: a note with stray quote marks breaks the JSON; read the verdict (and what can be read of the note) anyway
+        const loose = !parseJSON(raw) && String(raw || "").match(/"verdict"\s*:\s*"(right|close|wrong)"/);
+        const out = parseJSON(raw) || (loose && { verdict: loose[1], note: (String(raw).match(/"note"\s*:\s*"([^\n]*?)"\s*}/) || [])[1] || "" });
+        const verdict = out && ["right", "close", "wrong"].includes(out.verdict) ? out.verdict : null;
         if (!verdict) { await account.logFail(who, "judge", "unreadable answer", today); return null; }
         return { verdict, note: String(out.note || "").slice(0, 120) };
       });
