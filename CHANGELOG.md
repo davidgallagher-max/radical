@@ -2,6 +2,15 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v104
+
+- Reading counts differently: a row counts once it has been on screen, and the total can't run ahead of your reading pace. Steady reading keeps the ticks up with you; flicking through still earns little.
+- Count to here: rows that went by uncounted show a faint ring. Tap one, then Yes, and everything up to it counts, as far as your pace allows ("Counted N words. The rest was too fast.").
+- Ticks fade while you scroll.
+- Books: the add box has "Book: None ▾". Pick or make a book and each text you add is its next page, named "Urban Legends (1)", "(2)" and so on in History.
+- After each page, the app keeps notes on the book: who's who and the story so far, built only from the pages you added (no outside knowledge, no spoilers). "Story so far" at the top of a book page shows them.
+- 解 and ENG on a book page use those notes, so names and callbacks come out right. Names from the cast read as one word in the reader. The notes are kept in your account.
+
 ## v103
 
 - Tapping a word in Read counts as "I'm here": everything unticked before it on the page counts at once, up to about 3 times your pace since your last tap.
