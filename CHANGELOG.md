@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v101
+
+- A word from a level or topic deck can be ticked into Basecamp too, to keep it for later. It then shows in both.
+- Listen cards with the keyboard up: Play, the speed choices, In a sentence and Not now sit side by side, so the answer boxes stay above the keyboard.
+- Word meanings keep the other dictionary senses: 童子軍 now reads "child soldiers; juvenile militia; Scout (youth organization)".
+
 ## v100
 
 - Topic decks are always 50 words; the 12 / 24 / 50 row is gone.
