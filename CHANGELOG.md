@@ -2,6 +2,11 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v103
+
+- Tapping a word in Read counts as "I'm here": everything unticked before it on the page counts at once, up to about 3 times your pace since your last tap.
+- While a word is open, counting goes right up to it and stops there (it used to pause before it). Closing the word or scrolling on lets it continue.
+
 ## v102
 
 - Reading: a row you read and scroll off the top counts at once, as long as it sat on screen at least half the time your pace needs (and 2 seconds). Ticks no longer trail far behind a fast reader. A quick flick earns nothing that second but no longer wipes the time rows had built up. Skimming still earns nothing.

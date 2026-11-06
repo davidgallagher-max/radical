@@ -1828,7 +1828,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v102";
+const APP_VERSION = "v103";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2126,8 +2126,8 @@ function countLine(line) {  // read aloud: the whole line at once
 let lineSeen = null, readBank = 0, readTop = null, readAllow = 0;  // v102: readAllow caps all credit at twice the pace
 // v99: nothing counts until you touch the page (a tap, a scroll, the wheel or a key) after opening a text or coming
 // back to Read, so a page left open on the screen earns nothing
-const readArm = { key: null, on: false };
-{ const arm = () => { readArm.on = true; }, sc = document.getElementById("readScreen");
+const readArm = { key: null, on: false, at: 0, shown: 0 };
+{ const arm = () => { if (!readArm.on) readArm.at = Date.now(); readArm.on = true; }, sc = document.getElementById("readScreen");
   if (sc) ["pointerdown", "touchstart", "wheel"].forEach(t => sc.addEventListener(t, arm, { passive: true, capture: true }));
   addEventListener("keydown", () => { if (sc && !sc.hidden) arm(); }, true); }
 const readNoted = new Set();
@@ -2146,11 +2146,11 @@ function readBand() {
   return { top, bottom };
 }
 setInterval(() => {
-  if (document.hidden || $("readScreen").hidden) { readBank = 0; readAllow = 0; readTop = null; readArm.on = false; return; }
+  if (document.hidden || $("readScreen").hidden) { readBank = 0; readAllow = 0; readTop = null; readArm.on = false; readArm.shown = Date.now(); return; }
   const lines = [...document.querySelectorAll("#reader .line")].filter(l => !l._counted);
   if (capReader()) { readBank = 0; return; }  // v61: today's free reading is used up
   const k0 = (document.querySelector("#reader .line") || {})._text || "";
-  if (k0 !== readArm.key) { readArm.key = k0; readArm.on = false; }  // a new text (or page) waits for a touch
+  if (k0 !== readArm.key) { readArm.key = k0; readArm.on = false; readArm.shown = Date.now(); }  // a new text (or page) waits for a touch
   if (!readArm.on) { readBank = 0; readAllow = 0; readTop = null; return; }
   const again = lines.filter(l => l._ready && readBefore(l)); again.forEach(markCounted);  // read already this month: no credit used
   if (again.length && !store.get("radical-reread", false)) {  // say so once per text this visit
@@ -2163,6 +2163,7 @@ setInterval(() => {
   if (readCap) {  // the cap ends once the looked-up word has scrolled above the band (or after two minutes)
     const r = readCap.cell.isConnected ? readCap.cell.getBoundingClientRect() : null;
     if (!r || (r.top + r.bottom) / 2 < band.top || Date.now() - readCap.t > 120000) readCap = null;
+    else if (!looking && readCap.open) readCap = null;  // v103: the word was closed: the stop at it ends
   }
   const open = lines.filter(l => !l._counted && l._vis);
   // v102: a fast move pays nothing that second, but rows keep the time they've already spent in the band
@@ -2171,7 +2172,7 @@ setInterval(() => {
   // falls behind the pace and catches up); only rows that never sat there are skipped as skimmed
   const plan = []; let room = 0;
   // v102: twice the pace a second (up to two minutes' worth) is the most any reading can earn, however it's scrolled
-  if (!flick && !looking && open.length) readAllow = Math.min(readAllow + 2 * readPace(), 240 * readPace());
+  if (!flick && open.length) readAllow = Math.min(readAllow + 2 * readPace(), 240 * readPace());
   for (const l of open) {
     partOf(l);
     const rows = rowsOf(l), prev = l._dwell || new Map(), now = new Map(), owed = l._owed || (l._owed = new Set());
@@ -2181,7 +2182,6 @@ setInterval(() => {
     rows.forEach(r => { const d0 = prev.get(r.start) || 0; if (seen(r) && !flick) { const d = d0 + 1; now.set(r.start, d); if (d >= READ_DWELL) owed.add(r.start); } else if (d0) now.set(r.start, d0); });
     l._dwell = now;
     if (flick) continue;
-    if (looking) continue;
     let got = l._got || 0;
     const capLine = readCap && readCap.line === l, after = readCap && !capLine && (readCap.line.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING);
     if (after) continue;  // lines after a looked-up word wait for it
@@ -2201,7 +2201,7 @@ setInterval(() => {
       break;
     }
   }
-  if (looking || flick) return;
+  if (flick) return;
   // v102: rows read and scrolled off the top pay at once; the bank only meters rows still on screen
   for (const p of plan) if (p[4]) readBank += p[4];
   const firstPay = plan.find(p => !p[3] && !p[4]);
@@ -3254,10 +3254,30 @@ function buildLine(lineText, onTap, withEN = true) {
 // In the reader: first tap picks a word (highlight + peek strip), second tap opens it.
 // v94: a word looked up in Read holds the reading credit back: nothing is paid while it's picked or its page is open,
 // and afterwards the credit can't pass that word until it has scrolled up out of the reading band
-let readCap = null;
+// v103: a tap is where you are: everything unticked before the tapped word counts at once (tapCredit), up to 3x your
+// pace since the last tap; while the word is open, credit stops at it (readCap.open), never before
+let readCap = null, tapLast = 0;
+function tapCredit(line, at) {
+  readArm.on = true;
+  const now = Date.now(), from = Math.max(tapLast, readArm.shown || now, now - 300000); tapLast = now;  // time on this page since the last tap
+  let budget = 3 * readPace() * (now - from) / 1000;
+  for (const l of document.querySelectorAll("#reader .line")) {
+    if (budget <= 0) break;
+    if (!l._counted && !(l._ready && readBefore(l))) {
+      partOf(l);
+      const n = hanIn(l._text || ""), to = l === line ? Math.min(at, n) : n, need = to - (l._got || 0);
+      if (need > 0) { const give = Math.min(need, budget); budget -= give; readAllow = Math.max(0, readAllow - give); payLine(l, (l._got || 0) + give); }
+    }
+    if (l === line) break;
+  }
+}
 function readerTap(group, tok, lineText, cell) {
   const line = group.closest(".line"), cells = [...line.querySelectorAll(".cell")], i = cells.indexOf(cell);
-  if (line.closest("#reader")) { const gc = [...group.querySelectorAll(".cell")], lastC = gc[gc.length - 1] || cell; readCap = { line, cell: lastC, at: hanIn((line._text || "").slice(0, (lastC._at || 0) + [...(lastC._ch || "")].join("").length)), t: Date.now() }; }
+  if (line.closest("#reader")) {
+    const gc = [...group.querySelectorAll(".cell")], lastC = gc[gc.length - 1] || cell;
+    readCap = { line, cell: lastC, at: hanIn((line._text || "").slice(0, (lastC._at || 0) + [...(lastC._ch || "")].join("").length)), t: Date.now(), open: true };
+    if (!capReader()) tapCredit(line, readCap.at);
+  }
   if (picked && picked.line === line && i >= picked.a && i <= picked.b) { picked.open(); return; }  // second tap opens
   const gc = [...group.querySelectorAll(".cell")];
   pickSpan(line, cells.indexOf(gc[0]), cells.indexOf(gc[gc.length - 1]), tok);
