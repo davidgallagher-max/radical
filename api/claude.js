@@ -112,9 +112,25 @@ function cardExamples(card) {
 const TITLE_PROMPT = (text) => `Give this Chinese text a short English title (2 to 6 words) that says what it is about, so a learner knows at a glance. Title case. Return only the title, no quotes.
 
 ${text}`;
-const TRANSLATE_PROMPT = (sentence) => `Translate this Chinese into natural English. Return only the translation, nothing else.
-
+const TRANSLATE_PROMPT = (sentence, ctx) => `Translate this Chinese into natural English. Return only the translation, nothing else.
+${ctx ? BOOK_NOTE(ctx) : ""}
 ${sentence}`;
+// v104: books. The reader's notes on earlier pages of the same book (cast and story so far), built only from pages
+// they have read. Used for names and references; never the AI's own knowledge of the book, never what comes later.
+const BOOK_NOTE = (ctx) => `This text is a page of a book the learner is reading page by page. Their notes on the earlier pages:
+${ctx}
+Use these notes to get names, relationships and references right (and to point out callbacks and build-up when it helps). Use nothing you may know about this book from elsewhere, and never hint at what happens later.
+`;
+const BOOK_PROMPT = (name, memory, text, page) => `A learner of Mandarin is reading the book "${name}" one page at a time. Keep their running notes on it.
+Notes so far (from pages 1 to ${page - 1}):
+${memory || "(none yet: this is the first page)"}
+
+New page (${page}):
+${text}
+
+Update the notes using ONLY what is written in these pages. Do not use anything you may know about this book from elsewhere, and do not guess what happens next.
+Return ONLY JSON: {"cast":[{"name":"the name exactly as written in the text","who":"one short line: who they are and how they relate to others"}],"story":"the story so far in at most 150 words of plain English, then one line starting 'Open threads:' with what has been set up but not resolved"}
+Cast: people, nicknames and important places or groups, at most 30, most important first; keep earlier entries unless the text corrects them.`;
 
 // English in (v41): a passage typed or pasted in English becomes Chinese to read; a word or phrase in context gets the
 // Chinese words that fit it, best first.
@@ -687,15 +703,17 @@ module.exports = async (req, res) => {
       // v63: a sentence from a pre-built card (cw names the card's word) explains for free: we chose not to pre-build these
       if (body.cw) { const c = await answers.get("card", `${rk}|${String(body.cw).slice(0, 40)}`); if (c && c.pre && (c.data.examples || []).some(x => String(x.example || "").trim() === sentence)) rate = 0; }
       const list = (x, n) => (Array.isArray(x) ? x : []).filter(v => v && typeof v === "object").slice(0, n);
-      const ans = await kept("explain", `${rk}|${trad ? 1 : 0}|${sentence}`, async () => {
-        const out = parseJSON(await askClaude(CARD_MODEL, EXPLAIN_PROMPT(sentence, trad, cn), 900));
+      const ctx = String(body.ctx || "").slice(0, 2000);  // v104: a page of a book: its notes go in, and the answer isn't shared
+      const keepIt = ctx ? (k, key, make) => make() : kept;
+      const ans = await keepIt("explain", `${rk}|${trad ? 1 : 0}|${sentence}`, async () => {
+        const out = parseJSON(await askClaude(CARD_MODEL, EXPLAIN_PROMPT(sentence, trad, cn) + (ctx ? "\n\n" + BOOK_NOTE(ctx) : ""), 900));
         return out ? { structure: String(out.structure || "").slice(0, 400),
           points: list(out.points, 4).map(p => ({ pattern: String(p.pattern || "").slice(0, 30), note: String(p.note || "").slice(0, 300) })).filter(p => p.pattern),
           words: list(out.words, 3).map(w => ({ word: String(w.word || "").slice(0, 12), note: String(w.note || "").slice(0, 200) })).filter(w => w.word) } : null;
       });
       if (!ans) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
       // v44: an explanation is the same for everyone, so asked with GET the CDN keeps it (the next person gets it at once)
-      if (req.method === "GET") { res.setHeader("Vercel-CDN-Cache-Control", "max-age=31536000"); res.setHeader("Cache-Control", "public, max-age=0"); }
+      if (req.method === "GET" && !ctx) { res.setHeader("Vercel-CDN-Cache-Control", "max-age=31536000"); res.setHeader("Cache-Control", "public, max-age=0"); }
       return res.status(200).json(ans);
     }
     if (body.action === "topics") {
@@ -734,8 +752,19 @@ module.exports = async (req, res) => {
     if (body.action === "translate") {
       const sentence = String(body.sentence || "").trim().slice(0, 4000);  // v98: a long Wikipedia paragraph fits (was 600, with 400 tokens of English)
       if (!sentence) return res.status(400).json({ error: "No sentence given." });
-      const translation = await kept("translate", sentence, () => askClaude(FAST_MODEL, TRANSLATE_PROMPT(sentence), 2500));
+      const ctx = String(body.ctx || "").slice(0, 2000);
+      const translation = ctx ? await askClaude(FAST_MODEL, TRANSLATE_PROMPT(sentence, ctx), 2500)  // v104: a book page is personal: not stored
+        : await kept("translate", sentence, () => askClaude(FAST_MODEL, TRANSLATE_PROMPT(sentence), 2500));
       return res.status(200).json({ translation });
+    }
+    if (body.action === "book") {
+      const name = String(body.name || "").trim().slice(0, 60), text = String(body.text || "").trim().slice(0, 5000);
+      const page = Math.max(1, Math.min(9999, parseInt(body.page, 10) || 1)), memory = String(body.memory || "").slice(0, 3000);
+      if (!name || !text) return res.status(400).json({ error: "Nothing to read." });
+      const out = parseJSON(await askClaude(FAST_MODEL, BOOK_PROMPT(name, memory, text, page), 1500));
+      if (!out) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
+      const cast = (Array.isArray(out.cast) ? out.cast : []).filter(c => c && c.name).slice(0, 30).map(c => ({ name: String(c.name).slice(0, 20), who: String(c.who || "").slice(0, 120) }));
+      return res.status(200).json({ cast, story: String(out.story || "").slice(0, 1500) });
     }
     return res.status(400).json({ error: "Unknown action." });
   } catch (e) {

@@ -408,6 +408,10 @@ p.busy{margin:-4px 4px 0}
 .reader .cell{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 @keyframes peekin{from{opacity:0;transform:translateY(8px)}}
 .srcform{position:relative;display:flex}
+.bookchip{justify-self:start;margin:-4px 0 0;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-size:.92rem;cursor:pointer}
+.bookchip b{font-weight:600;color:var(--fg)}.bookchip.on{border-color:var(--accent);color:var(--accent)}.bookchip.on b{color:var(--accent)}
+.linkbtn.storylink{display:block;justify-self:start;padding:4px 0 0;font-size:.92rem}.storycard .story{line-height:1.55}.storycard .story.open{color:var(--muted)}.storycard h4{margin:6px 0 0;font-size:.95rem}
+.storycard .cast{display:grid;gap:6px}.storycard .cast b{font-weight:600;margin-right:6px}.storycard .cast span{color:var(--muted)}
 .srcname{width:100%;box-sizing:border-box;margin:0 0 8px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:1rem}
 .glyph.sentend{cursor:pointer;color:var(--accent)}.glyph.phrase{cursor:pointer}.glyph.phrase.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}.glyph.sentend.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}
 .senttip{position:absolute;z-index:4;width:max-content;white-space:nowrap;padding:6px 12px;border-radius:12px;background:var(--accent);color:var(--bg);font-weight:600;font-size:.92rem;box-shadow:0 4px 16px rgba(0,0,0,.35);animation:tlabel 4.5s ease-out both}
@@ -555,6 +559,8 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .rtick::after{content:"";position:absolute;left:10px;top:6px;width:4px;height:8px;border:solid var(--gold2);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);opacity:.7}
 .rtick.old::after{border-color:var(--muted);opacity:.45}
 .rtick.on::after{opacity:1}
+.rtick.empty::after{left:8px;top:8px;width:7px;height:7px;border:1px solid var(--muted);border-radius:50%;transform:none;opacity:.4}
+.rtick{transition:opacity .4s}#reader.scrolling .rtick{opacity:.25}
 .rtickask{position:absolute;right:10px;z-index:3;transform:translateY(-50%);display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 20px);font:600 .92rem/1.25 var(--ui,system-ui);color:var(--fg);background:var(--card,var(--bg));border:1px solid var(--gold2);border-radius:14px;padding:8px 10px 8px 12px;box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .rtickask button{font:600 .92rem/1 var(--ui,system-ui);border-radius:999px;padding:7px 14px;cursor:pointer}
 .rtickask .rty{background:var(--gold2);color:var(--metal-ink,#1a1206);border:0}
@@ -1360,6 +1366,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
         <button type="button" class="tool" id="histBtn"><span class="ti">歷</span>History</button>
       </div>
       <input type="text" id="srcName" class="srcname" maxlength="60" placeholder="Name it (optional)" aria-label="Name this text" autocomplete="off">
+      <button type="button" class="bookchip" id="bookChip" aria-label="Book"></button>
       <form class="srcform" id="srcForm">
         <textarea id="srcIn" rows="1" lang="zh" placeholder="今天讀什麼？" aria-label="Paste or type Chinese" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
         <button type="submit" class="srcgo" aria-label="Read this text"><i></i></button>
@@ -1828,7 +1835,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v103";
+const APP_VERSION = "v104";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1995,8 +2002,18 @@ function paintTicks(line) {
   const lineDay = line._counted ? readLines()[lineKey(line._text || "")] || today : null;
   const dayOf = r => lineDay || (line._old && r.end <= line._old.upTo ? line._old.day : today);
   const want = rows.filter(r => r.han && r.end <= got && !skipped(r)).map(r => [Math.round((r.top + r.bottom) / 2 - top0), r.start, dayOf(r)]);
-  const sig = want.map(w => w.join(":")).join(","); if (line._tickSig === sig) return; line._tickSig = sig;
+  // v104: rows passed without credit (skipped, or above the reading band and still unpaid) get a faint empty ring:
+  // tap = Count to here
+  const bandTop = $("readScreen").hidden ? -Infinity : readBand().top;
+  const empty = line._counted ? [] : rows.filter(r => r.han && (skipped(r) || (r.end > got && (r.top + r.bottom) / 2 < bandTop))).map(r => [Math.round((r.top + r.bottom) / 2 - top0), r.end]);
+  const sig = want.map(w => w.join(":")).join(",") + "|" + empty.map(w => w.join(":")).join(","); if (line._tickSig === sig) return; line._tickSig = sig;
   line.querySelectorAll(":scope>.rtick").forEach(t => t.remove());
+  empty.forEach(([y, end]) => {
+    const t = el("button", "rtick empty"); t.type = "button"; t.setAttribute("aria-label", "Count to here"); t.style.top = y + "px";
+    t.addEventListener("pointerdown", e => e.stopPropagation());
+    t.onclick = e => { e.stopPropagation(); countAsk(line, t, y, end); };
+    line.append(t);
+  });
   want.forEach(([y, start, day]) => {
     const t = el("button", "rtick" + (day !== today ? " old" : "")); t.type = "button"; t.setAttribute("aria-label", "Read " + dayWord(day)); t.style.top = y + "px";
     t.addEventListener("pointerdown", e => e.stopPropagation());
@@ -2018,6 +2035,28 @@ function tickAsk(line, t, y, start, day) {
   box._close = close;
   box.addEventListener("pointerdown", e => e.stopPropagation()); box.onclick = e => e.stopPropagation();
   yes.onclick = () => { close(); clearFrom(line, start); };
+  no.onclick = close;
+  t.classList.add("on"); line.append(box);
+  setTimeout(() => document.addEventListener("pointerdown", away, true), 0);
+}
+// v104: tap an empty ring: "Count to here?" Yes credits everything on the page up to that row, as fast as your pace
+// allows since the page was shown (pageRoom); what doesn't fit stays uncounted and says so
+function countAsk(line, t, y, end) {
+  document.querySelectorAll(".rtickask").forEach(x => x._close());
+  const box = el("div", "rtickask"); box.style.top = y + "px";
+  box.append(el("span", "", "Count to here?"));
+  const yes = el("button", "rty", "Yes"), no = el("button", "rtn", "No"); yes.type = no.type = "button"; box.append(yes, no);
+  const away = e => { if (!box.contains(e.target)) close(); };
+  const close = () => { box.remove(); t.classList.remove("on"); document.removeEventListener("pointerdown", away, true); };
+  box._close = close;
+  box.addEventListener("pointerdown", e => e.stopPropagation()); box.onclick = e => e.stopPropagation();
+  yes.onclick = () => {
+    close();
+    const day = () => (store.get("radical-days", {})[localDay()] || {}).w || 0, w0 = day();
+    creditTo(line, end, true);
+    const n = day() - w0, left = pageRoom() < 1;
+    toast(left ? `Counted ${n} word${n === 1 ? "" : "s"}. The rest was too fast.` : n ? `Counted ${n} word${n === 1 ? "" : "s"}.` : "Already counted.", 2800);
+  };
   no.onclick = close;
   t.classList.add("on"); line.append(box);
   setTimeout(() => document.addEventListener("pointerdown", away, true), 0);
@@ -2108,7 +2147,7 @@ function payLine(line, upTo) {
   }
   line._wi = i; line._ci = at;
   keepPart(line, t);
-  if (chars) logDay("r", chars);
+  if (chars) { logDay("r", chars); readArm.paid += chars; }
   if (words) logDay("w", words);
   if (line._got < n) paintTicks(line);
   if (line._got >= n && (line._skip || []).length) { line._tickSig = null; paintTicks(line); }  // v90: rows were skipped: not read through
@@ -2123,18 +2162,21 @@ function countLine(line) {  // read aloud: the whole line at once
   if (readBefore(line)) { markCounted(line); return; }
   payLine(line, Infinity);
 }
-let lineSeen = null, readBank = 0, readTop = null, readAllow = 0;  // v102: readAllow caps all credit at twice the pace
+let lineSeen = null, readBank = 0, readTop = null;
 // v99: nothing counts until you touch the page (a tap, a scroll, the wheel or a key) after opening a text or coming
 // back to Read, so a page left open on the screen earns nothing
-const readArm = { key: null, on: false, at: 0, shown: 0 };
+const readArm = { key: null, on: false, at: 0, shown: 0, paid: 0 };  // paid: characters credited since the page was shown
 { const arm = () => { if (!readArm.on) readArm.at = Date.now(); readArm.on = true; }, sc = document.getElementById("readScreen");
   if (sc) ["pointerdown", "touchstart", "wheel"].forEach(t => sc.addEventListener(t, arm, { passive: true, capture: true }));
   addEventListener("keydown", () => { if (sc && !sc.hidden) arm(); }, true); }
 const readNoted = new Set();
+// v104: ticks fade while the page moves and come back when you stop, so they're there to check, not to watch
+{ const sc = document.getElementById("readScreen"); let st = 0;
+  if (sc) sc.addEventListener("scroll", () => { const r = $("reader"); if (!r) return; r.classList.add("scrolling"); clearTimeout(st); st = setTimeout(() => r.classList.remove("scrolling"), 900); }, { passive: true }); }
 // v86: credit goes only to rows actually on screen (between the reading bar and the tab bar) that have stayed there
 // about 2 seconds, in reading order; a row scrolled past unread is skipped, not paid later; a second in which the
 // page moved more than a third of the screen pays nothing (skimming).
-const READ_DWELL = 2;
+const READ_DWELL = 1, READ_GEN = 1.5, READ_HOLD = 60;  // v104: seen after 1s; credit up to 1.5x pace; at most a minute banked
 function readBand() {
   const H = innerHeight, bar = $("readBar"), tb = $("tabbar"); let top = 0, bottom = H;
   if (bar) { const r = bar.getBoundingClientRect(); if (r.height && r.bottom > 0 && r.bottom < H / 2) top = r.bottom; }
@@ -2146,19 +2188,19 @@ function readBand() {
   return { top, bottom };
 }
 setInterval(() => {
-  if (document.hidden || $("readScreen").hidden) { readBank = 0; readAllow = 0; readTop = null; readArm.on = false; readArm.shown = Date.now(); return; }
+  if (document.hidden || $("readScreen").hidden) { readBank = 0; readTop = null; readArm.on = false; readArm.shown = Date.now(); readArm.paid = 0; return; }
   const lines = [...document.querySelectorAll("#reader .line")].filter(l => !l._counted);
   if (capReader()) { readBank = 0; return; }  // v61: today's free reading is used up
   const k0 = (document.querySelector("#reader .line") || {})._text || "";
-  if (k0 !== readArm.key) { readArm.key = k0; readArm.on = false; readArm.shown = Date.now(); }  // a new text (or page) waits for a touch
-  if (!readArm.on) { readBank = 0; readAllow = 0; readTop = null; return; }
+  if (k0 !== readArm.key) { readArm.key = k0; readArm.on = false; readArm.shown = Date.now(); readArm.paid = 0; }  // a new text (or page) waits for a touch
+  if (!readArm.on) { readBank = 0; readTop = null; return; }
   const again = lines.filter(l => l._ready && readBefore(l)); again.forEach(markCounted);  // read already this month: no credit used
   if (again.length && !store.get("radical-reread", false)) {  // say so once per text this visit
     const k = lineKey((document.querySelector("#reader .line") || {})._text || "");
     if (!readNoted.has(k)) { readNoted.add(k); toast("Read before. Ticked lines don't count again this month.", 3500); }
   }
   const band = readBand(), st = $("readScreen").scrollTop, moved = readTop == null ? 0 : Math.abs(st - readTop); readTop = st;
-  // v94: looking a word up: the clock stops. v98: rows on screen still count as seen (owed), so they aren't skipped later
+  // a word open in Read (v103: credit runs up to it, not past)
   const looking = !!(picked && picked.line && picked.line.closest && picked.line.closest("#reader"));
   if (readCap) {  // the cap ends once the looked-up word has scrolled above the band (or after two minutes)
     const r = readCap.cell.isConnected ? readCap.cell.getBoundingClientRect() : null;
@@ -2166,58 +2208,42 @@ setInterval(() => {
     else if (!looking && readCap.open) readCap = null;  // v103: the word was closed: the stop at it ends
   }
   const open = lines.filter(l => !l._counted && l._vis);
-  // v102: a fast move pays nothing that second, but rows keep the time they've already spent in the band
-  const flick = moved > (band.bottom - band.top) / 3; if (flick) readBank = 0;
-  // v93: a row that sat in the band READ_DWELL seconds is owed its credit even after it scrolls up (a slow reader
-  // falls behind the pace and catches up); only rows that never sat there are skipped as skimmed
-  const plan = []; let room = 0;
-  // v102: twice the pace a second (up to two minutes' worth) is the most any reading can earn, however it's scrolled
-  if (!flick && open.length) readAllow = Math.min(readAllow + 2 * readPace(), 240 * readPace());
+  // v104 (one rule, after the proteus "reader completion" idea): a row counts once it has been SEEN (READ_DWELL
+  // seconds in the reading band, outside fast flicks), and all credit together can't outrun READ_GEN x your pace in
+  // time on the page. Seen rows pay in reading order as the time allows, wherever they are now; a row that went above
+  // the band without being seen was skimmed and is skipped.
+  const flick = moved > (band.bottom - band.top) / 3, pace = readPace();
+  if (!flick && open.length) readBank = Math.min(readBank + READ_GEN * pace, READ_HOLD * pace);
+  const rowMap = new Map();
   for (const l of open) {
     partOf(l);
-    const rows = rowsOf(l), prev = l._dwell || new Map(), now = new Map(), owed = l._owed || (l._owed = new Set());
-    const seen = r => r.han && r.top >= band.top - 4 && r.bottom <= band.bottom + 4;
-    // v102: dwell is kept for rows that left the band (keyed by row start), so a row scrolled off the top can be judged
-    // by its total time there: at least half the time its pace needs (min READ_DWELL) and it counts
-    rows.forEach(r => { const d0 = prev.get(r.start) || 0; if (seen(r) && !flick) { const d = d0 + 1; now.set(r.start, d); if (d >= READ_DWELL) owed.add(r.start); } else if (d0) now.set(r.start, d0); });
-    l._dwell = now;
-    if (flick) continue;
-    let got = l._got || 0;
-    const capLine = readCap && readCap.line === l, after = readCap && !capLine && (readCap.line.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING);
-    if (after) continue;  // lines after a looked-up word wait for it
-    for (const r of rows) {
-      if (!r.han || r.end <= got) continue;
-      const above = (r.top + r.bottom) / 2 < band.top, part = r.end - Math.max(got, r.start);
-      // v102: a row scrolled off the top counts at once if it sat in the band at least half the time its pace needs
-      if (above && !capLine && part <= readAllow && (now.get(r.start) || 0) >= Math.max(READ_DWELL, part / (2 * readPace(l, r)))) {
-        plan.push([l, r.end, r, false, part]); room += part; readAllow -= part; got = r.end; continue;
-      }
-      if (owed.has(r.start)) {
-        if ((r.top + r.bottom) / 2 > band.bottom) break;  // v96: scrolled back below the band: it waits until it's back up
-        const end = capLine ? Math.min(r.end, readCap.at) : r.end; if (end <= got) break;
-        plan.push([l, end, r]); room += end - Math.max(got, r.start); got = end; if (end < r.end) break; continue;
-      }
-      if (above) { plan.push([l, r.end, r, true]); got = r.end; continue; }  // scrolled past unread
-      break;
-    }
+    const rows = rowsOf(l), prev = l._dwell || new Map(), now = new Map(), seen = l._owed || (l._owed = new Set());
+    rows.forEach(r => {
+      const d0 = prev.get(r.start) || 0;
+      if (!flick && r.han && r.top >= band.top - 4 && r.bottom <= band.bottom + 4) { const d = d0 + 1; now.set(r.start, d); if (d >= READ_DWELL) seen.add(r.start); }
+      else if (d0) now.set(r.start, d0);
+    });
+    l._dwell = now; rowMap.set(l, rows);
+    paintTicks(l);  // rings follow rows that have moved above the band
   }
   if (flick) return;
-  // v102: rows read and scrolled off the top pay at once; the bank only meters rows still on screen
-  for (const p of plan) if (p[4]) readBank += p[4];
-  const firstPay = plan.find(p => !p[3] && !p[4]);
-  // v94: rows already scrolled past (read, then moved on) catch up at twice the pace
-  const behind = firstPay && (firstPay[2].top + firstPay[2].bottom) / 2 < band.top;
-  readBank = Math.min(readBank + (firstPay ? readPace(firstPay[0], firstPay[2]) * (behind ? 2 : 1) : 0), room);
-  const stuck = new Set();
-  for (const [l, end, , skip, instant] of plan) {
-    if (stuck.has(l)) continue;
-    if (skip) { if (end > (l._got || 0)) skipTo(l, end); continue; }
-    const need = end - (l._got || 0); if (need <= 0) continue;
-    if (readBank <= 0) { stuck.add(l); continue; }
-    const give = Math.min(need, readBank);
-    readBank -= give; payLine(l, (l._got || 0) + give);
-    if (!instant) readAllow = Math.max(0, readAllow - give);
-    if (give < need) stuck.add(l);
+  pay: for (const l of open) {
+    const capLine = readCap && readCap.line === l, after = readCap && !capLine && (readCap.line.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING);
+    if (after) break;  // nothing past an open word
+    for (const r of rowMap.get(l)) {
+      const got = l._got || 0, mid = (r.top + r.bottom) / 2;
+      if (!r.han || r.end <= got) continue;
+      if (l._owed.has(r.start)) {
+        if (mid > band.bottom) break pay;  // scrolled back below the band: it waits
+        const end = capLine ? Math.min(r.end, readCap.at) : r.end, give = Math.min(end - got, readBank);
+        if (give <= 0) break pay;
+        readBank -= give; payLine(l, got + give);
+        if (got + give < r.end) break pay;
+        continue;
+      }
+      if (mid < band.top) { skipTo(l, r.end); continue; }  // above the band and never seen: skimmed
+      break pay;
+    }
   }
 }, 1000);
 function watchLines(reader) {
@@ -2716,6 +2742,11 @@ function hintNames(text) {  // surname + one character pairs that come up at lea
 function joinNames(toks) {
   const out = [];
   for (let i = 0; i < toks.length;) {
+    if (bookNames.size && isHan(toks[i].chars[0])) {  // v104: a name from the book's cast
+      let s = "", k = i, hit = 0;
+      while (k < toks.length && s.length < 4) { s += toks[k].chars.join(""); k++; if (k - i >= 2 && bookNames.has(s)) hit = k; }
+      if (hit) { const cs = toks.slice(i, hit).flatMap(x => x.chars), t = token(null, cs); t.mean = bookNames.get(cs.join("")) || "A name in this book"; t.name = true; out.push(t); i = hit; continue; }
+    }
     if (isSur(toks[i])) {
       const sur = toks[i].chars, two = loose(toks[i + 1]) && loose(toks[i + 2]), pair = loose(toks[i + 1]) && nameHint.has(sur.join("") + toks[i + 1].chars[0]);
       if (two || pair) {
@@ -3254,23 +3285,48 @@ function buildLine(lineText, onTap, withEN = true) {
 // In the reader: first tap picks a word (highlight + peek strip), second tap opens it.
 // v94: a word looked up in Read holds the reading credit back: nothing is paid while it's picked or its page is open,
 // and afterwards the credit can't pass that word until it has scrolled up out of the reading band
-// v103: a tap is where you are: everything unticked before the tapped word counts at once (tapCredit), up to 3x your
-// pace since the last tap; while the word is open, credit stops at it (readCap.open), never before
-let readCap = null, tapLast = 0;
-function tapCredit(line, at) {
+// v103: a tap is where you are: everything unticked before the tapped word counts at once. v104: the limit is the
+// page's own clock: all credit since the page was shown (pageRoom) can't pass 3x your pace in that time (20 min max)
+let readCap = null;
+const pageRoom = () => { const secs = Math.min(1200, (Date.now() - (readArm.shown || Date.now())) / 1000); return Math.max(0, 3 * readPace() * secs - (readArm.paid || 0)); };
+// credit a line's skipped stretches (rows passed unseen) up to `to`: their words are logged like any other
+function fillSkips(line, to, budget) {
+  const t = line._text || "", sk = line._skip || []; if (!sk.length || budget <= 0) return 0;
+  const have = new Set((line._cred || []).map(c => c[0])); let at = 0, used = 0, words = 0;
+  const spans = line._spans || [], cover = [];
+  for (const x of spans) {
+    const c = hanIn(t.slice(x.start, x.end)), a = at; at += c; if (!c || at > to || have.has(at)) continue;
+    if (!sk.some(([p, q]) => a >= p && at <= q)) continue;
+    if (used + c > budget) break;
+    used += c; words++; (line._cred = line._cred || []).push([at, c]); cover.push([a, at]);
+  }
+  if (!used) return 0;
+  line._cred.sort((x, y) => x[0] - y[0]);
+  // what's left of each skipped range once the credited words are taken out
+  line._skip = sk.flatMap(([p, q]) => { const out = []; let from = p; cover.filter(([a, b]) => a >= p && b <= q).sort((x, y) => x[0] - y[0]).forEach(([a, b]) => { if (a > from) out.push([from, a]); from = Math.max(from, b); }); if (from < q) out.push([from, q]); return out; });
+  logDay("r", used); readArm.paid += used; logDay("w", words);
+  keepPart(line, t); line._tickSig = null; paintTicks(line);
+  if ((line._got || 0) >= hanIn(t) && !line._skip.length) { markCounted(line); markRead(lineKey(t)); }
+  return used;
+}
+// count everything on the page up to `at` characters into `line` (a tapped word, or Count to here), within pageRoom
+function creditTo(line, at, fill) {
   readArm.on = true;
-  const now = Date.now(), from = Math.max(tapLast, readArm.shown || now, now - 300000); tapLast = now;  // time on this page since the last tap
-  let budget = 3 * readPace() * (now - from) / 1000;
+  let budget = pageRoom(), gave = 0;
   for (const l of document.querySelectorAll("#reader .line")) {
     if (budget <= 0) break;
     if (!l._counted && !(l._ready && readBefore(l))) {
       partOf(l);
-      const n = hanIn(l._text || ""), to = l === line ? Math.min(at, n) : n, need = to - (l._got || 0);
-      if (need > 0) { const give = Math.min(need, budget); budget -= give; readAllow = Math.max(0, readAllow - give); payLine(l, (l._got || 0) + give); }
+      const n = hanIn(l._text || ""), to = l === line ? Math.min(at, n) : n;
+      if (fill) { const u = fillSkips(l, to, budget); budget -= u; gave += u; }
+      const need = to - (l._got || 0);
+      if (need > 0 && budget > 0) { const give = Math.min(need, budget); budget -= give; gave += give; payLine(l, (l._got || 0) + give); }
     }
     if (l === line) break;
   }
+  return gave;
 }
+const tapCredit = (line, at) => creditTo(line, at, false);
 function readerTap(group, tok, lineText, cell) {
   const line = group.closest(".line"), cells = [...line.querySelectorAll(".cell")], i = cells.indexOf(cell);
   if (line.closest("#reader")) {
@@ -3774,7 +3830,7 @@ function record(entry) {
   const key = histKey(h);
   // v90: opening it again keeps its name, its English title and when it was first added
   const was = textHistory.find(x => histKey(x) === key);
-  if (was) { for (const f of ["name", "en", "made", "at"]) if (was[f] && !entry[f]) h[f] = was[f]; } histGone(textHistory.filter(x => histKey(x) === key).map(x => x.id));
+  if (was) { for (const f of ["name", "en", "made", "at", "book", "bn"]) if (was[f] && !entry[f]) h[f] = was[f]; } histGone(textHistory.filter(x => histKey(x) === key).map(x => x.id));
   textHistory = [h, ...textHistory.filter(x => histKey(x) !== key)].slice(0, 100);
   saveHistory(); scheduleSync(); return h.id;
 }
@@ -3791,8 +3847,15 @@ function setText(text, keepDoc, kind = "typed", title = "", fromHist) {
   if (!keepDoc && doc) closeDoc();
   if (!fromHist) text = paraBreaks(text);
   const name = fromHist ? "" : takeName();
-  $("src").value = text; const id = record({ kind, text, ...(title ? { title } : {}), ...(name ? { name } : {}) }); store.set("radical-text", text); $("addPanel").open = false;
-  if (!fromHist && !name && !title) autoTitle(id, text);
+  // v104: a text added with a book picked is its next page (the same text again keeps its number)
+  let bk = null;
+  if (!fromHist && !title && ["typed", "photo", "file"].includes(kind) && bookNow()) {
+    const b = books.list[bookNow()], was = textHistory.find(x => !x.doc && x.text === text && x.book === bookNow());
+    bk = { book: bookNow(), bn: was ? was.bn : (b.pages = (b.pages || 0) + 1) }; b.t = Date.now(); saveBooks();
+  }
+  $("src").value = text; const id = record({ kind, text, ...(title ? { title } : {}), ...(name ? { name } : {}), ...(bk || {}) }); store.set("radical-text", text); $("addPanel").open = false;
+  if (bk) bookLearn(bk.book, bk.bn, text);
+  else if (!fromHist && !name && !title) autoTitle(id, text);
   stack.length = 0; setTab("readScreen"); $("readScreen").scrollTop = 0;
   onNewText(); render();
 }
@@ -3818,11 +3881,12 @@ async function autoTitle(id, text) {
 const TKINDS = { typed: "Pasted text", wiki: "Wikipedia", photo: "Photo", pdf: "PDF", file: "File" };
 const madeOf = h => h.made || parseInt(String(h.id || "").slice(1, 9), 36) || h.t || Date.now();
 const whenOf = h => new Date(madeOf(h)).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(/ ([AP])M$/, (m, x) => " " + x.toLowerCase() + "m");
-const histName = h => h.name || h.en || (h.doc ? h.title : h.title || [...(h.text || "").split("\n")[0]].slice(0, 14).join("") + ([...(h.text || "")].length > 14 ? "…" : ""));
+const histName = h => h.name || (h.book ? `${h.book} (${h.bn || 1})` : "") || h.en || (h.doc ? h.title : h.title || [...(h.text || "").split("\n")[0]].slice(0, 14).join("") + ([...(h.text || "")].length > 14 ? "…" : ""));
 const curHist = () => doc ? textHistory.find(x => x.id === doc._hid) : textHistory.find(x => !x.doc && x.kind !== "list" && x.text === $("src").value);
 function paintTextHead() {
   const head = $("textHead"); if (!head) return;
   const h = !doc && curHist();
+  paintBookNames();
   head.hidden = !h; if (!h) return;
   const t = $("textTitle"), name = histName(h);
   const nb = el("button", "tname", esc(name)); nb.type = "button"; if (!h.name && !h.en) nb.lang = "zh"; nb.title = "Rename";
@@ -3833,8 +3897,75 @@ function paintTextHead() {
     inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); save(); } if (e.key === "Escape") { done = true; paintTextHead(); } };
     inp.onblur = save; nb.replaceWith(inp); inp.focus(); inp.select();
   };
-  t.replaceChildren(nb, el("span", "src", esc(`${TKINDS[h.kind] || "Text"} · ${whenOf(h)}`)));
+  t.replaceChildren(nb, el("span", "src", esc(`${h.book ? "Book page" : TKINDS[h.kind] || "Text"} · ${whenOf(h)}`)));
+  if (h.book && books.list[h.book]) { const sb = el("button", "linkbtn storylink", "Story so far"); sb.type = "button"; sb.onclick = () => storySheet(h); t.append(sb); }
 }
+// v104: books. A text added with a book picked is one of its pages: History names it "Book (n)", and after each new
+// page a small AI pass updates the book's notes (the cast, one line each, and the story so far), built only from the
+// pages you've added. 解 and ENG on a book page get the notes as context; the cast's names read as names.
+// Kept in the account with the settings (radical-books), so a week of other texts in between loses nothing.
+let books = store.get("radical-books", null) || { list: {}, last: "" };
+if (!books.list) books.list = {};
+const saveBooks = () => store.set("radical-books", books);
+const bookNow = () => books.last && books.list[books.last] ? books.last : "";
+const curBook = () => { const h = curHist(); return h && h.book && books.list[h.book] ? h : null; };
+// The notes as they stood before page n, so a page is never explained with notes made from itself or later pages.
+function bookState(name, n) {
+  const b = books.list[name]; if (!b) return null;
+  for (const s of [b, b.prev]) if (s && (s.upto || 0) < n && (s.story || (s.cast || []).length)) return s;
+  return null;
+}
+function bookCtx(name, n = Infinity) {
+  const s = bookState(name, n); if (!s) return "";
+  const cast = (s.cast || []).map(c => `${c.name}: ${c.who}`).join("\n");
+  return `Book: ${name}\n` + (cast ? `Cast:\n${cast}\n` : "") + (s.story ? `Story so far:\n${s.story}` : "");
+}
+const ctxFor = line => { if (!line || !line.closest || !line.closest("#reader")) return ""; const h = curBook(); return h ? bookCtx(h.book, h.bn || Infinity).slice(0, 2000) : ""; };
+let bookNames = new Map();
+function paintBookNames() {
+  bookNames = new Map(); const h = curBook(), s = h && bookState(h.book, Infinity);
+  if (s) (s.cast || []).forEach(c => { const n = String(c.name || "").replace(/[^\p{Script=Han}]/gu, ""); if (n.length >= 2 && n.length <= 4) { bookNames.set(n, c.who); bookNames.set(toTrad(n), c.who); bookNames.set(toSimp(n), c.who); } });
+}
+async function bookLearn(name, n, text) {
+  const b = books.list[name]; if (!b || (b.upto || 0) >= n || !(await accessToken().catch(() => null))) return;
+  try {
+    const r = await claude({ action: "book", name, page: n, memory: bookCtx(name), text: text.trim().slice(0, 5000) });
+    const c = books.list[name]; if (!c || (c.upto || 0) >= n) return;
+    c.prev = { cast: c.cast || [], story: c.story || "", upto: c.upto || 0 };
+    c.cast = r.cast || []; c.story = r.story || ""; c.upto = n; saveBooks(); paintTextHead();
+  } catch (e) {}
+}
+function bookPicker(done) {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard deckpick"), list = el("div", "dplist"), close = () => sheet.remove();
+  const pick = n => { books.last = n; saveBooks(); close(); paintBookChip(); if (done) done(n); };
+  const row = (label, on, fn, cls = "") => { const b = btn("", "dprow" + cls + (on ? " on" : ""), fn); b.innerHTML = `<span>${label}</span><i aria-hidden="true">${on ? "✓" : ""}</i>`; list.append(b); return b; };
+  const cur = bookNow();
+  row("None<small>not part of a book</small>", !cur, () => pick(""));
+  Object.keys(books.list).sort((a, b) => (books.list[b].t || 0) - (books.list[a].t || 0)).forEach(n => row(`${esc(n)}<small>${books.list[n].pages || 0} page${books.list[n].pages === 1 ? "" : "s"}</small>`, n === cur, () => pick(n)));
+  const add = row("＋ New book", false, () => {
+    const inp = el("input", "srcname"); inp.type = "text"; inp.maxLength = 40; inp.placeholder = "Book name"; inp.autocomplete = "off";
+    const go = () => { const v = inp.value.trim(); if (!v) return; if (!books.list[v]) books.list[v] = { pages: 0, cast: [], story: "", upto: 0, t: Date.now() }; pick(v); };
+    inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); go(); } };
+    const ok = btn("Add", "btn", go); const r = el("div", "row"); r.append(inp, ok); add.replaceWith(r); inp.focus();
+  }, " dpnew");
+  const head = el("div", "sheethead"); head.append(el("h3", "", "Book"), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Close");
+  card.append(head, el("p", "note", "Pages get numbered. 解 and ENG remember the story."), list);
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
+}
+function paintBookChip() { const b = $("bookChip"); if (!b) return; const n = bookNow(); b.innerHTML = `Book: <b>${esc(n || "None")}</b> ▾`; b.classList.toggle("on", !!n); }
+function storySheet(h) {
+  const s = bookState(h.book, Infinity), sheet = el("div", "sheet"), card = el("div", "sheetcard storycard"), close = () => sheet.remove();
+  card.append(el("h3", "", esc(h.book)));
+  if (!s) card.append(el("p", "note", "Notes start after the first page."));
+  else {
+    if (s.story) s.story.split(/\n+/).forEach(p => card.append(el("p", /^Open threads/i.test(p) ? "story open" : "story", esc(p))));
+    if ((s.cast || []).length) { const c = el("div", "cast"); s.cast.forEach(x => c.append(el("div", "", `<b lang="zh">${esc(conv(x.name))}</b> <span>${esc(x.who)}</span>`))); card.append(el("h4", "", "Who's who"), c); }
+    card.append(el("p", "note", `Pages 1 to ${s.upto} only. Nothing from outside the book.`));
+  }
+  card.append(btn("Close", "btn ghost", close));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
+}
+$("bookChip").onclick = () => bookPicker(); paintBookChip();
 function openHistory(h) {
   if (h.kind === "list") { const ws = (h.words || []).map(findWord).filter(Boolean); if (ws.length) openLook(ws); return; }
   if (h.doc) {
@@ -3895,7 +4026,7 @@ async function claude(payload, why) {
   // Cards and Word Sets are the same for everyone: asked with GET, so Vercel's CDN can answer them.
   // Mainland cards and Word Sets are cached apart (r=cn); Taiwan keeps the URLs it always had.
   // v44: explanations too, so the second person to tap 解 on a sentence gets it at once.
-  const get = ["card", "wordset", "explain"].includes(payload.action), rp = region === "cn" ? "&r=cn" : "";
+  const get = ["card", "wordset", "explain"].includes(payload.action) && !payload.ctx, rp = region === "cn" ? "&r=cn" : "";
   payload = { region, ...payload };
   const url = payload.action === "card" ? `${API}/api/claude?v=2&action=card&word=${encodeURIComponent(payload.word)}${rp}${region === "cn" && toTrad(payload.word) !== payload.word ? `&t=${encodeURIComponent(toTrad(payload.word))}` : ""}`
     : payload.action === "explain" ? `${API}/api/claude?v=1&action=explain&sentence=${encodeURIComponent(payload.sentence)}&trad=${payload.trad === false ? 0 : 1}${payload.cw ? `&cw=${encodeURIComponent(payload.cw)}` : ""}${rp}`
@@ -3995,7 +4126,7 @@ async function signIn(email, code) {
 const PAY_RULE = "daily", PAY_WORDS = 50, FREE_READ = 100;
 const PAY_LOCKS = { daily: ["cards", "ai", "add"], reading: ["cards", "ai", "add"], teaser: ["read", "explore", "cards", "ai", "add"], words: [] };
 const DEMO_AI = { allow: { kind: "paid", base: 2.5, day: .5 }, meter: { chg: .38, dchg: .02 } };  // the still meter on the tour and the card
-const AUTO_AI = ["card", "topics", "rate", "wordset", "example", "title"];  // calls the app makes on its own: no card or sheet for them
+const AUTO_AI = ["card", "topics", "rate", "wordset", "example", "title", "book"];  // calls the app makes on its own: no card or sheet for them
 // v96: on Android the store is Google Play: its subscriptions page, its terms, its refunds
 const STORE = ANDROID ? "Google Play" : "Apple";
 const SUBS_URL = ANDROID ? "https://play.google.com/store/account/subscriptions?package=com.upslopelabs.radical" : "https://apps.apple.com/account/subscriptions";
@@ -4442,7 +4573,7 @@ function aiBreakdown(me) {
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
 const AI_NAMES = { title: "Text names", wordset: "Word Decks", card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
-  zhquery: "Explore search", tozh: "English to Chinese", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
+  book: "Book notes", zhquery: "Explore search", tozh: "English to Chinese", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
 function tallyText(a) { return `AI today: ${a.today.calls} call${a.today.calls === 1 ? "" : "s"} · ${money(a.today.cost)} · this month ${money(a.month.cost)} (all users)`; }
 // v45: everything only owners see lives on one page, Admin tools, behind one menu entry.
 function paintTally(a) { $("aiLine").textContent = a ? tallyText(a) : "No AI use yet."; $("aiTally").hidden = !a; }
@@ -4684,7 +4815,8 @@ function applySettings(st) {
   rawSet("radical-settings-synced", true);
   if (!first && !((+st.t || 0) > store.get("radical-settings-t", 0))) return;
   let changed = false;
-  for (const [k, v] of Object.entries(st.v)) if (SYNC_SETTINGS.includes(k) && typeof v === "string") { try { if (localStorage.getItem(k) !== v) { localStorage.setItem(k, v); changed = true; } } catch (e) {} }
+  // v104: book notes change often and need no restart: they're read again in place
+  for (const [k, v] of Object.entries(st.v)) if (SYNC_SETTINGS.includes(k) && typeof v === "string") { try { if (localStorage.getItem(k) !== v) { localStorage.setItem(k, v); if (k === "radical-books") { books = store.get(k, books); if (!books.list) books.list = {}; paintBookChip(); paintTextHead(); } else changed = true; } } catch (e) {} }
   rawSet("radical-settings-t", +st.t || 0); rawSet("radical-settings-sent", +st.t || 0);
   // The settings are read when the app starts, so it starts again (not in the middle of a flash card session).
   if (changed && $("reviewScreen").hidden) { toast("Settings updated from your account.", 1500); setTimeout(() => location.reload(), 1200); }
@@ -4857,17 +4989,18 @@ async function explainLine(text, line, b) {
   const after = line.nextElementSibling && line.nextElementSibling.classList.contains("trans") ? line.nextElementSibling : line;
   after.after(box); b.classList.add("on");
   store.set("radical-explain-uses", store.get("radical-explain-uses", 0) + 1);
-  if (explainCache[text]) { await ensure(explainText(explainCache[text])); box.innerHTML = explainHTML(explainCache[text]); return; }
+  const ctx = ctxFor(line), ek = ctx ? "b:" + curBook().book + "|" + text : text;  // v104: a book page is explained with the book's notes
+  if (explainCache[ek]) { await ensure(explainText(explainCache[ek])); box.innerHTML = explainHTML(explainCache[ek]); return; }
   box.innerHTML = '<p class="exs loading">Explaining…</p>'; b.disabled = true;
   try {
     // v63: a sentence on a pre-built card names its word, so the server can explain it for free
     const pre = myWords.find(w => w.card && w.card.pre && (w.card.examples || []).some(x => x.example === text));
-    const r = await claude({ action: "explain", sentence: text, trad: script !== "simp", ...(pre ? { cw: pre.word } : {}) });
-    explainCache[text] = { structure: r.structure, points: r.points, words: r.words };
+    const r = await claude({ action: "explain", sentence: text, trad: script !== "simp", ...(pre ? { cw: pre.word } : {}), ...(ctx ? { ctx } : {}) });
+    explainCache[ek] = { structure: r.structure, points: r.points, words: r.words };
     const keys = Object.keys(explainCache); while (keys.length > 300) delete explainCache[keys.shift()];
     store.set("radical-explain", explainCache);
-    await ensure(explainText(explainCache[text]));
-    box.innerHTML = explainHTML(explainCache[text]);
+    await ensure(explainText(explainCache[ek]));
+    box.innerHTML = explainHTML(explainCache[ek]);
   } catch (e) { box.innerHTML = `<p class="exs">${esc(e.message)}</p>`; box.classList.add("err"); failRetry(box, () => explainLine(text, line, b)); }
   b.disabled = false;
 }
@@ -4879,12 +5012,13 @@ async function translateLine(text, line, b) {
     if (!failed) return;
   }
   const box = el("p", "trans"); line.after(box);
-  if (transCache[text]) { box.textContent = transCache[text]; b.textContent = "Hide ENG"; b.classList.add("on"); return; }
+  const ctx = ctxFor(line), tk = ctx ? "b:" + curBook().book + "|" + text : text;  // v104: book pages translate with the notes
+  if (transCache[tk]) { box.textContent = transCache[tk]; b.textContent = "Hide ENG"; b.classList.add("on"); return; }
   box.textContent = "Translating…"; b.disabled = true;
   try {
-    const { translation } = await claude({ action: "translate", sentence: text });
+    const { translation } = await claude({ action: "translate", sentence: text, ...(ctx ? { ctx } : {}) });
     if (!String(translation || "").trim()) throw new Error("No translation came back. Tap ENG to try again.");  // v68: never show or keep a blank
-    transCache[text] = translation; store.set("radical-trans", transCache);
+    transCache[tk] = translation; store.set("radical-trans", transCache);
     box.textContent = translation; b.textContent = "Hide ENG"; b.classList.add("on");
   } catch (e) { box.textContent = e.message; box.classList.add("err"); }
   b.disabled = false;
@@ -8636,7 +8770,7 @@ function setSums() {
 document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "change"].forEach(ev => x.addEventListener(ev, () => setTimeout(setSums, 50))));
 // ---- settings that go in a backup file and (v58) sync with the account.
 const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules", "radical-day-ends",
-  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-read-speed", "radical-tiles", "radical-common", "radical-region", "radical-levels"];
+  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-read-speed", "radical-tiles", "radical-common", "radical-region", "radical-levels", "radical-books"];
 const SYNC_SETTINGS = SETTING_KEYS.filter(k => k !== "radical-decks");  // v58: decks sync on their own
 // Restore a backup file (v58: the Backup page is gone; a backup chosen with the add box's file icon comes here):
 // words and History merge with what's here (nothing added since is lost; a word's newer copy wins); the learned list
