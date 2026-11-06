@@ -44,6 +44,7 @@ LINE = re.compile(r"^(\S+) (\S+) \[([^\]]+)\] /(.*)/\s*$")
 TW = re.compile(r"Taiwan pr\. \[([^\]]+)\]")
 
 best = {}  # word -> (score, pinyin, tw, meaning)
+firsts = defaultdict(list)  # word -> (score, meaning, first sense) for every entry
 for line in open(SRC, encoding="utf-8"):
     if line.startswith("#"):
         continue
@@ -62,9 +63,19 @@ for line in open(SRC, encoding="utf-8"):
     score = len(clean) - 5 * sum(1 for s in clean if s.lower().startswith(PENALTY)) - (3 if py[:1].isupper() else 0)
     meaning = "; ".join(clean[:3])
     entry = (score, to_marks(py), tw, meaning)
+    first = next((x for x in clean if not x.startswith(("CL:", "see ")) and not x.lower().startswith(PENALTY)), "")
     for w in {trad, simp}:
+        if first:
+            firsts[w].append((score, meaning, first))
         if w not in best or entry[0] > best[w][0]:
             best[w] = entry
+
+# A word with several entries (童子軍: Scout / child soldiers) keeps the other entries'
+# first senses after its own, so a lower-scored meaning isn't lost.
+for w, (sc, py, tw, meaning) in list(best.items()):
+    extra = [f for _, m, f in sorted(firsts[w], key=lambda e: -e[0]) if m != meaning and f not in meaning][:2]
+    if extra:
+        best[w] = (sc, py, tw, "; ".join([meaning] + extra) if meaning else "; ".join(extra))
 
 # "variant of 臺灣|台湾[Tai2 wan1]" says nothing useful; borrow the main word's meaning instead.
 VAR = re.compile(r"^(?:old )?variant of ([^|\[\s]+)")
