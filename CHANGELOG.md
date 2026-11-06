@@ -2,6 +2,13 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v102
+
+- Reading: a row you read and scroll off the top counts at once, as long as it sat on screen at least half the time your pace needs (and 2 seconds). Ticks no longer trail far behind a fast reader. A quick flick earns nothing that second but no longer wipes the time rows had built up. Skimming still earns nothing.
+- The bin under a text is gone (it only cleared the reader; the text stayed in History).
+- The meaning check reads the AI's verdict even when its reply is slightly malformed, so it asks you ✓/✗ less often.
+- The owner-only timing box after each meaning check is gone.
+
 ## v101
 
 - A word from a level or topic deck can be ticked into Basecamp too, to keep it for later. It then shows in both.
