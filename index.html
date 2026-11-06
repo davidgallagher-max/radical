@@ -1166,6 +1166,15 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .listenbig:active{transform:scale(.97)}
 .listenprompt .insent{padding:8px 16px;font-size:.9rem}
 .listenprompt .notnow{font-size:.92rem;color:var(--muted);font-weight:500;padding:4px 8px}
+/* v101: keyboard up: the same controls, rearranged: a smaller Play on the left, the speeds stacked beside it,
+   In a sentence and Not now on one row under them */
+#reviewScreen.typing .listenprompt{grid-template-columns:96px minmax(0,1fr) auto;grid-template-areas:"big seg seg" "sent sent not";justify-items:stretch;align-items:center;gap:6px 12px;padding:4px 0 6px}
+#reviewScreen.typing .listenbig{grid-area:big;width:96px;height:96px;gap:2px;font-size:.88rem}#reviewScreen.typing .listenbig svg{width:30px;height:30px}
+#reviewScreen.typing .listenprompt .seg2.speeds{grid-area:seg;width:auto;grid-template-columns:1fr;margin-right:40px}
+#reviewScreen.typing .listenprompt .seg2.speeds button{padding:5px 8px;font-size:.88rem}
+#reviewScreen.typing .listenprompt .insent{grid-area:sent;justify-self:start;padding:6px 14px}
+#reviewScreen.typing .listenprompt .notnow{grid-area:not}
+#reviewScreen.typing .listenprompt:not(:has(.notnow)) .insent{grid-column:1 / -1}
 .seg2.speeds{width:min(100%,320px);padding:2px}
 .seg2.speeds button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);border-radius:8px;font-weight:700}
 .seg2.speeds button[aria-pressed="true"]+button,.seg2.speeds button:has(+button[aria-pressed="true"]){border-color:transparent}
@@ -1819,7 +1828,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v100";
+const APP_VERSION = "v101";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -5955,6 +5964,8 @@ const inDeck = (w, n) => wDecks(w).includes(n);
 // v65: a word can also be filed into a ready-made deck (Top or a topic): w.decks holds "@:" + that list's key beside
 // your own deck names. The ready-made deck's own word list doesn't change; the word just shows and studies there too.
 const RM = "@:", isRm = n => typeof n === "string" && n.startsWith(RM), rmKey = n => n.slice(RM.length);
+// v101: Basecamp can be ticked alongside other decks ("@:mine"); a word with no deck at all is in Basecamp as before
+const BASE_TAG = RM + "mine";
 const ownDecks = w => wDecks(w).filter(n => !isRm(n));
 const deckLabel = n => isRm(n) ? keyName(rmKey(n)) : n;
 const DECK_MAX = 20;  // deck names (v44)
@@ -5965,7 +5976,7 @@ function saveDecks() { decks.t = Date.now(); store.set("radical-decks", decks); 
 // v100: a removed level's (or Top's) studied words keep their tag and progress but are paused: they show nowhere and
 // never come up, until the level is added again (or they're in one of your decks, or in another open level)
 const paused = w => !!(w.set && isLevel(w.set) && !levelsOn().includes(w.set) || w.common && !commonSize()) && !wDecks(w).length && !levelsOn().some(L => levelHas(w, L));
-const inList = (w, L = curList) => paused(w) ? false : L === "all" ? true : isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? !w.common && !w.set && !wDecks(w).length : L === "top" ? !!w.common || inDeck(w, RM + "top") || topHas(w) : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L || inDeck(w, RM + L) || isLevel(L) && levelHas(w, L);
+const inList = (w, L = curList) => paused(w) ? false : L === "all" ? true : isGroup(L) ? groupKeys(L).some(k => inList(w, k)) : L === "mine" ? (!w.common && !w.set && !wDecks(w).length) || inDeck(w, BASE_TAG) : L === "top" ? !!w.common || inDeck(w, RM + "top") || topHas(w) : isDeck(L) ? inDeck(w, L.slice(2)) : w.set === L || inDeck(w, RM + L) || isLevel(L) && levelHas(w, L);
 const listWords = () => myWords.filter(w => inList(w));
 // v69: a word you saved before picking Top (in Basecamp or a deck) still counts in Top, so Top 500 shows 500
 let topSetOf = null;
@@ -5982,7 +5993,7 @@ function allLists() {
   if (isGroup(curList)) out.unshift([curList, groupName(curList)]);
   new Set([...decks.names, ...myWords.flatMap(ownDecks)]).forEach(n => out.push([deckKey(n), cut(n)]));
   if (size) out.push(["top", `Top ${num(size)}`]);
-  [...new Set([...myWords.filter(w => w.set && !isLevel(w.set)).map(w => w.set), ...Object.keys(setCache), ...levelsOn(), ...myWords.flatMap(wDecks).filter(isRm).map(rmKey).filter(k => k !== "top")])].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
+  [...new Set([...myWords.filter(w => w.set && !isLevel(w.set)).map(w => w.set), ...Object.keys(setCache), ...levelsOn(), ...myWords.flatMap(wDecks).filter(isRm).map(rmKey).filter(k => k !== "top" && k !== "mine")])].forEach(t => out.push([t, t.length > 18 ? t.slice(0, 17) + "…" : t]));
   if (myWords.length) out.push(["all", "All decks"]);  // v52: every word, each once (last, so a real deck comes first)
   return out;
 }
@@ -6427,7 +6438,7 @@ const pills = (cls, items, on, pick) => {
   return row;
 };
 // v53: what Basecamp is, in one line: the caption over the word list, and a 3s bubble when you tap Basecamp while it's picked.
-const BASE_LINE = "New words camp here until you file them.";
+const BASE_LINE = "New words camp here.";
 let baseTipEl = null;
 function baseTip(pill) {
   if (baseTipEl) baseTipEl.remove();
@@ -6934,7 +6945,9 @@ function deckPicker({ w, title, start, save, remove, cancel }) {
     list.replaceChildren();
     const fixed = w && (w.common || w.set) ? keyName(w.set || "top") : "";
     if (fixed) row(esc(fixed), true, null, " fixed").disabled = true;
-    else row(`${esc(mineName())}<small>new words camp here</small>`, !sel.size, () => { sel.clear(); paint(); }, " base");
+    // v101: Basecamp is a tick like the others (on by itself when nothing else is ticked)
+    const baseOn = sel.has(BASE_TAG) || (!fixed && ![...sel].length);
+    row(`${esc(mineName())}<small>new words camp here</small>`, baseOn, () => { if (sel.has(BASE_TAG)) sel.delete(BASE_TAG); else if (sel.size || fixed) sel.add(BASE_TAG); paint(); }, " base");
     [...new Set([...decks.names, ...[...sel].filter(n => !isRm(n))])].forEach(n => row(esc(n), sel.has(n), () => { sel.has(n) ? sel.delete(n) : sel.add(n); paint(); }));
     // v65: the ready-made decks in your list too (not the one a word already comes from)
     allLists().filter(([k]) => k === "top" || (!isDeck(k) && !isGroup(k) && k !== "mine" && k !== "all")).forEach(([k]) => {
@@ -6949,7 +6962,7 @@ function deckPicker({ w, title, start, save, remove, cancel }) {
   paint();
   const head = el("div", "sheethead"); head.append(el("h3", "", esc(title)), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Cancel");
   const acts = el("div", "row dpacts");
-  acts.append(btn("Save", "btn", () => { sheet.remove(); const a = [...sel]; setLastDecks(a); save(a); }), btn("Cancel", "btn ghost", close));
+  acts.append(btn("Save", "btn", () => { sheet.remove(); let a = [...sel]; if (a.length === 1 && a[0] === BASE_TAG && !(w && (w.common || w.set))) a = []; setLastDecks(a); save(a); }), btn("Cancel", "btn ghost", close));
   card.append(head, list, acts);
   if (remove) { const rm = btn("Remove word", "btn ghost wide dprm"); rm.onclick = () => armConfirm(rm, on => rm.textContent = on ? "Remove it from your words?" : "Remove word", () => { sheet.remove(); remove(); }); card.append(rm); }
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); };
@@ -7175,8 +7188,8 @@ function renderSelBar(shown) {
     if (!a.length) return;
     const ws = [...picks]; ws.forEach(w => setDecks(w, [...wDecks(w), ...a])); picks.clear(); sorting = false; saveWords(); renderWords(); updateCounts();
     toast(`${num(ws.length)} added to <b>${esc(a.map(deckLabel).join(", "))}</b>`, 2500); } }));
-  const own = isDeck(curList) ? curList.slice(2) : "";
-  const out = own && btn(`Take out of ${own.length > 12 ? own.slice(0, 11) + "…" : own}`, "btn ghost", () => {
+  const own = isDeck(curList) ? curList.slice(2) : curList === "mine" && [...picks].some(w => inDeck(w, BASE_TAG)) ? BASE_TAG : "";
+  const out = own && btn(`Take out of ${own === BASE_TAG ? mineName() : own.length > 12 ? own.slice(0, 11) + "…" : own}`, "btn ghost", () => {
     [...picks].forEach(w => setDecks(w, wDecks(w).filter(x => x !== own))); picks.clear(); saveWords(); renderWords(); updateCounts(); });
   const study = btn(`Flash cards (${picks.size})`, "btn", () => { const ws = [...picks]; picks.clear(); renderWords(); openReviewWith(ws); });
   const stat = btn("Set status ▾", "btn ghost", e => statusMenu(e.currentTarget, [...picks]));
