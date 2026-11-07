@@ -411,6 +411,7 @@ p.busy{margin:-4px 4px 0}
 .bookchip{justify-self:start;margin:-4px 0 0;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-size:.92rem;cursor:pointer}
 .bookchip b{font-weight:600;color:var(--fg)}.bookchip.on{border-color:var(--accent);color:var(--accent)}.bookchip.on b{color:var(--accent)}
 .booklinks{display:flex;gap:16px;flex-wrap:wrap}.linkbtn.storylink{display:block;justify-self:start;padding:4px 0 0;font-size:.92rem}.linkbtn.bookfile{color:var(--muted);font-weight:500}.storycard .story{line-height:1.55}.storycard .story.open{color:var(--muted)}.storycard h4{margin:6px 0 0;font-size:.95rem}
+.bpages{display:grid;gap:4px}.bprow{display:flex;align-items:center;gap:6px}.bpgo{all:unset;cursor:pointer;flex:1;min-width:0;display:flex;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line)}.bpgo b{min-width:1.6em;color:var(--muted);font-weight:500}.bpgo span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.storycard>*{min-width:0}.bpages,.bprow{min-width:0}.bprow .iconbtn:disabled{opacity:.25}
 .storycard .cast{display:grid;gap:6px}.storycard .cast b{font-weight:600;margin-right:6px}.storycard .cast span{color:var(--muted)}
 .srcname{width:100%;box-sizing:border-box;margin:0 0 8px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:1rem}
 .glyph.sentend{cursor:pointer;color:var(--accent)}.glyph.phrase{cursor:pointer}.glyph.phrase.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}.glyph.sentend.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}
@@ -1835,7 +1836,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v106";
+const APP_VERSION = "v107";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3830,7 +3831,7 @@ function record(entry) {
   const key = histKey(h);
   // v90: opening it again keeps its name, its English title and when it was first added
   const was = textHistory.find(x => histKey(x) === key);
-  if (was) { for (const f of ["name", "en", "made", "at", "book", "bn"]) if (was[f] && !entry[f]) h[f] = was[f]; } histGone(textHistory.filter(x => histKey(x) === key).map(x => x.id));
+  if (was) { for (const f of ["name", "en", "made", "at", "book", "bn"]) if (was[f] && !entry[f]) h[f] = was[f]; if (!entry.made) h.made = was.made || madeOf(was); }  // v107: texts from before v90 kept no date: keep the first one histGone(textHistory.filter(x => histKey(x) === key).map(x => x.id));
   textHistory = [h, ...textHistory.filter(x => histKey(x) !== key)].slice(0, 100);
   saveHistory(); scheduleSync(); return h.id;
 }
@@ -3957,32 +3958,32 @@ function bookPicker(done, keep) {
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
 function paintBookChip() { const b = $("bookChip"); if (!b) return; const n = bookNow(); b.innerHTML = `Book: <b>${esc(n || "None")}</b> ▾`; b.classList.toggle("on", !!n); }
-// v105: put a page into a book (or take it out). Pages after it move up a number; when a page lands before the
-// notes' latest page, the notes are rebuilt from page 1 in order, so they still never include anything later.
+// v105, v107: put a page into a book (or take it out). It joins at the end; then, with 2+ pages, the AI puts the
+// pages in story order from how each begins and ends (`bookSort`), and the notes are rebuilt from page 1 in order.
+// The pages list in Story so far shows each page's first line, with ↑ ↓ to fix the order by hand.
 function fileToBook(h) {
   bookPicker(name => {
     const old = h.book;
-    if (!name) { if (!old) return; delete h.book; delete h.bn; saveHistory(); scheduleSync(); paintTextHead(); bookRedo(old); return; }
-    const pages = textHistory.filter(x => x !== h && x.book === name && !x.doc), last = pages.reduce((m, x) => Math.max(m, x.bn || 0), 0);
-    pageNum(name, old === name ? h.bn : last + 1, last + (old === name ? 0 : 1), n => {
-      if (old === name && n === h.bn) return;
-      pages.sort((x, y) => (x.bn || 0) - (y.bn || 0)).forEach((x, i) => { x.bn = i + 1; if (x.bn >= n) x.bn++; });  // v106: close its old gap first, so moving a page later lands where you said
-      h.book = name; h.bn = n;
-      const all = textHistory.filter(x => x.book === name && !x.doc).sort((a, c) => a.bn - c.bn); all.forEach((x, i) => x.bn = i + 1);  // no gaps
-      const b = books.list[name]; b.pages = all.length; b.t = Date.now(); saveBooks();
-      saveHistory(); scheduleSync(); paintTextHead();
-      if (old && old !== name) bookRedo(old);
-      if (h.bn > (b.upto || 0) && h.bn === all.length) bookLearn(name, h.bn, h.text); else bookRedo(name);
-    });
+    if (name === old) return;
+    if (!name) { delete h.book; delete h.bn; saveHistory(); scheduleSync(); paintTextHead(); bookRedo(old); return; }
+    const last = textHistory.filter(x => x !== h && x.book === name && !x.doc).reduce((m, x) => Math.max(m, x.bn || 0), 0);
+    h.book = name; h.bn = last + 1; bookNumber(name); saveHistory(); scheduleSync(); paintTextHead();
+    if (old) bookRedo(old);
+    if (books.list[name].pages > 1) bookSort(name); else bookLearn(name, h.bn, h.text);
   }, { book: h.book || "" });
 }
-function pageNum(name, n0, max, done) {
-  const sheet = el("div", "sheet"), card = el("div", "sheetcard"), close = () => sheet.remove();
-  const inp = el("input", "srcname"); inp.type = "number"; inp.min = 1; inp.max = max; inp.value = n0; inp.inputMode = "numeric";
-  const go = () => { const n = Math.max(1, Math.min(max, parseInt(inp.value, 10) || n0)); close(); done(n); };
-  inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); go(); } };
-  card.append(el("h3", "", `${esc(name)}: page number`), inp, btn("Done", "btn", go), btn("Cancel", "btn ghost", close));
-  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet); inp.focus(); inp.select();
+const bookPages = name => textHistory.filter(x => x.book === name && x.text && !x.doc).sort((a, c) => (a.bn || 0) - (c.bn || 0));
+function bookNumber(name) { const ps = bookPages(name), b = books.list[name]; ps.forEach((x, i) => x.bn = i + 1); if (b) { b.pages = ps.length; b.t = Date.now(); saveBooks(); } return ps; }
+async function bookSort(name) {
+  const ps = bookNumber(name);
+  if (ps.length < 2 || !(await accessToken().catch(() => null))) return bookRedo(name);
+  toast(`Putting ${esc(name)} in order…`, 2200);
+  try {
+    const r = await claude({ action: "bookorder", name, pages: ps.map(p => ({ id: p.id, start: p.text.trim().slice(0, 160), end: p.text.trim().slice(-100) })) });
+    const ids = (r.order || []).filter(id => ps.some(p => p.id === id));
+    if (new Set(ids).size === ps.length) ids.forEach((id, i) => { ps.find(p => p.id === id).bn = i + 1; });
+  } catch (e) {}
+  bookNumber(name); saveHistory(); scheduleSync(); paintTextHead(); bookRedo(name);
 }
 async function bookRedo(name) {  // the notes again from page 1, one page at a time
   const b = books.list[name]; if (!b) return;
@@ -3993,7 +3994,7 @@ async function bookRedo(name) {  // the notes again from page 1, one page at a t
   for (const p of pages) { if (bookRedo.run !== run) return; await bookLearn(name, p.bn, p.text); if ((books.list[name] || {}).upto !== p.bn) return; }
 }
 function storySheet(h) {
-  const s = bookState(h.book, Infinity), sheet = el("div", "sheet"), card = el("div", "sheetcard storycard"), close = () => sheet.remove();
+  const s = bookState(h.book, Infinity), sheet = el("div", "sheet"), card = el("div", "sheetcard storycard"), close = () => { sheet.remove(); if (moved) { paintTextHead(); bookRedo(h.book); } };
   card.append(el("h3", "", esc(h.book)));
   if (!s) card.append(el("p", "note", "Notes start after the first page."));
   else {
@@ -4001,6 +4002,22 @@ function storySheet(h) {
     if ((s.cast || []).length) { const c = el("div", "cast"); s.cast.forEach(x => c.append(el("div", "", `<b lang="zh">${esc(conv(x.name))}</b> <span>${esc(x.who)}</span>`))); card.append(el("h4", "", "Who's who"), c); }
     card.append(el("p", "note", `Pages 1 to ${s.upto} only. Nothing from outside the book.`));
   }
+  // v107: the pages, by their first line, to check the order; ↑ ↓ move one, tap opens it
+  const name = h.book, list = el("div", "bpages"); let moved = false;
+  const paint = () => {
+    list.replaceChildren();
+    bookPages(name).forEach((p, i, a) => {
+      const r = el("div", "bprow"), go = btn("", "bpgo", () => { sheet.remove(); if (moved) bookRedo(name); openHistory(p); });
+      go.innerHTML = `<b>${p.bn}</b><span lang="zh">${esc(conv([...p.text.trim().split("\n")[0]].slice(0, 14).join("")))}</span>`;
+      const mv = d => { const q = a[i + d]; if (!q) return; [p.bn, q.bn] = [q.bn, p.bn]; moved = true; saveHistory(); scheduleSync(); paint(); };
+      const up = btn("↑", "iconbtn", () => mv(-1)), dn = btn("↓", "iconbtn", () => mv(1)); up.disabled = !i; dn.disabled = i === a.length - 1;
+      up.setAttribute("aria-label", "Earlier"); dn.setAttribute("aria-label", "Later");
+      r.append(go, up, dn); list.append(r);
+    });
+  };
+  paint();
+  const sortB = btn("Sort by story", "btn outl small", () => { close(); bookSort(name); });
+  card.append(el("h4", "", "Pages"), list); if (bookPages(name).length > 1) card.append(sortB);
   card.append(btn("Close", "btn ghost", close));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
@@ -4165,7 +4182,7 @@ async function signIn(email, code) {
 const PAY_RULE = "daily", PAY_WORDS = 50, FREE_READ = 100;
 const PAY_LOCKS = { daily: ["cards", "ai", "add"], reading: ["cards", "ai", "add"], teaser: ["read", "explore", "cards", "ai", "add"], words: [] };
 const DEMO_AI = { allow: { kind: "paid", base: 2.5, day: .5 }, meter: { chg: .38, dchg: .02 } };  // the still meter on the tour and the card
-const AUTO_AI = ["card", "topics", "rate", "wordset", "example", "title", "book"];  // calls the app makes on its own: no card or sheet for them
+const AUTO_AI = ["card", "topics", "rate", "wordset", "example", "title", "book", "bookorder"];  // calls the app makes on its own: no card or sheet for them
 // v96: on Android the store is Google Play: its subscriptions page, its terms, its refunds
 const STORE = ANDROID ? "Google Play" : "Apple";
 const SUBS_URL = ANDROID ? "https://play.google.com/store/account/subscriptions?package=com.upslopelabs.radical" : "https://apps.apple.com/account/subscriptions";
@@ -4612,7 +4629,7 @@ function aiBreakdown(me) {
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
 const AI_NAMES = { title: "Text names", wordset: "Word Decks", card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
-  book: "Book notes", zhquery: "Explore search", tozh: "English to Chinese", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
+  book: "Book notes", bookorder: "Book page order", zhquery: "Explore search", tozh: "English to Chinese", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
 function tallyText(a) { return `AI today: ${a.today.calls} call${a.today.calls === 1 ? "" : "s"} · ${money(a.today.cost)} · this month ${money(a.month.cost)} (all users)`; }
 // v45: everything only owners see lives on one page, Admin tools, behind one menu entry.
 function paintTally(a) { $("aiLine").textContent = a ? tallyText(a) : "No AI use yet."; $("aiTally").hidden = !a; }

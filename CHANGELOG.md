@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v107
+
+- Opening an older text from History no longer resets its date to now (texts from before v90 never kept one).
+- "Add to a book" no longer asks for a page number. The page joins the book, then the AI puts the pages in story order by how each one begins and ends, and the notes are rebuilt.
+- Story so far lists the book's pages by their first line. Use ↑ ↓ to fix the order, tap one to open it, or "Sort by story" to let the AI order them again.
+
 ## v106
 
 - Fix: moving a book page to a later number put it one short (page 1 moved to 3 landed at 2). It now lands where you say.

@@ -757,6 +757,19 @@ module.exports = async (req, res) => {
         : await kept("translate", sentence, () => askClaude(FAST_MODEL, TRANSLATE_PROMPT(sentence), 2500));
       return res.status(200).json({ translation });
     }
+    if (body.action === "bookorder") {  // v107: put a book's pages in story order from how each begins and ends
+      const name = String(body.name || "").trim().slice(0, 60);
+      const pages = (Array.isArray(body.pages) ? body.pages : []).slice(0, 60).map(p => ({ id: String(p.id || "").slice(0, 40), start: String(p.start || "").slice(0, 160), end: String(p.end || "").slice(0, 100) })).filter(p => p.id);
+      if (pages.length < 2) return res.status(200).json({ order: pages.map(p => p.id) });
+      const prompt = `These are pages of the book "${name}", in no particular order. For each: how it begins and how it ends.
+${pages.map(p => `[${p.id}] begins: ${p.start}\n[${p.id}] ends: ${p.end}`).join("\n\n")}
+
+Put them in reading order, using how one page's end runs into the next page's beginning, and the story's logic. Use only these texts.
+Return ONLY JSON: {"order":["id", ...]} with every id once.`;
+      const out = parseJSON(await askClaude(FAST_MODEL, prompt, 600));
+      const order = out && Array.isArray(out.order) ? out.order.map(String).filter(id => pages.some(p => p.id === id)) : [];
+      return res.status(200).json({ order: new Set(order).size === pages.length ? order : pages.map(p => p.id) });
+    }
     if (body.action === "book") {
       const name = String(body.name || "").trim().slice(0, 60), text = String(body.text || "").trim().slice(0, 5000);
       const page = Math.max(1, Math.min(9999, parseInt(body.page, 10) || 1)), memory = String(body.memory || "").slice(0, 3000);
