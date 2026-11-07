@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v108
+
+- Books are now Binders, since they also suit class notes. The add box says "Binder: None ▾".
+- History shows each binder as one row (its pages and when one was last added). Tap it for the notes and the page list, where each page shows when it was added.
+- ✕ on a page in the list (tap twice) takes it out of the binder. It goes back to History as a text of its own, and the notes rebuild without it.
+
 ## v107
 
 - Opening an older text from History no longer resets its date to now (texts from before v90 never kept one).

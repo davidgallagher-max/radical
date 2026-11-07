@@ -411,7 +411,7 @@ p.busy{margin:-4px 4px 0}
 .bookchip{justify-self:start;margin:-4px 0 0;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-size:.92rem;cursor:pointer}
 .bookchip b{font-weight:600;color:var(--fg)}.bookchip.on{border-color:var(--accent);color:var(--accent)}.bookchip.on b{color:var(--accent)}
 .booklinks{display:flex;gap:16px;flex-wrap:wrap}.linkbtn.storylink{display:block;justify-self:start;padding:4px 0 0;font-size:.92rem}.linkbtn.bookfile{color:var(--muted);font-weight:500}.storycard .story{line-height:1.55}.storycard .story.open{color:var(--muted)}.storycard h4{margin:6px 0 0;font-size:.95rem}
-.bpages{display:grid;gap:4px}.bprow{display:flex;align-items:center;gap:6px}.bpgo{all:unset;cursor:pointer;flex:1;min-width:0;display:flex;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line)}.bpgo b{min-width:1.6em;color:var(--muted);font-weight:500}.bpgo span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.storycard>*{min-width:0}.bpages,.bprow{min-width:0}.bprow .iconbtn:disabled{opacity:.25}
+.bpages{display:grid;gap:4px}.bprow{display:flex;align-items:center;gap:6px}.bpgo{all:unset;cursor:pointer;flex:1;min-width:0;display:flex;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line)}.bpgo b{min-width:1.6em;color:var(--muted);font-weight:500}.bpgo span{flex:1;min-width:0;display:flex;flex-direction:column}.bpgo i{display:block;font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.bpgo i *{white-space:nowrap}.bpgo small{color:var(--muted);font-size:.8rem}.bpx.on{width:auto;padding:0 10px;border-radius:999px;color:var(--danger,#e66)}.storycard>*{min-width:0}.bpages,.bprow{min-width:0}.bprow .iconbtn:disabled{opacity:.25}
 .storycard .cast{display:grid;gap:6px}.storycard .cast b{font-weight:600;margin-right:6px}.storycard .cast span{color:var(--muted)}
 .srcname{width:100%;box-sizing:border-box;margin:0 0 8px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:1rem}
 .glyph.sentend{cursor:pointer;color:var(--accent)}.glyph.phrase{cursor:pointer}.glyph.phrase.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}.glyph.sentend.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}
@@ -1367,7 +1367,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
         <button type="button" class="tool" id="histBtn"><span class="ti">歷</span>History</button>
       </div>
       <input type="text" id="srcName" class="srcname" maxlength="60" placeholder="Name it (optional)" aria-label="Name this text" autocomplete="off">
-      <button type="button" class="bookchip" id="bookChip" aria-label="Book"></button>
+      <button type="button" class="bookchip" id="bookChip" aria-label="Binder"></button>
       <form class="srcform" id="srcForm">
         <textarea id="srcIn" rows="1" lang="zh" placeholder="今天讀什麼？" aria-label="Paste or type Chinese" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
         <button type="submit" class="srcgo" aria-label="Read this text"><i></i></button>
@@ -1836,7 +1836,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v107";
+const APP_VERSION = "v108";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2746,7 +2746,7 @@ function joinNames(toks) {
     if (bookNames.size && isHan(toks[i].chars[0])) {  // v104: a name from the book's cast
       let s = "", k = i, hit = 0;
       while (k < toks.length && s.length < 4) { s += toks[k].chars.join(""); k++; if (k - i >= 2 && bookNames.has(s)) hit = k; }
-      if (hit) { const cs = toks.slice(i, hit).flatMap(x => x.chars), t = token(null, cs); t.mean = bookNames.get(cs.join("")) || "A name in this book"; t.name = true; out.push(t); i = hit; continue; }
+      if (hit) { const cs = toks.slice(i, hit).flatMap(x => x.chars), t = token(null, cs); t.mean = bookNames.get(cs.join("")) || "A name in these pages"; t.name = true; out.push(t); i = hit; continue; }
     }
     if (isSur(toks[i])) {
       const sur = toks[i].chars, two = loose(toks[i + 1]) && loose(toks[i + 2]), pair = loose(toks[i + 1]) && nameHint.has(sur.join("") + toks[i + 1].chars[0]);
@@ -3898,11 +3898,11 @@ function paintTextHead() {
     inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); save(); } if (e.key === "Escape") { done = true; paintTextHead(); } };
     inp.onblur = save; nb.replaceWith(inp); inp.focus(); inp.select();
   };
-  t.replaceChildren(nb, el("span", "src", esc(`${h.book ? "Book page" : TKINDS[h.kind] || "Text"} · ${whenOf(h)}`)));
+  t.replaceChildren(nb, el("span", "src", esc(`${h.book ? "Binder page" : TKINDS[h.kind] || "Text"} · ${whenOf(h)}`)));
   const links = el("div", "booklinks");
   if (h.book && books.list[h.book]) { const sb = el("button", "linkbtn storylink", "Story so far"); sb.type = "button"; sb.onclick = () => storySheet(h); links.append(sb); }
   // v105: any page (one added before books, too) can be filed into a book, at the page number you give it
-  const fb = el("button", "linkbtn storylink bookfile", h.book ? "Book ▾" : "Add to a book ▾"); fb.type = "button"; fb.onclick = () => fileToBook(h); links.append(fb);
+  const fb = el("button", "linkbtn storylink bookfile", h.book ? "Binder ▾" : "Add to a binder ▾"); fb.type = "button"; fb.onclick = () => fileToBook(h); links.append(fb);
   t.append(links);
 }
 // v104: books. A text added with a book picked is one of its pages: History names it "Book (n)", and after each new
@@ -3945,19 +3945,19 @@ function bookPicker(done, keep) {
   const pick = n => { if (!keep) books.last = n; saveBooks(); close(); paintBookChip(); if (done) done(n); };  // keep: filing a page, not changing the add box
   const row = (label, on, fn, cls = "") => { const b = btn("", "dprow" + cls + (on ? " on" : ""), fn); b.innerHTML = `<span>${label}</span><i aria-hidden="true">${on ? "✓" : ""}</i>`; list.append(b); return b; };
   const cur = keep ? keep.book || "" : bookNow();
-  row("None<small>not part of a book</small>", !cur, () => pick(""));
+  row("None<small>not in a binder</small>", !cur, () => pick(""));
   Object.keys(books.list).sort((a, b) => (books.list[b].t || 0) - (books.list[a].t || 0)).forEach(n => row(`${esc(n)}<small>${books.list[n].pages || 0} page${books.list[n].pages === 1 ? "" : "s"}</small>`, n === cur, () => pick(n)));
-  const add = row("＋ New book", false, () => {
-    const inp = el("input", "srcname"); inp.type = "text"; inp.maxLength = 40; inp.placeholder = "Book name"; inp.autocomplete = "off";
+  const add = row("＋ New binder", false, () => {
+    const inp = el("input", "srcname"); inp.type = "text"; inp.maxLength = 40; inp.placeholder = "Binder name"; inp.autocomplete = "off";
     const go = () => { const v = inp.value.trim(); if (!v) return; if (!books.list[v]) books.list[v] = { pages: 0, cast: [], story: "", upto: 0, t: Date.now() }; pick(v); };
     inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); go(); } };
     const ok = btn("Add", "btn", go); const r = el("div", "row"); r.append(inp, ok); add.replaceWith(r); inp.focus();
   }, " dpnew");
-  const head = el("div", "sheethead"); head.append(el("h3", "", "Book"), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Close");
-  card.append(head, el("p", "note", "Pages get numbered. 解 and ENG remember the story."), list);
+  const head = el("div", "sheethead"); head.append(el("h3", "", "Binder"), btn("✕", "iconbtn", close)); head.lastChild.setAttribute("aria-label", "Close");
+  card.append(head, el("p", "note", "For a book or class notes. Pages stay in order, and 解 and ENG remember what came before."), list);
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
-function paintBookChip() { const b = $("bookChip"); if (!b) return; const n = bookNow(); b.innerHTML = `Book: <b>${esc(n || "None")}</b> ▾`; b.classList.toggle("on", !!n); }
+function paintBookChip() { const b = $("bookChip"); if (!b) return; const n = bookNow(); b.innerHTML = `Binder: <b>${esc(n || "None")}</b> ▾`; b.classList.toggle("on", !!n); }
 // v105, v107: put a page into a book (or take it out). It joins at the end; then, with 2+ pages, the AI puts the
 // pages in story order from how each begins and ends (`bookSort`), and the notes are rebuilt from page 1 in order.
 // The pages list in Story so far shows each page's first line, with ↑ ↓ to fix the order by hand.
@@ -3993,26 +3993,30 @@ async function bookRedo(name) {  // the notes again from page 1, one page at a t
   if (pages.length) toast(`Rereading ${esc(name)} from page 1…`, 2200);
   for (const p of pages) { if (bookRedo.run !== run) return; await bookLearn(name, p.bn, p.text); if ((books.list[name] || {}).upto !== p.bn) return; }
 }
-function storySheet(h) {
-  const s = bookState(h.book, Infinity), sheet = el("div", "sheet"), card = el("div", "sheetcard storycard"), close = () => { sheet.remove(); if (moved) { paintTextHead(); bookRedo(h.book); } };
-  card.append(el("h3", "", esc(h.book)));
+function storySheet(h) {  // v108: a page, or a binder's name (from History)
+  const name = typeof h === "string" ? h : h.book;
+  const s = bookState(name, Infinity), sheet = el("div", "sheet"), card = el("div", "sheetcard storycard"), close = () => { sheet.remove(); if (moved) { paintTextHead(); bookRedo(name); if (!$("historyScreen").hidden) renderHistory(); } };
+  card.append(el("h3", "", esc(name)));
   if (!s) card.append(el("p", "note", "Notes start after the first page."));
   else {
     if (s.story) s.story.split(/\n+/).forEach(p => card.append(el("p", /^Open threads/i.test(p) ? "story open" : "story", esc(p))));
     if ((s.cast || []).length) { const c = el("div", "cast"); s.cast.forEach(x => c.append(el("div", "", `<b lang="zh">${esc(conv(x.name))}</b> <span>${esc(x.who)}</span>`))); card.append(el("h4", "", "Who's who"), c); }
-    card.append(el("p", "note", `Pages 1 to ${s.upto} only. Nothing from outside the book.`));
+    card.append(el("p", "note", `From pages 1 to ${s.upto} only. Nothing from outside them.`));
   }
   // v107: the pages, by their first line, to check the order; ↑ ↓ move one, tap opens it
-  const name = h.book, list = el("div", "bpages"); let moved = false;
+  const list = el("div", "bpages"); let moved = false;
   const paint = () => {
     list.replaceChildren();
     bookPages(name).forEach((p, i, a) => {
       const r = el("div", "bprow"), go = btn("", "bpgo", () => { sheet.remove(); if (moved) bookRedo(name); openHistory(p); });
-      go.innerHTML = `<b>${p.bn}</b><span lang="zh">${esc(conv([...p.text.trim().split("\n")[0]].slice(0, 14).join("")))}</span>`;
+      go.innerHTML = `<b>${p.bn}</b><span><i class="noink" lang="zh">${esc(conv([...p.text.trim().split("\n")[0]].slice(0, 14).join("")))}</i><small>Added ${esc(whenOf(p))}</small></span>`;
       const mv = d => { const q = a[i + d]; if (!q) return; [p.bn, q.bn] = [q.bn, p.bn]; moved = true; saveHistory(); scheduleSync(); paint(); };
       const up = btn("↑", "iconbtn", () => mv(-1)), dn = btn("↓", "iconbtn", () => mv(1)); up.disabled = !i; dn.disabled = i === a.length - 1;
       up.setAttribute("aria-label", "Earlier"); dn.setAttribute("aria-label", "Later");
-      r.append(go, up, dn); list.append(r);
+      // v108: ✕ takes the page out of the binder (it stays in History as a text of its own)
+      const x = btn("✕", "iconbtn bpx"); x.setAttribute("aria-label", "Remove from binder");
+      x.onclick = e => { e.stopPropagation(); armConfirm(x, on => { x.textContent = on ? "Remove?" : "✕"; x.classList.toggle("on", on); }, () => { delete p.book; delete p.bn; bookNumber(name); moved = true; saveHistory(); scheduleSync(); paint(); }, true); };
+      r.append(go, up, dn, x); list.append(r);
     });
   };
   paint();
@@ -4043,8 +4047,15 @@ function renderHistory() {
   list.append(chips);
   const shown = textHistory.filter(h => histFilter === "all" || (histFilter === "file" ? h.kind === "file" || h.kind === "pdf" : h.kind === histFilter));
   if (!shown.length) list.append(el("p", "note", "Nothing yet."));
+  const binders = new Set();
   shown.forEach(h => {
     const row = el("div", "hitem");
+    // v108: a binder is one row (where its newest page would be); it opens the page list
+    if (h.book && books.list[h.book] && !h.doc) {
+      if (binders.has(h.book)) return; binders.add(h.book);
+      const ps = bookPages(h.book), b = el("button", "load", `<span class="hk">Binder</span><span class="ht">${esc(h.book)}</span><span class="note">${ps.length} page${ps.length === 1 ? "" : "s"} · last added ${esc(whenOf(ps.reduce((m, x) => madeOf(x) > madeOf(m) ? x : m, ps[0])))}</span>`);
+      b.type = "button"; b.onclick = () => storySheet(h.book); row.append(b); list.append(row); return;
+    }
     const first = h.kind === "list" ? (h.title || "Word list") : histName(h);
     const size = h.doc ? `${h.doc.pages.length} page${h.doc.pages.length === 1 ? "" : "s"}${h.doc.pages.length > 1 && h.doc.i ? `, on ${h.doc.i + 1}` : ""}` : h.kind === "list" ? `${(h.words || []).length} words` : `${[...(h.text || "")].length} characters`;
     const load = el("button", "load", `<span class="hk">${HKINDS[h.kind] || "Text"}</span><span class="ht" lang="zh">${esc(first)}</span><span class="note">${esc(h.made || h.id ? whenOf(h) : h.at)} · ${size}</span>`);
@@ -4629,7 +4640,7 @@ function aiBreakdown(me) {
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
 const AI_NAMES = { title: "Text names", wordset: "Word Decks", card: "Word cards", words: "Word lists", ocr: "Photo reading", translate: "Translate (EN)", explain: "Explain (解)", judge: "Meaning checks",
-  book: "Book notes", bookorder: "Book page order", zhquery: "Explore search", tozh: "English to Chinese", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
+  book: "Binder notes", bookorder: "Binder page order", zhquery: "Explore search", tozh: "English to Chinese", rate: "Difficulty rating", simplify: "Easier versions", topics: "Explore topics" };
 function tallyText(a) { return `AI today: ${a.today.calls} call${a.today.calls === 1 ? "" : "s"} · ${money(a.today.cost)} · this month ${money(a.month.cost)} (all users)`; }
 // v45: everything only owners see lives on one page, Admin tools, behind one menu entry.
 function paintTally(a) { $("aiLine").textContent = a ? tallyText(a) : "No AI use yet."; $("aiTally").hidden = !a; }
