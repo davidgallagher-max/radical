@@ -757,18 +757,24 @@ module.exports = async (req, res) => {
         : await kept("translate", sentence, () => askClaude(FAST_MODEL, TRANSLATE_PROMPT(sentence), 2500));
       return res.status(200).json({ translation });
     }
-    if (body.action === "bookorder") {  // v107: put a book's pages in story order from how each begins and ends
+    if (body.action === "bookorder") {  // v107, v109: put a binder's pages in story order, reading whole pages
       const name = String(body.name || "").trim().slice(0, 60);
-      const pages = (Array.isArray(body.pages) ? body.pages : []).slice(0, 60).map(p => ({ id: String(p.id || "").slice(0, 40), start: String(p.start || "").slice(0, 160), end: String(p.end || "").slice(0, 100) })).filter(p => p.id);
+      let room = 48000;
+      const pages = (Array.isArray(body.pages) ? body.pages : []).slice(0, 80).map(p => { const t = String(p.text || ((p.start || "") + "\n…\n" + (p.end || ""))).slice(0, Math.max(200, Math.min(1500, room))); room -= t.length; return { id: String(p.id || "").slice(0, 40), text: t }; }).filter(p => p.id);
       if (pages.length < 2) return res.status(200).json({ order: pages.map(p => p.id) });
-      const prompt = `These are pages of the book "${name}", in no particular order. For each: how it begins and how it ends.
-${pages.map(p => `[${p.id}] begins: ${p.start}\n[${p.id}] ends: ${p.end}`).join("\n\n")}
+      const fixed = (Array.isArray(body.fixed) ? body.fixed : []).map(String).filter(id => pages.some(p => p.id === id));
+      const prompt = `These are pages from "${name}" (a book or a set of class notes), not in order.
+${pages.map(p => `=== [${p.id}] ===\n${p.text}`).join("\n\n")}
 
-Put them in reading order, using how one page's end runs into the next page's beginning, and the story's logic. Use only these texts.
-Return ONLY JSON: {"order":["id", ...]} with every id once.`;
-      const out = parseJSON(await askClaude(FAST_MODEL, prompt, 600));
-      const order = out && Array.isArray(out.order) ? out.order.map(String).filter(id => pages.some(p => p.id === id)) : [];
-      return res.status(200).json({ order: new Set(order).size === pages.length ? order : pages.map(p => p.id) });
+${fixed.length > 1 ? `The reader already put these pages in this order, and it must stay as it is: ${fixed.join(", ")}. Place only the other pages among them, where each fits best.` : "Put all the pages in reading order."} Use how one page's end runs into the next page's start, printed page numbers or headings if any, and the story's logic (scenes, time, who knows what). Use only these texts.
+Return ONLY JSON: {"order":["id", ...]} with every id exactly once.`;
+      const out = parseJSON(await askClaude(CARD_MODEL, prompt, 900));
+      let order = out && Array.isArray(out.order) ? [...new Set(out.order.map(String))].filter(id => pages.some(p => p.id === id)) : [];
+      if (order.length !== pages.length) return res.status(502).json({ error: "The order wasn't readable. Try again." });
+      if (fixed.length > 1) {  // keep the reader's order no matter what came back: the fixed pages fill their slots in their order
+        const slots = order.map(id => fixed.includes(id)); let k = 0; order = order.map((id, i) => slots[i] ? fixed[k++] : id);
+      }
+      return res.status(200).json({ order });
     }
     if (body.action === "book") {
       const name = String(body.name || "").trim().slice(0, 60), text = String(body.text || "").trim().slice(0, 5000);

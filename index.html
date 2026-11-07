@@ -1249,8 +1249,11 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .setbody{display:grid;gap:10px}
 .voices{gap:8px}
 .histchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.hitem .wsel{all:unset;cursor:pointer;padding:6px 2px;display:grid;place-items:center}.hitem .wsel i{width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--muted);display:grid;place-items:center}.hitem .wsel[aria-checked="true"] i{background:var(--accent);box-shadow:none}.hitem .wsel[aria-checked="true"] i::after{content:"";width:5px;height:10px;border:solid var(--bg);border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+.hitem.binder{grid-template-columns:0 1fr;border-color:var(--accent)}.hitem.binder .hsel0{display:block}.hitem.sel{border-color:var(--accent)}.dragging{position:relative;z-index:20;opacity:.92;box-shadow:0 10px 30px rgba(0,0,0,.45)}.dropto{outline:2px solid var(--accent);outline-offset:2px}.histq{margin:0 0 4px}.hrows{display:grid;gap:8px}#historyScreen.hassel .inner{padding-bottom:150px}
+.bpdrag{touch-action:none;cursor:grab;font-size:1.1rem}.bptag{font-style:normal;font-size:.72rem;padding:1px 6px;border-radius:999px;border:1px solid var(--accent);color:var(--accent);margin-right:4px}.bptag.dup{border-color:var(--gold2,#c9a227);color:var(--gold2,#c9a227)}.bprow.dragging{background:var(--surface)}
 .hitem .hk{display:block;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
-.hitem{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px 12px}
+.hitem{display:grid;grid-template-columns:auto 1fr auto;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px 12px}
 .hitem button.load{all:unset;cursor:pointer;display:grid;gap:3px;min-width:0}
 .hitem .ht{font-family:var(--font-zh);font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .panel{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
@@ -1358,7 +1361,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
     </header>
     <h3 class="sec tabsec"><span lang="zh">讀</span>Read<span class="togo" hidden></span></h3>
     <details class="tpanel addbox" id="addPanel">
-      <summary class="addsum"><span class="plus" aria-hidden="true">＋</span>New text</summary>
+      <summary class="addsum"><span class="plus" aria-hidden="true">＋</span>Add, open or manage texts</summary>
       <div class="addbody">
       <div class="toolbar">
         <label class="tool" title="Photo or file"><span class="ti">拍</span>Photo/File
@@ -1775,13 +1778,36 @@ async function liveUpdate() {
 }
 // v63: iOS rarely starts the app fresh, so a page fetched earlier could wait days. Back in the app (or the moment a
 // check finds one), a newer page is taken by reloading, unless you're mid-card, typing, listening or in a sheet.
+// v109: your place (tab, scroll, and the open text's page) is kept when the app goes to the back and before any reload
+// the app makes itself, and given back when it starts again (within 12 hours); a reload it made skips the splash.
+const PLACE_TABS = ["readScreen", "wikiScreen", "wordsScreen", "trackScreen"];
+function savePlace(reload) {
+  try { const t = PLACE_TABS.includes(tab) ? tab : "readScreen", sc = document.getElementById(t);
+    localStorage.setItem("radical-place", JSON.stringify({ at: Date.now(), tab: t, top: sc ? sc.scrollTop : 0, reload: !!reload })); } catch (e) {}
+}
+function restorePlace(p) {
+  try {
+    if (p.tab && p.tab !== tab && PLACE_TABS.includes(p.tab)) setTab(p.tab);
+    const sc = document.getElementById(p.tab || "readScreen"), t0 = Date.now();
+    const go = () => { if (!sc) return; if (sc.scrollHeight - sc.clientHeight >= p.top - 2 || Date.now() - t0 > 4000) { sc.scrollTop = p.top; return; }
+      const more = sc.querySelector(".more, .showmore"); if (more && p.tab === "readScreen") more.click(); setTimeout(go, 150); };
+    if (p.top > 0) setTimeout(go, 60);
+  } catch (e) {}
+}
+let reloading = false;
+function reloadKeep() { savePlace(true); reloading = true; location.reload(); }
+document.addEventListener("visibilitychange", () => { if (document.hidden && !reloading) savePlace(false); });
+window.addEventListener("pagehide", () => { if (!reloading) savePlace(false); });
 function takeLive() {
   const v = localStorage.getItem("radical-live-v"), num = x => parseInt(String(x || "").slice(1), 10) || 0;
   if (!v || num(v) <= num(APP_VERSION) || v === localStorage.getItem("radical-live-bad") || document.hidden) return;
   const a = document.activeElement, busy = !$("reviewScreen").hidden || document.querySelector(".sheet") || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || (window.speechSynthesis && speechSynthesis.speaking);
-  if (!busy) location.reload();
+  if (!busy) reloadKeep();
 }
-if (NATIVE) document.addEventListener("visibilitychange", () => { if (document.hidden) nativeBadge(); else { takeLive(); liveUpdate().then(takeLive); } });
+// v109: a newer page waits until you've been away (a minute or more), never while you're reading; the reload keeps
+// your place (`reloadKeep`). A check that finds one while you're here leaves it for next time.
+let hiddenAt = 0;
+if (NATIVE) document.addEventListener("visibilitychange", () => { if (document.hidden) { hiddenAt = Date.now(); nativeBadge(); } else { if (hiddenAt && Date.now() - hiddenAt > 6e4) takeLive(); liveUpdate(); } });
 if (window.__radicalLive) try { localStorage.setItem("radical-live-ok", window.__radicalLive); } catch (e) {}  // this live page started
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -1836,7 +1862,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v108";
+const APP_VERSION = "v109";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3851,8 +3877,9 @@ function setText(text, keepDoc, kind = "typed", title = "", fromHist) {
   // v104: a text added with a book picked is its next page (the same text again keeps its number)
   let bk = null;
   if (!fromHist && !title && ["typed", "photo", "file"].includes(kind) && bookNow()) {
-    const b = books.list[bookNow()], was = textHistory.find(x => !x.doc && x.text === text && x.book === bookNow());
-    bk = { book: bookNow(), bn: was ? was.bn : (b.pages = (b.pages || 0) + 1) }; b.t = Date.now(); saveBooks();
+    const b = books.list[bookNow()], was = textHistory.find(x => !x.doc && x.text === text && x.book === bookNow()), dup = !was && sameAs(bookNow(), { text });
+    if (dup) toast(`Already page ${dup.bn} of ${esc(bookNow())}`, 2400);  // v109: a copy isn't added again
+    else { bk = { book: bookNow(), bn: was ? was.bn : (b.pages = (b.pages || 0) + 1) }; b.t = Date.now(); saveBooks(); }
   }
   $("src").value = text; const id = record({ kind, text, ...(title ? { title } : {}), ...(name ? { name } : {}), ...(bk || {}) }); store.set("radical-text", text); $("addPanel").open = false;
   if (bk) bookLearn(bk.book, bk.bn, text);
@@ -3958,32 +3985,56 @@ function bookPicker(done, keep) {
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
 function paintBookChip() { const b = $("bookChip"); if (!b) return; const n = bookNow(); b.innerHTML = `Binder: <b>${esc(n || "None")}</b> ▾`; b.classList.toggle("on", !!n); }
-// v105, v107: put a page into a book (or take it out). It joins at the end; then, with 2+ pages, the AI puts the
-// pages in story order from how each begins and ends (`bookSort`), and the notes are rebuilt from page 1 in order.
-// The pages list in Story so far shows each page's first line, with ↑ ↓ to fix the order by hand.
-function fileToBook(h) {
-  bookPicker(name => {
-    const old = h.book;
-    if (name === old) return;
-    if (!name) { delete h.book; delete h.bn; saveHistory(); scheduleSync(); paintTextHead(); bookRedo(old); return; }
-    const last = textHistory.filter(x => x !== h && x.book === name && !x.doc).reduce((m, x) => Math.max(m, x.bn || 0), 0);
-    h.book = name; h.bn = last + 1; bookNumber(name); saveHistory(); scheduleSync(); paintTextHead();
-    if (old) bookRedo(old);
-    if (books.list[name].pages > 1) bookSort(name); else bookLearn(name, h.bn, h.text);
-  }, { book: h.book || "" });
+// v105, v107, v109: put pages into a binder (or take one out). A page filed from History is "new" (`fresh`) until
+// it's sorted: the AI reads whole pages and puts them in story order. Once you move a page by hand (`b.hand`), your
+// order stays: sorting then only fits the new pages in among the others. The AI's last order is kept (`b.ai`), so
+// "Back to AI order" restores it without asking again. A copy of a page already in the binder isn't added.
+const pageSig = t => String(t || "").replace(/[\s\p{P}\p{S}]/gu, "");
+function sameAs(name, h) {  // the page in this binder with the same text (spaces and punctuation aside), if any
+  const a = pageSig(h.text); if (!a) return null;
+  return bookPages(name).find(p => { if (p === h) return false; const b = pageSig(p.text); return b === a || (Math.min(a.length, b.length) / Math.max(a.length, b.length) > .9 && (a.includes(b) || b.includes(a))); }) || null;
+}
+function fileToBook(h) { bookPicker(name => fileMany([h], name), { book: h.book || "" }); }
+function fileMany(hs, name) {
+  const olds = new Set(), skipped = [];
+  hs = hs.filter(h => h.text && !h.doc && h.kind !== "list");
+  if (!name) { hs.forEach(h => { if (h.book) { olds.add(h.book); delete h.book; delete h.bn; delete h.fresh; } }); }
+  else hs.forEach(h => {
+    if (h.book === name) return;
+    const dup = sameAs(name, h); if (dup) { skipped.push(dup.bn); return; }
+    if (h.book) olds.add(h.book);
+    const last = bookPages(name).reduce((m, x) => Math.max(m, x.bn || 0), 0);
+    h.book = name; h.bn = last + 1; h.fresh = true;
+  });
+  saveHistory(); scheduleSync(); paintTextHead(); if (!$("historyScreen").hidden) renderHistory();
+  olds.forEach(n => { if (n !== name) { bookNumber(n); bookRedo(n); } });
+  if (skipped.length) toast(skipped.length === 1 ? `Already page ${skipped[0]}` : `${skipped.length} were already in it`, 2400);
+  if (name && books.list[name]) { bookNumber(name); if (bookPages(name).some(p => p.fresh)) bookSort(name); }
 }
 const bookPages = name => textHistory.filter(x => x.book === name && x.text && !x.doc).sort((a, c) => (a.bn || 0) - (c.bn || 0));
 function bookNumber(name) { const ps = bookPages(name), b = books.list[name]; ps.forEach((x, i) => x.bn = i + 1); if (b) { b.pages = ps.length; b.t = Date.now(); saveBooks(); } return ps; }
 async function bookSort(name) {
-  const ps = bookNumber(name);
-  if (ps.length < 2 || !(await accessToken().catch(() => null))) return bookRedo(name);
+  const ps = bookNumber(name), b = books.list[name]; if (!b) return;
+  const before = ps.filter(p => !p.fresh).map(p => p.id).join();
+  if (ps.length < 2 || !(await accessToken().catch(() => null))) { ps.forEach(p => delete p.fresh); saveHistory(); return bookRedo(name); }
   toast(`Putting ${esc(name)} in order…`, 2200);
+  let ok = false;
   try {
-    const r = await claude({ action: "bookorder", name, pages: ps.map(p => ({ id: p.id, start: p.text.trim().slice(0, 160), end: p.text.trim().slice(-100) })) });
+    const fixed = b.hand ? ps.filter(p => !p.fresh).map(p => p.id) : [];
+    let room = 45000;
+    const pages = ps.map(p => { const t = p.text.trim().slice(0, Math.max(300, Math.min(1500, room / ps.length))); room -= t.length; return { id: p.id, text: t }; });
+    const r = await claude({ action: "bookorder", name, pages, fixed });
     const ids = (r.order || []).filter(id => ps.some(p => p.id === id));
-    if (new Set(ids).size === ps.length) ids.forEach((id, i) => { ps.find(p => p.id === id).bn = i + 1; });
+    if (new Set(ids).size === ps.length) { ids.forEach((id, i) => { ps.find(p => p.id === id).bn = i + 1; }); ok = true; }
   } catch (e) {}
-  bookNumber(name); saveHistory(); scheduleSync(); paintTextHead(); bookRedo(name);
+  if (!ok) { toast("Couldn't sort just now. Try Sort again.", 2400); return; }
+  ps.forEach(p => delete p.fresh);
+  const now = bookNumber(name); b.ai = now.map(p => p.id); saveBooks(); saveHistory(); scheduleSync(); paintTextHead();
+  // the old pages kept their order and the new ones came last: only the new ones need reading; else start again
+  const kept = now.filter(p => before.split(",").includes(p.id)).map(p => p.id).join();
+  if (kept === before && now.slice(0, before ? before.split(",").length : 0).map(p => p.id).join() === before && (b.upto || 0) >= (before ? before.split(",").length : 0)) {
+    for (const p of now.slice(b.upto || 0)) await bookLearn(name, p.bn, p.text);
+  } else bookRedo(name);
 }
 async function bookRedo(name) {  // the notes again from page 1, one page at a time
   const b = books.list[name]; if (!b) return;
@@ -3992,6 +4043,26 @@ async function bookRedo(name) {  // the notes again from page 1, one page at a t
   const run = bookRedo.run = {};
   if (pages.length) toast(`Rereading ${esc(name)} from page 1…`, 2200);
   for (const p of pages) { if (bookRedo.run !== run) return; await bookLearn(name, p.bn, p.text); if ((books.list[name] || {}).upto !== p.bn) return; }
+}
+// v109: drag a row. With `hold` (ms) it starts after a still press (History rows); without, at once (a ≡ handle).
+// `over(el)` while moving, `drop(el)` at the end with the element under the finger; row._dragged stops the click after.
+function dragRow(row, start, { hold = 0, over, drop }) {
+  let t = null, sx = 0, sy = 0, on = false;
+  const block = e => { if (on) e.preventDefault(); };
+  const under = e => { row.style.pointerEvents = "none"; const u = document.elementFromPoint(e.clientX, e.clientY); row.style.pointerEvents = ""; return u; };
+  const stop = () => { on = false; document.removeEventListener("touchmove", block, { passive: false }); row.classList.remove("dragging"); row.style.transform = ""; };
+  start.addEventListener("pointerdown", e => {
+    if (e.button) return; sx = e.clientX; sy = e.clientY; const id = e.pointerId;
+    const go = () => { t = null; on = true; row.classList.add("dragging"); try { start.setPointerCapture(id); } catch (x) {} document.addEventListener("touchmove", block, { passive: false }); try { navigator.vibrate && navigator.vibrate(8); } catch (x) {} };
+    if (hold) t = setTimeout(go, hold); else { e.preventDefault(); go(); }
+  });
+  start.addEventListener("pointermove", e => {
+    if (!on) { if (t && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) { clearTimeout(t); t = null; } return; }
+    row.style.transform = `translate(${hold ? e.clientX - sx : 0}px, ${e.clientY - sy}px)`; if (over) over(under(e));
+  });
+  start.addEventListener("pointerup", e => { clearTimeout(t); t = null; if (!on) return; const u = under(e); stop(); row._dragged = Date.now(); if (drop) drop(u); });
+  start.addEventListener("pointercancel", () => { clearTimeout(t); t = null; if (on) { stop(); if (over) over(null); } });
+  start.addEventListener("contextmenu", e => { if (hold) e.preventDefault(); });
 }
 function storySheet(h) {  // v108: a page, or a binder's name (from History)
   const name = typeof h === "string" ? h : h.book;
@@ -4003,25 +4074,36 @@ function storySheet(h) {  // v108: a page, or a binder's name (from History)
     if ((s.cast || []).length) { const c = el("div", "cast"); s.cast.forEach(x => c.append(el("div", "", `<b lang="zh">${esc(conv(x.name))}</b> <span>${esc(x.who)}</span>`))); card.append(el("h4", "", "Who's who"), c); }
     card.append(el("p", "note", `From pages 1 to ${s.upto} only. Nothing from outside them.`));
   }
-  // v107: the pages, by their first line, to check the order; ↑ ↓ move one, tap opens it
-  const list = el("div", "bpages"); let moved = false;
+  // v107, v109: the pages by their first line; drag ≡ to reorder (your order then stays), tap one to open it,
+  // ✕ takes it out of the binder (it stays in History). New pages and copies are tagged.
+  const list = el("div", "bpages"), b = books.list[name] || {}, foot = el("div", "bpfoot"); let moved = false;
   const paint = () => {
     list.replaceChildren();
-    bookPages(name).forEach((p, i, a) => {
-      const r = el("div", "bprow"), go = btn("", "bpgo", () => { sheet.remove(); if (moved) bookRedo(name); openHistory(p); });
-      go.innerHTML = `<b>${p.bn}</b><span><i class="noink" lang="zh">${esc(conv([...p.text.trim().split("\n")[0]].slice(0, 14).join("")))}</i><small>Added ${esc(whenOf(p))}</small></span>`;
-      const mv = d => { const q = a[i + d]; if (!q) return; [p.bn, q.bn] = [q.bn, p.bn]; moved = true; saveHistory(); scheduleSync(); paint(); };
-      const up = btn("↑", "iconbtn", () => mv(-1)), dn = btn("↓", "iconbtn", () => mv(1)); up.disabled = !i; dn.disabled = i === a.length - 1;
-      up.setAttribute("aria-label", "Earlier"); dn.setAttribute("aria-label", "Later");
+    const ps = bookPages(name);
+    ps.forEach((p, i) => {
+      const r = el("div", "bprow"), go = btn("", "bpgo", () => { if (Date.now() - (r._dragged || 0) < 400) return; sheet.remove(); if (moved) bookRedo(name); openHistory(p); });
+      const dup = ps.slice(0, i).find(q => q !== p && sameAs(name, p) === q);
+      go.innerHTML = `<b>${p.bn}</b><span><i class="noink" lang="zh">${esc(conv([...p.text.trim().split("\n")[0]].slice(0, 14).join("")))}</i><small>${p.fresh ? '<em class="bptag">new</em> ' : ""}${dup ? `<em class="bptag dup">Same as page ${dup.bn}</em> ` : ""}Added ${esc(whenOf(p))}</small></span>`;
+      const h = btn("≡", "iconbtn bpdrag"); h.setAttribute("aria-label", "Drag to reorder");
+      r._page = p;
+      dragRow(r, h, { over: u => list.querySelectorAll(".bprow").forEach(x => x.classList.toggle("dropto", !!u && x !== r && x.contains(u))),
+        drop: u => { const t = u && u.closest && u.closest(".bprow"); list.querySelectorAll(".dropto").forEach(x => x.classList.remove("dropto")); if (!t || t === r || !t._page) return;
+          const a = bookPages(name).filter(x => x !== p), k = a.indexOf(t._page); a.splice(p.bn < t._page.bn ? k + 1 : k, 0, p); a.forEach((x, n) => { x.bn = n + 1; delete x.fresh; });
+          b.hand = true; moved = true; saveBooks(); saveHistory(); scheduleSync(); paint(); } });
       // v108: ✕ takes the page out of the binder (it stays in History as a text of its own)
       const x = btn("✕", "iconbtn bpx"); x.setAttribute("aria-label", "Remove from binder");
-      x.onclick = e => { e.stopPropagation(); armConfirm(x, on => { x.textContent = on ? "Remove?" : "✕"; x.classList.toggle("on", on); }, () => { delete p.book; delete p.bn; bookNumber(name); moved = true; saveHistory(); scheduleSync(); paint(); }, true); };
-      r.append(go, up, dn, x); list.append(r);
+      x.onclick = e => { e.stopPropagation(); armConfirm(x, on => { x.textContent = on ? "Remove?" : "✕"; x.classList.toggle("on", on); }, () => { delete p.book; delete p.bn; delete p.fresh; bookNumber(name); moved = true; saveHistory(); scheduleSync(); paint(); }, true); };
+      r.append(h, go, x); list.append(r);
     });
+    foot.replaceChildren();
+    const fresh = ps.filter(p => p.fresh).length;
+    if (fresh) foot.append(btn(`Sort ${fresh} new page${fresh === 1 ? "" : "s"}`, "btn outl small", () => { sheet.remove(); bookSort(name); }));
+    else if (b.hand && (b.ai || []).length) foot.append(btn("Back to AI order", "btn outl small", () => {
+      const all = bookPages(name), ord = b.ai.map(id => all.find(p => p.id === id)).filter(Boolean).concat(all.filter(p => !b.ai.includes(p.id)));
+      ord.forEach((p, n) => p.bn = n + 1); b.hand = false; moved = true; saveBooks(); saveHistory(); scheduleSync(); paint(); }));
   };
   paint();
-  const sortB = btn("Sort by story", "btn outl small", () => { close(); bookSort(name); });
-  card.append(el("h4", "", "Pages"), list); if (bookPages(name).length > 1) card.append(sortB);
+  card.append(el("h4", "", "Pages"), list, foot);
   card.append(btn("Close", "btn ghost", close));
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
@@ -4036,33 +4118,80 @@ function openHistory(h) {
   }
   setText(h.text, false, h.kind, h.title || "", true);
 }
+// v109: History has a search box, tick circles like Practice's word list (a bar: Select all, Add to binder, Delete),
+// a two-tap Delete, and a still press on a text drags it onto a binder row to file it there.
+const histPicks = new Set(); let histQuery = "";
+function histMatch(h, q) {
+  if (!q) return true;
+  const qs = [q, toTrad(q), toSimp(q)].map(x => x.toLowerCase());
+  const hay = [histName(h), h.name, h.en, h.title, h.book, h.text, h.doc && h.doc.title].filter(Boolean).join("\n").toLowerCase();
+  return qs.some(x => hay.includes(x));
+}
 function renderHistory() {
   const list = $("histList"); list.innerHTML = "";
+  const q = el("input", "srcname histq"); q.type = "search"; q.placeholder = "Search"; q.value = histQuery; q.autocomplete = "off"; q.setAttribute("aria-label", "Search History");
+  const rows = el("div", "list hrows");
+  q.oninput = () => { histQuery = q.value.trim(); paintHistRows(rows); };
   const chips = el("div", "filters histchips");
   HFILTERS.forEach(([k, label]) => {
     const n = k === "all" ? textHistory.length : textHistory.filter(h => k === "file" ? h.kind === "file" || h.kind === "pdf" : h.kind === k).length;
     if (k !== "all" && !n) return;
     const b = el("button", "", `${label} ${n}`); b.type = "button"; b.setAttribute("aria-pressed", histFilter === k); b.onclick = () => { histFilter = k; renderHistory(); }; chips.append(b);
   });
-  list.append(chips);
-  const shown = textHistory.filter(h => histFilter === "all" || (histFilter === "file" ? h.kind === "file" || h.kind === "pdf" : h.kind === histFilter));
-  if (!shown.length) list.append(el("p", "note", "Nothing yet."));
-  const binders = new Set();
+  list.append(q, chips, rows);
+  paintHistRows(rows);
+}
+function paintHistRows(box) {
+  box.replaceChildren();
+  [...histPicks].forEach(h => { if (!textHistory.includes(h)) histPicks.delete(h); });
+  const shown = textHistory.filter(h => (histFilter === "all" || (histFilter === "file" ? h.kind === "file" || h.kind === "pdf" : h.kind === histFilter)) && histMatch(h, histQuery));
+  if (!shown.length) box.append(el("p", "note", histQuery ? "Nothing matches." : "Nothing yet."));
+  const binders = new Set(), pickable = [];
   shown.forEach(h => {
     const row = el("div", "hitem");
     // v108: a binder is one row (where its newest page would be); it opens the page list
     if (h.book && books.list[h.book] && !h.doc) {
       if (binders.has(h.book)) return; binders.add(h.book);
+      row.classList.add("binder"); row._book = h.book;
       const ps = bookPages(h.book), b = el("button", "load", `<span class="hk">Binder</span><span class="ht">${esc(h.book)}</span><span class="note">${ps.length} page${ps.length === 1 ? "" : "s"} · last added ${esc(whenOf(ps.reduce((m, x) => madeOf(x) > madeOf(m) ? x : m, ps[0])))}</span>`);
-      b.type = "button"; b.onclick = () => storySheet(h.book); row.append(b); list.append(row); return;
+      b.type = "button"; b.onclick = () => storySheet(h.book); row.append(el("span", "hsel0"), b); box.append(row); return;
     }
+    pickable.push(h);
+    const on = histPicks.has(h);
+    if (on) row.classList.add("sel");
+    const sel = el("button", "wsel"); sel.type = "button"; sel.setAttribute("role", "checkbox"); sel.setAttribute("aria-checked", on); sel.setAttribute("aria-label", "Select"); sel.innerHTML = "<i></i>";
+    sel.onclick = () => { on ? histPicks.delete(h) : histPicks.add(h); paintHistRows(box); };
     const first = h.kind === "list" ? (h.title || "Word list") : histName(h);
     const size = h.doc ? `${h.doc.pages.length} page${h.doc.pages.length === 1 ? "" : "s"}${h.doc.pages.length > 1 && h.doc.i ? `, on ${h.doc.i + 1}` : ""}` : h.kind === "list" ? `${(h.words || []).length} words` : `${[...(h.text || "")].length} characters`;
     const load = el("button", "load", `<span class="hk">${HKINDS[h.kind] || "Text"}</span><span class="ht" lang="zh">${esc(first)}</span><span class="note">${esc(h.made || h.id ? whenOf(h) : h.at)} · ${size}</span>`);
-    load.type = "button"; load.onclick = () => openHistory(h);
-    const del = btn("Delete", "btn ghost small", () => { histGone([h.id]); textHistory = textHistory.filter(x => x !== h); saveHistory(); renderHistory(); scheduleSync(); });
-    row.append(load, del); list.append(row);
+    load.type = "button"; load.onclick = () => { if (Date.now() - (row._dragged || 0) < 400) return; openHistory(h); };
+    const del = btn("Delete", "btn ghost small");
+    del.onclick = e => { e.stopPropagation(); armConfirm(del, on => del.textContent = on ? "Delete?" : "Delete", () => { histGone([h.id]); textHistory = textHistory.filter(x => x !== h); histPicks.delete(h); saveHistory(); paintHistRows(box); scheduleSync(); }, true); };
+    if (h.text && !h.doc && h.kind !== "list") dragRow(row, load, { hold: 450,
+      over: u => box.querySelectorAll(".hitem.binder").forEach(x => x.classList.toggle("dropto", !!u && x.contains(u))),
+      drop: u => { box.querySelectorAll(".dropto").forEach(x => x.classList.remove("dropto")); const t = u && u.closest && u.closest(".hitem.binder"); if (!t) return;
+        const hs = histPicks.has(h) ? [...histPicks] : [h]; histPicks.clear(); fileMany(hs, t._book); } });
+    row.append(sel, load, del); box.append(row);
   });
+  histBar(pickable, box);
+}
+function histBar(shown, box) {
+  const scr = $("historyScreen"); let bar = $("histbar");
+  scr.classList.toggle("hassel", histPicks.size > 0);
+  if (!histPicks.size) { if (bar) bar.remove(); return; }
+  if (!bar) { bar = el("div", "selbar"); bar.id = "histbar"; scr.append(bar); }
+  const all = shown.length && shown.every(h => histPicks.has(h)), redo = () => paintHistRows(box);
+  const top = el("div", "selrow");
+  top.append(el("b", "", `${histPicks.size} selected`),
+    btn(all ? "Select none" : `Select all ${shown.length}`, "btn ghost small", () => { if (all) shown.forEach(h => histPicks.delete(h)); else shown.forEach(h => histPicks.add(h)); redo(); }),
+    btn("Cancel", "btn outl small selx", () => { histPicks.clear(); redo(); }));
+  const acts = el("div", "selrow selacts");
+  const into = btn("Add to binder ▾", "btn", () => bookPicker(name => { const hs = [...histPicks]; histPicks.clear(); fileMany(hs, name); redo(); }, { book: "" }));
+  const del = btn(`Delete ${histPicks.size}`, "btn ghost", () => {
+    if (del.dataset.sure !== "1") { del.dataset.sure = "1"; del.textContent = `Delete ${histPicks.size}?`; del.classList.add("confirm"); return; }
+    histGone([...histPicks].map(h => h.id)); textHistory = textHistory.filter(h => !histPicks.has(h)); histPicks.clear(); saveHistory(); scheduleSync(); redo();
+  });
+  acts.append(into, del); bar.replaceChildren(top, acts);
 }
 $("histBtn").onclick = () => { remember($("src").value); renderHistory(); go("historyScreen"); };
 
@@ -4076,7 +4205,7 @@ const AI_WHY = { explain: "use Explain", translate: "see the English", words: "f
   notes: "read class notes", tozh: "read it in Chinese", card: "make cards", wordset: "start a Word Deck", example: "get new sentences", judge: "check meanings", friends: "add friends" };
 function deviceId() { let id = store.get("radical-device", ""); if (!id) { id = Math.random().toString(36).slice(2) + Date.now().toString(36); store.set("radical-device", id); } return id; }
 // v58: how long each AI action normally takes; a call running over twice that counts as stuck
-const aiLive = new Set(), AI_NORMAL = { card: 2e4, notes: 4e4, ocr: 25e3, wordset: 2e4, words: 15e3, explain: 12e3, topics: 15e3, simplify: 2e4, example: 12e3, translate: 25e3 };
+const aiLive = new Set(), AI_NORMAL = { card: 2e4, notes: 4e4, ocr: 25e3, wordset: 2e4, words: 15e3, explain: 12e3, topics: 15e3, simplify: 2e4, example: 12e3, translate: 25e3, bookorder: 4e4, book: 2e4 };
 const aiStuck = j => Date.now() - j.t0 > 2 * (AI_NORMAL[j.action] || 1e4);
 function aiRestart() { let n = 0; aiLive.forEach(j => { if (aiStuck(j) && j.ctrl) { j.again = true; j.ctrl.abort(); n++; } }); return n; }
 // Failures shown on screen can leave a way to try again: a pull to refresh runs it while the message is still showing
@@ -4886,7 +5015,7 @@ function applySettings(st) {
   for (const [k, v] of Object.entries(st.v)) if (SYNC_SETTINGS.includes(k) && typeof v === "string") { try { if (localStorage.getItem(k) !== v) { localStorage.setItem(k, v); if (k === "radical-books") { books = store.get(k, books); if (!books.list) books.list = {}; paintBookChip(); paintTextHead(); } else changed = true; } } catch (e) {} }
   rawSet("radical-settings-t", +st.t || 0); rawSet("radical-settings-sent", +st.t || 0);
   // The settings are read when the app starts, so it starts again (not in the middle of a flash card session).
-  if (changed && $("reviewScreen").hidden) { toast("Settings updated from your account.", 1500); setTimeout(() => location.reload(), 1200); }
+  if (changed && $("reviewScreen").hidden) { toast("Settings updated from your account.", 1500); setTimeout(reloadKeep, 1200); }
 }
 async function syncNow(quietErrors) {
   if (!session) return null;
@@ -9511,7 +9640,7 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
       updateCounts(); paintReadGoal(); checkGoalToday(); if (!$("trackScreen").hidden) renderTrack();
       showNotice();
       if (!$("adminScreen").hidden) { paintTally(store.get("radical-ai-tally", null)); noticePanel(); topicPanel(true); giftPanel(); hitsPanel(); judgePanel(); soundPanel(); prebuildPanel(); aiTally(); }
-      if (await newerVersion()) { location.reload(); return; }
+      if (await newerVersion()) { reloadKeep(); return; }
     } catch (e) {}
     setTimeout(() => { busy = false; ptr.classList.remove("on", "spin"); show(0); if (restarted + retried) toast(`Trying ${restarted + retried === 1 ? "it" : "those"} again…`, 1800); }, 500);
   }
@@ -9559,6 +9688,9 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   const hide = () => { sp0.classList.add("out"); setTimeout(() => sp0.remove(), 500); };
   const finish = () => { if (done) return; done = true; hide(); if (firstRun) openSettings(true); else if (!store.get("radical-tour-seen", false)) setTimeout(showTour, 3200); else if (!store.get("radical-goal-asked", false)) setTimeout(askGoal, 1200); };  // after the harp has rung out
   sp0.onclick = () => { try { harp(); } catch (e) {} finish(); };
+  let place = null; try { place = JSON.parse(localStorage.getItem("radical-place") || "null"); localStorage.removeItem("radical-place"); } catch (e) {}
+  if (place && !(Date.now() - place.at < 12 * 36e5)) place = null;
+  if (place && place.reload && Date.now() - place.at < 10 * 6e4) { done = true; sp0.remove(); }  // v109: our own reload: straight back in
   setTimeout(() => sp0.classList.add("ready"), 6000);  // "Tap to begin" shows even if the drawing is slow
   // A quiet line under 部 from the progress record (nothing on a first launch).
   try {
@@ -9574,11 +9706,12 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
     await ensure("部");
     document.querySelectorAll(".brandMark").forEach(x => { const m = goldMark(); m.classList.add("brandMark"); x.replaceWith(m); });  // the gold 部 heads every tab
     const am = goldMark(); am.style.width = am.style.height = "56px"; $("aboutMark").replaceWith(am);
-    const big = goldMark(); big.classList.add("mark"); $("splashMark").replaceWith(big);
+    const big = goldMark(); big.classList.add("mark"); if ($("splashMark")) $("splashMark").replaceWith(big);
     // The strokes draw over about 5 seconds; then "Tap to begin" fades in. Phones only allow sound after a touch, so
     // the tap is what lets the harp play.
-    animate(big, "部", 1.4, () => sp0.classList.add("ready"));
+    if (big.isConnected) animate(big, "部", 1.4, () => sp0.classList.add("ready"));
     await render(); fitLegend();
+    if (place) restorePlace(place);
   } catch (e) {
     sp0.classList.add("ready");
     const m = el("p", "splerr", "Radical couldn't finish loading. Check your connection, then reload.");

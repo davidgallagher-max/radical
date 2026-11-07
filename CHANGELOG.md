@@ -2,6 +2,15 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v109
+
+- Binder sorting reads whole pages (with the stronger model) and uses page breaks, printed page numbers and the story to place them.
+- Your order sticks: drag pages by ≡ in a binder's page list. Sort then places only the new pages around the ones you arranged. "Back to AI order" undoes your moves.
+- The same page added twice is caught ("Already page N"), in History and when pasted.
+- History: search, select many (Add to binder, Delete N), Delete asks twice, and hold and drag a text onto a binder.
+- The add box is "＋ Add, open or manage texts".
+- An update no longer throws you to the top: the app keeps your tab and scroll, waits until you've been away a minute, and skips the splash after its own reload.
+
 ## v108
 
 - Books are now Binders, since they also suit class notes. The add box says "Binder: None ▾".
