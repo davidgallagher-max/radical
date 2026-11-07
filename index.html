@@ -410,7 +410,7 @@ p.busy{margin:-4px 4px 0}
 .srcform{position:relative;display:flex}
 .bookchip{justify-self:start;margin:-4px 0 0;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-size:.92rem;cursor:pointer}
 .bookchip b{font-weight:600;color:var(--fg)}.bookchip.on{border-color:var(--accent);color:var(--accent)}.bookchip.on b{color:var(--accent)}
-.linkbtn.storylink{display:block;justify-self:start;padding:4px 0 0;font-size:.92rem}.storycard .story{line-height:1.55}.storycard .story.open{color:var(--muted)}.storycard h4{margin:6px 0 0;font-size:.95rem}
+.booklinks{display:flex;gap:16px;flex-wrap:wrap}.linkbtn.storylink{display:block;justify-self:start;padding:4px 0 0;font-size:.92rem}.linkbtn.bookfile{color:var(--muted);font-weight:500}.storycard .story{line-height:1.55}.storycard .story.open{color:var(--muted)}.storycard h4{margin:6px 0 0;font-size:.95rem}
 .storycard .cast{display:grid;gap:6px}.storycard .cast b{font-weight:600;margin-right:6px}.storycard .cast span{color:var(--muted)}
 .srcname{width:100%;box-sizing:border-box;margin:0 0 8px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:1rem}
 .glyph.sentend{cursor:pointer;color:var(--accent)}.glyph.phrase{cursor:pointer}.glyph.phrase.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}.glyph.sentend.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}
@@ -1835,7 +1835,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v104";
+const APP_VERSION = "v105";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3898,7 +3898,11 @@ function paintTextHead() {
     inp.onblur = save; nb.replaceWith(inp); inp.focus(); inp.select();
   };
   t.replaceChildren(nb, el("span", "src", esc(`${h.book ? "Book page" : TKINDS[h.kind] || "Text"} · ${whenOf(h)}`)));
-  if (h.book && books.list[h.book]) { const sb = el("button", "linkbtn storylink", "Story so far"); sb.type = "button"; sb.onclick = () => storySheet(h); t.append(sb); }
+  const links = el("div", "booklinks");
+  if (h.book && books.list[h.book]) { const sb = el("button", "linkbtn storylink", "Story so far"); sb.type = "button"; sb.onclick = () => storySheet(h); links.append(sb); }
+  // v105: any page (one added before books, too) can be filed into a book, at the page number you give it
+  const fb = el("button", "linkbtn storylink bookfile", h.book ? "Book ▾" : "Add to a book ▾"); fb.type = "button"; fb.onclick = () => fileToBook(h); links.append(fb);
+  t.append(links);
 }
 // v104: books. A text added with a book picked is one of its pages: History names it "Book (n)", and after each new
 // page a small AI pass updates the book's notes (the cast, one line each, and the story so far), built only from the
@@ -3935,11 +3939,11 @@ async function bookLearn(name, n, text) {
     c.cast = r.cast || []; c.story = r.story || ""; c.upto = n; saveBooks(); paintTextHead();
   } catch (e) {}
 }
-function bookPicker(done) {
+function bookPicker(done, keep) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard deckpick"), list = el("div", "dplist"), close = () => sheet.remove();
-  const pick = n => { books.last = n; saveBooks(); close(); paintBookChip(); if (done) done(n); };
+  const pick = n => { if (!keep) books.last = n; saveBooks(); close(); paintBookChip(); if (done) done(n); };  // keep: filing a page, not changing the add box
   const row = (label, on, fn, cls = "") => { const b = btn("", "dprow" + cls + (on ? " on" : ""), fn); b.innerHTML = `<span>${label}</span><i aria-hidden="true">${on ? "✓" : ""}</i>`; list.append(b); return b; };
-  const cur = bookNow();
+  const cur = keep ? keep.book || "" : bookNow();
   row("None<small>not part of a book</small>", !cur, () => pick(""));
   Object.keys(books.list).sort((a, b) => (books.list[b].t || 0) - (books.list[a].t || 0)).forEach(n => row(`${esc(n)}<small>${books.list[n].pages || 0} page${books.list[n].pages === 1 ? "" : "s"}</small>`, n === cur, () => pick(n)));
   const add = row("＋ New book", false, () => {
@@ -3953,6 +3957,41 @@ function bookPicker(done) {
   sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet);
 }
 function paintBookChip() { const b = $("bookChip"); if (!b) return; const n = bookNow(); b.innerHTML = `Book: <b>${esc(n || "None")}</b> ▾`; b.classList.toggle("on", !!n); }
+// v105: put a page into a book (or take it out). Pages after it move up a number; when a page lands before the
+// notes' latest page, the notes are rebuilt from page 1 in order, so they still never include anything later.
+function fileToBook(h) {
+  bookPicker(name => {
+    const old = h.book;
+    if (!name) { if (!old) return; delete h.book; delete h.bn; saveHistory(); scheduleSync(); paintTextHead(); bookRedo(old); return; }
+    const pages = textHistory.filter(x => x !== h && x.book === name && !x.doc), last = pages.reduce((m, x) => Math.max(m, x.bn || 0), 0);
+    pageNum(name, old === name ? h.bn : last + 1, last + (old === name ? 0 : 1), n => {
+      if (old === name && n === h.bn) return;
+      pages.forEach(x => { if ((x.bn || 0) >= n) x.bn = (x.bn || 0) + 1; });
+      h.book = name; h.bn = n;
+      const all = textHistory.filter(x => x.book === name && !x.doc).sort((a, c) => a.bn - c.bn); all.forEach((x, i) => x.bn = i + 1);  // no gaps
+      const b = books.list[name]; b.pages = all.length; b.t = Date.now(); saveBooks();
+      saveHistory(); scheduleSync(); paintTextHead();
+      if (old && old !== name) bookRedo(old);
+      if (h.bn > (b.upto || 0) && h.bn === all.length) bookLearn(name, h.bn, h.text); else bookRedo(name);
+    });
+  }, { book: h.book || "" });
+}
+function pageNum(name, n0, max, done) {
+  const sheet = el("div", "sheet"), card = el("div", "sheetcard"), close = () => sheet.remove();
+  const inp = el("input", "srcname"); inp.type = "number"; inp.min = 1; inp.max = max; inp.value = n0; inp.inputMode = "numeric";
+  const go = () => { const n = Math.max(1, Math.min(max, parseInt(inp.value, 10) || n0)); close(); done(n); };
+  inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); go(); } };
+  card.append(el("h3", "", `${esc(name)}: page number`), inp, btn("Done", "btn", go), btn("Cancel", "btn ghost", close));
+  sheet.append(card); sheet.onclick = e => { if (e.target === sheet) close(); }; document.body.append(sheet); inp.focus(); inp.select();
+}
+async function bookRedo(name) {  // the notes again from page 1, one page at a time
+  const b = books.list[name]; if (!b) return;
+  const pages = textHistory.filter(x => x.book === name && x.text && !x.doc).sort((a, c) => a.bn - c.bn);
+  b.cast = []; b.story = ""; b.upto = 0; delete b.prev; b.pages = pages.length; saveBooks();
+  const run = bookRedo.run = {};
+  if (pages.length) toast(`Rereading ${esc(name)} from page 1…`, 2200);
+  for (const p of pages) { if (bookRedo.run !== run) return; await bookLearn(name, p.bn, p.text); if ((books.list[name] || {}).upto !== p.bn) return; }
+}
 function storySheet(h) {
   const s = bookState(h.book, Infinity), sheet = el("div", "sheet"), card = el("div", "sheetcard storycard"), close = () => sheet.remove();
   card.append(el("h3", "", esc(h.book)));
