@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v106
+
+- Fix: moving a book page to a later number put it one short (page 1 moved to 3 landed at 2). It now lands where you say.
+
 ## v105
 
 - Pages added before books existed can join one: open a page from History and tap "Add to a book ▾" under its name, pick the book and give it a page number. Later pages move up one.

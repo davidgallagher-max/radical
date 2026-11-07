@@ -1835,7 +1835,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v105";
+const APP_VERSION = "v106";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3966,7 +3966,7 @@ function fileToBook(h) {
     const pages = textHistory.filter(x => x !== h && x.book === name && !x.doc), last = pages.reduce((m, x) => Math.max(m, x.bn || 0), 0);
     pageNum(name, old === name ? h.bn : last + 1, last + (old === name ? 0 : 1), n => {
       if (old === name && n === h.bn) return;
-      pages.forEach(x => { if ((x.bn || 0) >= n) x.bn = (x.bn || 0) + 1; });
+      pages.sort((x, y) => (x.bn || 0) - (y.bn || 0)).forEach((x, i) => { x.bn = i + 1; if (x.bn >= n) x.bn++; });  // v106: close its old gap first, so moving a page later lands where you said
       h.book = name; h.bn = n;
       const all = textHistory.filter(x => x.book === name && !x.doc).sort((a, c) => a.bn - c.bn); all.forEach((x, i) => x.bn = i + 1);  // no gaps
       const b = books.list[name]; b.pages = all.length; b.t = Date.now(); saveBooks();
