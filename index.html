@@ -766,6 +766,9 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .noticedeck{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);max-width:60%}
 .wtoday{margin:0 0 6px}.wtdate{color:var(--muted);font-weight:500;margin-left:6px}.wty{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;margin-right:2px}.wtoday .wev{font-weight:600;font-family:var(--font-zh)}.wtoday .wt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.wtoday .wen{color:var(--fg)}
 .frrow{border-bottom:1px solid color-mix(in srgb,var(--line) 85%,var(--fg))}
+.frrow.frnew{border-radius:12px;padding:0 10px;margin:4px -10px;border-bottom-color:transparent;background:color-mix(in srgb,var(--gold2) 10%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--gold2) 55%,transparent),0 0 16px color-mix(in srgb,var(--gold2) 35%,transparent);animation:frglow 2.8s ease-in-out infinite}
+@keyframes frglow{50%{box-shadow:0 0 0 1px var(--gold2),0 0 24px color-mix(in srgb,var(--gold2) 55%,transparent)}}
+@media (prefers-reduced-motion:reduce){.frrow.frnew{animation:none}}
 .frhead{font:inherit;width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:none;border:0;color:var(--fg);padding:10px 0;cursor:pointer}
 .frwho{flex:1;display:grid;gap:2px;min-width:0}.frchev{font-style:normal;font-size:1.4rem;line-height:1;color:var(--accent);transition:transform .2s}
 .frrow.open .frchev{transform:rotate(90deg)}.frbody{display:grid;gap:8px;padding:2px 0 12px}.frbody .trtiles .trbig{font-size:1.4rem}.frrow:not(.open) .frbody{display:none}
@@ -1862,7 +1865,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v109";
+const APP_VERSION = "v110";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -5869,7 +5872,26 @@ async function friendsCall(body = {}) {
 }
 // Friend requests waiting for you: a red number on 記 (v42), checked at start and when the app comes back (at most
 // every five minutes).
-function friendBadge() { const f = store.get("radical-friends", null), n = f ? (f.requests || []).length + (f.inbox || []).length : 0; $("trackBadge").textContent = n || ""; }
+function friendBadge() { const f = store.get("radical-friends", null), n = f ? (f.requests || []).length + (f.inbox || []).length + newFriends(f).length : 0; $("trackBadge").textContent = n || ""; }
+// A friend who just joined: a red number on 記 until the Friends box has been on screen, then their row glows for
+// 24 hours. radical-friends-seen {code: ms seen, 0 = not seen yet}; the first time, everyone already there counts as old.
+const FRIEND_GLOW = 864e5, fKey = x => x.code || x.name || "";
+function friendSeen(f) {
+  let seen = store.get("radical-friends-seen", null), ch = false;
+  if (!seen) { seen = {}; (f.friends || []).forEach(x => seen[fKey(x)] = 1); ch = true; }
+  (f.friends || []).forEach(x => { const k = fKey(x); if (k && !(k in seen)) { seen[k] = 0; ch = true; } });
+  if (ch) store.set("radical-friends-seen", seen);
+  return seen;
+}
+const newFriends = f => { const seen = friendSeen(f); return (f.friends || []).filter(x => seen[fKey(x)] === 0); };
+const friendGlows = (f, x) => { const t = friendSeen(f)[fKey(x)]; return t === 0 || t > 1 && Date.now() - t < FRIEND_GLOW; };
+function watchNewFriends(b, f) {
+  if (!newFriends(f).length || !("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver(es => { if (!es.some(e => e.isIntersecting)) return; io.disconnect();
+    const seen = friendSeen(f), now = Date.now(); (f.friends || []).forEach(x => { if (seen[fKey(x)] === 0) seen[fKey(x)] = now; });
+    store.set("radical-friends-seen", seen); friendBadge(); }, { threshold: .5 });
+  b.querySelectorAll(".frrow.frnew").forEach(r => io.observe(r));
+}
 let friendPing = 0;
 function pingFriends() {
   if (!session || !store.get("radical-friends", null) || Date.now() - friendPing < 3e5 || friendsBusy) return;
@@ -5917,7 +5939,7 @@ function paintFriends(b) {
   builderRow(b, f);
   // v43: each friend is a row with a ›; tapping it opens their numbers right there (tap again to close)
   f.friends.forEach(x => {
-    const r = el("div", "frrow"), head = el("button", "frhead"); head.type = "button"; head.setAttribute("aria-expanded", "false");
+    const r = el("div", "frrow" + (friendGlows(f, x) ? " frnew" : "")), head = el("button", "frhead"); head.type = "button"; head.setAttribute("aria-expanded", "false");
     head.innerHTML = `<span class="frwho"><b>${esc(x.name)}</b><span class="trs">${x.words ? `${num(x.words.familiar)} recognized · ${num(x.words.learned)} mastered · ` : ""}${(x.week || {}).days || 0} of 7 days</span></span><i class="frchev" aria-hidden="true">›</i>`;
     head.onclick = () => {
       const open = r.classList.toggle("open"); head.setAttribute("aria-expanded", open);
@@ -5958,6 +5980,7 @@ function paintFriends(b) {
   if (!realName(f)) { b.firstElementChild.after(nameHead, nameRow); b.append(add, msg, me, btns); if ((f.friends.length || (f.requests || []).length) && !store.get("radical-name-asked2", false)) realNameSheet(b); }
   else b.append(add, msg, me, btns, nameHead, nameRow);
   b.append(el("p", "trs trq", "Friends see your progress, never your words."));
+  watchNewFriends(b, f);
 }
 // v46: the builder's row (one owner, see builderView in api/_account.js). Anyone can follow, no approval: then the row
 // opens like a friend's (numbers, chart, the decks you both have) plus the decks the builder sent to followers. The
