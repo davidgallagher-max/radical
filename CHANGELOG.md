@@ -2,6 +2,11 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v105
+
+- Pages added before books existed can join one: open a page from History and tap "Add to a book ▾" under its name, pick the book and give it a page number. Later pages move up one.
+- When a page lands before others, the book's notes are rebuilt from page 1 in order, so they still use only the pages up to each one. "Book ▾" on a book page moves it to another book or takes it out.
+
 ## v104
 
 - Reading counts differently: a row counts once it has been on screen, and the total can't run ahead of your reading pace. Steady reading keeps the ticks up with you; flicking through still earns little.
