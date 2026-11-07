@@ -2,6 +2,11 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v110
+
+- Track: a red number on 記 when a friend joins. It clears once their row is on screen, and the row glows for a day.
+- How it works: on the Save words page, the Read label no longer flashes and vanishes, and no stray ring shows outside the box (they were borrowing the goal burst's style).
+
 ## v109
 
 - Binder sorting reads whole pages (with the stronger model) and uses page breaks, printed page numbers and the story to place them.
