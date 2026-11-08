@@ -557,11 +557,11 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 @keyframes tlabel{0%{opacity:0;transform:translateY(8px) scale(.94)}12%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0}}
 @keyframes thalo{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(9)}}
 .rtick{position:absolute;right:-18px;width:24px;height:24px;margin-top:-12px;padding:0;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:1}
-.rtick::after{content:"";position:absolute;left:10px;top:6px;width:4px;height:8px;border:solid var(--gold2);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);opacity:.7}
-.rtick.old::after{border-color:var(--muted);opacity:.45}
+.rtick::after{content:"";position:absolute;left:9px;top:4px;width:5px;height:10px;border:solid var(--gold2);border-width:0 2px 2px 0;transform:rotate(45deg);opacity:1}
+.rtick.old::after{border-color:var(--muted);opacity:.7}
 .rtick.on::after{opacity:1}
 .rtick.empty::after{left:8px;top:8px;width:7px;height:7px;border:1px solid var(--muted);border-radius:50%;transform:none;opacity:.4}
-.rtick{transition:opacity .4s}#reader.scrolling .rtick{opacity:.25}
+.rtick{transition:opacity .4s}
 .rtickask{position:absolute;right:10px;z-index:3;transform:translateY(-50%);display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 20px);font:600 .92rem/1.25 var(--ui,system-ui);color:var(--fg);background:var(--card,var(--bg));border:1px solid var(--gold2);border-radius:14px;padding:8px 10px 8px 12px;box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .rtickask button{font:600 .92rem/1 var(--ui,system-ui);border-radius:999px;padding:7px 14px;cursor:pointer}
 .rtickask .rty{background:var(--gold2);color:var(--metal-ink,#1a1206);border:0}
@@ -1865,7 +1865,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v110";
+const APP_VERSION = "v111";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3159,6 +3159,7 @@ uiScript();
 function currentText() { const t = $("src").value; return script === typed ? t : script === "trad" ? toTrad(t) : toSimp(t); }
 let renderToken = 0;
 async function render() {
+  if (readPlace) readPlace.line = -1;  // v111: a new page has no remembered place yet
   const token = ++renderToken, text = currentText(), reader = $("reader");
   if (!Object.keys(cache).length) reader.innerHTML = '<p class="loading">Drawing…</p>';
   await ensure(text);
@@ -3809,6 +3810,31 @@ function fitLegend(box = $("readLegend")) {
 }
 edgeFade($("readLegend"));
 addEventListener("resize", () => { fitLegend(); fitLatin($("reader")); });
+// v111: turning the phone keeps your place. The row at the top of the reading band is remembered as you
+// scroll (line and character), and after the page re-wraps at the new width it goes back to the top of the band.
+var readPlace = { w: innerWidth, line: -1, at: 0, busy: 0, hold: false };  // hold: a turn put us here; keep the spot until you scroll yourself
+function notePlace() {
+  const sc = $("readScreen"); if (!sc || sc.hidden || innerWidth !== readPlace.w || readPlace.busy || readPlace.hold) return;
+  const top = readBand().top, lines = [...document.querySelectorAll("#reader .line")];
+  const i = lines.findIndex(l => l.getBoundingClientRect().bottom > top + 4); if (i < 0) return;
+  const row = rowsOf(lines[i]).find(r => r.bottom > top + 4);
+  readPlace.line = i; readPlace.at = row ? row.start : 0;
+}
+function keepPlace() {
+  const sc = $("readScreen"), line = document.querySelectorAll("#reader .line")[readPlace.line];
+  if (!sc || sc.hidden || !line) { readPlace.w = innerWidth; return; }
+  const rows = rowsOf(line), row = [...rows].reverse().find(r => r.start <= readPlace.at) || rows[0];
+  const y = row ? row.top : line.getBoundingClientRect().top;
+  sc.scrollTop += y - readBand().top;
+}
+{ let t = 0; const sc = $("readScreen"); sc.addEventListener("scroll", () => { cancelAnimationFrame(t); t = requestAnimationFrame(notePlace); }, { passive: true });
+  ["touchstart", "pointerdown", "wheel"].forEach(e => sc.addEventListener(e, () => { readPlace.hold = false; }, { passive: true, capture: true })); }
+addEventListener("resize", () => {
+  if (innerWidth === readPlace.w) return;
+  clearTimeout(readPlace.busy); readPlace.hold = true; readPlace.busy = setTimeout(() => { readPlace.busy = 0; readPlace.w = innerWidth; }, 700);
+  requestAnimationFrame(() => { fitLatin($("reader")); keepPlace(); });
+  setTimeout(keepPlace, 350);  // again once the phone has finished turning
+});
 // Frozen controls: once the bar reaches the top it gets a solid edge, the Traditional / Simplified label hides, and a
 // small ☰ appears at its right end (the page's own menu button has scrolled away).
 function pinned(screenId, barId, onChange) {

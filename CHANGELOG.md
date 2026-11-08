@@ -2,6 +2,11 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v111
+
+- Reading ticks are bolder and easier to see, in light and dark, and they stay put while you scroll (no more fading).
+- Turning the phone keeps your place: the row you were reading stays at the top.
+
 ## v110
 
 - Track: a red number on 記 when a friend joins. It clears once their row is on screen, and the row glows for a day.
