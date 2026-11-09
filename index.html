@@ -745,6 +745,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .trs{margin:0;font-size:.92rem;color:var(--muted)}
 .trq{opacity:.8}
 .trwords{margin:2px 2px -6px}
+.trskill{margin:-4px 2px 0;text-align:center}
 .sblabels span{font-weight:600;white-space:nowrap}.sl-new{color:var(--muted)}.sl-seen{color:color-mix(in srgb,var(--st-active) 40%,var(--muted))}.sl-learning{color:var(--st-active)}.sl-learned{color:var(--accent)}
 .trktop{grid-template-columns:minmax(0,1fr) auto;align-items:end}
 .trktop>div{display:grid;gap:2px}
@@ -5544,7 +5545,7 @@ function setStatus(w, st) {
 function upgradeKnown() { let n = 0; myWords.forEach(w => { if (w.skip && (!w.srs || !w.srs.due)) { w.srs = w.srs || freshSrs(); w.srs.ivl = knownWait(); w.srs.due = midnight() + Math.round(Math.random() * KNOWN_SPAN + 30) * DAY; n++; } }); if (n) saveWords(); }
 function reviewQueue(k = "srs") {
   const now = Date.now();
-  const due = myWords.filter(w => w[k] && w[k].due && w[k].due <= now && (k === "srs" || !w.skip)).sort((a, b) => a[k].due - b[k].due);
+  const due = myWords.filter(w => w[k] && w[k].due && w[k].due <= now).sort((a, b) => a[k].due - b[k].due);
   const fresh = myWords.filter(w => !w.skip && !w[k]).slice(0, Math.max(0, newLeft(k)));
   return [...due, ...fresh];
 }
@@ -5873,6 +5874,8 @@ function renderTrack() {
     tiles.append(t);
   });
   box.append(tiles);
+  // v112: Mastered by skill, under the boxes (words mastered before v112 count only in the headline)
+  { const by = masteredBy(); if (by.srs + by.wsrs + by.lsrs) box.append(el("p", "trs trskill", `Mastered ${num(st.learned.size)}: Read ${num(by.srs)} · Write ${num(by.wsrs)} · Listen ${num(by.lsrs)}`)); }
   if (!store.get("radical-tile-tip", false)) { store.set("radical-tile-tip", true); box.append(el("p", "trs trtip", "Touch and hold a box to change it.")); }
   // recognized and mastered words over time, once there's a month of it to show
   const since = store.get("radical-first-use", Date.now());
@@ -6337,35 +6340,52 @@ if (!store.get("radical-first-use", null)) store.set("radical-first-use", Date.n
 function grade(w, g, k = "srs", q = {}) {
   if (!w[k]) { w[k] = freshSrs(); countNew(k); }
   const s = w[k], ivl = nextIvl(s, g, q.slip), wasKnown = k === "srs" && !!w.skip;
-  if (wasKnown && (g === "again" || g === "hard")) { w.skip = false; unlearn(w.word); }  // a known word you missed (or found hard) is Learning again
+  if (wasKnown && (g === "again" || g === "hard")) { w.skip = false; unmaster(w, k); }  // a known word you missed (or found hard) is Learning again
   logDay("c"); markDone(w, k);
-  if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); unlearn(w.word); delete w.ok2; }
+  if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); unmaster(w, k); }
   else { s.ivl = wasKnown ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
   if (g !== "again") gotRight(w);
   let mastered = false;
   if (g === "good" || g === "easy") {
     // The month check of a word you'd marked I know it: right, or I know it again, makes it Mastered
-    if (wasKnown && !learned[w.word] && (q.right || q.claim)) mastered = masterWord(w, !!q.right, true);
-    else if (q.right) mastered = masterStep(w);
+    if (wasKnown && !mastered1(w, k) && (q.right || q.claim)) mastered = masterWord(w, !!q.right, true, k);
+    else if (q.right) mastered = masterStep(w, k);
   }
   saveWords();
   return mastered;
 }
-// Right (Good or Easy) on two different days: Mastered. The word goes to Known with one check a month later (MONTH_CHECK).
-function masterStep(w) {
-  if (learned[w.word]) return false;
-  const day = localDay();
-  if (!w.ok2) { w.ok2 = day; return false; }
-  if (w.ok2 === day) return false;
-  return masterWord(w, true);
-}
-function masterWord(w, loud, checked) {
-  learned[w.word] = localDay(); store.set("radical-learned", learned);
-  if (!familiar[w.word]) { familiar[w.word] = localDay(); store.set("radical-familiar", familiar); }
+// Right (Good or Easy) on two different days: Mastered. v112: per skill. Each mode (k: srs Read, wsrs Write, lsrs
+// Listen) keeps its own first right day (w.mk[k]) and its own Mastered day (w.ms[k]); the headline Mastered (`learned`)
+// is any skill. Mastered in Read makes the word Known (w.skip) with one check a month later (MONTH_CHECK); in Write or
+// Listen, that skill's own card comes back in a month. Known in Read no longer stops Write and Listen cards.
+// Words mastered before v112 have no w.ms: they count in the headline only.
+const mastered1 = (w, k) => !!(w.ms && w.ms[k]);
+function masterStep(w, k = "srs") {
+  if (mastered1(w, k)) return false;
+  const day = localDay(), mk = w.mk = w.mk || {};
+  if (w.ok2 && !Object.keys(mk).length) mk[k] = w.ok2;  // the old shared first day counts for the skill answered next
   delete w.ok2;
-  if (!checked) { w.skip = true; w.srs = w.srs || freshSrs(); w.srs.ivl = Math.max(w.srs.ivl, MONTH_CHECK); w.srs.due = midnight() + MONTH_CHECK * DAY; }
+  if (!mk[k]) { mk[k] = day; return false; }
+  if (mk[k] === day) return false;
+  return masterWord(w, true, false, k);
+}
+function masterWord(w, loud, checked, k = "srs") {
+  const day = localDay();
+  if (!learned[w.word]) { learned[w.word] = day; store.set("radical-learned", learned); }
+  if (!familiar[w.word]) { familiar[w.word] = day; store.set("radical-familiar", familiar); }
+  (w.ms = w.ms || {})[k] = day; if (w.mk) { delete w.mk[k]; if (!Object.keys(w.mk).length) delete w.mk; } delete w.ok2;
+  if (k === "srs") { if (!checked) { w.skip = true; w.srs = w.srs || freshSrs(); w.srs.ivl = Math.max(w.srs.ivl, MONTH_CHECK); w.srs.due = midnight() + MONTH_CHECK * DAY; } }
+  else if (w[k]) { w[k].ivl = Math.max(w[k].ivl, MONTH_CHECK); w[k].due = midnight() + w[k].ivl * DAY; }
   return loud;
 }
+// Missed in a skill: that skill's Mastered (and its first right day) go; the headline goes once no skill holds it
+function unmaster(w, k) {
+  if (w.mk) { delete w.mk[k]; if (!Object.keys(w.mk).length) delete w.mk; } delete w.ok2;
+  if (w.ms) { delete w.ms[k]; if (!Object.keys(w.ms).length) delete w.ms; }
+  if (!w.ms) unlearn(w.word);
+}
+// Track's split under Mastered: words mastered in each skill
+const masteredBy = () => { const n = { srs: 0, wsrs: 0, lsrs: 0 }; myWords.forEach(w => { if (w.ms && learned[w.word]) Object.keys(n).forEach(k => { if (w.ms[k]) n[k]++; }); }); return n; };
 const ivlText = d => d === 0 ? "this round" : d === 1 ? "tomorrow" : d < 30 ? `${d} days` : d < 365 ? `${Math.round(d / 30)} mo` : `${(d / 365).toFixed(1)} yr`;
 // Each word keeps a schedule per practice mode (Read, Write, Listen). Every mode is always open to practice; Mix
 // covers all three.
@@ -6381,7 +6401,7 @@ function setGoal(m, on) {
   if (!next.length) return false;  // the last one stays
   goal = next; store.set("radical-goal", goal); updateCounts(); return true;
 }
-const modeDue = (w, m) => { const k = KEYS[m], x = w[k]; return !!(x && x.due && x.due <= Date.now() && (k === "srs" || !w.skip)); };
+const modeDue = (w, m) => { const k = KEYS[m], x = w[k]; return !!(x && x.due && x.due <= Date.now()); };  // v112: Known (Read) no longer stops Write and Listen
 const dueIn = (w, ms) => ms.some(m => modeDue(w, m));
 const dueAny = w => dueIn(w, MODES);
 const modesOf = how => how === "mix" ? MODES : [how];
@@ -6401,7 +6421,7 @@ function markDone(w, k) {
   if (!t.q && (d.size >= dailyMax() || !todayList(goal).length)) logDay("q");
 }
 function todayList(ms, at) {
-  const now = at || Date.now(), dueAt = (w, m) => { const k = KEYS[m], x = w[k]; return !!(x && x.due && x.due <= now && (k === "srs" || !w.skip)); };
+  const now = at || Date.now(), dueAt = (w, m) => { const k = KEYS[m], x = w[k]; return !!(x && x.due && x.due <= now); };
   const first = w => Math.min(...ms.filter(m => dueAt(w, m)).map(m => w[KEYS[m]].due));
   const k = KEYS[ms[0]], dues = ws => ws.filter(w => ms.some(m => dueAt(w, m))).sort((a, b) => first(a) - first(b)), news = ws => ws.filter(w => !w.skip && !w[k] && !ms.some(m => dueAt(w, m)));
   // v46: the picked list first; when it runs short, Today fills from your other lists (due, then new), so a small deck
@@ -6414,7 +6434,7 @@ function todayList(ms, at) {
   return [...dues(lw), ...news(lw), ...dues(other), ...news(other)].filter(w => !done.has(w.word) && room-- > 0);
 }
 // Words practiced today that are due again (missed and left before their repeat): offered quietly, not on the badge.
-const againToday = (ms = goal) => { const done = doneToday(), now = Date.now(); return listWords().filter(w => done.has(w.word) && ms.some(m => { const x = w[KEYS[m]]; return x && x.due && x.due <= now && (m === "read" || !w.skip); })); };
+const againToday = (ms = goal) => { const done = doneToday(), now = Date.now(); return listWords().filter(w => done.has(w.word) && ms.some(m => { const x = w[KEYS[m]]; return x && x.due && x.due <= now; })); };
 const isNewIn = (w, how) => !w.skip && !modesOf(how).some(m => w[KEYS[m]]);
 // ---- Lists (v41): Practice works on one list at a time: Mine (words you added), Top N (lists/common.tsv) or a Word Set
 // (w.set). Today, the pills, Start, the list below and the 練 badge follow the picked list; the others are paused
@@ -7110,7 +7130,7 @@ function feedCommon() {
   feeding = (async () => {
     // Bring in enough new Top words to fill today's quota after what's due (v42: no separate new-word allowance)
     const k = KEYS[goal[0]], now = Date.now(), lw = listWords(), fresh = lw.filter(w => !w.skip && !w[k]).length;
-    const due = lw.filter(w => goal.some(m => { const x = w[KEYS[m]]; return x && x.due && x.due <= now && (KEYS[m] === "srs" || !w.skip); })).length;
+    const due = lw.filter(w => goal.some(m => { const x = w[KEYS[m]]; return x && x.due && x.due <= now; })).length;
     const n = await fillList(curList, Math.max(0, dailyMax() - doneToday().size - due - fresh));
     if (n) updateCounts();
     return n;
@@ -8060,6 +8080,7 @@ function prevCard() {
   if (h.srs === undefined) delete h.w[h.k]; else h.w[h.k] = h.srs;
   if (h.skip === undefined) delete h.w.skip; else h.w.skip = h.skip;
   if (h.ok2 === undefined) delete h.w.ok2; else h.w.ok2 = h.ok2;
+  ["mk", "ms"].forEach(f => { if (h[f] === undefined) delete h.w[f]; else h.w[f] = h[f]; });
   if (h.learned === undefined) { if (learned[h.w.word]) { delete learned[h.w.word]; store.set("radical-learned", learned); } }
   else if (!learned[h.w.word]) { learned[h.w.word] = h.learned; store.set("radical-learned", learned); }
   store.set(dayKey(h.k), h.newday || {}); saveWords();
@@ -8733,7 +8754,7 @@ function showBack(w, how, st) {
     if (g === suggest && how !== "show") showBack.autoRate = () => { showBack.autoRate = null; b.onclick(true); };  // v96: Quit takes it
     b.onclick = force => {
       if (force !== true && Date.now() - shownAt < 500 && !quiet) return;
-      revHist.push({ w, k, out: revOutcome.get(w), srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, ok2: w.ok2, learned: learned[w.word], rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore, mw: rScore.mw.slice() } });
+      revHist.push({ w, k, out: revOutcome.get(w), srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, ok2: w.ok2, mk: w.mk ? { ...w.mk } : undefined, ms: w.ms ? { ...w.ms } : undefined, learned: learned[w.word], rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore, mw: rScore.mw.slice() } });
       const sc = rScore, out = revOutcome.get(w) || (g === "again" ? "missed" : g === "hard" ? "shaky" : "right");
       sc[out]++;
       if (out === "missed") { sc.run = 0; if (!sc.mw.includes(w)) sc.mw.push(w); } else { sc.run++; sc.best = Math.max(sc.best, sc.run); }
