@@ -1338,6 +1338,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
   .revpanel>*{grid-column:1/-1}
   .revpanel>p.note{order:2}
 }
+body.tonecolor .tc1{color:var(--t1)}body.tonecolor .tc2{color:var(--t2)}body.tonecolor .tc3{color:var(--t3)}body.tonecolor .tc4{color:var(--t4)}body.tonecolor .tc5{color:var(--t5)}
 </style>
 
 <div id="splash" aria-hidden="true">
@@ -1638,7 +1639,8 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
       <button type="button" data-theme-set="dark">Dark</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="system">Match phone</button>
     </div>
     <p class="note setlbl">Color vision</p>
-    <div class="seg themeseg" id="cvdSeg" role="group" aria-label="Color vision"><button type="button" data-cvd="0">Standard</button><button type="button" data-cvd="1">Red-green safe</button></div></details>
+    <div class="seg themeseg" id="cvdSeg" role="group" aria-label="Color vision"><button type="button" data-cvd="0">Standard</button><button type="button" data-cvd="1">Red-green safe</button></div>
+    <div class="row" style="justify-content:space-between;margin-top:10px"><span>Color tones</span><button type="button" class="switch small" id="toneSw" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span></button></div></details>
     <details class="setsec"><summary><b>Sound and lighting</b><span class="sum" data-sum="sound"></span></summary>
     <div class="panel">
       <div class="row" style="justify-content:space-between"><span>Sounds</span><button type="button" class="switch small" id="soundSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
@@ -2564,7 +2566,10 @@ function play(kind) {
 }
 
 // ================= pinyin display (each syllable colored by its tone)
-const pyHTML = s => s ? `<span style="color:var(--t${tone(s)})">${s}</span>` : "";
+// v112: tone colors only with Settings, Color tones (body.tonecolor); plain ink by default
+const pyHTML = s => s ? `<span class="tc${tone(s)}">${s}</span>` : "";
+const toneColorOn = () => store.get("radical-tonecolor", false);
+const paintToneColor = () => document.body.classList.toggle("tonecolor", toneColorOn());
 const PLAIN = {};
 "āáǎàa ēéěèe īíǐìi ōóǒòo ūúǔùu ǖǘǚǜv".split(" ").forEach(g => [...g].forEach(c => PLAIN[c] = g[4]));
 PLAIN["ü"] = "v";
@@ -9042,7 +9047,7 @@ function setSums() {
 document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "change"].forEach(ev => x.addEventListener(ev, () => setTimeout(setSums, 50))));
 // ---- settings that go in a backup file and (v58) sync with the account.
 const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules", "radical-day-ends",
-  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-read-speed", "radical-tiles", "radical-common", "radical-region", "radical-levels", "radical-books"];
+  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-read-speed", "radical-tiles", "radical-common", "radical-region", "radical-levels", "radical-books", "radical-tonecolor"];
 const SYNC_SETTINGS = SETTING_KEYS.filter(k => k !== "radical-decks");  // v58: decks sync on their own
 // Restore a backup file (v58: the Backup page is gone; a backup chosen with the add box's file icon comes here):
 // words and History merge with what's here (nothing added since is lost; a word's newer copy wins); the learned list
@@ -9653,6 +9658,8 @@ document.querySelectorAll("#readSpeedSeg [data-p]").forEach(b => {
   b.setAttribute("aria-pressed", b.dataset.p === readSpeed());
   b.onclick = () => { store.set("radical-read-speed", b.dataset.p); document.querySelectorAll("#readSpeedSeg [data-p]").forEach(x => x.setAttribute("aria-pressed", x === b)); };
 });
+paintToneColor(); $("toneSw").setAttribute("aria-checked", toneColorOn());
+$("toneSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-tonecolor", on); e.currentTarget.setAttribute("aria-checked", on); paintToneColor(); };
 $("rereadSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-reread", on); e.currentTarget.setAttribute("aria-checked", on); setSums(); };
 $("badgeSw").onclick = e => { const on = e.currentTarget.getAttribute("aria-checked") !== "true"; store.set("radical-badge", on); e.currentTarget.setAttribute("aria-checked", on); updateCounts(); setSums(); };
 // Asked once: on a first launch after the walkthrough, and once to everyone who had the app before goals.
