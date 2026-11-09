@@ -115,11 +115,14 @@ ${text}`;
 const TRANSLATE_PROMPT = (sentence, ctx) => `Translate this Chinese into natural English. Return only the translation, nothing else.
 ${ctx ? BOOK_NOTE(ctx) : ""}
 ${sentence}`;
+// v112: he/she only when the text shows it (他/她 for that person, 先生/小姐/哥哥 and the like) or the notes say so.
+const PRONOUNS = `Pronouns: call a person "he" or "she" only when the text itself shows it (他 or 她 used for that person, or a word like 先生, 小姐, 哥哥, 姐姐, 爸爸, 媽媽 naming them) or the notes give their gender. Otherwise use their name, or "they". Never guess from a name.`;
 // v104: books. The reader's notes on earlier pages of the same book (cast and story so far), built only from pages
 // they have read. Used for names and references; never the AI's own knowledge of the book, never what comes later.
 const BOOK_NOTE = (ctx) => `This text is a page of a book the learner is reading page by page. Their notes on the earlier pages:
 ${ctx}
 Use these notes to get names, relationships and references right (and to point out callbacks and build-up when it helps). Use nothing you may know about this book from elsewhere, and never hint at what happens later.
+${PRONOUNS}
 `;
 const BOOK_PROMPT = (name, memory, text, page) => `A learner of Mandarin is reading the book "${name}" one page at a time. Keep their running notes on it.
 Notes so far (from pages 1 to ${page - 1}):
@@ -129,8 +132,9 @@ New page (${page}):
 ${text}
 
 Update the notes using ONLY what is written in these pages. Do not use anything you may know about this book from elsewhere, and do not guess what happens next.
-Return ONLY JSON: {"cast":[{"name":"the name exactly as written in the text","who":"one short line: who they are and how they relate to others"}],"story":"the story so far in at most 150 words of plain English, then one line starting 'Open threads:' with what has been set up but not resolved"}
-Cast: people, nicknames and important places or groups, at most 30, most important first; keep earlier entries unless the text corrects them.`;
+Return ONLY JSON: {"cast":[{"name":"the name exactly as written in the text","who":"one short line: who they are and how they relate to others","gender":"he, she or unknown","proof":0}],"story":"the story so far in at most 150 words of plain English, then one line starting 'Open threads:' with what has been set up but not resolved"}
+Cast: people, nicknames and important places or groups, at most 30, most important first; keep earlier entries unless the text corrects them.
+Gender: "he" or "she" only when a page shows it for certain (他 or 她 used for that person, or a word like 先生, 小姐, 哥哥, 姐姐, 爸爸, 媽媽 naming them); "proof" is the number of that page. Otherwise "unknown" and proof 0. Keep a gender the notes already give unless a page clearly corrects it. Places and groups are "unknown". In "who" and "story", ${PRONOUNS.charAt(0).toLowerCase() + PRONOUNS.slice(1)}`;
 
 // English in (v41): a passage typed or pasted in English becomes Chinese to read; a word or phrase in context gets the
 // Chinese words that fit it, best first.
@@ -167,6 +171,7 @@ Return ONLY JSON with these keys:
 {"structure":"one or two short sentences on how the sentence is built (topic, main verb, what the clauses do)",
  "points":[{"pattern":"the grammar pattern as it appears, e.g. 把…V完 or 是…的","note":"what it does in THIS sentence, one sentence"}],
  "words":[{"word":"a word","note":"its meaning here, only when it differs from the first dictionary sense or is easy to misread"}]}
+${PRONOUNS}
 0 to 4 points, 0 to 3 words; leave out anything obvious. Plain English, no jargon a learner wouldn't know; if you use a grammar term, say what it means. Use ${trad ? "Traditional" : "Simplified"} characters in patterns and words.`;
 
 // Explore's daily topic chips: seven varied picks across subjects and two tied to what the learner searches and reads.
@@ -782,7 +787,7 @@ Return ONLY JSON: {"order":["id", ...]} with every id exactly once.`;
       if (!name || !text) return res.status(400).json({ error: "Nothing to read." });
       const out = parseJSON(await askClaude(FAST_MODEL, BOOK_PROMPT(name, memory, text, page), 1500));
       if (!out) return res.status(502).json({ error: "The answer wasn't readable. Try again." });
-      const cast = (Array.isArray(out.cast) ? out.cast : []).filter(c => c && c.name).slice(0, 30).map(c => ({ name: String(c.name).slice(0, 20), who: String(c.who || "").slice(0, 120) }));
+      const cast = (Array.isArray(out.cast) ? out.cast : []).filter(c => c && c.name).slice(0, 30).map(c => ({ name: String(c.name).slice(0, 20), who: String(c.who || "").slice(0, 120), gender: ["he", "she"].includes(c.gender) ? c.gender : "unknown", proof: Math.max(0, parseInt(c.proof, 10) || 0) }));
       return res.status(200).json({ cast, story: String(out.story || "").slice(0, 1500) });
     }
     return res.status(400).json({ error: "Unknown action." });

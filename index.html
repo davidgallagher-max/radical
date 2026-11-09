@@ -3978,7 +3978,8 @@ function bookState(name, n) {
 }
 function bookCtx(name, n = Infinity) {
   const s = bookState(name, n); if (!s) return "";
-  const cast = (s.cast || []).map(c => `${c.name}: ${c.who}`).join("\n");
+  const g = c => c.gender === "he" || c.gender === "she" ? ` (${c.gender})` : c.gender ? " (gender unknown: use the name or they)" : "";
+  const cast = (s.cast || []).map(c => `${c.name}${g(c)}: ${c.who}`).join("\n");
   return `Book: ${name}\n` + (cast ? `Cast:\n${cast}\n` : "") + (s.story ? `Story so far:\n${s.story}` : "");
 }
 const ctxFor = line => { if (!line || !line.closest || !line.closest("#reader")) return ""; const h = curBook(); return h ? bookCtx(h.book, h.bn || Infinity).slice(0, 2000) : ""; };
@@ -3993,8 +3994,21 @@ async function bookLearn(name, n, text) {
     const r = await claude({ action: "book", name, page: n, memory: bookCtx(name), text: text.trim().slice(0, 5000) });
     const c = books.list[name]; if (!c || (c.upto || 0) >= n) return;
     c.prev = { cast: c.cast || [], story: c.story || "", upto: c.upto || 0 };
-    c.cast = r.cast || []; c.story = r.story || ""; c.upto = n; saveBooks(); paintTextHead();
+    // v112: a gender the pages now prove (or change): this binder's saved 解 and ENG are redone on the next tap
+    const was = new Map((c.cast || []).map(x => [x.name, x.gender || ""]));
+    const settled = (r.cast || []).some(x => (x.gender === "he" || x.gender === "she") && was.get(x.name) !== x.gender);
+    c.cast = r.cast || []; c.story = r.story || ""; c.upto = n; c.gv = 1; saveBooks(); paintTextHead();
+    if (settled) bookForget(name);
   } catch (e) {}
+}
+function bookForget(name) {  // drop a binder's saved explanations and translations
+  const pre = "b:" + name + "|";
+  [[explainCache, "radical-explain"], [transCache, "radical-trans"]].forEach(([c, k]) => { let n = 0; Object.keys(c).forEach(x => { if (x.startsWith(pre)) { delete c[x]; n++; } }); if (n) store.set(k, c); });
+}
+// v112: binders made before genders were kept are read again once (signed in), so their notes stop guessing he/she
+async function bookGenders() {
+  if (!(await accessToken().catch(() => null))) return;
+  for (const name of Object.keys(books.list)) { const b = books.list[name]; if (!b.gv && (b.upto || 0) > 0) { b.gv = 1; saveBooks(); bookForget(name); await bookRedo(name); } }
 }
 function bookPicker(done, keep) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard deckpick"), list = el("div", "dplist"), close = () => sheet.remove();
@@ -9729,7 +9743,7 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   // The splash takes a tap from the very first moment: a tap hides it even while the app is still loading behind it
   // (the reader shows "Drawing…" until the characters arrive), so a slow connection never looks like a frozen app.
   window.__radicalStarted = true;
-  setTimeout(liveUpdate, 8000); fetchTopics(); levelsInit(); nativeKeyboard(); setTimeout(chimesLoad, 2500);
+  setTimeout(liveUpdate, 8000); fetchTopics(); levelsInit(); setTimeout(bookGenders, 6000); nativeKeyboard(); setTimeout(chimesLoad, 2500);
   payInit().then(() => { if ((tab === "readScreen" && !payFree("read")) || (tab === "wikiScreen" && !payFree("explore"))) setTab("trackScreen"); }).catch(() => {});  // v61
   const sp0 = $("splash");
   let harped = false, done = false;
