@@ -417,7 +417,8 @@ p.busy{margin:-4px 4px 0}
 .glyph.sentend{cursor:pointer;color:var(--accent)}.glyph.phrase{cursor:pointer}.glyph.phrase.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}.glyph.sentend.on{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}
 .senttip{position:absolute;z-index:4;width:max-content;white-space:nowrap;padding:6px 12px;border-radius:12px;background:var(--accent);color:var(--bg);font-weight:600;font-size:.92rem;box-shadow:0 4px 16px rgba(0,0,0,.35);animation:tlabel 4.5s ease-out both}
 .sentpop{position:absolute;left:0;right:0;z-index:4;background:var(--bg);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.35),inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent);padding:8px 10px}
-.sentrow{display:flex;gap:8px;align-items:center}.sentrow .sentx{margin-left:auto}.sentpop .trans,.sentpop .explain{margin:8px 0 2px}
+.sentrow{display:flex;gap:8px;align-items:center}.sentpop .seg2.sentseg{margin:0 0 8px;width:max-content;display:inline-grid;grid-template-columns:auto auto}.sentpop .sentseg button{padding:5px 9px;font-size:.85rem;min-width:0}
+.cell.speaking{background:color-mix(in srgb,var(--accent) 42%,transparent);box-shadow:inset 0 -3px 0 var(--accent)}.sentrow .sentx{margin-left:auto}.sentpop .trans,.sentpop .explain{margin:8px 0 2px}
 .texthead{margin-bottom:6px}.texthead .tname{all:unset;cursor:pointer;display:inline-block;max-width:100%;box-sizing:border-box;padding:6px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 8%,transparent);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600;font-size:1.05rem;line-height:1.35}
 .texthead .tname[lang=zh]{font-family:var(--font-zh)}
 .texthead input{width:100%;box-sizing:border-box;padding:6px 10px;border-radius:8px;border:1px solid var(--accent);background:var(--bg);color:var(--fg);font:inherit;font-size:1.05rem}
@@ -3432,6 +3433,8 @@ const latinRoom = () => cellPx() * 3;
 const CLOSERS = /[」』”"’）)\]】〕》〉]/;
 function sentenceMarks(line, text) {
   // v98: ，；： are tappable too (not tinted): the phrase since the last mark
+  // v112: every sentence end is tappable, the paragraph's last one too (the line's own buttons still do the whole
+  // paragraph); a sentence with commas offers its last phrase as well (Sentence | Phrase)
   const t = [...text], SE = /[。！？!?]/, PH = /[，；：]/, ends = [];
   for (let i = 0; i < t.length; i++) {
     if (PH.test(t[i])) { ends.push({ i, j: i + 1, ph: true }); continue; }
@@ -3439,19 +3442,20 @@ function sentenceMarks(line, text) {
     let j = i + 1; while (j < t.length && CLOSERS.test(t[j])) j++;
     ends.push({ i, j });
   }
-  const tailEmpty = e => !t.slice(e.j).join("").trim(), sents = ends.filter(e => !e.ph);
-  const oneSent = sents.length < 2 && !(sents.length === 1 && !tailEmpty(sents[0]));  // one sentence: the line's buttons do it
+  const off = i => t.slice(0, i).join("").length;  // code points to string offsets (cells keep string offsets in _at)
   const marks = [...line.querySelectorAll(".glyph:not(.latin)")].filter(g => /[。！？!?，；：]/.test(g.textContent));
   let from = 0, pfrom = 0, k = 0;
   ends.forEach(e => {
     // each mark in the text matches the mark glyphs in order (a run like ！？ counts once, at its last mark)
     while (k < marks.length && marks[k].textContent !== t[e.i]) k++;
-    const g = marks[k++], part = t.slice(e.ph ? pfrom : from, e.j).join("").trim(); pfrom = e.j; if (!e.ph) from = e.j;
+    const st = e.ph ? pfrom : from, g = marks[k++], part = t.slice(st, e.j).join("").trim(), last = pfrom;
+    pfrom = e.j; if (!e.ph) from = e.j;
     if (!g || !/\p{Script=Han}/u.test(part)) return;
-    if (e.ph) { g.classList.add("phrase"); g.setAttribute("role", "button"); g.setAttribute("aria-label", "This phrase"); g.onclick = ev => { ev.stopPropagation(); sentenceBar(line, g, part); }; return; }
-    if (oneSent || tailEmpty(e)) return;
+    const r = { a: off(st), b: off(e.j) };
+    if (e.ph) { g.classList.add("phrase"); g.setAttribute("role", "button"); g.setAttribute("aria-label", "This phrase"); g.onclick = ev => { ev.stopPropagation(); sentenceBar(line, g, part, r); }; return; }
+    if (last > st) { const ph = t.slice(last, e.j).join("").trim(); if (/\p{Script=Han}/u.test(ph)) { r.pa = off(last); r.phrase = ph; } }
     g.classList.add("sentend"); g.setAttribute("role", "button"); g.setAttribute("aria-label", "This sentence");
-    g.onclick = ev => { ev.stopPropagation(); sentenceBar(line, g, part); };
+    g.onclick = ev => { ev.stopPropagation(); sentenceBar(line, g, part, r); };
   });
 }
 // v95: once ever, a small bubble under the first green 。 that comes into view says it can be tapped
@@ -3468,16 +3472,37 @@ function sentTip(reader) {
     }, 1200); }, { threshold: 1 });
   io.observe(g);
 }
-function sentenceBar(line, g, sent) {
-  const old = line.querySelector(":scope>.sentpop"); if (old) { old.remove(); line.querySelectorAll(".sentend.on,.phrase.on").forEach(x => x.classList.remove("on")); if (old._g === g) return; }
+function sentenceBar(line, g, sent, r = {}) {
+  const old = line.querySelector(":scope>.sentpop"); if (old) { old.remove(); line.querySelectorAll(".sentend.on,.phrase.on").forEach(x => x.classList.remove("on")); line.querySelectorAll(".cell.speaking").forEach(x => x.classList.remove("speaking")); if (old._g === g) return; }
   const pop = el("div", "sentpop"); pop._g = g; g.classList.add("on");
+  let cur = { text: sent, a: r.a, b: r.b };
+  // v112: the cells being said light up like Listen's chunk while the speaker plays
+  const light = on => line.querySelectorAll(".cell").forEach(c => c.classList.toggle("speaking", !!on && cur.a != null && c._at >= cur.a && c._at < cur.b));
   const row = el("div", "sentrow"), say = el("button", "saybtn sm", SPK); say.type = "button"; say.setAttribute("aria-label", "Read this sentence aloud");
-  say.onclick = e => { e.stopPropagation(); if (sayPace === "step") sayPaced(sent, "step"); else saySentence(sent, sayPace); };
-  const en = btn("ENG", "enbtn"); en.title = "Translate this sentence"; en.onclick = e => { e.stopPropagation(); translateLine(sent, row, en); };
+  say._onSay = light;
+  say.onclick = e => { e.stopPropagation(); if (sayPace === "step") sayPaced(cur.text, "step"); else saySentence(cur.text, sayPace); };
+  const en = btn("ENG", "enbtn"); en.title = "Translate this sentence"; en.onclick = e => { e.stopPropagation(); translateLine(cur.text, row, en); };
   const ex = el("button", "enbtn exbtn", '<span lang="zh">解</span>'); ex.type = "button"; ex.title = "Explain this sentence's grammar";
-  ex.onclick = e => { e.stopPropagation(); explainLine(sent, row, ex); };
-  const x = btn("✕", "enbtn sentx"); x.setAttribute("aria-label", "Close"); x.onclick = e => { e.stopPropagation(); pop.remove(); g.classList.remove("on"); };
-  row.append(say, en, ex, x); pop.append(row);
+  ex.onclick = e => { e.stopPropagation(); explainLine(cur.text, row, ex); };
+  const x = btn("✕", "enbtn sentx"); x.setAttribute("aria-label", "Close"); x.onclick = e => { e.stopPropagation(); if (say.classList.contains("saying")) { stopReading(); clearSaying(); } light(false); pop.remove(); g.classList.remove("on"); };
+  row.append(say, en, ex, x);
+  // v112: a sentence with commas: Sentence | Phrase (its last phrase); the speaker, ENG and 解 follow the pick
+  if (r.phrase) {
+    const seg = el("div", "seg2 two sentseg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Sentence or phrase");
+    [["Sentence", { text: sent, a: r.a, b: r.b }], ["Phrase", { text: r.phrase, a: r.pa, b: r.b }]].forEach(([label, v], i) => {
+      const b = el("button", "", label); b.type = "button"; b.setAttribute("aria-pressed", i === 0);
+      b.onclick = e => {
+        e.stopPropagation(); if (cur.a === v.a) return; cur = v;
+        seg.querySelectorAll("button").forEach(o => o.setAttribute("aria-pressed", o === b));
+        if (say.classList.contains("saying")) { stopReading(); clearSaying(); }
+        pop.querySelectorAll(".trans,.explain").forEach(o => o.remove());
+        en.textContent = "ENG"; en.classList.remove("on"); if (ex._label) ex.innerHTML = ex._label; ex.classList.remove("on");
+      };
+      seg.append(b);
+    });
+    pop.append(seg);
+  }
+  pop.append(row);
   pop.addEventListener("click", e => e.stopPropagation()); pop.addEventListener("pointerdown", e => e.stopPropagation());
   const lr = line.getBoundingClientRect(), gr = g.getBoundingClientRect();
   pop.style.top = Math.round(gr.bottom - lr.top + 2) + "px"; line.append(pop);
