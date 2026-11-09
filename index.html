@@ -2082,10 +2082,10 @@ function countAsk(line, t, y, end) {
   box.addEventListener("pointerdown", e => e.stopPropagation()); box.onclick = e => e.stopPropagation();
   yes.onclick = () => {
     close();
-    const day = () => (store.get("radical-days", {})[localDay()] || {}).w || 0, w0 = day();
+    const today = () => store.get("radical-days", {})[localDay()] || {}, day = () => today().w || 0, w0 = day(), rb0 = !!today().rb;
     creditTo(line, end, true);
-    const n = day() - w0, left = pageRoom() < 1;
-    toast(left ? `Counted ${n} word${n === 1 ? "" : "s"}. The rest was too fast.` : n ? `Counted ${n} word${n === 1 ? "" : "s"}.` : "Already counted.", 2800);
+    const n = day() - w0, left = pageRoom() < 1, burst = !rb0 && !!today().rb;  // v112: the goal burst went off: the note waits for it
+    setTimeout(() => toast(left ? `Counted ${n} word${n === 1 ? "" : "s"}. The rest was too fast.` : n ? `Counted ${n} word${n === 1 ? "" : "s"}.` : "Already counted.", 2800), burst ? 3800 : 0);
   };
   no.onclick = close;
   t.classList.add("on"); line.append(box);
@@ -2121,6 +2121,7 @@ function clearFrom(line, pos) {
   store.set("radical-read-unread", un);
   if (session && !readSync) readSync = setTimeout(() => { readSync = 0; syncNow(true); }, 30000);
   readBank = 0;
+  readArm.paid = Math.max(0, (readArm.paid || 0) - chars);  // v112: what came off today can be counted again (Count to here)
   if (words || chars) unlogRead(words, chars);
   toast(words ? `Cleared. ${words} word${words === 1 ? "" : "s"} off today.` : "Cleared", 2500);
 }
@@ -2217,7 +2218,16 @@ function readBand() {
   if (!end) bottom = top + (bottom - top) * 2 / 3;
   return { top, bottom };
 }
+// v112: leaving the app stops counting at once. iOS freezes the page in the background, so the tick below never
+// sees it hidden: the time away would count as reading time. A gap of over 3s between ticks counts as away too.
+function readAway() { readBank = 0; readTop = null; readArm.on = false; readArm.shown = Date.now(); readArm.paid = 0; }
+addEventListener("visibilitychange", () => { if (document.hidden) readAway(); else readArm.shown = Date.now(); });
+addEventListener("pagehide", readAway); addEventListener("blur", readAway);
+addEventListener("focus", () => { readArm.shown = Date.now(); });
+let readTickAt = 0;
 setInterval(() => {
+  const gap = Date.now() - readTickAt; readTickAt = Date.now();
+  if (gap > 3000 && gap < 1e12) { readAway(); return; }
   if (document.hidden || $("readScreen").hidden) { readBank = 0; readTop = null; readArm.on = false; readArm.shown = Date.now(); readArm.paid = 0; return; }
   const lines = [...document.querySelectorAll("#reader .line")].filter(l => !l._counted);
   if (capReader()) { readBank = 0; return; }  // v61: today's free reading is used up
@@ -5597,7 +5607,10 @@ function paintReadGoal() {
   const ring = $("readRing"); if (!ring) return;
   const w = (store.get("radical-days", {})[localDay()] || {}).w || 0, g = readGoal(), left = Math.max(0, g - w), p = Math.min(100, Math.round(w / g * 100));
   ring.querySelector(".rr1").setAttribute("stroke-dasharray", `${p} 100`);
-  if (!left && ring._painted && !ring.classList.contains("met")) readBurst(ring);  // v57: only at the moment the target is crossed
+  if (!left && ring._painted && !ring.classList.contains("met")) {  // v57: only at the moment the target is crossed
+    const d = store.get("radical-days", {}), k = localDay();  // v112: once a day (`rb`), even after an uncount and a recount
+    if (!(d[k] || {}).rb) { d[k] = d[k] || {}; d[k].rb = 1; store.set("radical-days", d); readBurst(ring); }
+  }
   ring.classList.toggle("met", !left); ring._painted = true;
   ring.closest("button").setAttribute("aria-label", `Read: ${left ? `${num(left)} words to go today` : "reading goal met"}`);
   const shown = Math.ceil(left / 5) * 5;  // in steps of 5, so it ticks down calmly
