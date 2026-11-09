@@ -2,6 +2,17 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v112
+
+- Mastered is now kept per skill. Read, Write and Listen each count on their own (right on two different days in that skill). The headline Mastered number still counts a word mastered in any skill, and Track shows the split under the boxes. Words mastered before this update count in the headline only.
+- Knowing a word in Read no longer stops its Write and Listen cards.
+- Tap 。 on any sentence, including the last one in a paragraph. A sentence with commas also offers its last phrase (Sentence | Phrase), and the words light up while it's read aloud.
+- Pinyin is plain ink. Settings, Appearance, Color tones brings the tone colors back.
+- 解, ENG and binder notes say "he" or "she" only when the text shows it. Otherwise they use the name or "they". Existing binders are read again once.
+- The reading goal celebration plays once a day.
+- After Clear from here down, Count to here can count those lines again, and its note waits for the celebration to finish.
+- Nothing counts as read while you're in another app.
+
 ## v111
 
 - Reading ticks are bolder and easier to see, in light and dark, and they stay put while you scroll (no more fading).
