@@ -1888,7 +1888,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v119";
+const APP_VERSION = "v120";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -6932,6 +6932,8 @@ const shuffleOn = () => /^Starter \d/.test(curList) ? store.get("radical-shuffle
 let curHow = null; const cardMode = new WeakMap();
 const howOf = w => { const h = curHow || revHow; return isMulti(h) ? (cardMode.get(w) || modesOf(h)[0]) : modesOf(h)[0]; };
 const srsKey = w => KEYS[w ? howOf(w) : modesOf(revHow)[0]];
+const chainW = new Map();  // words whose Write card follows their Read/Listen card this session: word -> cards in between
+const revLeft = () => rq.length + new Set(rq.filter(w => chainW.has(w))).size;
 const pick1 = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 // The words in a choice, in the order a session takes them. Learning is every word that isn't Known (new ones too):
@@ -6959,7 +6961,18 @@ function assignModes(q, how) {
   // v76: once a word has had a reading card, its Write and Listen can start: they join its due modes in the draw
   // (a word you've never seen still starts on Read; Known words don't start new modes)
   const fresh = (w, m) => m !== "read" && w.srs && !w.skip && !w[KEYS[m]];
-  q.forEach(w => { const dm = ms.filter(m => modeDue(w, m) || fresh(w, m)); cardMode.set(w, dm.length ? pick1(dm) : !w.srs && ms.includes("read") ? "read" : pick1(ms)); });
+  q.forEach(w => {
+    const dm = ms.filter(m => modeDue(w, m) || fresh(w, m)); chainW.delete(w);
+    // v120: a brand new word (never studied in any skill) with Write ticked gets its Write card right after its Read
+    // (or Listen) card; review words are drawn one skill at a time as before
+    if (ms.includes("write") && ms.length > 1 && !w.srs && !w.wsrs && !w.lsrs) {
+      cardMode.set(w, ms.includes("read") ? "read" : pick1(ms.filter(x => x !== "write"))); chainW.set(w, 0); return;
+    }
+    // a review word due in Write and another skill: the other one now, its Write a few cards later
+    const other = dm.filter(m => m !== "write");
+    if (dm.includes("write") && other.length) { cardMode.set(w, pick1(other)); chainW.set(w, 3 + Math.floor(Math.random() * 3)); return; }
+    cardMode.set(w, dm.length ? pick1(dm) : !w.srs && ms.includes("read") ? "read" : pick1(ms));
+  });
 }
 function buildQueue(cat, count, how = revHow) {
   let q = pool(cat, how).slice();
@@ -7031,8 +7044,10 @@ function renderStrip(sizes) {
   sec("Type", cats);
   const n = sizes[revCat], count = countFor(n);
   if (n) sec("How many", pills("counts" + (countChoices(n).length ? "" : " solo"), [...countChoices(n).map(c => [c, String(c)]), ["all", `All (${n})`]], count, k => { revCount = k; store.set("radical-revcount", k); }));
-  const nCards = count === "all" ? n : Math.min(n, count);
-  if (nCards) box.append(btn(`Start ${nCards}`, "btn wide revgo" + (store.get("radical-start-glow", false) && isStarter(curList) ? " startglow" : ""), async () => {
+  const nCards = count === "all" ? n : Math.min(n, count), hm = modesOf(revHow);
+  // v120: new words with Write ticked come back as Write cards, so say how many cards that makes
+  const plus = hm.includes("write") && hm.length > 1 ? pool(revCat).slice(0, nCards).filter(w => !w.srs && !w.wsrs && !w.lsrs).length + (revCat === "new" || revCat === "all" ? Math.max(0, nCards - pool(revCat).length) : 0) : 0;
+  if (nCards) box.append(btn(`Start ${nCards}${plus ? ` · ${nCards + plus} cards` : ""}`, "btn wide revgo" + (store.get("radical-start-glow", false) && isStarter(curList) ? " startglow" : ""), async () => {
     store.set(RES_KEY, null); store.set("radical-start-glow", false);
     if (isReady(curList) && (revCat === "new" || revCat === "all")) await fillList(curList, nCards - pool(revCat).length);  // ready-made words join when first studied
     openReview(revCat, count);
@@ -8198,6 +8213,7 @@ function prevCard() {
   if (h.learned === undefined) { if (learned[h.w.word]) { delete learned[h.w.word]; store.set("radical-learned", learned); } }
   else if (!learned[h.w.word]) { learned[h.w.word] = h.learned; store.set("radical-learned", learned); }
   store.set(dayKey(h.k), h.newday || {}); saveWords();
+  if (h.mode) cardMode.set(h.w, h.mode); if (h.chain != null) chainW.set(h.w, h.chain); else chainW.delete(h.w);
   rq = h.rq; rDone = h.rDone; rScore = h.score; if (h.out) revOutcome.set(h.w, h.out);
   showFront(); if (showFront.reveal) showFront.reveal("prev");
   $("reviewScreen").scrollTop = 0;
@@ -8220,7 +8236,7 @@ $("revEnd").onclick = () => {
   const auto = revSide && rq[0] && typeof showBack.autoRate === "function" ? showBack.autoRate : null;
   if (auto) { auto(); if (!rq.length) return; }
   const sheet = el("div", "sheet"), card = el("div", "sheetcard");
-  card.innerHTML = rDone ? `<h3>End this session?</h3><p>${rDone} of ${rDone + rq.length} done · ${scoreText(rScore)}</p><p class="note">Your ratings so far are saved.</p>`
+  card.innerHTML = rDone ? `<h3>End this session?</h3><p>${rDone} of ${rDone + revLeft()} done · ${scoreText(rScore)}</p><p class="note">Your ratings so far are saved.</p>`
     : `<h3>End this session?</h3><p>Nothing rated yet.</p>`;
   const row = el("div", "row"), stay = btn("Keep going", "btn ghost", () => sheet.remove()), quit = btn("Quit", "btn", () => {
     sheet.remove(); store.set(RES_KEY, null);
@@ -8479,7 +8495,7 @@ function showFront() {
   }
   const w = rq[0];
   const m0 = howOf(w);
-  prog.innerHTML = `${rDone + 1}/${rDone + rq.length}${w[srsKey(w)] ? "" : ' <span class="ptag">new</span>'}${isMulti(curHow || revHow) ? ` <span class="ptag">${{ read: "Read", write: "Write", listen: "Listen" }[m0]}</span>` : ""}${inList(w) ? "" : ` <span class="ptag pdeck">${esc(keyName(keyOf(w)))}</span>`}`;
+  prog.innerHTML = `${rDone + 1}/${rDone + revLeft()}${w[srsKey(w)] ? "" : ' <span class="ptag">new</span>'}${isMulti(curHow || revHow) ? ` <span class="ptag">${{ read: "Read", write: "Write", listen: "Listen" }[m0]}</span>` : ""}${inList(w) ? "" : ` <span class="ptag pdeck">${esc(keyName(keyOf(w)))}</span>`}`;
   revSide = null;
   $("revScript").replaceChildren(scriptToggle(async () => {  // 繁/简 for the whole set; the card you're on is redrawn
     const back = revSide; await ensure(rq.map(x => conv(x.word) + conv(x.context || "") + exList(x).map(e => conv(e.example)).join("")).join(""));
@@ -8873,13 +8889,14 @@ function showBack(w, how, st) {
     if (g === suggest && how !== "show") showBack.autoRate = () => { showBack.autoRate = null; b.onclick(true); };  // v96: Quit takes it
     b.onclick = force => {
       if (force !== true && Date.now() - shownAt < 500 && !quiet) return;
-      revHist.push({ w, k, out: revOutcome.get(w), srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, ok2: w.ok2, mk: w.mk ? { ...w.mk } : undefined, ms: w.ms ? { ...w.ms } : undefined, learned: learned[w.word], rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore, mw: rScore.mw.slice() } });
+      revHist.push({ w, k, mode: cardMode.get(w), chain: chainW.get(w), out: revOutcome.get(w), srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, ok2: w.ok2, mk: w.mk ? { ...w.mk } : undefined, ms: w.ms ? { ...w.ms } : undefined, learned: learned[w.word], rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore, mw: rScore.mw.slice() } });
       const sc = rScore, out = revOutcome.get(w) || (g === "again" ? "missed" : g === "hard" ? "shaky" : "right");
       sc[out]++;
       if (out === "missed") { sc.run = 0; if (!sc.mw.includes(w)) sc.mw.push(w); } else { sc.run++; sc.best = Math.max(sc.best, sc.run); }
       if (g === "again") { sc.repeats++; if (!sc.mw.includes(w)) sc.mw.push(w); }
       revOutcome.delete(w);
       tick(g); if (grade(w, g, k, ansQ)) masteredBloom(); if (knowNew && g === "easy") { setStatus(w, "known"); saveWords(); } rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w);
+      else if (k !== "wsrs" && chainW.has(w)) { const gap = chainW.get(w); chainW.delete(w); cardMode.set(w, "write"); rq.splice(Math.min(gap, rq.length), 0, w); }
       // Today in Mix: a word due in another mode too comes back in that mode, so Today really empties.
       else if (lastSet && lastSet.mode === "today" && isMulti(curHow)) { const more = modesOf(curHow).filter(m => modeDue(w, m) && !(noListen && m === "listen")); if (more.length && !rq.includes(w)) { cardMode.set(w, more[0]); rq.push(w); } } showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);

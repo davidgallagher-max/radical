@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v120
+
+- Flash cards with Write ticked: a new word's Write card comes right after its Read (or Listen) card. A review word due in Write and another skill gets its Write card a few cards later. Start shows the card count (Start 20 · 40 cards) and the card counter counts them from the first card.
+
 ## v119
 
 - Read, Write and Listen fill the Skill(s) row.
