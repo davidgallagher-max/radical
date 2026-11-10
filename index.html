@@ -982,6 +982,7 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .setchip.wide{color:var(--accent)}
 /* v113: Starter decks */
 .setchip.starterchip{display:grid;line-height:1.2;padding:8px 10px;border-radius:14px}.setchip.starterchip small{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.pills.hows button::before{content:"○ ";opacity:.6}.pills.hows button[aria-pressed="true"]::before{content:"✓ ";opacity:1}
 .revgo.startglow{animation:startglow 2.4s ease-in-out infinite}
 @keyframes startglow{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gold2) 0%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--gold2) 35%,transparent),0 0 22px color-mix(in srgb,var(--gold2) 45%,transparent)}}
 @media (prefers-reduced-motion:reduce){.revgo.startglow{animation:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--gold2) 45%,transparent)}}
@@ -1876,7 +1877,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v115";
+const APP_VERSION = "v116";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -6419,7 +6420,11 @@ function setGoal(m, on) {
 const modeDue = (w, m) => { const k = KEYS[m], x = w[k]; return !!(x && x.due && x.due <= Date.now()); };  // v112: Known (Read) no longer stops Write and Listen
 const dueIn = (w, ms) => ms.some(m => modeDue(w, m));
 const dueAny = w => dueIn(w, MODES);
-const modesOf = how => how === "mix" ? MODES : [how];
+// v116: Skill(s) is any combination: "read", "read+write", ... ; all three is still "mix"
+const modesOf = how => { if (how === "mix") return MODES; const a = String(how || "").split("+").filter(m => MODES.includes(m)); return a.length ? MODES.filter(m => a.includes(m)) : ["read"]; };
+const howKey = ms => { const a = MODES.filter(m => ms.includes(m)); return a.length === 3 ? "mix" : a.length ? a.join("+") : "read"; };
+const isMulti = h => modesOf(h).length > 1;
+const howOk = h => typeof h === "string" && h.length > 0 && (h === "mix" || h.split("+").every(m => MODES.includes(m)));
 // Today: every word whose review time has come in these modes (longest waiting first), then new words, up to dailyMax()
 // a day (Settings, Cards a day: 10, 20, 30 or 50; 30 unless changed). Reviews come first, so the more you have due, the
 // fewer new words fit. New words start in the first of the modes (Read when it's there). Words practiced today are done
@@ -6508,7 +6513,7 @@ const keyName = k => k === "all" ? "All decks" : k === "mine" ? mineName() : k =
 function groupName(L) { const n = groupKeys(L).map(keyName); return n.length > 2 ? `${n[0]} + ${n.length - 1} more` : n.join(" + "); }
 function setList(L) {
   stampUsed(L);
-  curList = L; store.set("radical-list", L); store.set("radical-list-recent", [L, ...store.get("radical-list-recent", []).filter(x => x !== L)].slice(0, 8)); revCat = "all"; catPicked = keepCat = true; contOk = false; updateCounts(); }
+  curList = L; store.set("radical-list", L); revHow = howFor(L); store.set("radical-list-recent", [L, ...store.get("radical-list-recent", []).filter(x => x !== L)].slice(0, 8)); revCat = "all"; catPicked = keepCat = true; contOk = false; updateCounts(); }
 // When each deck was last used: stamped on picking it and on starting cards (v45: ready-made decks too).
 function stampUsed(L = curList) { const d = localDay(), ks = groupKeys(L).filter(k => decks.used[k] !== d); if (!ks.length) return; ks.forEach(k => decks.used[k] = d); saveDecks(); }
 // v53: the day a deck was made. Decks from before v53 have none: use the last change to a word in it.
@@ -6889,12 +6894,14 @@ let pending = null;
 const CATS = [["today", "Today"], ["new", "New"], ["learning", "Learning"], ["known", "Known"], ["all", "All"]];
 let revCat = "today", catPicked = false, revCount = store.get("radical-revcount", 20);
 // Read: see the word, recall its sound and meaning. Write: hear it and see the meaning, write the characters.
-let revHow = store.get("radical-revhow", goal.length > 1 ? "mix" : goal[0]);  // read, write, listen or mix
-if (!["read", "write", "listen", "mix"].includes(revHow)) revHow = "read";
+// v116: a Starter deck keeps its own Skill(s), Read + Write to start
+const howFor = L => { const h = /^Starter \d/.test(L) ? store.get("radical-revhow-starter", "read+write") : store.get("radical-revhow", howKey(goal)); return howOk(h) ? h : "read"; };
+let revHow = howFor(curList);
+const shuffleOn = () => /^Starter \d/.test(curList) ? store.get("radical-shuffle-starter", false) : store.get("radical-shuffle", true);  // v116  // read, write, listen, a combination (read+write) or mix (all three)
 // During a session, curHow is how it runs; in Mix each card has its own mode.
 let curHow = null; const cardMode = new WeakMap();
-const howOf = w => { const h = curHow || revHow; return h === "mix" ? (cardMode.get(w) || "read") : h; };
-const srsKey = w => KEYS[w ? howOf(w) : (revHow === "mix" ? "read" : revHow)];
+const howOf = w => { const h = curHow || revHow; return isMulti(h) ? (cardMode.get(w) || modesOf(h)[0]) : modesOf(h)[0]; };
+const srsKey = w => KEYS[w ? howOf(w) : modesOf(revHow)[0]];
 const pick1 = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 // The words in a choice, in the order a session takes them. Learning is every word that isn't Known (new ones too):
@@ -6917,17 +6924,22 @@ function pool(cat, how = revHow) {
 // word gets one of the three at random.
 let noListen = false;  // Mix: Not now on a Listen card keeps Listen out until the session ends
 function assignModes(q, how) {
-  if (how !== "mix") return;
-  const ms = noListen ? MODES.filter(m => m !== "listen") : MODES;
+  if (!isMulti(how)) return;
+  const all = modesOf(how), ms = noListen && all.length > 1 ? all.filter(m => m !== "listen") : all;
   // v76: once a word has had a reading card, its Write and Listen can start: they join its due modes in the draw
   // (a word you've never seen still starts on Read; Known words don't start new modes)
   const fresh = (w, m) => m !== "read" && w.srs && !w.skip && !w[KEYS[m]];
-  q.forEach(w => { const dm = ms.filter(m => modeDue(w, m) || fresh(w, m)); cardMode.set(w, dm.length ? pick1(dm) : !w.srs ? "read" : pick1(ms)); });
+  q.forEach(w => { const dm = ms.filter(m => modeDue(w, m) || fresh(w, m)); cardMode.set(w, dm.length ? pick1(dm) : !w.srs && ms.includes("read") ? "read" : pick1(ms)); });
 }
 function buildQueue(cat, count, how = revHow) {
   let q = pool(cat, how).slice();
-  if (!isStarter(curList) && (cat === "known" || cat === "all" || (cat === "new" && curList !== "top" && !isLevel(curList)))) shuffle(q);  // Top's and a level's new words go in order; a Starter deck always does
+  // v116: Order (In order / Shuffle) is the user's; Shuffle picks a random set from New, Known and All (Top's and a
+  // level's new words still come in order) and mixes the cards; In order keeps the list's order (due order for Today
+  // and Learning, #1 first in a Starter deck)
+  const mixIt = shuffleOn();
+  if (mixIt && (cat === "known" || cat === "all" || (cat === "new" && curList !== "top" && !isLevel(curList)))) shuffle(q);
   q = count === "all" ? q : q.slice(0, count);
+  if (mixIt) shuffle(q);
   assignModes(q, how);
   return q;
 }
@@ -6978,7 +6990,13 @@ function renderStrip(sizes) {
     row.lastChild.onclick = () => openSets();
     sec("Deck", row);
   }
-  sec("Skill", pills("hows", [["read", "Read"], ["write", "Write"], ["listen", "Listen"], ["mix", "Mix"]], revHow, k => { revHow = k; store.set("radical-revhow", k); }));
+  // v116: tick any combination (at least one stays ticked); a Starter deck keeps its own choice
+  const hows = pills("hows", [["read", "Read"], ["write", "Write"], ["listen", "Listen"]], null, k => {
+    const on = modesOf(revHow), next = on.includes(k) ? (on.length > 1 ? on.filter(m => m !== k) : on) : [...on, k];
+    revHow = howKey(next); store.set(isStarter(curList) ? "radical-revhow-starter" : "radical-revhow", revHow); });
+  [...hows.children].forEach((b, i) => { const on = modesOf(revHow).includes(MODES[i]); b.setAttribute("aria-pressed", on); b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", on); });
+  sec("Skill(s)", hows);
+  sec("Order", pills("order", [["in", "In order"], ["mix", "Shuffle"]], shuffleOn() ? "mix" : "in", k => store.set(isStarter(curList) ? "radical-shuffle-starter" : "radical-shuffle", k === "mix")));
   const cats = pills("cats", CATS.map(([k, label]) => [k, label, sizes[k], k !== "today" && k !== "all" && !sizes[k]]), revCat, k => { revCat = k; });
   sec("Type", cats);
   const n = sizes[revCat], count = countFor(n);
@@ -6996,7 +7014,7 @@ function renderStrip(sizes) {
     else if (more) box.append(btn(`${more} more`, "btn outl wide revgo", () => openReview("learning", 10)));
   } else box.append(el("p", "revdone", listWords().length ? "No words here." : curList === "mine" ? "Add words to start." : "No words here."));
   // What each mode does: shown the first time you pick it, then How it works keeps it.
-  const NOTES = { write: "Write: hear it, see the meaning, write it.", listen: "Listen: hear it, type pinyin and meaning.", mix: "Mix: Read, Write and Listen, shuffled." };
+  const NOTES = { write: "Write: hear it, see the meaning, write it.", listen: "Listen: hear it, type pinyin and meaning.", mix: "All three: each card is Read, Write or Listen." };
   const seen = store.get("radical-hownote", {});
   if (NOTES[revHow] && !seen[revHow]) { box.append(el("p", "note", NOTES[revHow])); seen[revHow] = true; store.set("radical-hownote", seen); }
   strip.append(box); todayNum();
@@ -8170,7 +8188,7 @@ function saveSession() {
 }
 function savedSession() {
   const r = store.get(RES_KEY, null);
-  if (!r || r.day !== localDay() || !Array.isArray(r.words) || !["read", "write", "listen", "mix"].includes(r.how)) return null;
+  if (!r || r.day !== localDay() || !Array.isArray(r.words) || !howOk(r.how)) return null;
   r.list = r.words.map(x => findWord(x)).filter(Boolean);
   return r.list.length ? r : null;
 }
@@ -8408,7 +8426,7 @@ function showFront() {
   }
   const w = rq[0];
   const m0 = howOf(w);
-  prog.innerHTML = `${rDone + 1}/${rDone + rq.length}${w[srsKey(w)] ? "" : ' <span class="ptag">new</span>'}${(curHow || revHow) === "mix" ? ` <span class="ptag">${{ read: "Read", write: "Write", listen: "Listen" }[m0]}</span>` : ""}${inList(w) ? "" : ` <span class="ptag pdeck">${esc(keyName(keyOf(w)))}</span>`}`;
+  prog.innerHTML = `${rDone + 1}/${rDone + rq.length}${w[srsKey(w)] ? "" : ' <span class="ptag">new</span>'}${isMulti(curHow || revHow) ? ` <span class="ptag">${{ read: "Read", write: "Write", listen: "Listen" }[m0]}</span>` : ""}${inList(w) ? "" : ` <span class="ptag pdeck">${esc(keyName(keyOf(w)))}</span>`}`;
   revSide = null;
   $("revScript").replaceChildren(scriptToggle(async () => {  // 繁/简 for the whole set; the card you're on is redrawn
     const back = revSide; await ensure(rq.map(x => conv(x.word) + conv(x.context || "") + exList(x).map(e => conv(e.example)).join("")).join(""));
@@ -8431,7 +8449,7 @@ function showFront() {
     if (ex && ex !== w.word) { const b = btn("In a sentence", "btn ghost insent", () => { const k = altSpeed("sent:" + ex); saySentence(conv(ex), k < 1 ? slowerPace(sayPace) : sayPace); }); lp.append(b); }
     // Mix (v42): can't listen right now (no headphones)? Not now turns this card into a Read card and keeps Listen out
     // for the rest of the session. The Listen schedule isn't touched.
-    if ((curHow || revHow) === "mix") lp.append(btn("Not now", "linkbtn notnow", () => {
+    if (isMulti(curHow || revHow) && modesOf(curHow || revHow).length > 1) lp.append(btn("Not now", "linkbtn notnow", () => {
       noListen = true; try { speechSynthesis.cancel(); } catch (e) {}
       rq.forEach(x => { if (cardMode.get(x) === "listen") cardMode.set(x, "read"); }); showFront();
     }));
@@ -8810,7 +8828,7 @@ function showBack(w, how, st) {
       revOutcome.delete(w);
       tick(g); if (grade(w, g, k, ansQ)) masteredBloom(); if (knowNew && g === "easy") { setStatus(w, "known"); saveWords(); } rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w);
       // Today in Mix: a word due in another mode too comes back in that mode, so Today really empties.
-      else if (lastSet && lastSet.mode === "today" && curHow === "mix") { const more = MODES.filter(m => modeDue(w, m) && !(noListen && m === "listen")); if (more.length && !rq.includes(w)) { cardMode.set(w, more[0]); rq.push(w); } } showFront(); $("reviewScreen").scrollTop = 0; };
+      else if (lastSet && lastSet.mode === "today" && isMulti(curHow)) { const more = modesOf(curHow).filter(m => modeDue(w, m) && !(noListen && m === "listen")); if (more.length && !rq.includes(w)) { cardMode.set(w, more[0]); rq.push(w); } } showFront(); $("reviewScreen").scrollTop = 0; };
     grades.append(b);
   });
   // Rating is the only way forward, so the bar says so; the flip button sits where "Show answer" was on the front.

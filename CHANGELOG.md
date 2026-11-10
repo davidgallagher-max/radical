@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v116
+
+- Flash cards: Skill(s) takes any combination of Read, Write and Listen (✓ on each one you tick). Mix is gone: tick all three. Each card is one of the skills you picked, whichever is due.
+- Starter decks keep their own Skill(s), starting on Read + Write.
+- A new Order row: In order or Shuffle, for any deck. Starter decks start In order, the others Shuffle, and your pick is remembered.
+
 ## v115
 
 - Starter cards are numbered (#1 to #100, later up to #500). A card's deck chip reads Starter 1 · #12, and Starter 1 is ticked in its deck sheet, even for a word you first got from Top or a level.
