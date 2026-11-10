@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v118
+
+- Reading ticks on a half-read paragraph stay after a reload or update.
+- A binder whose notes were being rebuilt carries on where it stopped; its sheet says it is reading the pages again.
+- About opens with Why I built Radical.
+
 ## v117
 
 - A Starter deck's word list (and Review these) goes #1 to #100.

@@ -1557,6 +1557,16 @@ body.tonecolor .tc1{color:var(--t1)}body.tonecolor .tc2{color:var(--t2)}body.ton
     <div class="brand" style="justify-content:center;padding:6px 0 2px"><svg id="aboutMark" viewBox="0 0 1024 1024" aria-hidden="true" style="width:56px;height:56px"></svg><b style="font-size:1.8rem">Radical</b></div>
     <p class="note" id="aboutVer" style="text-align:center;margin-top:-6px"></p>
     
+    <div class="panel about aboutstory">
+      <h3 class="abouthead">Why I built Radical</h3>
+      <p>Back in 1999 I was a Peace Corps volunteer, sent to teach English in small villages in Kyrgyzstan. My Kyrgyz teacher used colored markers for the Turkic suffixes, and I was functionally fluent in three months. Being immersed helped, but the colors made it stick. I'm a visual learner, and I need to see how a language fits together.</p>
+      <p>Mandarin was different. After seven years, I stalled. The readings had nothing to do with my life, and flash card apps asked me to memorize characters with no context. A character with dozens of strokes got the same tiny space as a Latin letter. I bought an awkward magnifying reader to see the details. All I got was dizzy.</p>
+      <p>So I built the app I wanted: real text I care about, every character colored by its parts and enlargeable, explanations the moment I need them, and settings for nearly everything.</p>
+      <p>I use it every day, and for the first time I can see my progress. I liked it so much that I started Upslope Labs to share it.</p>
+      <p>Your feedback comes straight to me. I read every message, and a lot of them end up in the app.</p>
+      <p>Happy studying!<br>David</p>
+      <p lang="zh-Hant">祝你學得開心，一起加油！<br><span class="note">Enjoy your studies. Let's keep at it together!</span></p>
+    </div>
     <div class="panel about">
       <h3 class="abouthead">Static flashcards? Bogus. Get radical.</h3>
       <p>Every character is drawn stroke by stroke and colored by what each part does: meaning, sound, or picture. Read real Chinese, tap any word, and it becomes a card that brings it to life in real sentences.</p>
@@ -1877,7 +1887,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v117";
+const APP_VERSION = "v118";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2111,7 +2121,7 @@ function clearFrom(line, pos) {
   const today = localDay(), rl = readLines(), un = store.get("radical-read-unread", {}); let words = 0, chars = 0, dropped = false;
   lines.slice(i).forEach((l, j) => {
     const keep = j === 0 ? pos : 0, n = hanIn(l._text), k = lineKey(l._text || "");
-    const known = partRead.get(k); partOf(l);
+    const known = partGet(k); partOf(l);
     const got = l._counted ? n : l._got || 0;
     if (got <= keep && !l._counted) return;
     const oldDay = l._counted && rl[k] && rl[k] !== today ? rl[k] : null;
@@ -2156,14 +2166,18 @@ function unlogRead(words, chars) {
 // v56: a long paragraph is one line, so credit is paid into a line bit by bit (in reading order) and each word is
 // logged as the credit passes it: the count moves smoothly instead of waiting for a whole paragraph. A line is "in
 // view" when most of it is on screen, or when it fills a good part of the screen (a paragraph taller than the screen).
-const partRead = new Map();  // lineKey -> { got, wi, ci, day }: a part-read line keeps its place when the page redraws
+// v118: kept in radical-part for today, so the ticks of a part-read paragraph survive a reload or an update
+const partRead = new Map(Object.entries(store.get("radical-part", {}) || {}).filter(([, p]) => p && p.day));
+const partGet = k => { const p = partRead.get(k); return p && p.day === localDay() ? p : undefined; };
+let partSave = null;
+const savePart = () => { clearTimeout(partSave); partSave = setTimeout(() => { const d = localDay(), o = {}; partRead.forEach((p, k) => { if (p.day === d) o[k] = p; }); store.set("radical-part", o); }, 800); };
 function partOf(line) {
   if (line._got != null) return;
-  const p = partRead.get(lineKey(line._text || ""));
+  const p = partGet(lineKey(line._text || ""));
   if (p && p.day === localDay()) { line._got = p.got; line._wi = p.wi; line._ci = p.ci; line._cred = p.cred ? p.cred.slice() : []; line._skip = p.skip ? p.skip.map(x => x.slice()) : []; line._old = p.old || null; }
   else { line._got = 0; line._cred = []; line._skip = []; line._old = null; }
 }
-const keepPart = (line, t) => partRead.set(lineKey(t), { got: line._got, wi: line._wi, ci: line._ci, cred: line._cred || [], skip: line._skip || [], old: line._old || null, day: localDay() });
+const keepPart = (line, t) => { partRead.set(lineKey(t), { got: line._got, wi: line._wi, ci: line._ci, cred: line._cred || [], skip: line._skip || [], old: line._old || null, day: localDay() }); savePart(); };
 // v86: move a line's place to `pos` without credit: rows scrolled past unread, or (back) after an uncount
 function skipTo(line, pos, back) {
   partOf(line);
@@ -4058,7 +4072,21 @@ function bookForget(name) {  // drop a binder's saved explanations and translati
 async function bookGenders() {
   if (!(await accessToken().catch(() => null))) return;
   for (const name of Object.keys(books.list)) { const b = books.list[name]; if (!b.gv && (b.upto || 0) > 0) { b.gv = 1; saveBooks(); bookForget(name); await bookRedo(name); } }
+  bookCatchUp();
 }
+// v118: a rebuild cut short (the app closed, an update, a failed call) carries on from the last page learned, at
+// start and when the binder's sheet opens, so a binder never stays without notes
+async function bookCatchUp(only) {
+  if (bookCatchUp.on || !(await accessToken().catch(() => null))) return;
+  bookCatchUp.on = true;
+  try {
+    for (const name of only ? [only] : Object.keys(books.list)) {
+      const pages = textHistory.filter(x => x.book === name && x.text && !x.doc).sort((a, c) => a.bn - c.bn);
+      for (const p of pages) { const b = books.list[name]; if (!b) break; if ((b.upto || 0) >= p.bn) continue; await bookLearn(name, p.bn, p.text); if ((books.list[name] || {}).upto !== p.bn) break; }
+    }
+  } finally { bookCatchUp.on = false; }
+}
+const bookBehind = name => { const b = books.list[name]; return !!b && textHistory.some(x => x.book === name && x.text && !x.doc && x.bn > (b.upto || 0)); };
 function bookPicker(done, keep) {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard deckpick"), list = el("div", "dplist"), close = () => sheet.remove();
   const pick = n => { if (!keep) books.last = n; saveBooks(); close(); paintBookChip(); if (done) done(n); };  // keep: filing a page, not changing the add box
@@ -4160,7 +4188,8 @@ function storySheet(h) {  // v108: a page, or a binder's name (from History)
   const name = typeof h === "string" ? h : h.book;
   const s = bookState(name, Infinity), sheet = el("div", "sheet"), card = el("div", "sheetcard storycard"), close = () => { sheet.remove(); if (moved) { paintTextHead(); bookRedo(name); if (!$("historyScreen").hidden) renderHistory(); } };
   card.append(el("h3", "", esc(name)));
-  if (!s) card.append(el("p", "note", "Notes start after the first page."));
+  const behind = bookBehind(name); if (behind) bookCatchUp(name);
+  if (!s) card.append(el("p", "note", behind ? "Reading the pages again for the notes. Check back in a minute." : "Notes start after the first page."));
   else {
     if (s.story) s.story.split(/\n+/).forEach(p => card.append(el("p", /^Open threads/i.test(p) ? "story open" : "story", esc(p))));
     if ((s.cast || []).length) { const c = el("div", "cast"); s.cast.forEach(x => c.append(el("div", "", `<b lang="zh">${esc(conv(x.name))}</b> <span>${esc(x.who)}</span>`))); card.append(el("h4", "", "Who's who"), c); }
