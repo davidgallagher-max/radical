@@ -1877,7 +1877,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v116";
+const APP_VERSION = "v117";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -7061,8 +7061,8 @@ function renderWords() {
   // The list shows the words in the choice above, newest first.
   const inSet = new Set(sets[revCat]);
   renderCommon();
-  const shown = myWords.map((w, i) => [w, i]).filter(([w]) => inSet.has(w))
-    .sort((a, b) => (b[0].added || "").localeCompare(a[0].added || "") || a[1] - b[1]).map(x => x[0]);
+  const shown = inOrder(myWords.map((w, i) => [w, i]).filter(([w]) => inSet.has(w))
+    .sort((a, b) => (b[0].added || "").localeCompare(a[0].added || "") || a[1] - b[1]).map(x => x[0]));  // v117: a Starter deck lists #1 first
   const ups = revCat === "new" || revCat === "all" ? up : [], nList = shown.length + ups.length;
   list.hidden = !nList;
   $("listHead").textContent = myWords.length ? `${CATS.find(c => c[0] === revCat)[1]} · ${num(nList)} word${nList === 1 ? "" : "s"}` : "";

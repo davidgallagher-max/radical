@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v117
+
+- A Starter deck's word list (and Review these) goes #1 to #100.
+
 ## v116
 
 - Flash cards: Skill(s) takes any combination of Read, Write and Listen (✓ on each one you tick). Mix is gone: tick all three. Each card is one of the skills you picked, whichever is due.
