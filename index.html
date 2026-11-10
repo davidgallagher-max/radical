@@ -1888,7 +1888,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v120";
+const APP_VERSION = "v121";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -6955,14 +6955,17 @@ function pool(cat, how = revHow) {
 // Mix: a card comes up in a mode where it's due (one picked at random if several); new words start in Read; any other
 // word gets one of the three at random.
 let noListen = false;  // Mix: Not now on a Listen card keeps Listen out until the session ends
+const freshMode = (w, m) => m !== "read" && w.srs && !w.skip && !w[KEYS[m]];
+const dueModes = (w, ms) => ms.filter(m => modeDue(w, m) || freshMode(w, m));
+// v120: does this word get a second (Write) card this session? new: right after; review: due in Write and another skill
+const getsWrite = (w, ms) => ms.includes("write") && ms.length > 1 && ((!w.srs && !w.wsrs && !w.lsrs) || (() => { const dm = dueModes(w, ms); return dm.includes("write") && dm.some(m => m !== "write"); })());
 function assignModes(q, how) {
   if (!isMulti(how)) return;
   const all = modesOf(how), ms = noListen && all.length > 1 ? all.filter(m => m !== "listen") : all;
   // v76: once a word has had a reading card, its Write and Listen can start: they join its due modes in the draw
   // (a word you've never seen still starts on Read; Known words don't start new modes)
-  const fresh = (w, m) => m !== "read" && w.srs && !w.skip && !w[KEYS[m]];
   q.forEach(w => {
-    const dm = ms.filter(m => modeDue(w, m) || fresh(w, m)); chainW.delete(w);
+    const dm = dueModes(w, ms); chainW.delete(w);
     // v120: a brand new word (never studied in any skill) with Write ticked gets its Write card right after its Read
     // (or Listen) card; review words are drawn one skill at a time as before
     if (ms.includes("write") && ms.length > 1 && !w.srs && !w.wsrs && !w.lsrs) {
@@ -7046,7 +7049,8 @@ function renderStrip(sizes) {
   if (n) sec("How many", pills("counts" + (countChoices(n).length ? "" : " solo"), [...countChoices(n).map(c => [c, String(c)]), ["all", `All (${n})`]], count, k => { revCount = k; store.set("radical-revcount", k); }));
   const nCards = count === "all" ? n : Math.min(n, count), hm = modesOf(revHow);
   // v120: new words with Write ticked come back as Write cards, so say how many cards that makes
-  const plus = hm.includes("write") && hm.length > 1 ? pool(revCat).slice(0, nCards).filter(w => !w.srs && !w.wsrs && !w.lsrs).length + (revCat === "new" || revCat === "all" ? Math.max(0, nCards - pool(revCat).length) : 0) : 0;
+  const hms = noListen && hm.length > 1 ? hm.filter(m => m !== "listen") : hm;
+  const plus = hms.includes("write") && hms.length > 1 ? pool(revCat).slice(0, nCards).filter(w => getsWrite(w, hms)).length + (revCat === "new" || revCat === "all" ? Math.max(0, nCards - pool(revCat).length) : 0) : 0;
   if (nCards) box.append(btn(`Start ${nCards}${plus ? ` · ${nCards + plus} cards` : ""}`, "btn wide revgo" + (store.get("radical-start-glow", false) && isStarter(curList) ? " startglow" : ""), async () => {
     store.set(RES_KEY, null); store.set("radical-start-glow", false);
     if (isReady(curList) && (revCat === "new" || revCat === "all")) await fillList(curList, nCards - pool(revCat).length);  // ready-made words join when first studied
