@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v123
+
+- A short number's pinyin stays on one line over it; long ones wrap at any letter.
+
 ## v122
 
 - Numbers in Read show their pinyin, read the Chinese way (8,313,921 is bā bǎi sān shí yī wàn...; a year before 年 goes digit by digit; 2 before a measure word is liǎng). Tap a number for its characters, a speaker and, for big ones, the 萬/億 math.

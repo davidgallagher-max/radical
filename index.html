@@ -545,8 +545,8 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
    (v38: the big polished serif made "401.3 km²" take half a line). */
 .glyph.latin{font-family:var(--font-zh);font-weight:400;font-size:calc(var(--cell,38px) * .5);color:var(--fg);text-align:left;padding:0 0 0 calc(var(--cell,38px) * .06);white-space:nowrap;opacity:1}
 .glyph.latin.speaking{border-radius:6px}
-.glyph.num{position:relative;cursor:pointer}.glyph.num::before{content:attr(data-py);position:absolute;left:0;right:0;bottom:calc(100% - var(--cell,38px) * .16);font-family:var(--font-ui);font-size:min(.74rem,calc(var(--cell,38px) * .3));font-weight:500;line-height:1.05;color:var(--fg);white-space:normal;overflow-wrap:break-word;pointer-events:none}
-.glyph.num.long::before{font-size:min(.6rem,calc(var(--cell,38px) * .24))}.nopy .glyph.num::before{display:none}
+.glyph.num{position:relative;cursor:pointer}.glyph.num::before{content:attr(data-py);position:absolute;left:0;right:0;bottom:calc(100% - var(--cell,38px) * .16);font-family:var(--font-ui);font-size:min(.74rem,calc(var(--cell,38px) * .3));font-weight:500;line-height:1.05;color:var(--fg);white-space:normal;overflow-wrap:anywhere;pointer-events:none}
+.glyph.num.long::before{font-size:min(.6rem,calc(var(--cell,38px) * .24))}.glyph.num:not(.long)::before{white-space:nowrap;left:50%;right:auto;transform:translateX(-50%)}.nopy .glyph.num::before{display:none}
 .glyph.num.on{border-radius:6px;box-shadow:inset 0 -3px 0 var(--accent)}
 .numrow{gap:10px}.numzh{display:grid;gap:2px;min-width:0}.numzh [lang=zh]{font-family:var(--font-zh);font-size:1.25rem;line-height:1.3;overflow-wrap:anywhere}.numpy{font-size:.92rem;color:var(--muted)}.numpop .numrow+.numrow{margin-top:8px}
 .numexp{list-style:none;padding:0}.numexp li{margin:6px 0}.numsum{color:var(--muted)}
@@ -1898,7 +1898,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v122";
+const APP_VERSION = "v123";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3387,7 +3387,7 @@ function buildLine(lineText, onTap, withEN = true) {
           const end = runAt + words[j].at + words[j].text.length, nums = numRead(text, lineText.slice(end, end + 4));
           if (nums.length) {
             const py = nums.map(x => x.py).join(" · "); g.classList.add("num"); g.dataset.py = py;
-            if (py.length > text.length * 2.2) g.classList.add("long");
+            if (py.length > Math.max(8, text.length * 2.2)) g.classList.add("long");
             g.setAttribute("role", "button"); g.tabIndex = 0; g.setAttribute("aria-label", `${text}: ${nums.map(x => x.zh).join(" ")}`);
             g.onclick = e => { e.stopPropagation(); numPop(line, g, nums); };
           }
