@@ -2,6 +2,15 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v122
+
+- Numbers in Read show their pinyin, read the Chinese way (8,313,921 is bā bǎi sān shí yī wàn...; a year before 年 goes digit by digit; 2 before a measure word is liǎng). Tap a number for its characters, a speaker and, for big ones, the 萬/億 math.
+- 解 adds the math for any number of 10,000 or more: 8,313,921 = 831萬 3921 = 831 × 10,000 + 3,921.
+- Listen highlights numbers and English like characters (they only had a faint underline), and spells out names like IMDb letter by letter so the voice says them.
+- Write forgives the finger pad: one missed or hinted stroke per 10 strokes (rounded) is still green, up to double is yellow. A hint still keeps a card from counting toward Mastered.
+- Word Decks shows Basecamp in its own color, like its pill.
+- About explains how flash cards work.
+
 ## v121
 
 - Start's card count includes review words that get a Write card later, so it matches the counter.

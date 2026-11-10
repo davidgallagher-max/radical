@@ -544,7 +544,12 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 /* English words and numbers: the plain interface font at half a square, so a number sits quietly in the Chinese
    (v38: the big polished serif made "401.3 km²" take half a line). */
 .glyph.latin{font-family:var(--font-zh);font-weight:400;font-size:calc(var(--cell,38px) * .5);color:var(--fg);text-align:left;padding:0 0 0 calc(var(--cell,38px) * .06);white-space:nowrap;opacity:1}
-.glyph.latin.speaking{background-color:transparent;box-shadow:none;border-bottom:3px solid var(--accent);border-radius:0}
+.glyph.latin.speaking{border-radius:6px}
+.glyph.num{position:relative;cursor:pointer}.glyph.num::before{content:attr(data-py);position:absolute;left:0;right:0;bottom:calc(100% - var(--cell,38px) * .16);font-family:var(--font-ui);font-size:min(.74rem,calc(var(--cell,38px) * .3));font-weight:500;line-height:1.05;color:var(--fg);white-space:normal;overflow-wrap:break-word;pointer-events:none}
+.glyph.num.long::before{font-size:min(.6rem,calc(var(--cell,38px) * .24))}.nopy .glyph.num::before{display:none}
+.glyph.num.on{border-radius:6px;box-shadow:inset 0 -3px 0 var(--accent)}
+.numrow{gap:10px}.numzh{display:grid;gap:2px;min-width:0}.numzh [lang=zh]{font-family:var(--font-zh);font-size:1.25rem;line-height:1.3;overflow-wrap:anywhere}.numpy{font-size:.92rem;color:var(--muted)}.numpop .numrow+.numrow{margin-top:8px}
+.numexp{list-style:none;padding:0}.numexp li{margin:6px 0}.numsum{color:var(--muted)}
 .glue{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-items:end}
 .glue>*{min-width:0}
 .glue .glyph:not(.latin){text-align:left}
@@ -999,6 +1004,7 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .decktable{display:grid;border-radius:14px;box-shadow:inset 0 0 0 1px var(--line);overflow:hidden;margin-bottom:8px}
 .deckrow{display:flex;align-items:center;border-top:1px solid var(--line)}.deckrow:first-child{border-top:0}
 .deckrow.on{background:color-mix(in srgb,var(--accent) 12%,transparent)}.deckrow.on .dname{color:var(--accent)}
+.deckrow.base .dname{color:var(--base,var(--gold2))}.deckrow.base.on{background:color-mix(in srgb,var(--base,var(--gold2)) 12%,transparent)}
 .dcheck{all:unset;cursor:pointer;padding:12px 6px 12px 12px;display:grid;place-items:center}
 .dcheck[aria-checked="false"]>.ncheck{background:none;box-shadow:inset 0 0 0 1.5px var(--muted)}.dcheck[aria-checked="false"]>.ncheck::after{display:none}
 .dmain{all:unset;cursor:pointer;flex:1;min-width:0;display:flex;align-items:baseline;gap:8px;padding:12px 12px 12px 6px}
@@ -1574,6 +1580,10 @@ body.tonecolor .tc1{color:var(--t1)}body.tonecolor .tc2{color:var(--t2)}body.ton
       <p><b>Words, not characters.</b> A character alone rarely means much. Radical counts the words you know, because words are what you read.</p>
       <p><b>Today:</b> our daily picks to help you remember. But any card you study counts toward your daily goal.</p>
       <div class="aboutpic" aria-hidden="true"><div class="revhead"><b>Flash cards</b><span class="pbadge fcbadge">12</span></div><div class="pills cats"><button aria-pressed="true">Today <span>12</span></button><button>New <span>40</span></button><button>Learning <span>85</span></button></div></div>
+      <h3 class="abouthead">How flash cards work</h3>
+      <p>A new word comes back fast, and if you miss it, you see it again this round. Each time you get it right, Radical stretches the gap: tomorrow, two days, four, then weeks. That's how memory sticks.</p>
+      <p>With Read and/or Listen plus Write, a new word's Write card is the very next card. A word you've seen before often gets one a few cards later. The repetition of writing is where you really own a new character. So 20 words can mean up to 40 cards. This is how Chinese has been learned for millennia. Science backs the method. Radical keeps the schedule for you.</p>
+      <p>A word is Mastered when you get it right, with no help, on two different days. Read, Write and Listen each count on their own. Radical checks it again a month later, and one miss puts it back in play.</p>
       <p>Designed, built and shipped by Upslope Labs, your polyglot friends in the Mile High City.</p>
       <p class="note aboutcred">Make Me a Hanzi · CC-CEDICT · OpenCC · Hanzi Writer · Wikipedia (CC BY-SA)</p>
       <p class="note aboutcred"><a href="https://upslopelabs.com/radical/privacy" target="_blank" rel="noopener">Privacy policy</a> · <a href="mailto:privacy@upslopelabs.com">privacy@upslopelabs.com</a></p>
@@ -1888,7 +1898,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v121";
+const APP_VERSION = "v122";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1947,8 +1957,10 @@ else document.documentElement.classList.add("nosay");
 // speak(text): say it at your speech speed. With `slow` ({ k, gap }), each character is its own utterance at k times
 // your speed with a pause of `gap` ms between them. iPhone voices barely change speed on a single short word, so
 // pausing between syllables is what you can actually hear.
+// v122: Chinese voices swallow mixed-case short names like IMDb; spell any 2 to 6 letter word with 2+ capitals ("I M D B").
+const spellCaps = t => String(t || "").replace(/\b[A-Za-z]{2,6}\b/g, w => (w.match(/[A-Z]/g) || []).length >= 2 ? [...w.toUpperCase()].join(" ") : w);
 function speak(text, slow) {
-  text = String(text || "").replace(/[~～〜]/g, "").replace(/…|⋯/g, "，");  // a pattern's slot isn't read out
+  text = spellCaps(text).replace(/[~～〜]/g, "").replace(/…|⋯/g, "，");  // a pattern's slot isn't read out
   if (!("speechSynthesis" in window) || !text) return;
   if (typeof stopReading === "function") stopReading(); else speechSynthesis.cancel();
   const simp = typeof region !== "undefined" && region === "cn", v = simp ? cnVoice : twVoice;
@@ -2376,7 +2388,7 @@ function readAloud(lines, all, k = 1) {
     if (c.first) countLine(c.line);
     c.groups.forEach(g => g.classList.add("speaking"));
     if (all) followAlong(c.groups);
-    const u = new SpeechSynthesisUtterance(c.text);
+    const u = new SpeechSynthesisUtterance(spellCaps(c.text));
     u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = Math.max(.1, rate * (all ? 1 : k));
     readAloud.current = u;  // keep a reference: some browsers drop the events of an utterance nothing points to
     let ended = false;
@@ -2595,6 +2607,66 @@ function play(kind) {
 const pyHTML = s => s ? `<span class="tc${tone(s)}">${s}</span>` : "";
 const toneColorOn = () => store.get("radical-tonecolor", false);
 const paintToneColor = () => document.body.classList.toggle("tonecolor", toneColorOn());
+// v122: Arabic numbers read the Chinese way. numZh("8313921") = 八百三十一萬三千九百二十一 (萬/億 every four digits,
+// 零 for a gap, 十 not 一十 at the start, 兩 before 千/萬/億 or a measure word); a 4-digit year before 年 and anything
+// with a leading 0 or over 12 digits goes digit by digit. numRead(text, after) finds each number in a Latin glyph.
+const NUM_D = "零一二三四五六七八九", NUM_PY = { 零: "líng", "〇": "líng", 一: "yī", 二: "èr", 兩: "liǎng", 两: "liǎng", 三: "sān", 四: "sì", 五: "wǔ", 六: "liù", 七: "qī", 八: "bā", 九: "jiǔ", 十: "shí", 百: "bǎi", 千: "qiān", 萬: "wàn", 万: "wàn", 億: "yì", 亿: "yì", 點: "diǎn", 点: "diǎn", 分: "fēn", 之: "zhī", 負: "fù", 负: "fù" };
+const NUM_MW = /^(個|个|本|隻|只|張|张|位|次|天|年|歲|岁|種|种|件|條|条|輛|辆|杯|塊|块|名|家|部|場|场|份|層|层|句|點|点|小時|小时|分鐘|分钟|公里|公斤|倍|週|周|個月|个月|人|頁|页|碗|瓶|雙|双|套|間|间|所|座|班|節|节|台|臺)/;
+const numSimp = () => typeof script !== "undefined" && script === "simp";
+function numFour(n, full) {
+  const d = [Math.floor(n / 1000), Math.floor(n / 100) % 10, Math.floor(n / 10) % 10, n % 10], u = ["千", "百", "十", ""];
+  let s = "", zero = false, started = false;
+  for (let i = 0; i < 4; i++) {
+    if (!d[i]) { if (started || full) zero = true; continue; }
+    if (zero) s += "零"; zero = false; s += NUM_D[d[i]] + u[i]; started = true;
+  }
+  return s;
+}
+function numZh(digits, opt = {}) {
+  const simp = opt.simp ?? numSimp(), W = simp ? "万" : "萬", Y = simp ? "亿" : "億", L = simp ? "两" : "兩";
+  let [int, dec] = String(digits).split("."); int = int.replace(/,/g, "");
+  const one = c => c === "0" ? (opt.year ? "〇" : "零") : NUM_D[+c];
+  let s;
+  if (opt.year || (int.length > 1 && int[0] === "0") || int.length > 12) s = [...int].map(one).join("");
+  else {
+    const n = +int; if (!n) s = "零";
+    else {
+      const g = [n % 10000, Math.floor(n / 10000) % 10000, Math.floor(n / 1e8)], unit = ["", W, Y]; s = "";
+      for (let i = 2; i >= 0; i--) { if (!g[i]) continue; s += numFour(g[i], !!s) + unit[i]; if (i && !g[i - 1] && g.slice(0, i - 1).some(Boolean)) s += "零"; }
+      s = s.replace(/零+/g, "零").replace(/零(?=[萬万億亿]|$)/g, "");
+      if (s.startsWith("一十")) s = s.slice(1);
+      if (/^二[千萬万億亿]/.test(s) || (n === 2 && opt.mw)) s = L + s.slice(1);
+    }
+  }
+  if (dec) s += (simp ? "点" : "點") + [...dec].map(one).join("");
+  return s;
+}
+const numPy = zh => [...zh].map(c => NUM_PY[c] || "").filter(Boolean).join(" ");
+// every number in a Latin glyph's text, with what follows the glyph in the line (年, a measure word)
+function numRead(text, after = "") {
+  const out = [], re = /(-)?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(%)?/g; let m;
+  while ((m = re.exec(text))) {
+    const end = m.index + m[0].length, tail = text.slice(end).trim() ? text.slice(end) : after;
+    const year = !m[3] && !m[4] && /^\d{4}$/.test(m[2]) && /^\s*年/.test(tail);
+    let zh = numZh(m[2] + (m[3] || ""), { year, mw: NUM_MW.test(tail.trim()) });
+    if (m[4]) zh = "百分之" + zh;
+    if (m[1] && !m.index) zh = (numSimp() ? "负" : "負") + zh;
+    out.push({ src: m[0], digits: m[2].replace(/,/g, ""), zh, py: numPy(zh), year });
+  }
+  return out;
+}
+// v122 (解): the math of a big number: 8,313,921 = 831萬 3921 = 831 × 10,000 + 3,921
+function numMath(text, bare) {
+  const simp = numSimp(), W = simp ? "万" : "萬", Y = simp ? "亿" : "億", seen = new Set(), rows = [];
+  for (const x of numRead(String(text || "").replace(/\p{Script=Han}+/gu, m => " " + m + " "), "")) {
+    const n = +x.digits; if (x.year || n < 10000 || n >= 1e12 || seen.has(x.digits) || /^0/.test(x.digits)) continue; seen.add(x.digits);
+    const g = [Math.floor(n / 1e8), Math.floor(n / 10000) % 10000, n % 10000], unit = [Y, W, ""], val = [100000000, 10000, 1];
+    const parts = g.map((v, i) => [v, i]).filter(([v]) => v);
+    const grp = parts.map(([v, i]) => v + unit[i]).join(" "), sum = parts.map(([v, i]) => i < 2 ? `${v.toLocaleString("en-US")} × ${val[i].toLocaleString("en-US")}` : v.toLocaleString("en-US")).join(" + ");
+    rows.push(`<li><b>${esc(n.toLocaleString("en-US"))}</b> = ${esc(grp)}${bare ? "" : `<br><span lang="zh">${esc(x.zh)}</span> <span class="expy">${esc(x.py)}</span>`}<br><span class="numsum">${esc(sum)}</span></li>`);
+  }
+  return rows.length ? `<p class="exs numhead">Big numbers count in 4-digit groups: ${W} = 10,000, ${Y} = 100,000,000.</p><ul class="exp numexp">${rows.join("")}</ul>` : "";
+}
 const PLAIN = {};
 "āáǎàa ēéěèe īíǐìi ōóǒòo ūúǔùu ǖǘǚǜv".split(" ").forEach(g => [...g].forEach(c => PLAIN[c] = g[4]));
 PLAIN["ü"] = "v";
@@ -3310,6 +3382,16 @@ function buildLine(lineText, onTap, withEN = true) {
         const fits = () => latinWidth(text + " " + words[j + 1].text + (unitAfter(j + 1) ? " " + words[j + 2].text : "")) <= latinRoom();
         while (j + 1 < words.length && (unitAfter(j) || text === "(" || !flowing && fits())) text += " " + words[++j].text;
         const latin = /[A-Za-z0-9]/.test(text), g = el("span", "glyph" + (latin ? " latin" : ""), esc(text));
+        // v122: a number shows its Chinese reading as pinyin (data-py, so textContent stays the number) and opens on a tap
+        if (latin && /^\(?-?\d/.test(text)) {
+          const end = runAt + words[j].at + words[j].text.length, nums = numRead(text, lineText.slice(end, end + 4));
+          if (nums.length) {
+            const py = nums.map(x => x.py).join(" · "); g.classList.add("num"); g.dataset.py = py;
+            if (py.length > text.length * 2.2) g.classList.add("long");
+            g.setAttribute("role", "button"); g.tabIndex = 0; g.setAttribute("aria-label", `${text}: ${nums.map(x => x.zh).join(" ")}`);
+            g.onclick = e => { e.stopPropagation(); numPop(line, g, nums); };
+          }
+        }
         line.append(g);
         if (latin) spans.push({ start: runAt + words[k].at, end: runAt + words[j].at + words[j].text.length, group: g });  // numbers and English light up too
         k = j + 1;
@@ -3527,6 +3609,23 @@ function sentenceBar(line, g, sent, r = {}) {
     pop.append(seg);
   }
   pop.append(row);
+  pop.addEventListener("click", e => e.stopPropagation()); pop.addEventListener("pointerdown", e => e.stopPropagation());
+  const lr = line.getBoundingClientRect(), gr = g.getBoundingClientRect();
+  pop.style.top = Math.round(gr.bottom - lr.top + 2) + "px"; line.append(pop);
+}
+// v122: a tapped number: its Chinese characters, pinyin and a speaker; big ones show their 萬/億 math
+function numPop(line, g, nums) {
+  const old = line.querySelector(":scope>.sentpop"); if (old) { old.remove(); line.querySelectorAll(".sentend.on,.phrase.on,.glyph.num.on").forEach(x => x.classList.remove("on")); if (old._g === g) return; }
+  const pop = el("div", "sentpop numpop"); pop._g = g; g.classList.add("on"); pop.lang = "en";
+  nums.forEach(x => {
+    const row = el("div", "sentrow numrow"), say = el("button", "saybtn sm", SPK); say.type = "button"; say.setAttribute("aria-label", "Say this number");
+    say.onclick = e => { e.stopPropagation(); speak(x.zh); };
+    row.append(say, el("span", "numzh", `<span lang="zh">${esc(x.zh)}</span><span class="numpy">${esc(x.py)}</span>`));
+    pop.append(row);
+  });
+  const math = numMath(nums.map(x => x.src).join(" "), true); if (math) pop.append(el("div", "explain nummath", math));
+  const x = btn("✕", "enbtn sentx"); x.setAttribute("aria-label", "Close"); x.onclick = e => { e.stopPropagation(); pop.remove(); g.classList.remove("on"); };
+  pop.firstChild.append(x);
   pop.addEventListener("click", e => e.stopPropagation()); pop.addEventListener("pointerdown", e => e.stopPropagation());
   const lr = line.getBoundingClientRect(), gr = g.getBoundingClientRect();
   pop.style.top = Math.round(gr.bottom - lr.top + 2) + "px"; line.append(pop);
@@ -5308,7 +5407,7 @@ async function explainLine(text, line, b) {
   after.after(box); b.classList.add("on");
   store.set("radical-explain-uses", store.get("radical-explain-uses", 0) + 1);
   const ctx = ctxFor(line), ek = ctx ? "b:" + curBook().book + "|" + text : text;  // v104: a book page is explained with the book's notes
-  if (explainCache[ek]) { await ensure(explainText(explainCache[ek])); box.innerHTML = explainHTML(explainCache[ek]); return; }
+  if (explainCache[ek]) { await ensure(explainText(explainCache[ek])); box.innerHTML = explainHTML(explainCache[ek]) + numMath(text); return; }
   box.innerHTML = '<p class="exs loading">Explaining…</p>'; b.disabled = true;
   try {
     // v63: a sentence on a pre-built card names its word, so the server can explain it for free
@@ -5318,7 +5417,7 @@ async function explainLine(text, line, b) {
     const keys = Object.keys(explainCache); while (keys.length > 300) delete explainCache[keys.shift()];
     store.set("radical-explain", explainCache);
     await ensure(explainText(explainCache[ek]));
-    box.innerHTML = explainHTML(explainCache[ek]);
+    box.innerHTML = explainHTML(explainCache[ek]) + numMath(text);
   } catch (e) { box.innerHTML = `<p class="exs">${esc(e.message)}</p>`; box.classList.add("err"); failRetry(box, () => explainLine(text, line, b)); }
   b.disabled = false;
 }
@@ -7630,7 +7729,7 @@ function openSets() {
     row.append(el("span", "dcheck"), main); table.append(row);
   }
   rows.forEach(r => {
-    const row = el("div", "deckrow" + (cur.has(r.k) ? " on" : "")), ck = el("button", "dcheck", '<i class="ncheck" aria-hidden="true"></i>');
+    const row = el("div", "deckrow" + (cur.has(r.k) ? " on" : "") + (r.k === "mine" ? " base" : "")), ck = el("button", "dcheck", '<i class="ncheck" aria-hidden="true"></i>');
     ck.type = "button"; ck.setAttribute("role", "checkbox"); ck.setAttribute("aria-checked", "false"); ck.setAttribute("aria-label", `Select ${r.n}`);
     ck.onclick = () => { picked.has(r.k) ? picked.delete(r.k) : picked.add(r.k); ck.setAttribute("aria-checked", picked.has(r.k)); row.classList.toggle("picked", picked.has(r.k)); paintBar(); };
     const main = el("button", "dmain", `<span class="dname">${esc(cut(r.n))} <span class="dcount">(${num(r.count)})</span></span><span class="dused">${dayShort(r.used) || "—"}</span>`);
@@ -8805,9 +8904,10 @@ function showBack(w, how, st) {
   // come when you answer (Right or Wrong).
   let asking = false; const fanfare = !quiet || !!(st && st.answered);
   if (how === "write" && st && st.strokes) {
-    // First-try strokes and hints decide the suggestion: clean is Good, a slip or one hint is Hard, more is Again.
-    const r = st.first / st.strokes;
-    suggest = !st.hints && r >= .9 ? "good" : st.hints <= 1 && r >= .6 ? "hard" : "again";
+    // v122: forgiveness. A stroke counts against you if it was missed or hinted; one free per 10% of strokes
+    // (rounded, so 5+ strokes get one). Within that is Good, up to double (at least 1) is Hard, more is Again.
+    const off = st.strokes - st.first, free = Math.round(st.strokes / 10);
+    suggest = off <= free ? "good" : off <= Math.max(1, free * 2) ? "hard" : "again";
     const cls = suggest === "good" ? "ok" : suggest === "hard" ? "part" : "no";
     ans.append(el("div", "results", `<div class="res ${cls}"><span>Writing</span><b>${st.first} of ${st.strokes} strokes right the first time</b><em>${st.hints ? `${st.hints} hint${st.hints === 1 ? "" : "s"}` : "No hints."}</em></div>`));
     if (!quiet) play(suggest === "again" ? "wrong" : suggest === "hard" ? "half" : "right");
@@ -8845,7 +8945,7 @@ function showBack(w, how, st) {
   else if (how === "show") revOutcome.set(w, "missed");
   else if (how === "check" || how === "write") revOutcome.set(w, suggest === "good" ? "right" : suggest === "hard" ? "shaky" : "missed");
   // How it was answered, for Mastered (v43): fully right with no clue, a tone slip, or I know it
-  const ansQ = { right: (how === "check" || how === "write") && suggest === "good" && !hinted, slip: slip && !hinted, claim: how === "know" };
+  const ansQ = { right: (how === "check" || how === "write") && suggest === "good" && !hinted && !(how === "write" && st && st.hints), slip: slip && !hinted, claim: how === "know" };
   if (hinted && suggest === "good") suggest = "hard";  // needed a hint: it comes back sooner
   if (fanfare && !asking && ["check", "write", "know"].includes(how) && revOutcome.get(w)) bloom(revOutcome.get(w));
   if (!asking && revOutcome.get(w)) scoreTakes(revOutcome.get(w));
