@@ -2,6 +2,13 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v113
+
+- New to Chinese? Starter 1: the first 100 words, made by us. Each card's sentences use only words you've already met (the first cards have none). Every card has the word's tones, a sound tip with a speaker, and notes when a tone changes in the sentence (不 rising, 一, two third tones). Starters 2 to 5 come later.
+- "Just starting" on first start opens Starter 1 with Start glowing. The walkthrough now comes after your first session.
+- Word Decks has Starter 1 at the top.
+- The script choice reads 简 Simplified · Mainland China, Singapore and 繁 Traditional · Taiwan, Hong Kong.
+
 ## v112
 
 - Mastered is now kept per skill. Read, Write and Listen each count on their own (right on two different days in that skill). The headline Mastered number still counts a word mastered in any skill, and Track shows the split under the boxes. Words mastered before this update count in the headline only.
