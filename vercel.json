@@ -28,6 +28,10 @@
       "dest": "/upslope/radical-privacy.html"
     },
     {
+      "src": "/(radical/)?terms/?",
+      "dest": "/upslope/radical-terms.html"
+    },
+    {
       "src": "/(.*)",
       "has": [
         {
