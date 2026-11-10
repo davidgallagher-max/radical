@@ -1876,7 +1876,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v113";
+const APP_VERSION = "v114";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -7165,7 +7165,7 @@ const hasSet = t => isLevel(t) ? levelsOn().includes(t) : !!setCache[t] || myWor
 const isReady = L => L === "top" || hasSet(L);
 const setUpcoming = t => {
   if (!levelData[t] || setCache[t]) return (setCache[t] || []).filter(x => !findWord(x.word) && !(deleted || {})[x.word]);
-  const have = new Set(myWords.map(w => toSimp(w.word))); Object.keys(deleted || {}).forEach(x => have.add(toSimp(x)));  // a level can be 5,000 words
+  const have = new Set(myWords.map(w => toSimp(w.word))); if (!isStarter(t)) Object.keys(deleted || {}).forEach(x => have.add(toSimp(x)));  // a level can be 5,000 words (v114: a Starter deck always has all its words; one you removed comes back)
   return levelData[t].filter(x => !have.has(x.s));
 };
 const upcoming = L => L === "top" ? topUpcoming() : setCache[L] || levelData[L] ? setUpcoming(L) : [];

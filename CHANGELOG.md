@@ -2,6 +2,10 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v114
+
+- Starter 1 always shows all 100 words. Words you had removed before were left out; they come back as new.
+
 ## v113
 
 - New to Chinese? Starter 1: the first 100 words, made by us. Each card's sentences use only words you've already met (the first cards have none). Every card has the word's tones, a sound tip with a speaker, and notes when a tone changes in the sentence (不 rising, 一, two third tones). Starters 2 to 5 come later.
