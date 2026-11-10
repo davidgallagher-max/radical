@@ -1876,7 +1876,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v114";
+const APP_VERSION = "v115";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -6899,8 +6899,11 @@ const pick1 = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 // The words in a choice, in the order a session takes them. Learning is every word that isn't Known (new ones too):
 // the ones whose review time has come first (longest waiting first), then the ones coming up soonest, new ones last.
+// v115: a Starter deck goes in its own order (#1 to #100), like a textbook
+const starterNo = w => { const e = starterMap && starterMap.get(w.word); return e ? e.no : 1e9; };
+const inOrder = a => isStarter(curList) ? a.slice().sort((x, y) => starterNo(x) - starterNo(y)) : a;
 function pool(cat, how = revHow) {
-  const ms = modesOf(how), lw = listWords();
+  const ms = modesOf(how), lw = inOrder(listWords());
   if (cat === "today") return todayList(ms);
   if (cat === "new") return lw.filter(w => isNewIn(w, how));
   if (cat === "known") return lw.filter(w => w.skip);
@@ -6923,7 +6926,7 @@ function assignModes(q, how) {
 }
 function buildQueue(cat, count, how = revHow) {
   let q = pool(cat, how).slice();
-  if (cat === "known" || cat === "all" || (cat === "new" && curList !== "top" && !isLevel(curList))) shuffle(q);  // Top's and a level's new words go in order
+  if (!isStarter(curList) && (cat === "known" || cat === "all" || (cat === "new" && curList !== "top" && !isLevel(curList)))) shuffle(q);  // Top's and a level's new words go in order; a Starter deck always does
   q = count === "all" ? q : q.slice(0, count);
   assignModes(q, how);
   return q;
@@ -7203,12 +7206,14 @@ const isStarter = L => typeof L === "string" && /^Starter \d/.test(L);
 let starterMap = null, starterLoad = null;
 function loadStarter() {
   return starterLoad || (starterLoad = getFile("lists/starter.json").then(r => r.ok ? r.json() : {}).catch(() => ({})).then(j => {
-    const m = new Map(); Object.values(j || {}).flat().forEach(x => { m.set(x.w, x); if (x.s) m.set(x.s, x); });
+    const m = new Map(); Object.entries(j || {}).forEach(([d, a]) => a.forEach((x, i) => { x.no = (d - 1) * 100 + i + 1; x.deck = `Starter ${d}`; m.set(x.w, x); if (x.s) m.set(x.s, x); }));  // v115: numbered 1 to 500
     if (!m.size) starterLoad = null; starterMap = m; return m;
   }));
 }
 const starterOf = w => w && starterMap && (isStarter(w.set) || levelsOn().some(isStarter)) ? starterMap.get(w.word) || null : null;
 const starterRI = () => region === "cn" ? 1 : 0;
+// v115: the open Starter deck a word is in (so its chip says Starter 1 · #12, even when it came from Top or a level)
+const starterIn = w => { const e = starterMap && starterMap.get(w.word); return e && (w.set === e.deck || levelsOn().includes(e.deck)) ? e : null; };
 const levelSystems = () => region === "tw" ? ["tocfl", "hsk"] : ["hsk", "tocfl"];
 let levelsMemo = null;
 const levelsOn = () => levelsMemo || (levelsMemo = (store.get("radical-levels", []) || []).filter(isLevel));
@@ -7477,6 +7482,7 @@ function deckPicker({ w, title, start, save, remove, cancel }) {
     // v65: the ready-made decks in your list too (not the one a word already comes from)
     allLists().filter(([k]) => k === "top" || (!isDeck(k) && !isGroup(k) && k !== "mine" && k !== "all")).forEach(([k]) => {
       if (w && (k === "top" ? w.common : w.set === k)) return;
+      if (w && isStarter(k) && starterIn(w) && starterIn(w).deck === k) { row(esc(keyName(k)), true, null, " fixed").disabled = true; return; }  // v115: in a Starter deck by its list, not a tag
       const n = RM + k; row(esc(keyName(k)), sel.has(n), () => { sel.has(n) ? sel.delete(n) : sel.add(n); paint(); });
     });
     row("＋ New deck", false, () => { sheet.remove(); nameDeck("", n => {
@@ -7496,13 +7502,13 @@ function deckPicker({ w, title, start, save, remove, cancel }) {
 // The decks a word is in, as a chip: tap to change them.
 function deckChip(w, after) {
   const b = btn("", "deckchip");
-  const paint = () => { const ds = wDecks(w).map(deckLabel), fixed = w.common || w.set ? [keyName(w.set || "top")] : [], names = fixed.concat(ds).length ? fixed.concat(ds) : [mineName()];
+  const paint = () => { const ds = wDecks(w).map(deckLabel), si = starterIn(w), fixed = [...(si ? [`${si.deck} · #${si.no}`] : []), ...(w.common || w.set ? [keyName(w.set || "top")] : [])].filter((x, i, a) => !(si && i && x === si.deck)), names = fixed.concat(ds).length ? fixed.concat(ds) : [mineName()];
     b.innerHTML = `<span>${esc(names[0])}${names.length > 1 ? ` +${names.length - 1}` : ""}</span> ▾`; b.setAttribute("aria-label", `Decks: ${names.join(", ")}. Change`); };
   b.onclick = e => { e.stopPropagation(); deckPicker({ w, title: `${conv(w.word)} is in`, save: a => { setDecks(w, a); saveWords(); paint(); updateCounts(); if (after) after(); } }); };
   paint(); return b;
 }
 // v53: a DECK (or DECKS) label in front, so the chip reads as a control
-const deckRow = w => { const r = el("div", "deckline"), lab = el("span", "decklab"), set = () => lab.textContent = wDecks(w).length + (w.common || w.set ? 1 : 0) > 1 ? "Decks" : "Deck";
+const deckRow = w => { const r = el("div", "deckline"), lab = el("span", "decklab"), set = () => lab.textContent = wDecks(w).length + (w.common || w.set ? 1 : 0) + (starterIn(w) && w.set !== starterIn(w).deck ? 1 : 0) > 1 ? "Decks" : "Deck";
   set(); r.append(lab, deckChip(w, set)); return r; };
 const addedToast = a => toast(`Added to <b>${esc(a && a.length ? a.map(deckLabel).join(", ") : mineName())}</b>`, 2200);
 // v51: + Add names its deck: the one you picked last ("" is Basecamp), so a word never lands somewhere you didn't see.

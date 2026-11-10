@@ -2,6 +2,11 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v115
+
+- Starter cards are numbered (#1 to #100, later up to #500). A card's deck chip reads Starter 1 · #12, and Starter 1 is ticked in its deck sheet, even for a word you first got from Top or a level.
+- A Starter deck goes in order, #1 first, for New, Known and All and in the Review list. Today and Learning still follow their due dates.
+
 ## v114
 
 - Starter 1 always shows all 100 words. Words you had removed before were left out; they come back as new.
