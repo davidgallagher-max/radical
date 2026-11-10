@@ -980,6 +980,13 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .setchip{all:unset;box-sizing:border-box;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:10px 4px;border-radius:999px;font-size:.92rem;font-weight:600;color:var(--fg);background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);font-variant-numeric:tabular-nums}
 .setchip[aria-pressed="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--bg));box-shadow:inset 0 0 0 1.5px var(--accent)}
 .setchip.wide{color:var(--accent)}
+/* v113: Starter decks */
+.setchip.starterchip{display:grid;line-height:1.2;padding:8px 10px;border-radius:14px}.setchip.starterchip small{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.revgo.startglow{animation:startglow 2.4s ease-in-out infinite}
+@keyframes startglow{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gold2) 0%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--gold2) 35%,transparent),0 0 22px color-mix(in srgb,var(--gold2) 45%,transparent)}}
+@media (prefers-reduced-motion:reduce){.revgo.startglow{animation:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--gold2) 45%,transparent)}}
+.tonenotes:empty{display:none}.tonenote{font-size:.92rem;color:var(--muted);margin:6px 2px 0}
+.sndtip{display:grid;gap:6px;margin-top:8px}.sndline .saybtn{vertical-align:middle;margin-right:6px}.sndtip b{margin-right:6px}
 .setchip.top{display:grid;line-height:1.15;padding:7px 2px;border-radius:14px;font-size:1rem}.setchip.top small{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .setchip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .setspanel .setsub{margin:-2px 0 4px}
@@ -1869,7 +1876,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v112";
+const APP_VERSION = "v113";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -5329,7 +5336,9 @@ const EX_MAX = 6;
 const aiExamples = c => !c ? [] : Array.isArray(c.examples) && c.examples.length ? c.examples : c.example ? [{ example: c.example, example_pinyin: c.example_pinyin || "", example_en: c.example_en || "" }] : [];
 function exList(w) {
   const own = w && w.mine && w.mine.example ? [{ example: w.mine.example, example_pinyin: w.mine.example_pinyin || "", example_en: w.mine.example_en || "", own: true }] : [];
-  return [...own, ...aiExamples(w && w.card).filter(x => !own.length || x.example !== own[0].example)];
+  const st = starterOf(w), ri = starterRI();
+  const base = st ? st.ex.map(e => ({ example: e.z, example_pinyin: e.p[ri], example_en: e.e, notes: e.n[ri], starter: true })) : aiExamples(w && w.card);
+  return [...own, ...base.filter(x => !own.length || x.example !== own[0].example)];
 }
 const exPick = new WeakMap();
 function exNow(w) {
@@ -5338,10 +5347,16 @@ function exNow(w) {
   if (!p || p.at !== at || p.i >= l.length) { p = { at, i: Math.floor(Math.random() * l.length) }; exPick.set(w, p); }
   return l[p.i];
 }
+// v113: a Starter card's tones and sound tip, under its sentence
+function starterTip(w, st) {
+  const ri = starterRI(), box = el("div", "sndtip");
+  box.append(el("p", "mnem sndtones", `<b>Tones</b> ${esc(st.tones[ri])}`), el("p", "mnem sndline", `${sayHTML(conv(w.word), true)}<b>Sound tip</b> ${esc(st.tip[ri])}`));
+  return box;
+}
 async function nextExample(w) {
   const l = exList(w), p = exPick.get(w) || { at: rDone, i: 0 };
   if (p.i + 1 < l.length) { p.i++; exPick.set(w, p); return l[p.i]; }
-  if (!online() || !w.card) { p.i = 0; exPick.set(w, p); return l[0]; }  // offline: round again
+  if (!online() || !w.card || starterOf(w)) { p.i = 0; exPick.set(w, p); return l[0]; }  // offline (or a Starter card's own sentences): round again
   // A one-sentence card gets two more in one go; otherwise one fresh sentence.
   const r = await claude({ action: "example", word: w.word, meaning: wMeaning(w), avoid: l.map(x => x.example).join(" / "), n: aiExamples(w.card).length < 3 ? 2 : 1 });
   const got = (r.examples || [r]).filter(x => x && x.example && !l.some(y => y.example === x.example));
@@ -6966,8 +6981,8 @@ function renderStrip(sizes) {
   const n = sizes[revCat], count = countFor(n);
   if (n) sec("How many", pills("counts" + (countChoices(n).length ? "" : " solo"), [...countChoices(n).map(c => [c, String(c)]), ["all", `All (${n})`]], count, k => { revCount = k; store.set("radical-revcount", k); }));
   const nCards = count === "all" ? n : Math.min(n, count);
-  if (nCards) box.append(btn(`Start ${nCards}`, "btn wide revgo", async () => {
-    store.set(RES_KEY, null);
+  if (nCards) box.append(btn(`Start ${nCards}`, "btn wide revgo" + (store.get("radical-start-glow", false) && isStarter(curList) ? " startglow" : ""), async () => {
+    store.set(RES_KEY, null); store.set("radical-start-glow", false);
     if (isReady(curList) && (revCat === "new" || revCat === "all")) await fillList(curList, nCards - pool(revCat).length);  // ready-made words join when first studied
     openReview(revCat, count);
   }));
@@ -7160,7 +7175,9 @@ async function fillList(L, n) {
   if (isLevel(L)) await loadLevels(levelSys(L));
   const add = setUpcoming(L).slice(0, n); if (!add.length) return 0;
   if (isLevel(L)) await ensure(add.map(x => x.word).join(""));
-  add.forEach(x => myWords.push({ ...(isLevel(L) ? dictInfo(x.word) : { pinyin: x.pinyin, meaning: x.meaning }), word: x.word, added: localDay(), set: L }));
+  if (isStarter(L)) await loadStarter();
+  const st = x => { const e = isStarter(L) && starterMap && starterMap.get(x.word); return e ? { pinyin: e.p[starterRI()], meaning: e.m } : null; };
+  add.forEach(x => myWords.push({ ...(st(x) || (isLevel(L) ? dictInfo(x.word) : { pinyin: x.pinyin, meaning: x.meaning })), word: x.word, added: localDay(), set: L }));
   saveWords(); return add.length;
 }
 // A word's pinyin and a short meaning from the dictionary (characters loaded first with ensure).
@@ -7175,15 +7192,30 @@ function dictInfo(word) {
 // (scripts/build_levels.py). Like a topic deck, a word joins your words (w.set = "TOCFL 1") when first studied, in the
 // list's order (most common first). The levels you've opened are radical-levels; a word you already have that's in a
 // level counts in it. Taiwan shows TOCFL first, mainland HSK.
-const LEVELS = { tocfl: { file: "lists/tocfl.txt", name: n => `TOCFL ${n}`, short: n => String(n) }, hsk: { file: "lists/hsk.txt", name: n => n === 7 ? "HSK 7–9" : `HSK ${n}`, short: n => n === 7 ? "7–9" : String(n) } };
+const LEVELS = { starter: { file: "lists/starter.txt", name: n => `Starter ${n}`, short: n => String(n) }, tocfl: { file: "lists/tocfl.txt", name: n => `TOCFL ${n}`, short: n => String(n) }, hsk: { file: "lists/hsk.txt", name: n => n === 7 ? "HSK 7–9" : `HSK ${n}`, short: n => n === 7 ? "7–9" : String(n) } };
 const LEVEL_N = [1, 2, 3, 4, 5, 6, 7];
-const isLevel = L => typeof L === "string" && /^(HSK|TOCFL) \d/.test(L), levelSys = L => L.startsWith("HSK") ? "hsk" : "tocfl";
+const isLevel = L => typeof L === "string" && /^(HSK|TOCFL|Starter) \d/.test(L), levelSys = L => L.startsWith("HSK") ? "hsk" : L.startsWith("Starter") ? "starter" : "tocfl";
+// v113: Starter decks (lists/starter.json from scripts/starter/build.py): the first words for absolute beginners, our own
+// cards: sentences that use only the words up to that card, tones, a sound tip and the tone changes under each sentence.
+// A word gets them while it is in a Starter deck (its tag, or a Starter deck you have open); its AI card still gives
+// the character parts, but never its sentences, and ↻ only steps through the Starter ones.
+const isStarter = L => typeof L === "string" && /^Starter \d/.test(L);
+let starterMap = null, starterLoad = null;
+function loadStarter() {
+  return starterLoad || (starterLoad = getFile("lists/starter.json").then(r => r.ok ? r.json() : {}).catch(() => ({})).then(j => {
+    const m = new Map(); Object.values(j || {}).flat().forEach(x => { m.set(x.w, x); if (x.s) m.set(x.s, x); });
+    if (!m.size) starterLoad = null; starterMap = m; return m;
+  }));
+}
+const starterOf = w => w && starterMap && (isStarter(w.set) || levelsOn().some(isStarter)) ? starterMap.get(w.word) || null : null;
+const starterRI = () => region === "cn" ? 1 : 0;
 const levelSystems = () => region === "tw" ? ["tocfl", "hsk"] : ["hsk", "tocfl"];
 let levelsMemo = null;
 const levelsOn = () => levelsMemo || (levelsMemo = (store.get("radical-levels", []) || []).filter(isLevel));
 const setLevels = a => { levelsMemo = null; store.set("radical-levels", a); };
 let levelData = {}, levelSets = {}, levelLoads = {};
 function loadLevels(sys) {
+  if (sys === "starter") loadStarter();
   return levelLoads[sys] || (levelLoads[sys] = getFile(LEVELS[sys].file).then(r => r.ok ? r.text() : "").catch(() => "").then(t => {
     const by = {};
     t.split("\n").forEach(l => { const [n, w] = l.trim().split("\t"); if (!w || l.startsWith("#")) return; const k = LEVELS[sys].name(+n); const s = sys === "hsk" ? w : toSimp(w); (by[k] || (by[k] = [])).push({ word: conv(w), s }); });
@@ -7353,6 +7385,9 @@ function setsGrid(close) {
   const pick = (fn, ai, why) => () => { if (close) close(); chooseSet(fn, ai, null, why); };
   // v98: the level decks (TOCFL and HSK, your region's first) replace Top 100 to 2,000. A Top list you have stays in your decks.
   const top = el("div", "levels");
+  // v113: Starter 1 first, for absolute beginners (Starter 2 to 5 come later)
+  const sb = btn("", "setchip wide starterchip", pick(() => openLevel("Starter 1"), false, "start Starter 1"));
+  sb.innerHTML = `<small>New to Chinese</small>Starter 1 · first 100 words`; sb.setAttribute("aria-pressed", curList === "Starter 1"); top.append(sb);
   levelSystems().forEach(sys => {
     const row = el("div", "setrow seven"); row.setAttribute("aria-label", sys.toUpperCase()); top.append(row);
     LEVEL_N.forEach(n => { const L = LEVELS[sys].name(n), b = btn("", "setchip top", pick(() => openLevel(L), false, `start ${L}`));
@@ -7566,7 +7601,8 @@ function upcomingRows(list, ups) {
 // First start, after Learning focus: one tap to a Top list at your level (where in it you start), or a topic.
 // 普通话 / 國語 (v42): two pills, no flags. Picking one sets the readings, voice and AI word choices, and switches the
 // script to match (繁/简 on the reading bar still changes the script alone).
-const REGIONS = [["cn", "普通话", "Pǔtōnghuà · Mainland"], ["tw", "國語", "Guóyǔ · Taiwan"]];
+// v113: named by the script people know they want (the pill still sets the voice and readings too)
+const REGIONS = [["cn", "简", "Simplified · Mainland China, Singapore", "Simplified"], ["tw", "繁", "Traditional · Taiwan, Hong Kong", "Traditional"]];
 function setRegion(r) {
   if (r !== "cn" && r !== "tw") return;
   region = r; store.set("radical-region", r);
@@ -7585,14 +7621,15 @@ function offerCommon() {
   store.set("radical-common-asked", true);
   const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard"); let lvs = [];
   // v98: each answer opens a level of your region's list (TOCFL for Taiwan, HSK for mainland)
-  const lv = (label, tw, cn) => { const L = () => region === "tw" ? LEVELS.tocfl.name(tw) : LEVELS.hsk.name(cn), b = btn("", "btn wide lvbtn", () => { sheet.remove(); chooseSet(() => openLevel(L()), false, null, `start ${L()}`); });
+  // v113: Just starting opens Starter 1 (both regions) and makes its Start button glow
+  const lv = (label, tw, cn) => { const L = () => typeof tw === "string" ? tw : region === "tw" ? LEVELS.tocfl.name(tw) : LEVELS.hsk.name(cn), b = btn("", "btn wide lvbtn", () => { sheet.remove(); if (isStarter(L())) store.set("radical-start-glow", true); chooseSet(() => openLevel(L()), false, null, `start ${L()}`); });
     b._paint = () => { b.innerHTML = `${label} <small>· ${L()}</small>`; }; b._paint(); return b; };
   card.addEventListener("click", () => setTimeout(() => lvs.forEach(b => b._paint())));  // the region pills change the list
   const topic = btn("or pick a topic ›", "linkbtn", () => { sheet.remove(); setTab("wordsScreen"); });
   if (!usedBefore && !store.get("radical-region-asked", false) && region !== regionGuess()) setRegion(regionGuess());  // a guess; one tap changes it
   store.set("radical-region-asked", true);
   card.append(regionPills(), el("h3", "", "How much Chinese do you know?"),
-    ...(lvs = [lv("Just starting", 1, 1), lv("A few hundred words", 2, 2), lv("1,000+ words", 4, 3)]), topic, btn("Not now", "btn ghost wide", () => sheet.remove()));
+    ...(lvs = [lv("Just starting", "Starter 1"), lv("A few hundred words", 2, 2), lv("1,000+ words", 4, 3)]), topic, btn("Not now", "btn ghost wide", () => sheet.remove()));
   sheet.append(card); document.body.append(sheet);
 }
 // A character's most common word, for the answer side of a one-character card.
@@ -8341,6 +8378,7 @@ function showFront() {
     // The finish: 完 (finished) draws itself in the lit ink, then the session in one glance, what it earned, what's next.
     const fin = el("div", "finish"), mark = el("div", "finmark");
     fin.append(mark, el("h3", "", showFront.ended ? "Session ended" : "Session complete")); showFront.ended = false;
+    if (store.get("radical-tour-after", false) && !store.get("radical-tour-seen", false)) { store.set("radical-tour-after", false); setTimeout(() => showTour(), 3500); }
     ensure("完").then(() => { if (!fin.isConnected) return; const svg = svgFor("完", false, true); mark.append(svg); animate(svg, "完", 1.2); });
     // What's next, counted the way the red number on 練 counts: what's left of Today, then Today as it will stand when
     // tomorrow starts (when the day ends), capped at 30 the same way.
@@ -8732,13 +8770,17 @@ function showBack(w, how, st) {
   const wm = el("p", "wmean", esc(wMeaning(w)) + markHTML(w, "meaning"));
   ans.append(wm, ...cardExtras(w));
   const cw = commonWordLine(w); if (cw) ans.append(cw);
-  if (c) {
-    (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
+  const st0 = starterOf(w);
+  if (c || st0) {
+    if (c) (c.chars || []).forEach(x => ans.append(el("p", "mnem", `<b lang="zh" style="font-family:var(--font-zh);font-size:1.2rem">${esc(x.char)}</b> ${esc(x.parts)}${x.mnemonic ? ` · ${esc(x.mnemonic)}` : ""}`)));
     if (ex1) {
-      const ex = el("div", "wcard");
-      ex.append(miniReader(conv(ex1.example), conv(w.word), ex1.example_en, { next: () => nextExample(w) }));
-      ans.append(ex);
+      const ex = el("div", "wcard"), notes = el("div", "tonenotes");
+      const paint = x => { notes.replaceChildren(...((x && x.notes) || []).map(t => el("p", "tonenote", esc(t)))); };
+      ex.append(miniReader(conv(ex1.example), conv(w.word), ex1.example_en, { next: async () => { const x = await nextExample(w); paint(x); return x; } }), notes);
+      paint(ex1); ans.append(ex);
     }
+    if (st0) ans.append(starterTip(w, st0));
+    if (!c && online()) ensureCard(w).catch(() => {});  // the character parts come with the AI card
   } else ans.append(cardPending(w, () => { if (ans.isConnected) { ans.remove(); showBack.hints = hintsUsed; showBack(w, how, { ...(st || {}), quiet: true }); } }));
   ans.append(deckRow(w));  // the deck chip at the very bottom, under the sentence
   const grades = el("div", "grades");
@@ -8932,7 +8974,10 @@ async function openSettings(welcome) {
   go("settingsScreen");
 }
 function saveSettings() { store.set("radical-palette", palette); myWords.filter(w => !w.card).forEach(queueCard); }
-$("startBtn").onclick = () => { saveSettings(); history.back(); setTimeout(showTour, 400); };
+// v113: a brand-new user goes straight to picking a deck; the tour waits until their first session is done
+$("startBtn").onclick = () => { saveSettings(); history.back();
+  if (!myWords.length && !store.get("radical-common-asked", false)) { store.set("radical-tour-after", true); setTimeout(store.get("radical-goal-asked", false) ? offerCommon : askGoal, 400); }
+  else setTimeout(showTour, 400); };
 // ---- the walkthrough: four pages, each one line and a short demo drawn live in the theme's colors (a still frame
 // with reduced motion). Shown once, after the look on a first launch, and any time from the menu (導 How it works).
 const calm = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -9081,7 +9126,7 @@ $("regionHost").append(regionPills());
 $("voiceTW").onclick = () => sayVoice("tw"); $("voiceCN").onclick = () => sayVoice("cn");
 // ---- Settings is a list of sections that open on tap; each shows a one-line summary while closed.
 function setSums() {
-  const S = { region: (REGIONS.find(x => x[0] === region) || [])[2] || "", acct: session ? session.email : "Signed out",
+  const S = { region: (REGIONS.find(x => x[0] === region) || [])[3] || "", acct: session ? session.email : "Signed out",
     theme: (PALETTES[palette] || {}).name || "", appear: ({ dark: "Dark", light: "Light", system: "Match phone" }[store.get("radical-theme", "dark")] || "") + (cvd ? " · red-green safe" : ""),
     modes: goal.map(m => HOW_NAME[m]).join(", ") + (store.get("radical-badge", true) ? "" : " · no red number"),
     sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
