@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v119
+
+- Read, Write and Listen fill the Skill(s) row.
+- Review with Write ticked: Watch it drawn and Write it (a pad for each character) under the word.
+- Review: the bottom buttons no longer cover I know this and Status.
+
 ## v118
 
 - Reading ticks on a half-read paragraph stay after a reload or update.

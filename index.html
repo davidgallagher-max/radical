@@ -961,7 +961,7 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .pills button[aria-pressed="true"] span{color:var(--accent);opacity:.85}
 .pills button:disabled{opacity:.4;cursor:default}
 .pills button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.pills.hows{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.pills.hows{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
 .pills.lists{flex-wrap:nowrap}.pills.lists button.base{flex:none;font-weight:700;letter-spacing:.01em;color:var(--base,var(--gold2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--base,var(--gold2)) 60%,transparent)}
 .pills.lists button.base[aria-pressed="true"]{color:var(--base,var(--gold2));background:color-mix(in srgb,var(--base,var(--gold2)) 14%,var(--bg));box-shadow:inset 0 0 0 2px var(--base,var(--gold2)),0 0 12px color-mix(in srgb,var(--base,var(--gold2)) 45%,transparent)}.pills.lists button{min-width:0;overflow:hidden;text-overflow:ellipsis;padding-left:10px;padding-right:10px}
 .pills.hows button{padding:9px 2px;font-size:.95rem}
@@ -1074,7 +1074,7 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .lookhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .lookhead .revtitle{text-align:left}
 .lookcard{min-height:50vh;touch-action:pan-y}
-.looknav{position:sticky;bottom:calc(var(--bot) + 10px);display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:6px}
+.looknav{position:sticky;bottom:calc(var(--bot) + 10px);display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:6px;margin-bottom:calc(var(--bot) + 10px)}
 .looknav .btn{padding:13px;font-size:1rem}
 .lookacts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .lookend{display:grid;gap:12px;justify-items:center;text-align:center;padding:30px 0}
@@ -1179,6 +1179,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .padwrap.shown .padtick{display:none!important}
 .padwrap.shown .pad{border-color:var(--line);box-shadow:none}
 .padwatch{all:unset;position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:3;cursor:pointer;font-size:.84rem;font-weight:600;color:var(--accent);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:5px 12px;white-space:nowrap}
+.lookwrite .lookacts{margin:6px 0 4px}.lookwrite .pracpick{margin:6px 0}
 .padwatch:focus-visible{outline:2px solid var(--accent)}
 .listenprompt{display:grid;justify-items:center;gap:10px;padding:18px 0 8px}
 .listenbig{all:unset;cursor:pointer;display:grid;justify-items:center;gap:6px;width:132px;height:132px;place-content:center;border-radius:50%;border:2px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:600}
@@ -1887,7 +1888,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v118";
+const APP_VERSION = "v119";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -8105,7 +8106,8 @@ function showLook() {
   const paint = () => {
     if ($("lookScreen").hidden || look.order[look.i] !== w) return;
     box.innerHTML = ""; const c = cardOf(w);
-    box.append(bigWord(conv(w.word)));
+    const big = bigWord(conv(w.word)); box.append(big);
+    if (modesOf(revHow).includes("write")) box.append(lookWrite(conv(w.word), big));
     { const l = legendLine(conv(w.word) + (c && c.example ? conv(c.example) : w.context ? conv(w.context) : "")); if (l) box.append(l); }
     box.append(el("div", "wpy", `<span class="bigpy">${pyWordHTML(patternPy(wPinyin(w)))}</span>${sayHTML(w.word)}`));
     box.append(el("p", "wmean", esc(wMeaning(w)) + markHTML(w, "meaning")), ...cardExtras(w));
@@ -8125,6 +8127,28 @@ function showLook() {
     box.append(acts);
   };
   paint();
+}
+
+// Review with Write ticked: watch the word drawn stroke by stroke, or write each character on a pad (never graded).
+function lookWrite(word, big) {
+  const chars = [...word].filter(ch => cache[ch]); const wrap = el("div", "lookwrite");
+  if (!chars.length) return wrap;
+  const host = el("div", "lookpad"); let i = 0, open = false;
+  const watch = btn("▶ Watch it drawn", "btn ghost small", () => {
+    const svgs = [...big.querySelectorAll("svg")].filter(x => x.querySelector("g.strokes")), list = [...word].filter(ch => cache[ch]);
+    const step = k => { if (k >= svgs.length || !document.body.contains(big)) return; animate(svgs[k], list[k], 1, () => step(k + 1)); };
+    step(0);
+  });
+  const pick = el("div", "seg2 pracpick"); pick.style.gridTemplateColumns = `repeat(${chars.length},1fr)`;
+  chars.forEach((ch, k) => { const b = btn(ch, "", () => { i = k; draw(); }); b.lang = "zh"; pick.append(b); });
+  const draw = () => { pick.querySelectorAll("button").forEach((b, k) => b.setAttribute("aria-pressed", k === i)); host.innerHTML = ""; practice(host, chars[i], null, true); };
+  const write = btn("✍ Write it", "btn ghost small", () => {
+    open = !open; write.textContent = open ? "✕ Close pad" : "✍ Write it";
+    if (!open) { pick.remove(); host.remove(); return; }
+    if (chars.length > 1) wrap.append(pick); wrap.append(host); draw();
+  });
+  const row = el("div", "lookacts"); row.append(watch, write); wrap.append(row);
+  return wrap;
 }
 
 // ================= review
