@@ -32,11 +32,11 @@ for x in d:
   for e in x["examples"]:
     if e["zh"] == "他說：「好。」": e["py_tw"] = e["py_cn"] = "Tā shuō: “Hǎo.”"
   rows.append({"w": x["word"], "s": x["simplified"], "p": [x["pinyin_tw"], x["pinyin_cn"]], "m": x["meaning"],
-    "tip": [TIPS[x["word"]], CN_TIP.get(x["word"], TIPS[x["word"]])], "tones": [tone_line(x["pinyin_tw"]), tone_line(x["pinyin_cn"])],
+    "tip": [TIPS.get(x["word"], ""), CN_TIP.get(x["word"], TIPS.get(x["word"], ""))], "tones": [tone_line(x["pinyin_tw"]), tone_line(x["pinyin_cn"])],
     "ex": [{"z": e["zh"], "e": e["en"], "p": [e["py_tw"], e["py_cn"]], "n": [notes(e["py_tw"]), notes(e["py_cn"])]} for e in x["examples"]]})
 root = os.path.join(here, "..", "..", "lists")
-json.dump({"1": rows}, open(os.path.join(root, "starter.json"), "w"), ensure_ascii=False, separators=(",", ":"))
+json.dump({str(k + 1): rows[k * 100:(k + 1) * 100] for k in range((len(rows) + 99) // 100)}, open(os.path.join(root, "starter.json"), "w"), ensure_ascii=False, separators=(",", ":"))
 with open(os.path.join(root, "starter.txt"), "w") as f:
   f.write("# Starter decks: the first words, in teaching order (level\\tword, Traditional). Built by scripts/starter/build.py.\n")
-  for r in rows: f.write(f"1\t{r['w']}\n")
+  for i, r in enumerate(rows): f.write(f"{i // 100 + 1}\t{r['w']}\n")
 print("starter: ", len(rows), "words,", sum(len(r["ex"]) for r in rows), "sentences")

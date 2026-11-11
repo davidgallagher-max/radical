@@ -2,6 +2,15 @@ import sys, json, re, unicodedata
 sys.path.insert(0, '.')
 from words import WORDS
 from ex import EX
+import importlib, os
+EX = dict(EX)
+for k in range(2, 6):  # Starter 2 to 5 live in deck2.py ... deck5.py
+  if not os.path.exists(f"deck{k}.py"): break
+  m = importlib.import_module(f"deck{k}")
+  ws = [dict(zip(["t","s","tw","cn","en"], l.split("|"))) for l in m.W.split("\n")]
+  dup = [w["t"] for w in ws if any(w["t"] == x["t"] for x in WORDS)]
+  if dup: print("DUP", k, dup)
+  WORDS = WORDS + ws; EX.update(m.EX)
 PUN = set("，。！？、：「」 ")
 idx = {w["t"]: i for i, w in enumerate(WORDS)}
 def seg(s, n):
