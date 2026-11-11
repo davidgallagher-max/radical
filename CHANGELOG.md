@@ -2,6 +2,11 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v124
+
+- Starter 2 to 5: words 101 to 500, in teaching order, each with three everyday sentences that use only words you've already met. Word Decks shows them in a row under Starter 1.
+- A card with no sound tip no longer shows an empty Sound tip line.
+
 ## v123
 
 - A short number's pinyin stays on one line over it; long ones wrap at any letter.

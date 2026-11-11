@@ -1898,7 +1898,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v123";
+const APP_VERSION = "v124";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -5480,7 +5480,8 @@ function exNow(w) {
 // v113: a Starter card's tones and sound tip, under its sentence
 function starterTip(w, st) {
   const ri = starterRI(), box = el("div", "sndtip");
-  box.append(el("p", "mnem sndtones", `<b>Tones</b> ${esc(st.tones[ri])}`), el("p", "mnem sndline", `${sayHTML(conv(w.word), true)}<b>Sound tip</b> ${esc(st.tip[ri])}`));
+  box.append(el("p", "mnem sndtones", `<b>Tones</b> ${esc(st.tones[ri])}`));
+  if (st.tip[ri]) box.append(el("p", "mnem sndline", `${sayHTML(conv(w.word), true)}<b>Sound tip</b> ${esc(st.tip[ri])}`));  // v124: Starter 2 to 5 have no sound tips
   return box;
 }
 async function nextExample(w) {
@@ -7556,9 +7557,12 @@ function setsGrid(close) {
   const pick = (fn, ai, why) => () => { if (close) close(); chooseSet(fn, ai, null, why); };
   // v98: the level decks (TOCFL and HSK, your region's first) replace Top 100 to 2,000. A Top list you have stays in your decks.
   const top = el("div", "levels");
-  // v113: Starter 1 first, for absolute beginners (Starter 2 to 5 come later)
+  // v113: Starter 1 first, for absolute beginners; v124: Starter 2 to 5 (words 101 to 500) in a row under it
   const sb = btn("", "setchip wide starterchip", pick(() => openLevel("Starter 1"), false, "start Starter 1"));
   sb.innerHTML = `<small>New to Chinese</small>Starter 1 · first 100 words`; sb.setAttribute("aria-pressed", curList === "Starter 1"); top.append(sb);
+  const srow = el("div", "setrow four"); srow.setAttribute("aria-label", "Starter 2 to 5"); top.append(srow);
+  [2, 3, 4, 5].forEach(n => { const L = `Starter ${n}`, b = btn("", "setchip top starterchip", pick(() => openLevel(L), false, `start ${L}`));
+    b.innerHTML = `<small>Starter ${n}</small>${(n - 1) * 100 + 1}–${n * 100}`; b.setAttribute("aria-label", L); b.setAttribute("aria-pressed", curList === L); srow.append(b); });
   levelSystems().forEach(sys => {
     const row = el("div", "setrow seven"); row.setAttribute("aria-label", sys.toUpperCase()); top.append(row);
     LEVEL_N.forEach(n => { const L = LEVELS[sys].name(n), b = btn("", "setchip top", pick(() => openLevel(L), false, `start ${L}`));
