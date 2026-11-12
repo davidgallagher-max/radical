@@ -1,5 +1,12 @@
 # Changelog
 
+## v126
+
+- Write cards have I know it, like Read cards.
+- Speech picks the best voice on the phone (Premium, then Enhanced) and skips the novelty ones. If only a basic voice is there, a one-time tip says how to get a better one, on iPhone and Android. The same steps are under Settings, Speech.
+- Listen and the line speaker fill reading ticks one row at a time as the voice reads, and only for rows on screen.
+- 60 more beginner stories: 75 in all (10, 13, 15, 17 and 20 for Starter 1 to 5), each checked against its deck's words.
+
 What changed in each version, in plain words. Newest first.
 
 ## v125

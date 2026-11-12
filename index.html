@@ -377,7 +377,7 @@ p.busy{margin:-4px 4px 0}
 .revbartop .rl{flex:1;display:grid;line-height:1.25}.revbartop .rl b{font-size:.92rem}.revbartop .rl small{font-size:.92rem;color:var(--muted)}
 .revbartop .flipbtn{flex:none;display:inline-flex;align-items:center;gap:6px}
 .revbartop .flipbtn i{font-style:normal;font-size:1.05rem}
-.revbartop.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.revbartop.two .rl{display:none}.revbartop.two .flipbtn{justify-content:center;padding-left:6px;padding-right:6px;white-space:nowrap}
+.revbartop.two{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.revbartop.two .rl{display:none}.revbartop.two .flipbtn{justify-content:center;padding-left:4px;padding-right:4px;text-align:center;line-height:1.15;min-width:0;width:100%}
 #reviewScreen.screen.sub{padding-bottom:calc(var(--bot) + 170px)}
 .resdetail{grid-column:2;display:grid;gap:4px;margin-top:2px}
 .sylrow{display:flex;gap:6px;flex-wrap:wrap}
@@ -1906,7 +1906,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v125";
+const APP_VERSION = "v126";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -1947,7 +1947,9 @@ const sayHTML = (t, sm) => `<button type="button" class="saybtn${sm ? " sm" : ""
 // Taiwan Mandarin is read with a Taiwan voice, Mainland with a Beijing voice (the 普通话 / 國語 setting, v42).
 let twVoice = null, cnVoice = null, rate = store.get("radical-rate", 0.65);
 function pickVoice() {
-  const vs = speechSynthesis.getVoices(), find = re => vs.find(v => re.test(v.lang));
+  // v126: the best voice for each, not the first: Premium, then Enhanced (or Android's network voices), then plain;
+  // the compact ones last, and the novelty voices (Eddy, Grandma, Zarvox...) never if anything else is there.
+  const vs = speechSynthesis.getVoices().map((v, i) => [v, voiceRank(v), i]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(x => x[0]), find = re => vs.find(v => re.test(v.lang));
   twVoice = find(/zh[-_]TW/i) || find(/zh[-_]Hant/i) || null;
   cnVoice = find(/zh[-_]CN/i) || find(/zh[-_]Hans/i) || null;
   const any = find(/^zh/i) || find(/^cmn/i) || null;
@@ -1955,10 +1957,28 @@ function pickVoice() {
   const name = v => v ? `${v.name} (${v.lang})` : "none";
   const short = v => v ? v.name.replace(/\s*\(.*$/, "") : "";
   if ($("voiceTW")) { $("voiceTW").textContent = twVoice ? `▶ ${short(twVoice)} · Taiwan` : "▶ Taiwan voice"; $("voiceCN").textContent = cnVoice ? `▶ ${short(cnVoice)} · Mainland` : "▶ Mainland voice"; }
-  if ($("voiceName")) $("voiceName").textContent = any
+  voiceBasic = !!any && (ANDROID || IOS_WEB) && voiceRank(regionNow() === "cn" ? cnVoice : twVoice) < 3;
+  if ($("voiceName")) $("voiceName").textContent = any && voiceBasic ? `${voiceHelp()}` : any
     ? `Taiwan uses ${short(twVoice)}; Mainland uses ${short(cnVoice)}.` + (!find(/zh[-_]TW/i) && !find(/zh[-_]Hant/i) ? " This phone has no Taiwan voice; the Mainland one reads both." : "")
     : ANDROID ? "No Chinese voice on this phone. In Settings, search Text-to-speech, then add Chinese voice data."
     : "No Chinese voice on this device. On iPhone: Settings → Accessibility → Spoken Content → Voices → Chinese.";
+}
+// v126: a basic voice sounds robotic; once, the first time something is said, a tip says how to get a better one.
+const IOS_WEB = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+const NOVELTY = /eloquence|novelty|\b(Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley|Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Fred|Junior|Kathy|Ralph)\b/i;
+function voiceRank(v) {
+  if (!v) return -1;
+  const s = `${v.voiceURI || ""} ${v.name || ""}`;
+  return NOVELTY.test(s) ? 0 : /premium/i.test(s) ? 5 : /enhanced|network/i.test(s) ? 4 : /compact/i.test(s) ? 1 : ANDROID ? 3 : 2;
+}
+let voiceBasic = false;
+const regionNow = () => { try { return region; } catch (e) { return store.get("radical-region", "tw"); } };  // pickVoice runs before region is set up
+const voiceHelp = () => ANDROID
+  ? "Robotic voice? In Settings, search Text-to-speech, then Google › Install voice data › Chinese."
+  : "Robotic voice? In Settings, search Voices (Read & Speak or Spoken Content), tap Chinese and download an Enhanced or Premium voice.";
+function voiceTip() {
+  if (!voiceBasic || store.get("radical-voice-tip", false)) return;
+  store.set("radical-voice-tip", true); setTimeout(() => toast(esc(voiceHelp()), 9000, true), 600);
 }
 if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 else document.documentElement.classList.add("nosay");
@@ -1971,6 +1991,7 @@ function speak(text, slow) {
   text = spellCaps(text).replace(/[~～〜]/g, "").replace(/…|⋯/g, "，");  // a pattern's slot isn't read out
   if (!("speechSynthesis" in window) || !text) return;
   if (typeof stopReading === "function") stopReading(); else speechSynthesis.cancel();
+  voiceTip();
   const simp = typeof region !== "undefined" && region === "cn", v = simp ? cnVoice : twVoice;
   const utter = (t, k) => { const u = new SpeechSynthesisUtterance(t); u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = Math.max(.1, rate * k); return u; };
   const parts = slow ? (slow.units || [...text].filter(c => /\S/.test(c) && !/[，、。]/.test(c))) : [];
@@ -2234,7 +2255,25 @@ function payLine(line, upTo) {
     readNoted.add(lineKey((document.querySelector("#reader .line") || {})._text || ""));  // read here just now: no "read before" note on a redraw
   }
 }
-function countLine(line) {  // read aloud: the whole line at once
+// v126: read aloud pays as the voice goes: up to `upTo` Chinese characters into the line, row by row, and only rows on
+// screen (a row the voice passes off screen is skipped, like one scrolled past unread)
+function voicePay(line, upTo) {
+  if (!line || line._counted || !line.isConnected || !line.closest("#reader")) return;
+  if (capReader()) { if (reading) stopReading(); return; }
+  if (readBefore(line)) { markCounted(line); return; }
+  partOf(line);
+  const H = innerHeight, bar = $("readBar"), tb = $("tabbar"); let top = 0, bottom = H;
+  if (bar) { const r = bar.getBoundingClientRect(); if (r.height && r.bottom > 0 && r.bottom < H / 2) top = r.bottom; }
+  if (tb) { const r = tb.getBoundingClientRect(); if (r.height && r.top > H / 2 && r.width > innerWidth / 2) bottom = r.top; }
+  for (const r of rowsOf(line)) {
+    const got = line._got || 0; if (got >= upTo) break;
+    if (r.end <= got || !r.han) continue;
+    const to = Math.min(r.end, upTo), mid = (r.top + r.bottom) / 2;
+    if (mid > top && mid < bottom) payLine(line, to); else skipTo(line, to);
+    if (line._counted) break;
+  }
+}
+function countLine(line) {  // the whole line at once (v126: read aloud uses voicePay instead)
   if (!line || line._counted || !line.isConnected) return;
   if (capReader()) { if (reading) stopReading(); return; }
   if (readBefore(line)) { markCounted(line); return; }
@@ -2369,7 +2408,7 @@ function chunksOf(line) {
     if (cur) out.push(cur);
   }
   return out.filter(([a, b]) => /[\p{Script=Han}A-Za-z0-9]/u.test(text.slice(a, b)))
-    .map(([a, b]) => ({ text: text.slice(a, b), groups: spans.filter(x => x.start < b && x.end > a).map(x => x.group) }));
+    .map(([a, b]) => ({ text: text.slice(a, b), a, b, groups: spans.filter(x => x.start < b && x.end > a).map(x => x.group) }));
 }
 function readAloud(lines, all, k = 1) {
   if (!("speechSynthesis" in window) || !lines.length) return;
@@ -2393,17 +2432,23 @@ function readAloud(lines, all, k = 1) {
       reading = false; listenAll = false; readAloud.restart = null; if (all) { $("listenBtn").setAttribute("aria-pressed", "false"); $("speedPop").hidden = true; } return;
     }
     const my = gen, c = queue[n++];
-    if (c.first) countLine(c.line);
     c.groups.forEach(g => g.classList.add("speaking"));
     if (all) followAlong(c.groups);
     const u = new SpeechSynthesisUtterance(spellCaps(c.text));
     u.lang = v ? v.lang : simp ? "zh-CN" : "zh-TW"; if (v) u.voice = v; u.rate = Math.max(.1, rate * (all ? 1 : k));
     readAloud.current = u;  // keep a reference: some browsers drop the events of an utterance nothing points to
     let ended = false;
-    const done = () => { if (ended || my !== gen) return; ended = true; setTimeout(next, 60); };
+    // v126: credit follows the voice: its word events where the voice sends them, else the time the sentence takes
+    const lt = c.line._text || "", h0 = hanIn(lt.slice(0, c.a)), h1 = hanIn(lt.slice(0, c.b)), est = [...c.text].length * 1000 / (4.3 * rate * (all ? 1 : k)), t0 = Date.now();
+    let heard = false;
+    u.onboundary = e => { if (my !== gen || token !== readToken) return; heard = true; voicePay(c.line, h0 + hanIn(c.text.slice(0, (e.charIndex || 0) + (e.charLength || 1)))); };
+    const pace = setInterval(() => {
+      if (ended || my !== gen || token !== readToken) { clearInterval(pace); return; }
+      if (!heard) voicePay(c.line, h0 + Math.floor((h1 - h0) * Math.min(.95, (Date.now() - t0) / est)));
+    }, 300);
+    const done = () => { if (ended || my !== gen) return; ended = true; clearInterval(pace); if (token === readToken) voicePay(c.line, h1); setTimeout(next, 60); };
     u.onend = u.onerror = done;
     // If the voice never says it has finished, check whether it's still talking once the sentence should be over.
-    const est = [...c.text].length * 1000 / (4.3 * rate * (all ? 1 : k));
     const poll = () => { if (token !== readToken || ended || my !== gen) return; if (!speechSynthesis.speaking) done(); else setTimeout(poll, 400); };
     setTimeout(poll, est + 600);
     speechSynthesis.speak(u);
@@ -8906,7 +8951,9 @@ function writeFront(w) {
       else revBar("", null, "", null, [], "guessacts");
       const all = btn("", "btn ghost small flipbtn", () => reveal("show")); all.innerHTML = chars.length > 1 ? "<i>⤓</i>Show whole word" : "<i>⤓</i>Show answer";
       const top = $("revBar").querySelector(".revbartop") || $("revBar").appendChild(el("div", "revbartop", '<span class="rl"></span>'));
-      top.append(all); top.classList.toggle("two", chars.length > 1);
+      // v126: I know it, as on Read cards (Known when the word is new to Write; Mastered needs it again a month on)
+      const know = btn("", "btn ghost small flipbtn", () => reveal("know")); know.innerHTML = "<i>✓</i>I know it";
+      top.append(all, know); top.classList.toggle("two", chars.length > 1);
     } else revBar("", null, "", null, [btn(more ? "Next character ›" : "See answer", "btn", () => more ? nextChar() : reveal("write"))], "guessacts one");
   }
   nextChar();
