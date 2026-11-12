@@ -2,6 +2,12 @@
 
 What changed in each version, in plain words. Newest first.
 
+## v125
+
+- Explore has a picker at the top: Beginner stories or Wikipedia. It opens on your last pick. With no pick yet, it opens on Beginner for people who said they're just starting, else Wikipedia.
+- Beginner stories: 15 short stories, three for each Starter deck, written only with that deck's words and the ones before it (code-checked). Each says how much you know: the share of its words you've practiced on cards. Tap one to read it.
+- Finish every word in a Starter deck and Practice offers the next deck and that deck's stories.
+
 ## v124
 
 - Starter 2 to 5: words 101 to 500, in teaching order, each with three everyday sentences that use only words you've already met. Word Decks shows them in a row under Starter 1.

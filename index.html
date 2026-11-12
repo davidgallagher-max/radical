@@ -1073,6 +1073,13 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .dprow small{margin-left:8px;font-size:.8rem;color:var(--muted)}.dpacts{margin-top:4px}.dpacts .btn{flex:1}.dprm{margin-top:8px}
 .basecap{margin:2px 0 8px;text-align:center;font-size:.92rem;color:var(--muted)}
 .basetip{position:fixed;z-index:30;padding:8px 12px;border-radius:10px;background:var(--surface);color:var(--base,var(--gold2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--base,var(--gold2)) 60%,transparent),0 6px 20px rgba(0,0,0,.25);font-size:.92rem;opacity:0;transform:translateY(-4px);transition:opacity .2s,transform .2s;pointer-events:none}.basetip.on{opacity:1;transform:none}
+#wikiScreen[data-src="beg"] .srcwiki,#wikiScreen:not([data-src="beg"]) .srcbeg{display:none!important}
+.exsrc{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 6px}.exsrc .tabsub{margin:0}
+.exsrcbox{position:relative;display:inline-block}.exsrcbox::after{content:"▾";position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--accent)}
+#exSrc{appearance:none;-webkit-appearance:none;font:inherit;font-size:.95rem;font-weight:600;color:var(--accent);background:transparent;border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);border-radius:999px;padding:7px 32px 7px 14px;min-height:38px;cursor:pointer}
+#exSrc option{color:initial}
+.begdeck{margin:14px 0 6px}.storyrow{display:grid;gap:2px;width:100%;text-align:left;font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:0 0 8px;cursor:pointer}
+.storyrow b{font-size:1.15rem;font-weight:600}.storyrow .sen{color:var(--muted);font-size:.92rem}.storyrow .smeta{color:var(--muted);font-size:.92rem}.storyrow .smeta .know{color:var(--accent)}.storyrow.ready .smeta .know{color:var(--gold2)}.storyrow.read{opacity:.75}
 .sortnudge{display:block;width:100%;min-height:46px;margin:4px 0 8px;border:1px dashed color-mix(in srgb,var(--base,var(--gold2)) 60%,transparent);border-radius:12px;background:transparent;color:var(--base,var(--gold2));font:inherit;font-size:.95rem;font-weight:500;cursor:pointer}
 .selrow .btn{flex:1;white-space:nowrap;padding-left:8px;padding-right:8px}.selrow:first-child .btn{flex:none}
 .lookbtn{font-size:.95rem;padding:11px}
@@ -1523,13 +1530,14 @@ body.tonecolor .tc1{color:var(--t1)}body.tonecolor .tc2{color:var(--t2)}body.ton
     </header>
     <button type="button" class="back" id="wikiBack" hidden>Back to reading</button>
     <h3 class="sec tabsec"><span lang="zh">探</span>Explore</h3>
-    <p class="note tabsub">Real Chinese Wikipedia.</p>
-    <div class="excol exleft">
+    <div class="exsrc"><label class="exsrcbox"><select id="exSrc" aria-label="What to read"><option value="beg">Beginner stories</option><option value="wiki">Wikipedia</option></select></label><p class="note tabsub" id="exSrcNote">Real Chinese Wikipedia.</p></div>
+    <div class="srcbeg list" id="begList"></div>
+    <div class="excol exleft srcwiki">
     <div id="wikiToday" hidden><h3 class="sec sub">On this day <span class="wtdate" id="wikiTodayDate"></span></h3><div class="list wtoday" id="wikiTodayList"></div></div>
     <h3 class="sec sub">Pick a topic</h3>
     <div class="topics" id="wikiTopics"></div>
     </div>
-    <div class="excol exright">
+    <div class="excol exright srcwiki">
     <h3 class="sec sub">Search</h3>
     <form class="addrow" id="wikiForm">
       <input type="text" id="wikiQ" lang="zh" placeholder="Anything, in Chinese or English" autocomplete="off" enterkeyhint="search">
@@ -1538,8 +1546,8 @@ body.tonecolor .tc1{color:var(--t1)}body.tonecolor .tc2{color:var(--t2)}body.ton
     <h3 class="sec sub">Surprise me</h3>
     <button type="button" class="randbtn" id="wikiRandom"><span lang="zh" id="wikiRandomZh">隨機條目</span> · Random article</button>
     </div>
-    <p class="note wstatus" id="wikiStatus" hidden></p>
-    <div class="list" id="wikiList"></div>
+    <p class="note wstatus srcwiki" id="wikiStatus" hidden></p>
+    <div class="list srcwiki" id="wikiList"></div>
   </div>
 </section>
 
@@ -1898,7 +1906,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v124";
+const APP_VERSION = "v125";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3208,7 +3216,7 @@ function showOnly(id) {
 let tab = "readScreen", revSide = null;
 function setTab(id) {
   if ((id === "readScreen" && !payOk("read")) || (id === "wikiScreen" && !payOk("explore"))) return;  // v61
-  if (id === "wikiScreen") fetchToday();  // v46: Explore's Today (once a day)
+  if (id === "wikiScreen") { fetchToday(); paintSrc(); }  // v46: Explore's Today (once a day); v125: the source picker
   if (id === "wordsScreen") askBadge();  // v54: the app asks once to show the number on its icon
   if (id === "wordsScreen") contOk = true, catPicked = keepCat; if (reading) stopReading(); if ($("wikiBack")) $("wikiBack").hidden = true;
   // A session you stepped away from (another tab) is where 練 takes you, until you Quit it or the day ends.
@@ -4031,7 +4039,7 @@ textHistory.forEach((h, i) => { if (!h.t) h.t = (Date.parse(h.at) || 0) + textHi
 let histDel = store.get("radical-hist-del", {});  // v58: History entries deleted here ({ id: when }), so other devices drop them too
 for (const [id, t] of Object.entries(histDel)) if (t < Date.now() - 180 * 864e5) delete histDel[id];
 function histGone(ids) { const now = Date.now(); ids.forEach(id => { if (id) histDel[id] = now; }); store.set("radical-hist-del", histDel); }
-const HKINDS = { typed: "Typed or pasted", wiki: "Wikipedia", photo: "Photo", pdf: "PDF", file: "File", list: "Word list" };
+const HKINDS = { typed: "Typed or pasted", story: "Beginner story", wiki: "Wikipedia", photo: "Photo", pdf: "PDF", file: "File", list: "Word list" };
 const HFILTERS = [["all", "All"], ["typed", "Typed"], ["wiki", "Wikipedia"], ["photo", "Photos"], ["file", "Files"], ["list", "Lists"]];
 let histFilter = "all", histTimer = 0;
 function saveHistory() {
@@ -4098,7 +4106,7 @@ async function autoTitle(id, text) {
     h.en = String(r.title).slice(0, 60); saveHistory(); scheduleSync(); paintTextHead();
   } catch (e) {}
 }
-const TKINDS = { typed: "Pasted text", wiki: "Wikipedia", photo: "Photo", pdf: "PDF", file: "File" };
+const TKINDS = { typed: "Pasted text", story: "Beginner story", wiki: "Wikipedia", photo: "Photo", pdf: "PDF", file: "File" };
 const madeOf = h => h.made || parseInt(String(h.id || "").slice(1, 9), 36) || h.t || Date.now();
 const whenOf = h => new Date(madeOf(h)).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(/ ([AP])M$/, (m, x) => " " + x.toLowerCase() + "m");
 const histName = h => h.name || (h.book ? `${h.book} (${h.bn || 1})` : "") || h.en || (h.doc ? h.title : h.title || [...(h.text || "").split("\n")[0]].slice(0, 14).join("") + ([...(h.text || "")].length > 14 ? "…" : ""));
@@ -7136,6 +7144,12 @@ function renderStrip(sizes) {
     row.lastChild.onclick = () => openSets();
     sec("Deck", row);
   }
+  // v125: a Starter deck with every word seen offers the next one (and its stories)
+  { const n = isStarter(curList) ? +curList.split(" ")[1] : 0, ws = n ? listWords() : [];
+    if (n && ws.length >= 100 && !upcoming(curList).length && ws.every(practiced)) {
+      if (n < 5) box.append(btn(`${curList} done. Next: Starter ${n + 1} ›`, "sortnudge nextdeck", () => openLevel(`Starter ${n + 1}`)));
+      box.append(btn(`Read Starter ${n} stories ›`, "linkbtn nextstory", () => { store.set("radical-explore-src", "beg"); openExplore(); }));
+    } }
   // v116: tick any combination (at least one stays ticked); a Starter deck keeps its own choice
   const hows = pills("hows", [["read", "Read"], ["write", "Write"], ["listen", "Listen"]], null, k => {
     const on = modesOf(revHow), next = on.includes(k) ? (on.length > 1 ? on.filter(m => m !== k) : on) : [...on, k];
@@ -7798,7 +7812,7 @@ function offerCommon() {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard"); let lvs = [];
   // v98: each answer opens a level of your region's list (TOCFL for Taiwan, HSK for mainland)
   // v113: Just starting opens Starter 1 (both regions) and makes its Start button glow
-  const lv = (label, tw, cn) => { const L = () => typeof tw === "string" ? tw : region === "tw" ? LEVELS.tocfl.name(tw) : LEVELS.hsk.name(cn), b = btn("", "btn wide lvbtn", () => { sheet.remove(); if (isStarter(L())) store.set("radical-start-glow", true); chooseSet(() => openLevel(L()), false, null, `start ${L()}`); });
+  const lv = (label, tw, cn) => { const L = () => typeof tw === "string" ? tw : region === "tw" ? LEVELS.tocfl.name(tw) : LEVELS.hsk.name(cn), b = btn("", "btn wide lvbtn", () => { sheet.remove(); if (isStarter(L())) { store.set("radical-start-glow", true); store.set("radical-beginner", true); } chooseSet(() => openLevel(L()), false, null, `start ${L()}`); });
     b._paint = () => { b.innerHTML = `${label} <small>· ${L()}</small>`; }; b._paint(); return b; };
   card.addEventListener("click", () => setTimeout(() => lvs.forEach(b => b._paint())));  // the region pills change the list
   const topic = btn("or pick a topic ›", "linkbtn", () => { sheet.remove(); setTab("wordsScreen"); });
@@ -9340,7 +9354,7 @@ function setSums() {
 document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "change"].forEach(ev => x.addEventListener(ev, () => setTimeout(setSums, 50))));
 // ---- settings that go in a backup file and (v58) sync with the account.
 const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules", "radical-day-ends",
-  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-read-speed", "radical-tiles", "radical-common", "radical-region", "radical-levels", "radical-books", "radical-tonecolor"];
+  "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-read-speed", "radical-tiles", "radical-common", "radical-region", "radical-levels", "radical-books", "radical-tonecolor", "radical-explore-src"];
 const SYNC_SETTINGS = SETTING_KEYS.filter(k => k !== "radical-decks");  // v58: decks sync on their own
 // Restore a backup file (v58: the Backup page is gone; a backup chosen with the add box's file icon comes here):
 // words and History merge with what's here (nothing added since is lost; a word's newer copy wins); the learned list
@@ -9834,7 +9848,36 @@ async function paintToday(items) {
 function openExplore(fromReading) {
   wStat(""); wikiLabels(); setTab("wikiScreen"); $("wikiScreen").scrollTop = 0;  // chips change only here, never under your finger
   $("wikiBack").hidden = !fromReading;  // "Back to reading" only when you came from the reading panel's Explore button
-  prefetchChips(); fetchDaily();
+  paintSrc(); prefetchChips(); fetchDaily();
+}
+// v125: Explore's source picker. Beginner stories (lists/stories.json: short stories made only from Starter words,
+// checked by scripts/starter/stories_build.py) or Wikipedia. It opens on your last pick; with none, on Beginner for
+// people who said they're just starting (or are on a Starter deck with under 100 words recognized), else Wikipedia.
+function beginnerish() { return store.get("radical-beginner", false) || (levelsOn().some(isStarter) && Object.keys(store.get("radical-familiar", {})).length < 100); }
+function exSrc() { return store.get("radical-explore-src", "") || (beginnerish() ? "beg" : "wiki"); }
+function paintSrc() {
+  const s = exSrc(), SRC_NOTE = { beg: "Short stories made from Starter words.", wiki: "Real Chinese Wikipedia." }; $("wikiScreen").dataset.src = s; $("exSrc").value = s; $("exSrcNote").textContent = SRC_NOTE[s];
+  if (s === "beg") paintStories();
+}
+$("exSrc").onchange = e => { store.set("radical-explore-src", e.target.value); paintSrc(); $("wikiScreen").scrollTop = 0; };
+let storyLoad = null;
+const loadStories = () => storyLoad || (storyLoad = getFile("lists/stories.json").then(r => r.ok ? r.json() : { stories: [] }).catch(() => { storyLoad = null; return { stories: [] }; }));
+async function paintStories() {
+  const box = $("begList"), { stories } = await loadStories();
+  if (!stories.length) { box.innerHTML = `<p class="note">Stories didn't load. Pull down to try again.</p>`; return; }
+  const seen = new Set(myWords.filter(practiced).map(w => toSimp(w.word))), read = new Set(textHistory.filter(h => h.kind === "story").map(h => h.title));
+  box.innerHTML = "";
+  for (let d = 1; d <= 5; d++) {
+    const ss = stories.filter(x => x.deck === d); if (!ss.length) continue;
+    box.append(el("h3", "sec sub begdeck", `Starter ${d} <span class="note">· words ${(d - 1) * 100 + 1}–${d * 100}</span>`));
+    ss.forEach(x => {
+      const k = x.words.filter(w => seen.has(toSimp(w))).length, pct = Math.floor(100 * k / x.words.length);
+      const b = btn("", "storyrow" + (pct >= 90 ? " ready" : "") + (read.has(conv(x.t)) ? " read" : ""), () => setText(conv(x.text), false, "story", conv(x.t)));
+      b.innerHTML = `<b lang="zh">${esc(conv(x.t))}</b><span class="sen">${esc(x.en)}</span><span class="smeta">${hanCount(x.text)} 字 · <span class="know">You know ${pct}%</span>${read.has(conv(x.t)) ? " · Read" : ""}</span>`;
+      box.append(b);
+    });
+  }
+  box.append(el("p", "note", "Percent: words you've practiced on cards."));
 }
 wikiLabels();
 const wStat = t => { const n = $("wikiStatus"); n.hidden = !t; n.innerHTML = t || ""; };
