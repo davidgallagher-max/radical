@@ -1,5 +1,16 @@
 # Changelog
 
+## v127
+
+- Write cards: after you write, say I know it or tap Show answer, ▶ Watch it drawn plays the strokes right on the big characters. The ✍ Write button is gone from Write cards (Read and Listen cards keep it).
+- Grid and Strokes switches sit under the pad on Write cards too. Writing with Strokes on rates as usual but never counts toward Mastered in Write.
+- Each written character's pad edge shows how it went: green, yellow or red, like 對 半 錯. Show this character is red.
+- Writing is graded more fairly: 60% of strokes right the first time is Hard (yellow), not Again. 10 of 13 is now Hard.
+- Strokes off now hides the grey shapes under Show me / Watch it drawn on a pad too.
+- Mastered says which skill: the bloom reads "Mastered · Write", the word page shows "Mastered · Read · Write", and Track's Mastered list names the skills under each word.
+- The daily goal burst plays over the card that met it; the next card waits for it.
+- Typing in the Read box (or Add words) with the iPhone keyboard up keeps Photo/File, Explore and History in reach.
+
 ## v126
 
 - Write cards have I know it, like Read cards.
