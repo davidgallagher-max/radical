@@ -1,5 +1,14 @@
 # Changelog
 
+## v128
+
+- I know it counts only for the skill on the card. On a new Write or Listen card it marks that skill Known (back in a month), not Read.
+- A Known word only becomes Mastered at its month check. Answering it right earlier counts like any other card.
+- A word with several readings (得: de / děi / dé) takes any one of them.
+- Strokes on a Write pad only matter if you write with them showing. A peek that you switch off again costs nothing.
+- A missed character's pad shows a plain red dot, not an ✕.
+- The Mastered bloom is green, on two lines (Mastered, then the skill), holds small mid screen for about two seconds, then bursts to fill the screen and fades.
+
 ## v127
 
 - Write cards: after you write, say I know it or tap Show answer, ▶ Watch it drawn plays the strokes right on the big characters. The ✍ Write button is gone from Write cards (Read and Listen cards keep it).

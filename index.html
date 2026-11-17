@@ -338,8 +338,10 @@ p.busy{margin:-4px 4px 0}
 .bloom.ok{color:var(--on)}.bloom.part{color:var(--part,#E2B33C)}.bloom.no{color:var(--no,#E5533D)}
 @keyframes bloom{0%{opacity:0;transform:translate(-50%,-50%) scale(.55);filter:blur(8px)}12%{opacity:.92;transform:translate(-50%,-50%) scale(1);filter:blur(0);text-shadow:0 0 28px currentColor}62%{opacity:.88;transform:translate(-50%,-50%) scale(1.06);filter:blur(0);text-shadow:0 0 36px currentColor}100%{opacity:0;transform:translate(-50%,-50%) scale(1.32);filter:blur(4px);text-shadow:0 0 60px currentColor}}
 @media (prefers-reduced-motion:reduce){.bloom{display:none}}
-.bloom.master{display:flex;flex-direction:column;align-items:center;gap:.06em;font-size:min(30vw,170px);color:var(--gold2,var(--accent));animation-duration:2.8s;white-space:nowrap}
-.bloom.master .en{font-family:var(--font-brand);font-size:.24em;font-weight:800;letter-spacing:.24em;text-transform:uppercase;padding-left:.24em}
+.bloom.master{top:50%;display:flex;flex-direction:column;align-items:center;gap:.06em;font-size:min(26vw,140px);color:var(--on);animation:masterburst 3s linear forwards;white-space:nowrap}
+.bloom.master .en{font-family:var(--font-brand);font-size:.24em;font-weight:800;letter-spacing:.24em;text-transform:uppercase;padding-left:.24em;line-height:1.25}
+.bloom.master .en+.en{font-size:.2em;font-weight:700}
+@keyframes masterburst{0%{opacity:0;transform:translate(-50%,-50%) scale(.5);filter:blur(8px);animation-timing-function:cubic-bezier(.2,.7,.3,1)}12%{opacity:1;transform:translate(-50%,-50%) scale(.8);filter:blur(0);text-shadow:0 0 24px currentColor}76%{opacity:1;transform:translate(-50%,-50%) scale(.84);filter:blur(0);text-shadow:0 0 30px currentColor;animation-timing-function:cubic-bezier(.5,0,.9,.6)}100%{opacity:0;transform:translate(-50%,-50%) scale(4.2);filter:blur(6px);text-shadow:0 0 80px currentColor}}
 .sckey{color:var(--muted);font-weight:400}
 #revProg{font-family:var(--font-ui);font-size:.95rem;font-weight:600;color:var(--muted)}
 .ptag{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:1px 7px;vertical-align:2px}
@@ -797,7 +799,7 @@ g.strokes path{stroke-width:var(--sw,0px);stroke-linejoin:round}
 .tlchars{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px}.tlchars .tlcell{aspect-ratio:1}
 .tlwords{display:flex;flex-wrap:wrap;gap:8px 14px}.tlwords .tlcell{display:flex;height:48px;min-width:48px}
 .tlitem{display:flex;flex-direction:column;align-items:center;gap:2px}.tlsk{font-size:.72rem;color:var(--muted);white-space:nowrap}
-.wmast{color:var(--gold2,var(--accent));font-size:.92rem;margin:10px 0 0}.wmast span{font-family:var(--font-zh)}
+.wmast{color:var(--on);font-size:.92rem;margin:10px 0 0}.wmast span{font-family:var(--font-zh)}
 .tlcell svg,.tlcell .glyph{width:100%;height:100%;display:block}.tlwords .tlcell svg,.tlwords .tlcell .glyph{width:48px;height:48px}
 .tlcell span{font-size:2.2rem;line-height:1}
 .pvdeck{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px}.pvdeck input{flex:1;min-width:150px;width:auto}
@@ -1913,7 +1915,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v127";
+const APP_VERSION = "v128";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -6574,8 +6576,10 @@ if (!store.get("radical-first-use", null)) store.set("radical-first-use", Date.n
 // tone, { claim } I know it. Mastered: right on two different days, rated Good or Easy both times (see masterStep).
 function grade(w, g, k = "srs", q = {}) {
   if (!w[k]) { w[k] = freshSrs(); countNew(k); }
-  const s = w[k], ivl = nextIvl(s, g, q.slip), wasKnown = k === "srs" && !!w.skip;
-  if (wasKnown && (g === "again" || g === "hard")) { w.skip = false; unmaster(w, k); }  // a known word you missed (or found hard) is Learning again
+  // v128: Known is per skill (Read: w.skip; Write/Listen: w.kn[k]); `checkDue`: the month check has come, so a right
+  // answer (or I know it again) then makes it Mastered. A Known word drawn early is graded like any other card.
+  const s = w[k], ivl = nextIvl(s, g, q.slip), wasKnown = k === "srs" ? !!w.skip : !!(w.kn && w.kn[k]), checkDue = !!s.due && s.due <= Date.now();
+  if (wasKnown && (g === "again" || g === "hard")) { if (k === "srs") w.skip = false; else unknow(w, k); unmaster(w, k); }  // a known word you missed (or found hard) is Learning again
   logDay("c"); markDone(w, k);
   if (g === "again") { if (s.reps) s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); unmaster(w, k); }
   else { s.ivl = wasKnown ? knownWait(ivl) : ivl; s.reps++; s.due = midnight() + s.ivl * DAY; if (g === "hard") s.ease = Math.max(1.3, s.ease - 0.15); if (g === "easy") s.ease += 0.15; }
@@ -6583,12 +6587,21 @@ function grade(w, g, k = "srs", q = {}) {
   let mastered = false;
   if (g === "good" || g === "easy") {
     // The month check of a word you'd marked I know it: right, or I know it again, makes it Mastered
-    if (wasKnown && !mastered1(w, k) && (q.right || q.claim)) mastered = masterWord(w, !!q.right, true, k);
+    if (wasKnown && checkDue && !mastered1(w, k) && (q.right || q.claim)) mastered = masterWord(w, !!q.right, true, k);
     else if (q.right) mastered = masterStep(w, k);
   }
   saveWords();
   return mastered;
 }
+// v128: I know it on a new card marks that card's skill Known: Read as before (setStatus: w.skip, a check in a month);
+// Write or Listen keep their own mark (w.kn[k] = day) and their own card comes back for the check in a month.
+function knowSkill(w, k) {
+  if (k === "srs") return setStatus(w, "known");
+  const s = w[k] = w[k] || freshSrs();
+  s.ivl = mastered1(w, k) ? knownWait(s.ivl) : MONTH_CHECK; s.due = midnight() + s.ivl * DAY;
+  (w.kn = w.kn || {})[k] = localDay();
+}
+function unknow(w, k) { if (w.kn) { delete w.kn[k]; if (!Object.keys(w.kn).length) delete w.kn; } }
 // Right (Good or Easy) on two different days: Mastered. v112: per skill. Each mode (k: srs Read, wsrs Write, lsrs
 // Listen) keeps its own first right day (w.mk[k]) and its own Mastered day (w.ms[k]); the headline Mastered (`learned`)
 // is any skill. Mastered in Read makes the word Known (w.skip) with one check a month later (MONTH_CHECK); in Write or
@@ -7034,7 +7047,7 @@ function padHolder(parent, size) {
 }
 // A finished character: the pad locks, its edge turns the accent color, a ✓ shows, the grid fades, the strokes glow once.
 function padDone(wrap, res = "ok") {
-  wrap.classList.add("done", res); const t = wrap.querySelector(".padtick"); if (t) t.textContent = res === "no" ? "✕" : "✓";
+  wrap.classList.add("done", res); const t = wrap.querySelector(".padtick"); if (t) t.textContent = res === "no" ? "" : "✓";  // v128: red is a plain dot (an ✕ read as Close)
 }
 // v127: how a written character (or word) went, from strokes right the first time out of all: Good within one free
 // miss per 10 strokes (rounded), Hard at 60% or more right (or within double the free ones, at least 1), else Again.
@@ -8433,7 +8446,7 @@ function prevCard() {
   if (h.srs === undefined) delete h.w[h.k]; else h.w[h.k] = h.srs;
   if (h.skip === undefined) delete h.w.skip; else h.w.skip = h.skip;
   if (h.ok2 === undefined) delete h.w.ok2; else h.w.ok2 = h.ok2;
-  ["mk", "ms"].forEach(f => { if (h[f] === undefined) delete h.w[f]; else h.w[f] = h[f]; });
+  ["mk", "ms", "kn"].forEach(f => { if (h[f] === undefined) delete h.w[f]; else h.w[f] = h[f]; });
   if (h.learned === undefined) { if (learned[h.w.word]) { delete learned[h.w.word]; store.set("radical-learned", learned); } }
   else if (!learned[h.w.word]) { learned[h.w.word] = h.learned; store.set("radical-learned", learned); }
   store.set(dayKey(h.k), h.newday || {}); saveWords();
@@ -8580,7 +8593,16 @@ function soundTip(g, t) {
   }
   return "";
 }
+// v128: a word with several readings ("de / děi / dé"): any one of them counts; the best match is the result.
 function checkPinyin(given, target) {
+  const alts = String(target || "").split(/\s*(?:\/|;|,|｜|\|)\s*|\s+or\s+/).map(x => x.trim()).filter(Boolean);
+  if (alts.length < 2) return checkPinyin1(given, target);
+  const rs = alts.map(t => checkPinyin1(given, t)), rank = r => r.ok === true ? 3 : r.ok === "part" ? 2 : r.ok === null ? 0 : 1;
+  const best = rs.reduce((x, y) => rank(y) > rank(x) ? y : x);
+  if (best.ok === false) return { ok: false, note: `Not quite: it's ${target}.` };
+  return best;
+}
+function checkPinyin1(given, target) {
   given = patternPy(given); target = patternPy(target);  // a pattern's slot (~到 → dào) isn't part of the answer
   if (!given.trim()) return { ok: null };
   if (!target) return { ok: null, note: "No pinyin on file to check against." };
@@ -8970,15 +8992,16 @@ function writeFront(w) {
     const inkStrokes = [...ink.querySelectorAll("g.strokes path")]; inkStrokes.forEach(x => { x.style.opacity = 0; x.style.transition = "opacity .35s ease"; });
     pad.append(ink); brushLayer(pad, size, () => d.r[current]);
     // v127: Grid and Strokes here too. Writing over the Strokes shape still rates as usual, but never counts toward
-    // Write Mastered (stats.guided).
-    padHost.append(padGuides(pad, () => writer, v => { if (v) stats.guided = true; }));
+    // Write Mastered (stats.guided). v128: only strokes drawn while Strokes is on count; a peek costs nothing.
+    padHost.append(padGuides(pad, () => writer));
+    const traced = () => { if (!pad.classList.contains("noguide")) stats.guided = true; };
     const total = d.s.length; stats.strokes += total;
     lead = chars.length > 1 ? `<b>${idx + 1} of ${chars.length}</b> · ` : "";
     const say = m => { coach.innerHTML = lead + m; };
     say("Write it from memory, first stroke first.");
     writer.quiz({
-      onCorrectStroke: s => { if (inkStrokes[s.strokeNum]) inkStrokes[s.strokeNum].style.opacity = 1; if (!s.mistakesOnStroke && !hinted.has(s.strokeNum)) { stats.first++; firstHere++; } current = s.strokeNum + 1; if (current < total && writer) writer.updateColor("highlightColor", strokeCol(d, current)); say(`Stroke ${Math.min(current + 1, total)} of ${total}`); },
-      onMistake: s => { const n = s.mistakesOnStroke; if (n >= 3 && !hinted.has(s.strokeNum)) { hinted.add(s.strokeNum); stats.hints++; } say(n >= 3 ? "Here's where it goes. Trace it." : "Not quite. Try that stroke again."); },
+      onCorrectStroke: s => { traced(); if (inkStrokes[s.strokeNum]) inkStrokes[s.strokeNum].style.opacity = 1; if (!s.mistakesOnStroke && !hinted.has(s.strokeNum)) { stats.first++; firstHere++; } current = s.strokeNum + 1; if (current < total && writer) writer.updateColor("highlightColor", strokeCol(d, current)); say(`Stroke ${Math.min(current + 1, total)} of ${total}`); },
+      onMistake: s => { traced(); const n = s.mistakesOnStroke; if (n >= 3 && !hinted.has(s.strokeNum)) { hinted.add(s.strokeNum); stats.hints++; } say(n >= 3 ? "Here's where it goes. Trace it." : "Not quite. Try that stroke again."); },
       // A finished character stays on the pad as long as you like; you move on when you're ready.
       onComplete: () => {
         const res = gradeRes(writeGrade(total, firstHere));
@@ -9120,13 +9143,13 @@ function showBack(w, how, st) {
     if (g === suggest && how !== "show") showBack.autoRate = () => { showBack.autoRate = null; b.onclick(true); };  // v96: Quit takes it
     b.onclick = force => {
       if (force !== true && Date.now() - shownAt < 500 && !quiet) return;
-      revHist.push({ w, k, mode: cardMode.get(w), chain: chainW.get(w), out: revOutcome.get(w), srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, ok2: w.ok2, mk: w.mk ? { ...w.mk } : undefined, ms: w.ms ? { ...w.ms } : undefined, learned: learned[w.word], rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore, mw: rScore.mw.slice() } });
+      revHist.push({ w, k, mode: cardMode.get(w), chain: chainW.get(w), out: revOutcome.get(w), srs: w[k] ? JSON.parse(JSON.stringify(w[k])) : undefined, skip: w.skip, ok2: w.ok2, mk: w.mk ? { ...w.mk } : undefined, ms: w.ms ? { ...w.ms } : undefined, kn: w.kn ? { ...w.kn } : undefined, learned: learned[w.word], rq: rq.slice(), rDone, newday: store.get(dayKey(k), null), score: { ...rScore, mw: rScore.mw.slice() } });
       const sc = rScore, out = revOutcome.get(w) || (g === "again" ? "missed" : g === "hard" ? "shaky" : "right");
       sc[out]++;
       if (out === "missed") { sc.run = 0; if (!sc.mw.includes(w)) sc.mw.push(w); } else { sc.run++; sc.best = Math.max(sc.best, sc.run); }
       if (g === "again") { sc.repeats++; if (!sc.mw.includes(w)) sc.mw.push(w); }
       revOutcome.delete(w);
-      tick(g); if (grade(w, g, k, ansQ)) masteredBloom(k); if (knowNew && g === "easy") { setStatus(w, "known"); saveWords(); } rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w);
+      tick(g); if (grade(w, g, k, ansQ)) masteredBloom(k); if (knowNew && g === "easy") { knowSkill(w, k); saveWords(); } rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w);
       else if (k !== "wsrs" && chainW.has(w)) { const gap = chainW.get(w); chainW.delete(w); cardMode.set(w, "write"); rq.splice(Math.min(gap, rq.length), 0, w); }
       // Today in Mix: a word due in another mode too comes back in that mode, so Today really empties.
       else if (lastSet && lastSet.mode === "today" && isMulti(curHow)) { const more = modesOf(curHow).filter(m => modeDue(w, m) && !(noListen && m === "listen")); if (more.length && !rq.includes(w)) { cardMode.set(w, more[0]); rq.push(w); } }
@@ -9178,8 +9201,8 @@ function bloom(out) {
 function masteredBloom(k) {
   play("master");
   document.querySelectorAll(".bloom").forEach(x => x.remove());
-  const b = el("div", "bloom master", `<span lang="zh">掌握</span><span class="en">Mastered${SKILL_NAME[k] ? ` · ${SKILL_NAME[k]}` : ""}</span>`); b.setAttribute("aria-hidden", "true");
-  document.body.append(b); setTimeout(() => b.remove(), 2900);
+  const b = el("div", "bloom master", `<span lang="zh">掌握</span><span class="en">Mastered</span>${SKILL_NAME[k] ? `<span class="en">${SKILL_NAME[k]}</span>` : ""}`); b.setAttribute("aria-hidden", "true");
+  document.body.append(b); setTimeout(() => b.remove(), 3100);  // v128: two lines, green, holds small mid screen about 2s, then bursts to fill and goes
 }
 function placeAnswer() {
   const go = () => {
