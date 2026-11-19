@@ -1,5 +1,10 @@
 # Changelog
 
+## v129
+
+- Fixed: Today kept refilling. After you finished the cards it offered, new words topped it back up toward Cards a day, so it showed 4, then 3. Now Today is the set you start with; finish it and you're done for the day (a word that comes due still joins). Changing Cards a day starts a fresh set.
+- Today also empties if the phone can't save (full or private storage).
+
 ## v128
 
 - I know it counts only for the skill on the card. On a new Write or Listen card it marks that skill Known (back in a month), not Read.

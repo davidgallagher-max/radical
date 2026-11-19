@@ -1915,7 +1915,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v128";
+const APP_VERSION = "v129";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -6667,11 +6667,13 @@ const howOk = h => typeof h === "string" && h.length > 0 && (h === "mix" || h.sp
 // for the day (v43): Today shrinks as you go and the badge reaches zero. With `at` (a time), the list as it will stand
 // then: Tomorrow on the finish screen.
 const dailyMax = () => store.get("radical-daily", 30);
-function doneToday() { const r = store.get("radical-today-done", null); return new Set(r && r.day === localDay() ? r.w : []); }
+// v129: kept in memory too, so a phone that can't save (full or private storage) still empties Today.
+let doneMem = null, planMem = null;
+function doneToday() { const r = store.get("radical-today-done", null), day = localDay(); return new Set([...(r && r.day === day ? r.w : []), ...(doneMem && doneMem.day === day ? doneMem.w : [])]); }
 function markDone(w, k) {
   const m = MODES.find(x => KEYS[x] === k); if (!inGoal(m)) return;
   const d = doneToday(); if (d.has(w.word)) return;
-  d.add(w.word); store.set("radical-today-done", { day: localDay(), w: [...d] });
+  lockToday(); d.add(w.word); doneMem = { day: localDay(), w: [...d] }; store.set("radical-today-done", doneMem);
   // The day's quota met (or nothing left in Today): the calendar on Track marks the day solid (v42)
   const t = store.get("radical-days", {})[localDay()] || {};
   if (!t.q && (d.size >= dailyMax() || !todayList(goal).length)) logDay("q");
@@ -6687,7 +6689,17 @@ function todayList(ms, at) {
   // v43: Today is what's left of your day: words you've practiced today don't count again (a missed one repeats in
   // its round, nothing comes back later the same day), and it fills with new words only, never Known or Learning ones.
   let room = dailyMax() - done.size;
-  return [...dues(lw), ...news(lw), ...dues(other), ...news(other)].filter(w => !done.has(w.word) && room-- > 0);
+  // v129: once a Today set starts, the day is that set. Finishing it ends the day: no new words refill it up to Cards a
+  // day (a word that comes due still joins). Each list keeps its own set; changing Cards a day starts a new one.
+  const plan = at ? null : todayPlan();
+  return [...dues(lw), ...news(lw), ...dues(other), ...news(other)].filter(w => !done.has(w.word) && (!plan || plan.has(w.word) || ms.some(m => dueAt(w, m))) && room-- > 0);
+}
+function todayPlan(L = curList) { const day = localDay(), s0 = store.get("radical-today-plan", null), r = s0 && s0.day === day ? s0 : planMem; return r && r.day === day && r.by && r.by[L] ? new Set(r.by[L]) : null; }
+function lockToday(extra = []) {
+  if (todayPlan()) return;
+  const r = store.get("radical-today-plan", null), by = r && r.day === localDay() && r.by ? r.by : {};
+  by[curList] = [...new Set([...todayList(goal), ...extra].map(w => w.word))];
+  planMem = { day: localDay(), by }; store.set("radical-today-plan", planMem);
 }
 // Words practiced today that are due again (missed and left before their repeat): offered quietly, not on the badge.
 const againToday = (ms = goal) => { const done = doneToday(), now = Date.now(); return listWords().filter(w => done.has(w.word) && ms.some(m => { const x = w[KEYS[m]]; return x && x.due && x.due <= now; })); };
@@ -7441,7 +7453,7 @@ async function fillTop(n) {
 // While Top is the list you're on, Today gets the day's new words from it.
 let feeding = null;
 function feedCommon() {
-  if (feeding || !isReady(curList) || curList === "top" && !commonSize()) return feeding;
+  if (feeding || !isReady(curList) || curList === "top" && !commonSize() || todayPlan()) return feeding;
   feeding = (async () => {
     // Bring in enough new Top words to fill today's quota after what's due (v42: no separate new-word allowance)
     const k = KEYS[goal[0]], now = Date.now(), lw = listWords(), fresh = lw.filter(w => !w.skip && !w[k]).length;
@@ -8520,7 +8532,7 @@ async function openReviewWith(ws) {
 async function openReview(mode = "today", count = "all", again) {
   if (!payOk("cards")) return;
   curHow = revHow; if (!again) noListen = false;
-  lastSet = { mode, count }; stampUsed(); rq = buildQueue(mode, count, curHow); rDone = 0; revHist = []; rScore = newScore(); scoreShown = null;
+  lastSet = { mode, count }; stampUsed(); rq = buildQueue(mode, count, curHow); if (mode === "today") lockToday(rq); rDone = 0; revHist = []; rScore = newScore(); scoreShown = null;
   if (!again) { go("reviewScreen"); } else $("reviewScreen").scrollTop = 0;
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
   showFront();
@@ -10167,7 +10179,7 @@ document.querySelectorAll("#cvdSeg [data-cvd]").forEach(b => {
 });
 document.querySelectorAll("#dailySeg [data-t]").forEach(b => {
   b.setAttribute("aria-pressed", +b.dataset.t === dailyMax());
-  b.onclick = () => { goalRules(); store.set("radical-daily", +b.dataset.t); noteGoal(); document.querySelectorAll("#dailySeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); updateCounts(); };
+  b.onclick = () => { goalRules(); store.set("radical-daily", +b.dataset.t); store.set("radical-today-plan", null); planMem = null; noteGoal(); document.querySelectorAll("#dailySeg [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b)); setSums(); updateCounts(); };
 });
 document.querySelectorAll("#readGoalSeg [data-t]").forEach(b => {
   b.setAttribute("aria-pressed", +b.dataset.t === readGoal());
