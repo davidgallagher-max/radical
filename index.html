@@ -338,10 +338,10 @@ p.busy{margin:-4px 4px 0}
 .bloom.ok{color:var(--on)}.bloom.part{color:var(--part,#E2B33C)}.bloom.no{color:var(--no,#E5533D)}
 @keyframes bloom{0%{opacity:0;transform:translate(-50%,-50%) scale(.55);filter:blur(8px)}12%{opacity:.92;transform:translate(-50%,-50%) scale(1);filter:blur(0);text-shadow:0 0 28px currentColor}62%{opacity:.88;transform:translate(-50%,-50%) scale(1.06);filter:blur(0);text-shadow:0 0 36px currentColor}100%{opacity:0;transform:translate(-50%,-50%) scale(1.32);filter:blur(4px);text-shadow:0 0 60px currentColor}}
 @media (prefers-reduced-motion:reduce){.bloom{display:none}}
-.bloom.master{top:50%;display:flex;flex-direction:column;align-items:center;gap:.06em;font-size:min(26vw,140px);color:var(--on);animation:masterburst 3s linear forwards;white-space:nowrap}
+.bloom.master{top:50%;display:flex;flex-direction:column;align-items:center;gap:.06em;font-size:min(26vw,140px);color:var(--on);animation:mbgrow 2.6s cubic-bezier(.08,.45,.75,.05) forwards,mbfade 2.6s linear forwards;text-shadow:0 0 28px currentColor;will-change:transform,opacity;white-space:nowrap}
 .bloom.master .en{font-family:var(--font-brand);font-size:.24em;font-weight:800;letter-spacing:.24em;text-transform:uppercase;padding-left:.24em;line-height:1.25}
 .bloom.master .en+.en{font-size:.2em;font-weight:700}
-@keyframes masterburst{0%{opacity:0;transform:translate(-50%,-50%) scale(.5);filter:blur(8px);animation-timing-function:cubic-bezier(.2,.7,.3,1)}12%{opacity:1;transform:translate(-50%,-50%) scale(.8);filter:blur(0);text-shadow:0 0 24px currentColor}76%{opacity:1;transform:translate(-50%,-50%) scale(.84);filter:blur(0);text-shadow:0 0 30px currentColor;animation-timing-function:cubic-bezier(.5,0,.9,.6)}100%{opacity:0;transform:translate(-50%,-50%) scale(4.2);filter:blur(6px);text-shadow:0 0 80px currentColor}}
+@keyframes mbgrow{0%{transform:translate(-50%,-50%) scale(.45)}100%{transform:translate(-50%,-50%) scale(2.8)}}@keyframes mbfade{0%{opacity:0}10%{opacity:1}72%{opacity:1}100%{opacity:0}}
 .sckey{color:var(--muted);font-weight:400}
 #revProg{font-family:var(--font-ui);font-size:.95rem;font-weight:600;color:var(--muted)}
 .ptag{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:1px 7px;vertical-align:2px}
@@ -1916,7 +1916,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v132";
+const APP_VERSION = "v133";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -9168,7 +9168,7 @@ function showBack(w, how, st) {
       // v131: Mastered plays on this card, right after the 對 splash; Next card moves on when you're ready
       if (mast) {
         showBack.autoRate = null; const t0 = Date.now();
-        const nx = btn(rq.length ? "Next card ›" : "Finish", "btn", () => { if (Date.now() - t0 < 600) return; showFront(); $("reviewScreen").scrollTop = 0; });
+        const nx = btn(rq.length ? "Next card ›" : "Finish", "btn", () => { if (Date.now() - t0 < 600) return; document.querySelectorAll(".bloom").forEach(x => x.remove()); showFront(); $("reviewScreen").scrollTop = 0; });
         revBar("", "", "", null, [nx], "grades one");
         return;
       }
@@ -9221,7 +9221,7 @@ function masteredBloom(k) {
   play("master");
   document.querySelectorAll(".bloom").forEach(x => x.remove());
   const b = el("div", "bloom master", `<span lang="zh">掌握</span><span class="en">Mastered</span>${SKILL_NAME[k] ? `<span class="en">${SKILL_NAME[k]}</span>` : ""}`); b.setAttribute("aria-hidden", "true");
-  document.body.append(b); setTimeout(() => b.remove(), 3100);  // v128: two lines, green, holds small mid screen about 2s, then bursts to fill and goes
+  document.body.append(b); setTimeout(() => b.remove(), 2700);  // v128: two lines, green, holds small mid screen about 2s, then bursts to fill and goes
 }
 function placeAnswer() {
   const go = () => {

@@ -1,5 +1,9 @@
 # Changelog
 
+## v133
+
+- The Mastered burst is one smooth motion: it pops in, drifts a little larger, then swells and fades. No pause and jump, no blur. Next card clears it, so it never sits on the new card.
+
 ## v132
 
 - Fixed: Today still refilled with new words when you looked at another deck. The day's set is now one set across every deck: once it's done, Today is 0 everywhere.

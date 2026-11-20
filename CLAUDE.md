@@ -229,6 +229,7 @@ Radical is a Mandarin reading app for adult learners. Every character is drawn f
 - v130 notes (fix): `todayList` keeps only plan words once a plan exists (no due-now exception).
 - v131 notes: a rating that masters (`mast` from `grade`) clears `showBack.autoRate` and swaps the bar for one Next card › / Finish (`.grades.one`, taps ignored for 600ms); the card stays under `masteredBloom`.
 - v132 notes (fix): the Today plan is one set for the day (`radical-today-plan` {day, w}; an older {by} is read as the union), `todayPlan()` takes no list.
+- v133 notes: `.bloom.master` animates only transform and opacity (`mbgrow` 2.6s one cubic-bezier .45 to 2.8, `mbfade`; no filter, static text-shadow); `masterburst` is gone; Next card removes `.bloom`.
 - v57 notes: `ringBurst(ring)` from `paintReadGoal` when the ring turns `.met` after its first paint (`ring._painted`), so never on load: `.readring.burst` (`ringburst` keyframes on `scale`, 2s) and 14 `.rspark` dots in the `.tz` (`--a` angle, `--r` distance, `--s` swirl, `--t`/`--d` timing), removed after 2.2s; nothing with reduced motion.
 
 ## Accounts and sync (v30, v31)
