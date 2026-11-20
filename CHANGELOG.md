@@ -1,5 +1,12 @@
 # Changelog
 
+## v134 (iPhone app 1.0.1)
+
+- Listen keeps reading with the screen locked or in another app. The lock screen shows the text's Chinese and English titles with play and pause. Reading credit only counts what was read with the app open.
+- Haptics: a light tap on switches, segments and pills, touch and hold, pull to refresh and dragging, and one buzz when a daily goal is met. Settings, Sound and lighting: Haptics.
+- Chimes: Always, Not on silent (new default) or Off. Speech always plays.
+- These need the 1.0.1 app; on 1.0 the page works as before.
+
 ## v133
 
 - The Mastered burst is one smooth motion: it pops in, drifts a little larger, then swells and fades. No pause and jump, no blur. Next card clears it, so it never sits on the new card.

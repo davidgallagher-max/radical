@@ -6,7 +6,7 @@
 (function () {
   var C = window.Capacitor, app = !/^https?:$/.test(location.protocol) || !!(C && C.isNativePlatform && C.isNativePlatform());
   if (!app || window.__radicalLive) return;
-  var BUNDLED = /*BUNDLED*/"", SHELL = 5, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
+  var BUNDLED = /*BUNDLED*/"", SHELL = 6, ls = localStorage, num = function (x) { return parseInt(String(x || "").replace(/\D/g, ""), 10) || 0; };
   try { ls.setItem("radical-shell", SHELL); var v = ls.getItem("radical-live-v"); } catch (e) { return; }
   if (!v || num(v) <= num(BUNDLED) || v === ls.getItem("radical-live-bad")) return;
   if (ls.getItem("radical-live-tried") === v && ls.getItem("radical-live-ok") !== v) { ls.setItem("radical-live-bad", v); return; }  // it never started last time
@@ -1692,7 +1692,9 @@ body.tonecolor .tc1{color:var(--t1)}body.tonecolor .tc2{color:var(--t2)}body.ton
     <div class="row" style="justify-content:space-between;margin-top:10px"><span>Color tones</span><button type="button" class="switch small" id="toneSw" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span></button></div></details>
     <details class="setsec"><summary><b>Sound and lighting</b><span class="sum" data-sum="sound"></span></summary>
     <div class="panel">
-      <div class="row" style="justify-content:space-between"><span>Sounds</span><button type="button" class="switch small" id="soundSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
+      <p class="note setlbl">Chimes</p>
+      <div class="seg themeseg" id="chimeSeg" role="group" aria-label="Chimes"><button type="button" data-chime="always">Always</button><button type="button" data-chime="quiet">Not on silent</button><button type="button" data-chime="off">Off</button></div>
+      <div class="row" id="feelRow" style="justify-content:space-between;margin-top:10px"><span>Haptics</span><button type="button" class="switch small" id="feelSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
       <div class="row" style="justify-content:space-between"><span>3D lacquer lighting</span><button type="button" class="switch small" id="lightSw" role="switch" aria-checked="true"><span class="track"><span class="knob"></span></span></button></div>
     </div></details>
     <details class="setsec"><summary><b>Speech</b><span class="sum" data-sum="speech"></span></summary>
@@ -1767,6 +1769,22 @@ const plug = n => { const C = NATIVE && window.Capacitor; if (!C) return null; t
   if (h && C.nativePromise) { const o = {}; (h.methods || []).forEach(m => o[m.name] = a => C.nativePromise(n, m.name, a || {})); return o; }
   return C.registerPlugin ? C.registerPlugin(n) : null;
 } catch (e) { return null; } };
+// 1.0.1: haptics, only where iPhone apps usually have them: switches, segments and pills, touch and hold, pull to
+// refresh, dragging, and once when a daily goal is met (Feel plugin, SHELL 6; elsewhere navigator.vibrate where it
+// exists, as before). Settings, Sound: Haptics.
+let feelOn = store.get("radical-haptics", true);
+const feelApp = () => NATIVE && !ANDROID && +store.get("radical-shell", 0) >= 6;
+const feelCan = () => feelApp() || !!navigator.vibrate;
+function feel(kind) {
+  if (!feelOn) return;
+  try {
+    if (feelApp()) { const F = plug("Feel"); if (!F) return; (kind === "goal" ? F.notify({ type: "success" }) : kind === "hold" ? F.impact({ style: "medium" }) : kind === "pull" ? F.impact({ style: "light" }) : F.selection()).catch(() => {}); return; }
+    if (navigator.vibrate) navigator.vibrate(kind === "goal" ? [20, 70, 30] : kind === "hold" ? 12 : 8);
+  } catch (e) {}
+}
+document.addEventListener("click", e => { const t = e.target && e.target.closest && e.target.closest(".switch, .seg button, .seg2 button, .pills button"); if (t && !t.disabled && t.id !== "feelSw") feel(); }, true);
+// 1.0.1: Listen in the app reads with the phone's own voice (Voice plugin, SHELL 6), so it goes on with the screen locked
+const voiceApp = () => NATIVE && !ANDROID && !voiceApp.bad && +store.get("radical-shell", 0) >= 6;
 // Flash cards and the word page stay upright; reading can turn sideways.
 function nativeOrient(id) {
   const o = plug("ScreenOrientation"); if (!o) return;
@@ -1855,7 +1873,7 @@ window.addEventListener("pagehide", () => { if (!reloading) savePlace(false); })
 function takeLive() {
   const v = localStorage.getItem("radical-live-v"), num = x => parseInt(String(x || "").slice(1), 10) || 0;
   if (!v || num(v) <= num(APP_VERSION) || v === localStorage.getItem("radical-live-bad") || document.hidden) return;
-  const a = document.activeElement, busy = !$("reviewScreen").hidden || document.querySelector(".sheet") || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || (window.speechSynthesis && speechSynthesis.speaking);
+  const a = document.activeElement, busy = !$("reviewScreen").hidden || document.querySelector(".sheet") || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || (window.speechSynthesis && speechSynthesis.speaking) || reading;
   if (!busy) reloadKeep();
 }
 // v109: a newer page waits until you've been away (a minute or more), never while you're reading; the reload keeps
@@ -1916,7 +1934,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v133";
+const APP_VERSION = "v134";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -2396,7 +2414,7 @@ function watchLines(reader) {
 // listenAll: Listen is reading the whole text (it turns pages and shows more by itself). Leaving the screen, tapping
 // Listen again or starting another voice ends it; turning a page by hand carries on from the top of that page.
 let listenAll = false;
-function stopReading(keepListen) { readToken++; reading = false; if (!keepListen) listenAll = false; if ("speechSynthesis" in window) speechSynthesis.cancel(); document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking")); const b = $("listenBtn"); if (b) b.setAttribute("aria-pressed", "false"); if ($("speedPop")) $("speedPop").hidden = true; readAloud.restart = null; }
+function stopReading(keepListen) { if (voiceApp.on) { voiceApp.on = false; try { plug("Voice").stop().catch(() => {}); } catch (e) {} } readToken++; reading = false; if (!keepListen) listenAll = false; if ("speechSynthesis" in window) speechSynthesis.cancel(); document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking")); const b = $("listenBtn"); if (b) b.setAttribute("aria-pressed", "false"); if ($("speedPop")) $("speedPop").hidden = true; readAloud.restart = null; }
 // A line's chunks: sentences (ending in 。！？); a sentence over about 25 characters splits at ，、；：; a stretch
 // with no punctuation at all splits every 15 or so characters, always at a word boundary.
 function chunksOf(line) {
@@ -2431,6 +2449,7 @@ function readAloud(lines, all, k = 1) {
   const simp = region === "cn", v = simp ? cnVoice : twVoice;
   const queue = lines.flatMap(line => chunksOf(line).map((c, k) => ({ ...c, line, first: k === 0 })));
   const unlight = () => document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking"));
+  if (all && voiceApp()) { nativeListen(lines, queue, token, unlight); return; }
   let n = 0, gen = 0;  // gen: bumped to drop the events of a sentence that was restarted
   // A new speed takes effect at once: the sentence being read starts over at that speed.
   readAloud.restart = () => { if (token !== readToken || !n) return; gen++; n--; speechSynthesis.cancel(); setTimeout(next, 80); };
@@ -2465,6 +2484,44 @@ function readAloud(lines, all, k = 1) {
   };
   next();
 }
+// 1.0.1: Listen in the app. Every sentence goes to the phone's voice at once, so it keeps reading with the screen
+// locked; the page follows its events (window "radicalvoice") to light the sentence and pay credit, but only for what
+// was said with the app open. The lock screen shows the text's Chinese and English titles with play and pause.
+const platRate = r => r < 1 ? r * .5 : .5 + (r - 1) * .5;  // WebKit's mapping of web speech rates to the phone's
+function listenTitles() {
+  const zh = s => /\p{Script=Han}/u.test(s || ""), h = typeof curHist === "function" ? curHist() : null;
+  const first = [...((($("reader").querySelector(".line") || {})._text) || "")].slice(0, 16).join("");
+  const title = (h && [h.title, h.name, h.book, histName(h)].find(zh)) || (typeof doc !== "undefined" && doc && zh(doc.title) ? doc.title : "") || first || "Radical";
+  const sub = (h && (h.en || (h.name && !zh(h.name) ? h.name : ""))) || "Radical";
+  return { title, subtitle: sub };
+}
+function nativeListen(lines, queue, token, unlight) {
+  const V = plug("Voice"), simp = region === "cn", v = simp ? cnVoice : twVoice;
+  let cur = 0;
+  const hs = c => { const lt = c.line._text || ""; return [hanIn(lt.slice(0, c.a)), hanIn(lt.slice(0, c.b))]; };
+  const send = from => { voiceApp.on = true; return V.speak({ chunks: queue.slice(from).map(c => spellCaps(c.text)), base: from, rate: platRate(rate), lang: v ? v.lang : simp ? "zh-CN" : "zh-TW", voice: (v && v.voiceURI) || "", voiceName: (v && v.name) || "", ...listenTitles() }); };
+  const quit = () => { removeEventListener("radicalvoice", on); };
+  const on = e => {
+    if (token !== readToken) { quit(); return; }
+    const c = queue[e.i];
+    if (e.kind === "chunk" && c) { cur = e.i; unlight(); c.groups.forEach(g => g.classList.add("speaking")); if (!e.bg && !document.hidden) followAlong(c.groups); }
+    else if (e.kind === "word" && c && !e.bg && !document.hidden) voicePay(c.line, hs(c)[0] + hanIn(spellCaps(c.text).slice(0, (e.at || 0) + (e.len || 1))));
+    else if (e.kind === "done" && c && !e.bg && !document.hidden) voicePay(c.line, hs(c)[1]);
+    else if (e.kind === "end") {
+      quit(); voiceApp.on = false; unlight();
+      // with the app open it turns the page and carries on; finished while away, it just stops
+      if (!e.bg && !document.hidden && listenAll && listenNext()) return;
+      reading = false; listenAll = false; readAloud.restart = null; $("listenBtn").setAttribute("aria-pressed", "false"); $("speedPop").hidden = true;
+    }
+  };
+  addEventListener("radicalvoice", on);
+  readAloud.restart = () => { if (token === readToken) send(cur).catch(() => {}); };
+  send(0).catch(() => {  // no Voice plugin after all: read with web speech
+    quit(); voiceApp.bad = true; voiceApp.on = false;
+    if (token === readToken) { stopReading(); readAloud(lines, true); }
+  });
+}
+if (NATIVE && !ANDROID) setTimeout(() => { if (voiceApp() && !reading) try { plug("Voice").stop().catch(() => {}); } catch (e) {} }, 0);  // a reload: the old page's voice stops
 // Listen goes on to the rest of the text: "Show more" when a long text is shown in parts (carrying on from the first
 // new line), then the next page of a document. Returns false at the very end.
 function listenNext() {
@@ -2613,7 +2670,7 @@ const chimeOn = new Set();
 let chimeP = null;
 // v83: what happened, for Admin tools' Sounds line (the iPhone can't be debugged from here)
 const chimeLog = { shell: null, plugin: null, loaded: 0, err: "", plays: 0, playErr: "", ms: 0 };
-const chimeGo = id => { if (!chimeP || !chimeOn.has(id)) return false; chimeLog.plays++; chimeP.play({ id }).catch(e => { chimeLog.playErr = String(e && e.message || e); chimeOn.delete(id); }); return true; };
+const chimeGo = id => { if (!chimeP || !chimeOn.has(id)) return false; chimeLog.plays++; chimeP.play({ id, mode: chimeMode }).catch(e => { chimeLog.playErr = String(e && e.message || e); chimeOn.delete(id); }); return true; };
 function wavB64(d, sr) {
   let n = d.length; while (n > sr * .2 && Math.abs(d[n - 1]) < 1e-3) n--;  // drop the silent tail
   const b = new DataView(new ArrayBuffer(44 + n * 2)), str = (o, t) => [...t].forEach((c, i) => b.setUint8(o + i, c.charCodeAt(0)));
@@ -2655,7 +2712,13 @@ function soundPanel() {
   box.append(line, btn("Play a chime", "btn ghost small", () => { play("right"); setTimeout(paint, 400); }));
 }
 const lastPlayed = {};
-let soundOn = store.get("radical-sound", true);
+// 1.0.1: "radical-chimes" always | quiet (not on silent, the default) | off; "radical-sound" stays in step for older pages
+const CHIME_NAMES = { always: "Always", quiet: "Not on silent", off: "Off" };
+let chimeMode = store.get("radical-chimes", null); if (!(chimeMode in CHIME_NAMES)) chimeMode = store.get("radical-sound", true) ? "quiet" : "off";
+let soundOn = chimeMode !== "off";
+function setChimes(m) { chimeMode = m; soundOn = m !== "off"; store.set("radical-chimes", m); store.set("radical-sound", soundOn); }
+// The silent switch is honored by the app's own chime player (Chime plugin, play's mode). Web audio stays
+// "transient" (v78): an "ambient" web page might take speech down with it, and speech always plays.
 function play(kind) {
   if (!soundOn || !KIT[kind]) return;
   try {
@@ -3562,7 +3625,7 @@ function holdToPick(b) {
     // v65: hold picks this one character; keep holding and drag along the line to take in more (or fewer).
     t = 0; b._held = true; const line = b.closest(".line"), cells = [...line.querySelectorAll(".cell")], i = cells.indexOf(b);
     drag = { line, cells, from: i, to: i }; pickSpan(line, i, i); try { b.setPointerCapture(pid); } catch (err) {}
-    try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) {}
+    feel("hold");
   }, 450); });
   // v54: slide sideways along a line to pick every character you pass; sliding back drops them again.
   b.addEventListener("pointermove", e => {
@@ -4360,7 +4423,7 @@ function dragRow(row, start, { hold = 0, over, drop }) {
   const stop = () => { on = false; document.removeEventListener("touchmove", block, { passive: false }); row.classList.remove("dragging"); row.style.transform = ""; };
   start.addEventListener("pointerdown", e => {
     if (e.button) return; sx = e.clientX; sy = e.clientY; const id = e.pointerId;
-    const go = () => { t = null; on = true; row.classList.add("dragging"); try { start.setPointerCapture(id); } catch (x) {} document.addEventListener("touchmove", block, { passive: false }); try { navigator.vibrate && navigator.vibrate(8); } catch (x) {} };
+    const go = () => { t = null; on = true; row.classList.add("dragging"); try { start.setPointerCapture(id); } catch (x) {} document.addEventListener("touchmove", block, { passive: false }); feel("hold"); };
     if (hold) t = setTimeout(go, hold); else { e.preventDefault(); go(); }
   });
   start.addEventListener("pointermove", e => {
@@ -5912,7 +5975,7 @@ function readBurst(ring) {
   }, 2300);
 }
 function todayBurst(o = {}) {
-  play(o.sound || "today");
+  play(o.sound || "today"); feel("goal");
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) { toast(o.label || "Daily goal met", 2500, true); return; }
   const fm = document.querySelector("#reviewScreen:not([hidden]) .finish .finmark"), r = fm && fm.getBoundingClientRect();
   const cx = r && r.width ? r.left + r.width / 2 : innerWidth / 2, cy = r && r.height ? r.top + r.height / 2 : innerHeight * .4;
@@ -6001,7 +6064,7 @@ function tileValue(k, st = wordStages()) {
 // A tap and a touch and hold do different things on the same box.
 function holdOrTap(node, onHold, onTap) {
   let t = 0, held = false, x0 = 0, y0 = 0;
-  node.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; held = false; clearTimeout(t); t = setTimeout(() => { held = true; try { navigator.vibrate && navigator.vibrate(8); } catch (e) {} onHold(); }, 500); });
+  node.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; held = false; clearTimeout(t); t = setTimeout(() => { held = true; feel("hold"); onHold(); }, 500); });
   node.addEventListener("pointermove", e => { if (Math.hypot(e.clientX - x0, e.clientY - y0) > 10) clearTimeout(t); });
   ["pointerup", "pointercancel", "pointerleave"].forEach(ev => node.addEventListener(ev, () => clearTimeout(t)));
   node.addEventListener("click", () => { if (held) { held = false; return; } onTap(); });
@@ -8563,7 +8626,7 @@ function holdToEnlarge(node, ch) {
 }
 function enlarge(ch, actions) {
   if (!cache[ch] || document.querySelector(".bigview")) return;
-  try { navigator.vibrate && navigator.vibrate(8); } catch (e) {}
+  feel("hold");
   const v = el("div", "bigview"), g = glyphFor(ch, true); g.classList.add("bigviewglyph");
   v.append(g); const l = legendLine(ch); if (l) v.append(l);
   if (actions) { const row = el("div", "bvacts"); actions.forEach(([label, fn]) => row.append(btn(label, "btn ghost", e => { e.stopPropagation(); v.remove(); fn(); }))); v.append(row); }
@@ -9492,8 +9555,13 @@ async function showTour(fromMenu) {
   sheet.onclick = ev => { if (ev.target === sheet) close(); };
   sheet.append(card); document.body.append(sheet); paint();
 }
-$("soundSw").setAttribute("aria-checked", soundOn);
-$("soundSw").onclick = e => { soundOn = !soundOn; store.set("radical-sound", soundOn); e.currentTarget.setAttribute("aria-checked", soundOn); if (soundOn) play("tap"); };
+// 1.0.1: Chimes Always / Not on silent / Off (speech always plays); Haptics on or off
+const paintChimes = () => document.querySelectorAll("#chimeSeg [data-chime]").forEach(b => b.setAttribute("aria-pressed", b.dataset.chime === chimeMode));
+paintChimes();
+document.querySelectorAll("#chimeSeg [data-chime]").forEach(b => b.onclick = () => { setChimes(b.dataset.chime); paintChimes(); setSums(); if (soundOn) play("tap"); });
+$("feelRow").hidden = !feelCan();
+$("feelSw").setAttribute("aria-checked", feelOn);
+$("feelSw").onclick = e => { feelOn = !feelOn; store.set("radical-haptics", feelOn); e.currentTarget.setAttribute("aria-checked", feelOn); setSums(); feel(); };
 // Light on/off: off gives flat ink, with no finish, glint or sheen anywhere.
 const setLight = on => { document.documentElement.classList.toggle("nolight", !on); $("lightSw").setAttribute("aria-checked", on); };
 setLight(store.get("radical-light", true));
@@ -9514,7 +9582,7 @@ function setSums() {
   const S = { region: (REGIONS.find(x => x[0] === region) || [])[3] || "", acct: session ? session.email : "Signed out",
     theme: (PALETTES[palette] || {}).name || "", appear: ({ dark: "Dark", light: "Light", system: "Match phone" }[store.get("radical-theme", "dark")] || "") + (cvd ? " · red-green safe" : ""),
     modes: goal.map(m => HOW_NAME[m]).join(", ") + (store.get("radical-badge", true) ? "" : " · no red number"),
-    sound: `Sounds ${soundOn ? "on" : "off"} · light ${store.get("radical-light", true) ? "on" : "off"}`,
+    sound: `Chimes ${CHIME_NAMES[chimeMode].toLowerCase()} · light ${store.get("radical-light", true) ? "on" : "off"}`,
     speech: `${PACES.find(x => x[0] === sayPace)[1]} · speed ${Math.round(rate * 100)}%`,
     daily: `${{ cards: `${dailyMax()} cards`, read: `${readGoal()} words` }[streakRule()] || `${dailyMax()} cards ${streakRule() === "both" ? "&" : "or"} ${readGoal()} words`} · ${hourShort(dayEndNow())}`,  // v64: short, so it fits a phone
     tiles: trackTiles().map(k => TILES[k][0]).join(", ") };
@@ -9522,7 +9590,7 @@ function setSums() {
 }
 document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "change"].forEach(ev => x.addEventListener(ev, () => setTimeout(setSums, 50))));
 // ---- settings that go in a backup file and (v58) sync with the account.
-const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules", "radical-day-ends",
+const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-chimes", "radical-haptics", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules", "radical-day-ends",
   "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-read-speed", "radical-tiles", "radical-common", "radical-region", "radical-levels", "radical-books", "radical-tonecolor", "radical-explore-src"];
 const SYNC_SETTINGS = SETTING_KEYS.filter(k => k !== "radical-decks");  // v58: decks sync on their own
 // Restore a backup file (v58: the Backup page is gone; a backup chosen with the add box's file icon comes here):
@@ -10205,7 +10273,7 @@ document.querySelectorAll("#ruleSeg [data-r]").forEach(b => {
   document.body.append(ptr);
   const markUp = () => { if (ptr.firstChild) return; try { const m = goldMark(); m.classList.add("ptrmark"); ptr.append(m); } catch (e) { ptr.append(el("b", "ptrmark", "部")); } };
   let sc = null, y0 = 0, x0 = 0, dy = 0, live = false, busy = false;
-  const show = d => { ptr.style.setProperty("--d", `${Math.min(d, PULL * 1.4)}px`); ptr.style.setProperty("--r", `${Math.round(d * 4)}deg`); ptr.classList.toggle("armed", d >= PULL); };
+  const show = d => { ptr.style.setProperty("--d", `${Math.min(d, PULL * 1.4)}px`); ptr.style.setProperty("--r", `${Math.round(d * 4)}deg`); const was = ptr.classList.contains("armed"); ptr.classList.toggle("armed", d >= PULL); if (!was && d >= PULL && live) feel("pull"); };
   const reset = () => { live = false; dy = 0; ptr.classList.remove("on", "armed"); show(0); };
   TABS.forEach(id => {
     const s = $(id); if (!s) return;
