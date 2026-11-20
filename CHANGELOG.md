@@ -1,5 +1,9 @@
 # Changelog
 
+## v130
+
+- Fixed: Today could still come back after you finished it. Now nothing joins Today once the day's set has started.
+
 ## v129
 
 - Fixed: Today kept refilling. After you finished the cards it offered, new words topped it back up toward Cards a day, so it showed 4, then 3. Now Today is the set you start with; finish it and you're done for the day (a word that comes due still joins). Changing Cards a day starts a fresh set.
