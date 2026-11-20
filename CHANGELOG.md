@@ -1,5 +1,9 @@
 # Changelog
 
+## v131
+
+- The Mastered burst now plays on the card you just graded, right after the 對 splash, and the card waits for Next card instead of jumping ahead.
+
 ## v130
 
 - Fixed: Today could still come back after you finished it. Now nothing joins Today once the day's set has started.

@@ -1223,6 +1223,7 @@ form.guess.toned input{margin-right:48px;width:calc(100% - 48px)}
 .seg2.speeds button[aria-pressed="true"]+button,.seg2.speeds button:has(+button[aria-pressed="true"]){border-color:transparent}
 .revans{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:14px}
 .grades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.grades.one{grid-template-columns:1fr}
 .grades button{display:grid;gap:2px;justify-items:center;padding:10px 4px}
 .grades small{font-size:.8rem;opacity:.8}
 .grades .again{box-shadow:inset 0 0 0 1px var(--sound);color:var(--sound)}
@@ -1915,7 +1916,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v130";
+const APP_VERSION = "v131";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -9161,10 +9162,17 @@ function showBack(w, how, st) {
       if (out === "missed") { sc.run = 0; if (!sc.mw.includes(w)) sc.mw.push(w); } else { sc.run++; sc.best = Math.max(sc.best, sc.run); }
       if (g === "again") { sc.repeats++; if (!sc.mw.includes(w)) sc.mw.push(w); }
       revOutcome.delete(w);
-      tick(g); if (grade(w, g, k, ansQ)) masteredBloom(k); if (knowNew && g === "easy") { knowSkill(w, k); saveWords(); } rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w);
+      tick(g); const mast = grade(w, g, k, ansQ); if (mast) masteredBloom(k); if (knowNew && g === "easy") { knowSkill(w, k); saveWords(); } rq.shift(); rDone++; if (g === "again") rq.splice(Math.min(3, rq.length), 0, w);
       else if (k !== "wsrs" && chainW.has(w)) { const gap = chainW.get(w); chainW.delete(w); cardMode.set(w, "write"); rq.splice(Math.min(gap, rq.length), 0, w); }
       // Today in Mix: a word due in another mode too comes back in that mode, so Today really empties.
       else if (lastSet && lastSet.mode === "today" && isMulti(curHow)) { const more = modesOf(curHow).filter(m => modeDue(w, m) && !(noListen && m === "listen")); if (more.length && !rq.includes(w)) { cardMode.set(w, more[0]); rq.push(w); } }
+      // v131: Mastered plays on this card, right after the 對 splash; Next card moves on when you're ready
+      if (mast) {
+        showBack.autoRate = null; const t0 = Date.now();
+        const nx = btn(rq.length ? "Next card ›" : "Finish", "btn", () => { if (Date.now() - t0 < 600) return; showFront(); $("reviewScreen").scrollTop = 0; });
+        revBar("", "", "", null, [nx], "grades one");
+        return;
+      }
       // v127: this rating met the daily goal: the burst plays over this card, and the next one waits for it
       if (rq.length && performance.now() - (cardsDone.at || -1e9) < 300) {
         const bar = $("revBar"); bar.querySelectorAll("button").forEach(x => x.disabled = true);
