@@ -1,5 +1,9 @@
 # Changelog
 
+## v132
+
+- Fixed: Today still refilled with new words when you looked at another deck. The day's set is now one set across every deck: once it's done, Today is 0 everywhere.
+
 ## v131
 
 - The Mastered burst now plays on the card you just graded, right after the 對 splash, and the card waits for Next card instead of jumping ahead.

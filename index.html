@@ -1916,7 +1916,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v131";
+const APP_VERSION = "v132";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -6691,16 +6691,15 @@ function todayList(ms, at) {
   // its round, nothing comes back later the same day), and it fills with new words only, never Known or Learning ones.
   let room = dailyMax() - done.size;
   // v129: once a Today set starts, the day is that set. Finishing it ends the day: nothing refills it up to Cards a
-  // day. Each list keeps its own set; changing Cards a day starts a new one.
+  // day. One set for the day across decks; changing Cards a day starts a new one.
   const plan = at ? null : todayPlan();
   return [...dues(lw), ...news(lw), ...dues(other), ...news(other)].filter(w => !done.has(w.word) && (!plan || plan.has(w.word)) && room-- > 0);
 }
-function todayPlan(L = curList) { const day = localDay(), s0 = store.get("radical-today-plan", null), r = s0 && s0.day === day ? s0 : planMem; return r && r.day === day && r.by && r.by[L] ? new Set(r.by[L]) : null; }
+function todayPlan() { const day = localDay(), s0 = store.get("radical-today-plan", null), r = s0 && s0.day === day ? s0 : planMem; if (!r || r.day !== day) return null; if (r.w) return new Set(r.w); const a = Object.values(r.by || {}).flat(); return a.length ? new Set(a) : null; }
 function lockToday(extra = []) {
   if (todayPlan()) return;
-  const r = store.get("radical-today-plan", null), by = r && r.day === localDay() && r.by ? r.by : {};
-  by[curList] = [...new Set([...todayList(goal), ...extra].map(w => w.word))];
-  planMem = { day: localDay(), by }; store.set("radical-today-plan", planMem);
+  // v132: one set for the whole day, whichever deck you're on (a per-deck set let another deck refill Today)
+  planMem = { day: localDay(), w: [...new Set([...todayList(goal), ...extra].map(w => w.word))] }; store.set("radical-today-plan", planMem);
 }
 // Words practiced today that are due again (missed and left before their repeat): offered quietly, not on the badge.
 const againToday = (ms = goal) => { const done = doneToday(), now = Date.now(); return listWords().filter(w => done.has(w.word) && ms.some(m => { const x = w[KEYS[m]]; return x && x.due && x.due <= now; })); };
