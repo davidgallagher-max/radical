@@ -1934,7 +1934,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v134";
+const APP_VERSION = "v135";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -5394,6 +5394,8 @@ async function syncNow(quietErrors) {
   syncing = (async () => {
     const token = await accessToken(); if (!token) return null;
     const settings = settingsOut(), hist = histOut(), cur = curOut();
+    const sent = new Map(myWords.map(w => [w.word, sigOf(w)]));  // v135: what this sync carries, so changes made while it's out survive the answer
+    sent.day = localDay(); sent.learned = new Set(Object.keys(learned)); sent.familiar = new Set(Object.keys(familiar)); sent.tally = JSON.stringify(store.get("radical-days", {})[sent.day] || {});
     const r = await fetch(API + "/api/claude", { method: "POST", headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ action: "sync", data: { words: myWords, deleted, learned, familiar, decks, days: store.get("radical-days", {}), reads: readLines(), unread: store.get("radical-read-unread", {}), summary: store.get("radical-friends", null) ? friendSummary() : undefined, settings, hist, cur } }) });
     const m = await r.json().catch(() => ({}));
@@ -5402,29 +5404,48 @@ async function syncNow(quietErrors) {
     if (settings) rawSet("radical-settings-sent", settings.t);
     if (cur) rawSet("radical-cur-sent", cur.t);
     if (hist.put.length) { const sent = store.get("radical-hist-sent", {}); hist.put.forEach(h => { sent[h.id] = Math.max(sent[h.id] || 0, h.t || 0); }); store.set("radical-hist-sent", sent); }
-    applyMerged(m); store.set("radical-synced", Date.now());
+    if (applyMerged(m, sent)) scheduleSync(); store.set("radical-synced", Date.now());
     if (hist.put.length && textHistory.some(h => (store.get("radical-hist-sent", {})[h.id] || 0) < (h.t || 0))) scheduleSync();  // more History to send
     return m;
   })().catch(e => { store.set("radical-sync-error", e.message); if (!quietErrors) throw e; return null; }).finally(() => { syncing = null; if (!$("settingsScreen").hidden) renderAccount(); });
   return syncing;
 }
 // The merged copy is applied to the word objects already in memory, so a flash card session in progress keeps working.
-function applyMerged(m) {
-  const have = new Map(myWords.map(w => [w.word, w]));
-  const list = (m.words || []).map(mw => { const ex = have.get(mw.word); if (!ex) return mw; for (const k of Object.keys(ex)) if (!(k in mw)) delete ex[k]; return Object.assign(ex, mw); });
+// v135: `sent` is each word as this sync carried it. A word rated, edited or added while the sync was out keeps this
+// phone's copy (the answer was built before that change), and one removed meanwhile stays removed; returns true when
+// such changes still need to go up.
+function applyMerged(m, sent) {
+  stampWords();
+  const have = new Map(myWords.map(w => [w.word, w])), mine = new Set(), changed = w => sent && sent.get(w.word) !== sigOf(w);
+  const back = new Set((m.words || []).map(mw => mw.word));
+  const list = (m.words || []).filter(mw => !(sent && sent.has(mw.word) && !have.has(mw.word))).map(mw => {
+    const ex = have.get(mw.word); if (!ex) return mw;
+    if (changed(ex)) { mine.add(ex.word); return ex; }
+    for (const k of Object.keys(ex)) if (!(k in mw)) delete ex[k]; return Object.assign(ex, mw);
+  });
+  myWords.filter(w => !back.has(w.word) && sent && !sent.has(w.word) && !(m.deleted || {})[w.word]).forEach(w => { mine.add(w.word); list.unshift(w); });  // added meanwhile
+  const local = deleted; deleted = { ...(m.deleted || {}) };
+  for (const [w, t] of Object.entries(local || {})) if (sent && sent.has(w) && !have.has(w) && t > (deleted[w] || 0)) { deleted[w] = t; mine.add(w); }  // removed meanwhile
   myWords.length = 0; myWords.push(...list);
-  deleted = m.deleted || {}; store.set("radical-deleted", deleted);
-  learned = m.learned || learned; store.set("radical-learned", learned);
-  if (m.familiar) { familiar = m.familiar; store.set("radical-familiar", familiar); }
-  if (m.days) store.set("radical-days", m.days);
+  store.set("radical-deleted", deleted);
+  // v135: Mastered/Recognized marks and today's tally made while the sync was out are kept too
+  if (m.learned) { const add = sent ? Object.entries(learned).filter(([w]) => !m.learned[w] && !sent.learned.has(w)) : []; learned = m.learned; add.forEach(([w, d]) => { learned[w] = d; mine.add(w); }); } store.set("radical-learned", learned);
+  if (m.familiar) { const add = sent ? Object.entries(familiar).filter(([w]) => !m.familiar[w] && !sent.familiar.has(w)) : []; familiar = m.familiar; add.forEach(([w, d]) => { familiar[w] = d; mine.add(w); }); store.set("radical-familiar", familiar); }
+  if (m.days) {
+    const now = (store.get("radical-days", {})[sent && sent.day] || {});
+    if (sent && JSON.stringify(now) !== sent.tally) { const t = m.days[sent.day] = { ...(m.days[sent.day] || {}) }; for (const [f, v] of Object.entries(now)) if (typeof v === "number" && !(t[f] >= v)) { t[f] = v; mine.add(""); } }
+    store.set("radical-days", m.days);
+  }
   if (m.reads && typeof m.reads === "object") { const r = readLines(); for (const [k, d] of Object.entries(m.reads)) if (!r[k] || r[k] < d) r[k] = d;
     // v90: lines cleared from a tick ({ lineKey: day }) stay cleared on every device unless read on a later day
     if (m.unread && typeof m.unread === "object") { for (const [k, v] of Object.entries(m.unread)) if (v > 0 && r[k] && r[k] <= new Date(v + 14 * 36e5).toISOString().slice(0, 10)) delete r[k]; store.set("radical-read-unread", m.unread); }
     store.set("radical-read-lines", r); }
   if (m.decks && (+m.decks.t || 0) >= (+decks.t || 0)) { decks = { mine: m.decks.mine || "Mine", names: Array.isArray(m.decks.names) ? m.decks.names : [], used: m.decks.used && typeof m.decks.used === "object" ? m.decks.used : decks.used || {}, made: m.decks.made && typeof m.decks.made === "object" ? m.decks.made : decks.made || {}, ids: m.decks.ids && typeof m.decks.ids === "object" ? m.decks.ids : decks.ids || {}, t: +m.decks.t || 0 }; store.set("radical-decks", decks); }
-  store.set("radical-words", myWords); resetSigs(); updateCounts();
+  store.set("radical-words", myWords); resetSigs(); mine.forEach(k => { if (wordSig.has(k)) wordSig.set(k, "~"); });  // still to send: the next save stamps them again
+  updateCounts();
   if (!$("wordsScreen").hidden) renderWords();
   applyHist(m.hist); applyCur(m.cur).catch(() => {}); applySettings(m.settings);
+  return mine.size > 0;
 }
 addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && (syncTimer || readSync)) { clearTimeout(syncTimer); clearTimeout(readSync); syncTimer = readSync = 0; syncNow(true); } });
 // Settings → Account: sign in, or who you're signed in as with Sync now and Sign out. One line says whether the

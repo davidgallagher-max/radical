@@ -1,5 +1,9 @@
 # Changelog
 
+## v135
+
+- Fixed: a card you rated while the app was syncing could lose its rating and come back in your next set. Ratings, Mastered marks, today's count and words added or removed during a sync now stay, and go up on the next one.
+
 ## v134 (iPhone app 1.0.1)
 
 - Listen keeps reading with the screen locked or in another app. The lock screen shows the text's Chinese and English titles with play and pause. Reading credit only counts what was read with the app open.
