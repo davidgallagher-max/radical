@@ -1,5 +1,11 @@
 # Changelog
 
+## v136
+
+- Guided study. Starter 1 to 5 as 50 lessons of ten words, 1-1 to 5-10. Each lesson: Meet (see and hear each word), Quiz (tap the meaning, then the pinyin), Story (a short story using only words taught so far), then Cards (the new words plus earlier ones that are due).
+- Practice shows Continue and Study on my own. Every step ends with the same two buttons. Change lesson jumps anywhere; Stop guided study turns it off.
+- "Just starting" on first open starts at 1-1.
+
 ## v135
 
 - Fixed: a card you rated while the app was syncing could lose its rating and come back in your next set. Ratings, Mastered marks, today's count and words added or removed during a sync now stay, and go up on the next one.
