@@ -997,6 +997,29 @@ h3.sec.tabsec .togo{margin-left:auto;text-transform:none;letter-spacing:0;font-s
 .revgo.startglow{animation:startglow 2.4s ease-in-out infinite}
 @keyframes startglow{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gold2) 0%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--gold2) 35%,transparent),0 0 22px color-mix(in srgb,var(--gold2) 45%,transparent)}}
 @media (prefers-reduced-motion:reduce){.revgo.startglow{animation:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--gold2) 45%,transparent)}}
+/* v136: Guided study */
+.pathbox{display:grid;gap:10px;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);margin:0 0 14px}
+.pathbox.off{background:none;border:0;padding:0;margin:0 0 6px;justify-items:end}
+.pathhead{display:grid;gap:2px;text-align:center}.pathlab{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.pathhead b{font-family:var(--font-brand);font-size:1.25rem;font-weight:800}
+.pathsteps{display:flex;justify-content:center;flex-wrap:wrap;gap:0 6px;font-size:.92rem;color:var(--muted)}
+.pathsteps span+span::before{content:"·";margin-right:6px;color:var(--muted);text-decoration:none;display:inline-block}
+.pathsteps .now{color:var(--accent);font-weight:700}.pathsteps .done{opacity:.6}.pathsteps .done::after{content:" ✓"}
+.pathgo{font-weight:700;min-height:50px}.pathpick{justify-self:center}.pathdone{margin:0;text-align:center;font-weight:600}
+.pathgo.startglow{animation:startglow 2.4s ease-in-out infinite}
+#wordsScreen.pathonly #revStrip,#wordsScreen.pathonly #wordAddPanel,#wordsScreen.pathonly #listHead,#wordsScreen.pathonly .lookrow,#wordsScreen.pathonly #wordList,#wordsScreen.pathonly .exportrow{display:none}
+.pathcard{display:grid;gap:10px;justify-items:center;text-align:center;padding:8px 0}
+.pathcard .revchars{width:100%}
+.pathpy{margin:0;font-size:1.35rem;display:flex;align-items:center;gap:8px;justify-content:center}.pathmean{margin:0;font-size:1.1rem;font-weight:600}
+.pathcard .mini{width:100%;text-align:left}
+.qask{margin:6px 0 0;color:var(--muted);font-weight:600}
+.qopts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
+.qopt{all:unset;box-sizing:border-box;cursor:pointer;padding:12px 10px;border-radius:12px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);color:var(--fg);font-size:1rem;text-align:center;overflow-wrap:anywhere;min-height:48px;display:grid;place-items:center}
+.qopt.ok{box-shadow:inset 0 0 0 2px var(--on);color:var(--on);font-weight:700}.qopt.no{box-shadow:inset 0 0 0 2px var(--no,#E5533D);color:var(--no,#E5533D)}
+.qopt:disabled{cursor:default}.qopt.ok .tc1,.qopt.ok .tc2,.qopt.ok .tc3,.qopt.ok .tc4,.qopt.ok .tc5{color:inherit}
+.pathok{font-family:var(--font-brand);font-size:1.35rem;font-weight:800;margin:24px 0 6px}
+.pathbar{display:flex;gap:8px;padding:12px 0 calc(var(--bot,0px) + 12px)}.pathbar .btn.wide{flex:1}.pathbar:empty{display:none}
+#pathRead{display:grid;gap:8px;margin:18px 0 8px}#pathRead .note{text-align:center;margin:0}
+.pathsheet .pathlv{margin:8px 0 0;font-weight:700}.pathsheet .lvrow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .tonenotes:empty{display:none}.tonenote{font-size:.92rem;color:var(--muted);margin:6px 2px 0}
 .sndtip{display:grid;gap:6px;margin-top:8px}.sndline .saybtn{vertical-align:middle;margin-right:6px}.sndtip b{margin-right:6px}
 .setchip.top{display:grid;line-height:1.15;padding:7px 2px;border-radius:14px;font-size:1rem}.setchip.top small{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
@@ -1460,6 +1483,7 @@ body.tonecolor .tc1{color:var(--t1)}body.tonecolor .tc2{color:var(--t2)}body.ton
     </div>
     <div class="docbar texthead" id="textHead" hidden><div class="doctitle" id="textTitle"></div></div>
       <section class="reader nopy" id="reader" aria-label="Your text, drawn"></section>
+      <div id="pathRead" hidden></div>
     </div>
   </div>
   <div class="peek" id="peek" hidden role="status" aria-live="polite"></div>
@@ -1474,6 +1498,7 @@ body.tonecolor .tc1{color:var(--t1)}body.tonecolor .tc2{color:var(--t2)}body.ton
       <button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button>
     </header>
     <h3 class="sec tabsec"><span lang="zh">練</span>Practice</h3>
+    <div id="pathBox"></div>
     <div id="revStrip"></div>
     <details class="tpanel addbox" id="wordAddPanel">
       <summary class="addsum"><span class="plus" aria-hidden="true">＋</span>Add words</summary>
@@ -1516,6 +1541,16 @@ body.tonecolor .tc1{color:var(--t1)}body.tonecolor .tc2{color:var(--t2)}body.ton
     </div>
     <div id="revCard" class="revcard"></div>
     <div class="revbar" id="revBar"></div>
+  </div>
+</section>
+
+<!-- GUIDED STUDY (v136): a lesson's Meet and Quiz -->
+<section class="screen sub" id="pathScreen" hidden>
+  <div class="inner">
+    <div class="topbar"><button type="button" class="back" data-back>Practice</button><button type="button" class="topbrand" aria-label="Radical: back to the top"><svg class="brandMark" viewBox="0 0 1024 1024" aria-hidden="true"></svg><b>Radical</b></button><span class="spacer gearslot"><button type="button" class="iconbtn menubtn" aria-label="Menu" aria-haspopup="true"></button></span></div>
+    <h2 class="revtitle" id="pathTitle"></h2>
+    <div id="pathCard" class="pathcard"></div>
+    <div class="pathbar" id="pathBar"></div>
   </div>
 </section>
 
@@ -1934,7 +1969,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v135";
+const APP_VERSION = "v136";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -3343,6 +3378,7 @@ function setTab(id) {
     if (rq && rq.length && $("revCard").childElementCount) { go("reviewScreen"); kbFit(); } else resumeSession();
     return;
   }
+  if (id === "wordsScreen" && tab !== "wordsScreen") pathSelf = false;  // v136: Study on my own lasts one visit
   tab = id; stack.length = 0; endSession(); showOnly(id); if (id === "wordsScreen") renderWords(); if (id === "trackScreen") renderTrack();
 }
 // Pages that can be opened from the menu (their Back always says "‹ Back").
@@ -3402,7 +3438,7 @@ async function render() {
   if (!Object.keys(cache).length) reader.innerHTML = '<p class="loading">Drawing…</p>';
   await ensure(text);
   if (token !== renderToken) return;
-  nameHint = hintNames(text); paintTextHead();
+  nameHint = hintNames(text); paintTextHead(); paintPathRead();
   reader.innerHTML = ""; unpick(); if (reading) stopReading();  // new text on screen: the voice stops with it
   if (!text.trim()) { $("addPanel").open = true; reader.innerHTML = '<p class="note">Add Chinese text above, or try Explore.</p>'; return; }
   // Every character is a drawing, so very long texts are shown in parts.
@@ -7335,6 +7371,7 @@ function baseTip(pill) {
   setTimeout(gone, 3000); addEventListener("scroll", gone, { capture: true, once: true });
 }
 function renderStrip(sizes) {
+  paintPath();
   const strip = $("revStrip"); strip.innerHTML = "";
   // No words yet: Word Sets takes this spot (there's nothing to practice).
   if (!myWords.length) { strip.append(setsPanel()); return; }
@@ -8024,7 +8061,7 @@ function offerCommon() {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard"); let lvs = [];
   // v98: each answer opens a level of your region's list (TOCFL for Taiwan, HSK for mainland)
   // v113: Just starting opens Starter 1 (both regions) and makes its Start button glow
-  const lv = (label, tw, cn) => { const L = () => typeof tw === "string" ? tw : region === "tw" ? LEVELS.tocfl.name(tw) : LEVELS.hsk.name(cn), b = btn("", "btn wide lvbtn", () => { sheet.remove(); if (isStarter(L())) { store.set("radical-start-glow", true); store.set("radical-beginner", true); } chooseSet(() => openLevel(L()), false, null, `start ${L()}`); });
+  const lv = (label, tw, cn) => { const L = () => typeof tw === "string" ? tw : region === "tw" ? LEVELS.tocfl.name(tw) : LEVELS.hsk.name(cn), b = btn("", "btn wide lvbtn", () => { sheet.remove(); if (isStarter(L())) { store.set("radical-start-glow", true); store.set("radical-beginner", true); if (L() === "Starter 1" && !pathNow()) setPath({ at: "1-1", step: "meet" }); } chooseSet(() => openLevel(L()), false, null, `start ${L()}`); });
     b._paint = () => { b.innerHTML = `${label} <small>· ${L()}</small>`; }; b._paint(); return b; };
   card.addEventListener("click", () => setTimeout(() => lvs.forEach(b => b._paint())));  // the region pills change the list
   const topic = btn("or pick a topic ›", "linkbtn", () => { sheet.remove(); setTab("wordsScreen"); });
@@ -8605,8 +8642,9 @@ async function resumeSession() {
 }
 // Flash cards for a hand-picked set of words (from the selection bar), shuffled, schedule ignored for choosing.
 let lastSet = null;  // the settings of the session that's running, for "Another N" (null: a hand-picked set)
-async function openReviewWith(ws) {
+async function openReviewWith(ws, run = null) {
   if (!payOk("cards")) return;
+  pathRun = run;
   noListen = false; lastSet = null; curHow = revHow; rq = ws.slice(); for (let i = rq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rq[i], rq[j]] = [rq[j], rq[i]]; }
   assignModes(rq, curHow);
   rDone = 0; revHist = []; rScore = newScore(); scoreShown = null; go("reviewScreen");
@@ -8615,7 +8653,7 @@ async function openReviewWith(ws) {
 }
 async function openReview(mode = "today", count = "all", again) {
   if (!payOk("cards")) return;
-  curHow = revHow; if (!again) noListen = false;
+  curHow = revHow; if (!again) noListen = false; pathRun = null;
   lastSet = { mode, count }; stampUsed(); rq = buildQueue(mode, count, curHow); if (mode === "today") lockToday(rq); rDone = 0; revHist = []; rScore = newScore(); scoreShown = null;
   if (!again) { go("reviewScreen"); } else $("reviewScreen").scrollTop = 0;
   await ensure(rq.map(w => w.word + conv(w.word)).join(""));
@@ -8812,7 +8850,7 @@ function showFront() {
     if (!rDone) { box.append(el("p", "wmean", "Nothing to review right now."), btn("Back to my words", "btn wide", () => history.back())); return; }
     // The finish: 完 (finished) draws itself in the lit ink, then the session in one glance, what it earned, what's next.
     const fin = el("div", "finish"), mark = el("div", "finmark");
-    fin.append(mark, el("h3", "", showFront.ended ? "Session ended" : "Session complete")); showFront.ended = false;
+    const ended = showFront.ended; fin.append(mark, el("h3", "", ended ? "Session ended" : "Session complete")); showFront.ended = false;
     if (store.get("radical-tour-after", false) && !store.get("radical-tour-seen", false)) { store.set("radical-tour-after", false); setTimeout(() => showTour(), 3500); }
     ensure("完").then(() => { if (!fin.isConnected) return; const svg = svgFor("完", false, true); mark.append(svg); animate(svg, "完", 1.2); });
     // What's next, counted the way the red number on 練 counts: what's left of Today, then Today as it will stand when
@@ -8828,9 +8866,17 @@ function showFront() {
     const todayDone = lastSet && lastSet.mode === "today" && !todayList(modesOf(curHow)).length;
     const more = todayDone ? Math.min(10, pool("learning", curHow).length) : lastSet ? buildQueue(lastSet.mode, lastSet.count, curHow).length : 0;
     if (todayDone) fin.querySelector("h3").textContent = "Done for today";
+    // v136: a lesson's cards end with the lesson's pair: Continue (the next lesson) and Study on my own
+    if (pathRun) {
+      const id = pathRun, p = pathNow(); pathRun = null;
+      if (!ended && p && p.at === id && p.step === "cards") pathAdvance(id, "cards");
+      if (missed.length) acts.append(btn(`Go over the ones you missed (${missed.length})`, "btn ghost wide", () => { history.back(); setTimeout(() => openLook(missed), 60); }));
+      acts.append(...pathPair().children);
+    } else {
     if (more) { const s0 = todayDone ? { mode: "learning", count: 10 } : lastSet; acts.append(btn(todayDone ? `${more} more` : `Another ${more}`, "btn wide", () => { revHow = curHow; openReview(s0.mode, s0.count, true); })); }
     if (missed.length) acts.append(btn(`Go over the ones you missed (${missed.length})`, "btn ghost wide", () => { history.back(); setTimeout(() => openLook(missed), 60); }));
     acts.append(btn("Done", more ? "btn ghost wide" : "btn wide", () => history.back()));
+    }
     fin.append(acts); box.append(fin);
     if (performance.now() - (cardsDone.at || -1e9) > 3000) play("reward"); setTimeout(() => checkMilestones(true, MILESTONES.map(m => m[0]).filter(k => k !== "rw")), 1800);
     return;
@@ -9611,7 +9657,7 @@ function setSums() {
 }
 document.querySelectorAll("#settingsScreen").forEach(x => ["click", "input", "change"].forEach(ev => x.addEventListener(ev, () => setTimeout(setSums, 50))));
 // ---- settings that go in a backup file and (v58) sync with the account.
-const SETTING_KEYS = ["radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-chimes", "radical-haptics", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules", "radical-day-ends",
+const SETTING_KEYS = ["radical-path", "radical-palette", "radical-decks", "radical-theme", "radical-light", "radical-sound", "radical-chimes", "radical-haptics", "radical-rate", "radical-listen-speed", "radical-daily", "radical-read-goal", "radical-streak-rule", "radical-goal-rules", "radical-day-ends",
   "radical-grid", "radical-strokes", "radical-script", "radical-size", "radical-py", "radical-lab", "radical-revhow", "radical-revcount", "radical-goal", "radical-cvd", "radical-badge", "radical-reread", "radical-read-speed", "radical-tiles", "radical-common", "radical-region", "radical-levels", "radical-books", "radical-tonecolor", "radical-explore-src"];
 const SYNC_SETTINGS = SETTING_KEYS.filter(k => k !== "radical-decks");  // v58: decks sync on their own
 // Restore a backup file (v58: the Backup page is gone; a backup chosen with the add box's file icon comes here):
@@ -10136,6 +10182,207 @@ async function paintStories() {
     });
   }
   box.append(el("p", "note", "Percent: words you've practiced on cards."));
+}
+
+// v136: Guided study. Starter 1 to 5 in lessons of ten words (1-1 to 5-10). A lesson: Meet (each word seen and heard,
+// nothing graded), Quiz (tap the meaning, then the pinyin, from four; a miss comes back once), Story (lists/lessons.json
+// from scripts/starter/lessons_build.py: only words taught up to that lesson), Cards (the lesson's words plus earlier
+// lesson words that are due, on the usual schedules). 練 shows Continue and Study on my own (the rest of 練 shows once
+// you pick it, for that visit); every step ends with the same pair. Place: radical-path {at: "1-3", step} (synced
+// with the settings), at "done" after 5-10. Change lesson jumps anywhere.
+var PATH_KEY = "radical-path", PATH_STEPS = ["meet", "quiz", "story", "cards"], STEP_NAME = { meet: "Meet", quiz: "Quiz", story: "Story", cards: "Cards" };
+var LESSONS = []; for (let d = 1; d <= 5; d++) for (let n = 1; n <= 10; n++) LESSONS.push(`${d}-${n}`);
+var pathSelf = false, pathRun = null;
+var lessonLoad = null, pathReadId = null, pathReadText = null;
+var pathNow = () => { const p = store.get(PATH_KEY, null); return p && (p.at === "done" || LESSONS.includes(p.at)) ? { at: p.at, step: PATH_STEPS.includes(p.step) ? p.step : "meet" } : null; };
+var setPath = p => store.set(PATH_KEY, p ? { at: p.at, step: p.step || "meet" } : null);
+var lessonName = id => { const [d, n] = id.split("-"); return `Level ${d} · Lesson ${n}`; };
+var loadLessons = () => lessonLoad || (lessonLoad = getFile("lists/lessons.json").then(r => r.ok ? r.json() : null).catch(() => null).then(j => { if (!j) lessonLoad = null; return j || {}; }));
+async function lessonEntries(id) {
+  const m = await loadStarter(), [d, n] = id.split("-").map(Number), lo = (d - 1) * 100 + (n - 1) * 10;
+  return [...new Set(m.values())].filter(x => x.no > lo && x.no <= lo + 10).sort((a, b) => a.no - b.no);
+}
+// The lesson's words join your words (in their Starter deck) the first time you meet them.
+function lessonWords(es) {
+  let added = 0;
+  const ws = es.map(e => {
+    const word = conv(e.w); let w = findWord(word);
+    if (!w) { w = { word, pinyin: e.p[starterRI()], meaning: e.m, added: localDay(), set: e.deck }; myWords.push(w); added++; }
+    return w;
+  });
+  const decks = [...new Set(es.map(e => e.deck))];
+  if (decks.some(L => !levelsOn().includes(L))) setLevels([...new Set([...levelsOn(), ...decks])]);
+  if (added) saveWords();
+  return ws;
+}
+function pathAdvance(id, step) {
+  const k = PATH_STEPS.indexOf(step);
+  if (k < PATH_STEPS.length - 1) setPath({ at: id, step: PATH_STEPS[k + 1] });
+  else setPath({ at: LESSONS[LESSONS.indexOf(id) + 1] || "done", step: "meet" });
+}
+var pathDid = (id, step) => { const p = pathNow(); if (p && p.at === id && p.step === step) pathAdvance(id, step); };
+function paintPath() {
+  const host = $("pathBox"); if (!host) return;
+  const p = pathNow(); host.replaceChildren(pathBox(p));
+  $("wordsScreen").classList.toggle("pathonly", !!p && p.at !== "done" && !pathSelf);
+}
+function pathBox(p) {
+  const box = el("div", "pathbox");
+  if (!p) { box.classList.add("off"); box.append(btn("Guided study ›", "linkbtn pathstart", pathPick)); return box; }
+  if (p.at === "done") { box.append(el("p", "pathdone", "All 50 lessons done."), btn("Change lesson", "linkbtn pathpick", pathPick)); return box; }
+  const i = PATH_STEPS.indexOf(p.step);
+  box.append(el("div", "pathhead", `<span class="pathlab">Guided study</span><b>${lessonName(p.at)}</b>`),
+    el("div", "pathsteps", PATH_STEPS.map((s, k) => `<span class="${k < i ? "done" : k === i ? "now" : ""}">${STEP_NAME[s]}</span>`).join("")));
+  box.append(btn(`Continue · ${STEP_NAME[p.step]}`, "btn wide pathgo" + (store.get("radical-start-glow", false) ? " startglow" : ""), () => { store.set("radical-start-glow", false); pathStep(); }));
+  if (!pathSelf) box.append(btn("Study on my own", "btn outl wide pathself", () => { pathSelf = true; renderWords(); requestAnimationFrame(() => $("revStrip").scrollIntoView({ behavior: "smooth", block: "start" })); }));
+  box.append(btn("Change lesson", "linkbtn pathpick", pathPick));
+  return box;
+}
+// The pair at the end of every step.
+function pathPair() {
+  const n = pathNow(), box = el("div", "finacts pathpair");
+  if (n && n.at !== "done") box.append(btn(`Continue · ${n.step === "meet" ? `Lesson ${n.at}` : STEP_NAME[n.step]}`, "btn wide", () => {
+    if (n.step !== "story" && stack[stack.length - 1] === "pathScreen") pathStep();
+    else if (stack.length) { history.back(); setTimeout(pathStep, 80); } else pathStep();
+  }));
+  else if (n) box.append(el("p", "pathdone", "All 50 lessons done."));
+  box.append(btn("Study on my own", "btn outl wide", pathOwn));
+  return box;
+}
+function pathOwn() {
+  const via = stack.length; if (via) history.back();
+  setTimeout(() => {
+    if (tab !== "wordsScreen") setTab("wordsScreen"); pathSelf = true;
+    const p = pathNow();  // nothing in Basecamp yet: open the lesson's Starter deck
+    if (p && p.at !== "done" && curList === "mine" && !listWords().length) setList(`Starter ${p.at.split("-")[0]}`);
+    renderWords();
+  }, via ? 80 : 0);
+}
+function pathStep() {
+  const p = pathNow(); if (!p || p.at === "done") return;
+  ({ meet: pathMeet, quiz: pathQuiz, story: pathStory, cards: pathCards })[p.step](p.at);
+}
+function pathOpen() { if (stack[stack.length - 1] !== "pathScreen") go("pathScreen"); $("pathScreen").scrollTop = 0; }
+async function lessonReady(id) {
+  if (!payOk("cards")) return null;
+  const es = await lessonEntries(id);
+  if (!es.length) { toast("The lesson didn't load. Pull down to try again.", 3000); return null; }
+  return es;
+}
+function pathEnd(id, step) {
+  pathDid(id, step);
+  $("pathTitle").textContent = `${id} · ${STEP_NAME[step]}`;
+  const card = $("pathCard"); card.replaceChildren(el("p", "pathok", `${STEP_NAME[step]} done`), pathPair());
+  $("pathBar").replaceChildren(); $("pathScreen").scrollTop = 0;
+}
+// Meet: one word at a time, its sound played, with one of its sentences.
+async function pathMeet(id) {
+  const es = await lessonReady(id); if (!es) return;
+  const ws = lessonWords(es); pathOpen();
+  $("pathCard").replaceChildren(el("p", "loading", "Drawing…")); $("pathBar").replaceChildren();
+  await ensure(es.map(e => conv(e.w) + conv((e.ex[0] || {}).z || "")).join(""));
+  let i = 0;
+  const show = () => {
+    const e = es[i], word = conv(e.w), card = $("pathCard"), ex = e.ex[0];
+    $("pathTitle").innerHTML = `${id} · Meet <span class="note">${i + 1}/${es.length}</span>`;
+    card.replaceChildren(bigWord(word), el("p", "pathpy", `<span>${pyWordHTML(e.p[starterRI()])}</span>${sayHTML(word)}`), el("p", "pathmean", esc(e.m)));
+    if (ex) card.append(miniReader(conv(ex.z), word, ex.e));
+    $("pathBar").replaceChildren(...[i ? btn("‹ Back", "btn ghost", () => { i--; show(); }) : null,
+      btn(i < es.length - 1 ? "Next ›" : "Done", "btn wide", () => { if (i < es.length - 1) { i++; show(); } else pathEnd(id, "meet"); })].filter(Boolean));
+    $("pathScreen").scrollTop = 0;
+    setTimeout(() => { if (card.isConnected && !$("pathScreen").hidden && $("pathCard").contains(card.firstChild)) sayPaced(word, sayPace); }, 350);
+  };
+  void ws; show();
+}
+// Quiz: the meaning from four, then the pinyin from four (one with the tone changed). Not graded on the cards.
+var TONE_SETS = ["āēīōūǖ", "áéíóúǘ", "ǎěǐǒǔǚ", "àèìòùǜ"];
+function toneSwap(p) {
+  const s = [...p], i = s.findIndex(c => TONE_SETS.some(m => m.includes(c))); if (i < 0) return null;
+  const t = TONE_SETS.findIndex(m => m.includes(s[i])), v = TONE_SETS[t].indexOf(s[i]), to = [0, 1, 2, 3].filter(x => x !== t);
+  s[i] = TONE_SETS[to[Math.floor(Math.random() * 3)]][v]; return s.join("");
+}
+function fourOf(right, others) {
+  const out = [right]; for (const x of shuffle(others.slice())) { if (out.length >= 4) break; if (x && !out.includes(x)) out.push(x); }
+  return shuffle(out);
+}
+async function pathQuiz(id) {
+  const es = await lessonReady(id); if (!es) return;
+  lessonWords(es); pathOpen(); $("pathBar").replaceChildren();
+  await ensure(es.map(e => conv(e.w)).join(""));
+  const near = [...new Set(starterMap.values())].filter(x => x.no <= es[es.length - 1].no + 30), ri = starterRI();
+  const q = es.map(e => ({ e })); let done = 0;
+  const show = () => {
+    if (!q.length) { pathEnd(id, "quiz"); return; }
+    const it = q[0], e = it.e, word = conv(e.w), card = $("pathCard"), py = e.p[ri];
+    $("pathTitle").innerHTML = `${id} · Quiz <span class="note">${Math.min(done + 1, es.length)}/${es.length}</span>`;
+    let miss = false;
+    const ask = (label, opts, right, html, then) => {
+      const box = el("div", "qopts"), p = el("p", "qask", label);
+      opts.forEach(o => { const b = el("button", "qopt", `<span>${html(o)}</span>`); b.type = "button"; b.lang = html === esc ? "en" : "";
+        b.onclick = () => {
+          box.querySelectorAll(".qopt").forEach(x => x.disabled = true);
+          const ok = o === right; b.classList.add(ok ? "ok" : "no"); if (!ok) { miss = true; box.children[opts.indexOf(right)].classList.add("ok"); }
+          tick(ok ? "good" : "again"); setTimeout(then, ok ? 500 : 1100);
+        }; box.append(b); });
+      card.append(p, box);
+    };
+    card.replaceChildren(bigWord(word));
+    ask("What does it mean?", fourOf(e.m, near.filter(x => x.m !== e.m).map(x => x.m)), e.m, esc, () => {
+      const same = near.filter(x => x.p[ri] !== py && sylls(x.p[ri]).length === sylls(py).length).map(x => x.p[ri]);
+      const sw = toneSwap(py), others = [...(sw ? [sw] : []), ...shuffle(same)];
+      const opts = [py, ...others.filter((x, k) => x !== py && others.indexOf(x) === k).slice(0, 3)];
+      for (const x of shuffle(near.map(y => y.p[ri]))) { if (opts.length >= 4) break; if (!opts.includes(x)) opts.push(x); }
+      ask("How do you say it?", shuffle(opts), py, x => pyWordHTML(x), () => {
+        sayPaced(word, sayPace);
+        q.shift(); if (miss && !it.again) q.push({ e, again: true }); if (!it.again) done++;
+        $("pathBar").replaceChildren(btn(q.length ? "Next ›" : "Done", "btn wide", show));
+      });
+      requestAnimationFrame(() => card.lastChild.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+    });
+    $("pathBar").replaceChildren(); $("pathScreen").scrollTop = 0;
+  };
+  show();
+}
+// Story: the lesson's story in Read (tap words, Listen, as usual); under it, the pair.
+async function pathStory(id) {
+  const L = await loadLessons(), s = L[id];
+  if (!s) { toast("The story didn't load. Pull down to try again.", 3000); return; }
+  if (stack.length) { history.back(); await new Promise(r => setTimeout(r, 80)); }
+  pathReadId = id; setText(conv(s.text), false, "story", conv(s.t)); pathReadText = $("src").value; paintPathRead();
+}
+function paintPathRead() {
+  const box = $("pathRead"); if (!box) return;
+  const p = pathNow(), on = !!pathReadId && !doc && $("src").value === pathReadText && p && p.at === pathReadId && p.step === "story";
+  box.hidden = !on; if (!on) { box.replaceChildren(); return; }
+  const id = pathReadId;
+  box.replaceChildren(el("p", "note", `${id} · Story`),
+    btn("Continue · Cards", "btn wide", () => { pathDid(id, "story"); paintPathRead(); pathCards(id); }),
+    btn("Study on my own", "btn outl wide", () => { pathDid(id, "story"); paintPathRead(); pathOwn(); }));
+}
+// Cards: the lesson's words, plus earlier lesson words due now (at most ten), in the Starter skills.
+async function pathCards(id) {
+  const es = await lessonReady(id); if (!es) return;
+  const ws = lessonWords(es), lo = es[0].no, how = howFor("Starter 1"), ms = modesOf(how);
+  const before = w => { const e = starterMap.get(w.word) || starterMap.get(toTrad(w.word)); return !!e && e.no < lo; };
+  const due = myWords.filter(w => !ws.includes(w) && before(w) && ms.some(m => modeDue(w, m)))
+    .sort((a, b) => Math.min(...ms.map(m => (a[KEYS[m]] || {}).due || Infinity)) - Math.min(...ms.map(m => (b[KEYS[m]] || {}).due || Infinity))).slice(0, 10);
+  if (stack.length) { history.back(); await new Promise(r => setTimeout(r, 80)); }
+  const was = revHow; revHow = how;
+  try { await openReviewWith([...ws, ...due], id); } finally { revHow = was; }
+}
+// Change lesson: any lesson of Levels 1 to 5; Stop guided study turns it off (the words stay).
+function pathPick() {
+  const p = pathNow(), sheet = el("div", "sheet"), card = el("div", "sheetcard pathsheet"), close = () => sheet.remove();
+  card.append(el("h3", "", "Guided study"), el("p", "note", "Ten words a lesson. Meet, quiz, story, cards."));
+  for (let d = 1; d <= 5; d++) {
+    const row = el("div", "lvrow");
+    for (let n = 1; n <= 10; n++) { const id = `${d}-${n}`, b = btn(id, "setchip", () => { close(); setPath({ at: id, step: "meet" }); pathSelf = false; if (tab === "wordsScreen" && !stack.length) renderWords(); else setTab("wordsScreen"); }); b.setAttribute("aria-pressed", !!p && p.at === id); row.append(b); }
+    card.append(el("p", "pathlv", `Level ${d} <span class="note">· words ${(d - 1) * 100 + 1}–${d * 100}</span>`), row);
+  }
+  if (p) card.append(btn("Stop guided study", "linkbtn", () => { close(); setPath(null); pathSelf = false; renderWords(); }));
+  card.append(btn("Close", "btn ghost wide", close));
+  sheet.onclick = e => { if (e.target === sheet) close(); };
+  sheet.append(card); document.body.append(sheet);
 }
 wikiLabels();
 const wStat = t => { const n = $("wikiStatus"); n.hidden = !t; n.innerHTML = t || ""; };
