@@ -1969,7 +1969,7 @@ document.querySelectorAll("#menu [data-go]").forEach(b => b.onclick = () => {
 });
 // Send feedback: a box in the app. The server emails it to the owners (no address shows anywhere) with the app
 // version, device and screen, plus an optional screenshot.
-const APP_VERSION = "v136";
+const APP_VERSION = "v137";
 if ($("aboutVer")) $("aboutVer").textContent = "Radical " + APP_VERSION;
 function metaLine() {
   const ua = navigator.userAgent, dev = /iPhone|iPad|Android|Mac|Windows/.exec(ua), on = [...document.querySelectorAll(".screen")].find(x => !x.hidden);
@@ -8061,7 +8061,7 @@ function offerCommon() {
   const sheet = el("div", "sheet"), card = el("div", "sheetcard goalcard"); let lvs = [];
   // v98: each answer opens a level of your region's list (TOCFL for Taiwan, HSK for mainland)
   // v113: Just starting opens Starter 1 (both regions) and makes its Start button glow
-  const lv = (label, tw, cn) => { const L = () => typeof tw === "string" ? tw : region === "tw" ? LEVELS.tocfl.name(tw) : LEVELS.hsk.name(cn), b = btn("", "btn wide lvbtn", () => { sheet.remove(); if (isStarter(L())) { store.set("radical-start-glow", true); store.set("radical-beginner", true); if (L() === "Starter 1" && !pathNow()) setPath({ at: "1-1", step: "meet" }); } chooseSet(() => openLevel(L()), false, null, `start ${L()}`); });
+  const lv = (label, tw, cn) => { const L = () => typeof tw === "string" ? tw : region === "tw" ? LEVELS.tocfl.name(tw) : LEVELS.hsk.name(cn), b = btn("", "btn wide lvbtn", () => { sheet.remove(); if (isStarter(L())) { store.set("radical-start-glow", true); store.set("radical-beginner", true); if (PATH_ON && L() === "Starter 1" && !pathNow()) setPath({ at: "1-1", step: "meet" }); } chooseSet(() => openLevel(L()), false, null, `start ${L()}`); });
     b._paint = () => { b.innerHTML = `${label} <small>· ${L()}</small>`; }; b._paint(); return b; };
   card.addEventListener("click", () => setTimeout(() => lvs.forEach(b => b._paint())));  // the region pills change the list
   const topic = btn("or pick a topic ›", "linkbtn", () => { sheet.remove(); setTab("wordsScreen"); });
@@ -10221,8 +10221,12 @@ function pathAdvance(id, step) {
   else setPath({ at: LESSONS[LESSONS.indexOf(id) + 1] || "done", step: "meet" });
 }
 var pathDid = (id, step) => { const p = pathNow(); if (p && p.at === id && p.step === step) pathAdvance(id, step); };
+// Guided study is hidden for now (David, Nov 26): the code and lessons stay; set PATH_ON to true to bring it back.
+var PATH_ON = false;
 function paintPath() {
   const host = $("pathBox"); if (!host) return;
+  host.hidden = !PATH_ON;
+  if (!PATH_ON) { host.replaceChildren(); $("wordsScreen").classList.remove("pathonly"); return; }
   const p = pathNow(); host.replaceChildren(pathBox(p));
   $("wordsScreen").classList.toggle("pathonly", !!p && p.at !== "done" && !pathSelf);
 }

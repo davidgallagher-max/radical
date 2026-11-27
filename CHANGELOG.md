@@ -1,5 +1,9 @@
 # Changelog
 
+## v137
+
+- Guided study is hidden for now. Practice is back to how it was before v136. The lessons, stories and code stay, ready to come back.
+
 ## v136
 
 - Guided study. Starter 1 to 5 as 50 lessons of ten words, 1-1 to 5-10. Each lesson: Meet (see and hear each word), Quiz (tap the meaning, then the pinyin), Story (a short story using only words taught so far), then Cards (the new words plus earlier ones that are due).
